@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calibrain"
+version = "0.1.0"
+description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
+authors = [
+    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
+    {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "readme.md"
+homepage = "https://github.com/braindatalab/CaliBrain"
+repository = "https://github.com/braindatalab/CaliBrain"
+documentation = "https://github.com/braindatalab/CaliBrain/wiki"
+requires-python = ">=3.6"
+
+[project.dependencies]
+numpy = "*"
+pandas = "*"
+scipy = "*"
+scikit-learn = "*"
+mne = "*"
+POT = "*"
+
+[project.optional-dependencies]
+dev = [
+    # Add your development dependencies here
+    # pytest = "==6.2.4"
+]
+
+[project.scripts]
+# Define any CLI scripts here
+# calibrain-cli = "calibrain.cli:main"
