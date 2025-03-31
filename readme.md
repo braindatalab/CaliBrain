@@ -64,8 +64,6 @@ pip install -r requirements.txt
 
 ### Usage
 
-To use the BSI Zoo tools, follow these steps:
-
 1. Clone the repository:
     ```bash
     git clone https://github.com/braindatalab/CaliBrain.git
@@ -74,9 +72,28 @@ To use the BSI Zoo tools, follow these steps:
     ```bash
     cd CaliBrain
     ```
-3. Run the main script:
+3. Create a venv or conda env
+   
+5. Run:
     ```bash
-    python main.py
+    pip install -e .
+    ```
+
+### How to Run the Code
+3. From the Command Line (Default Behavior)
+You can still run the script from the command line as before:
+```bash
+    python examples/dipole_simulation.py --config examples/dipole_sim_cfg.yml --log-level INFO
+```
+1. Programmatically (Inside the Script)
+You can call the main function with a list of arguments directly:
+
+    ```python
+    if __name__ == "__main__":
+        main([
+            "--config", "examples/dipole_sim_cfg.yml",
+            "--log-level", "DEBUG" # or INFO
+        ])
     ```
 
 ---

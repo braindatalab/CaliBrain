@@ -1,3 +1,12 @@
+*.fif
+*.fif.gz
+*.npy
+*.npz
+*.h5
+*.hdf
+
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
