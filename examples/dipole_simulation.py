@@ -2,10 +2,10 @@ import argparse
 import logging
 import numpy as np
 from pathlib import Path
+from mne.io.constants import FIFF
 import mne
 from mne.datasets import sample
 from calibrain.utils import load_config
-
 
 # Mdular and configurable framework for setting up and running dipole simulations pipeline. Handle various MNE-Python components, such as source space, BEM model, montage, info object, forward solution, and leadfield matrix.
 class DipoleSimulation:
@@ -59,12 +59,10 @@ class DipoleSimulation:
             if source_space_cfg.get("save", False):
                 save_path = self.save_path / f"{self.subject}-src.fif"
                 verbose = source_space_cfg.get("verbose", None) 
-                overwrite = source_space_cfg.get("overwrite", False)
+                overwrite = source_space_cfg.get("overwrite", None)
     
-                # Log the save operation
-                self.logger.info(f"Saving source space to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
+                self.logger.debug(f"Saving source space to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
     
-                # Save the source space
                 mne.write_source_spaces(save_path, src, overwrite=overwrite, verbose=verbose)
     
             return src
@@ -97,7 +95,7 @@ class DipoleSimulation:
                 overwrite = bem_model_cfg.get("overwrite", False)
 
                 # Log the save operation
-                self.logger.info(f"Saving BEM model to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
+                self.logger.debug(f"Saving BEM model to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
 
                 # Save the BEM model
                 mne.write_bem_solution(save_path, bem, overwrite=overwrite, verbose=verbose)
@@ -128,7 +126,7 @@ class DipoleSimulation:
                 overwrite = montage_cfg.get("overwrite", False)
     
                 # Log the save operation
-                self.logger.info(f"Saving montage to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
+                self.logger.debug(f"Saving montage to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
     
                 # Save the montage
                 montage.save(save_path, overwrite=overwrite, verbose=verbose)
@@ -169,7 +167,7 @@ class DipoleSimulation:
                 verbose = info_cfg.get("verbose", False)
     
                 # Log the save operation
-                self.logger.info(f"Saving info object to file: {save_path} (verbose={verbose})")
+                self.logger.debug(f"Saving info object to file: {save_path} (verbose={verbose})")
     
                 # Save the info object
                 mne.io.write_info(save_path, info)
@@ -188,12 +186,25 @@ class DipoleSimulation:
         Returns:
         - fwd (mne.Forward): The forward solution object.
         """
-        forward_solution_cfg = self.config["forward_solution"]
-        if "fname" in forward_solution_cfg and forward_solution_cfg["fname"]:
-            self.logger.info(f"Loading forward solution from file: {forward_solution_cfg['fname']}")
-            return mne.read_forward_solution(forward_solution_cfg["fname"])
+        forward_solution_cfg = self.config.get("forward_solution", {})
+        fname = forward_solution_cfg.get("fname", "")
+    
+        # Load the forward solution if a file is specified
+        if fname:
+            load_path = Path(fname)
+            if load_path.exists():
+                self.logger.info(f"Loading forward solution from file: {load_path}")
+                fwd = mne.read_forward_solution(load_path)
+            else:
+                self.logger.warning(f"Specified forward solution file does not exist: {load_path}. Creating from scratch...")
+                fwd = None
         else:
-            self.logger.info("Creating forward solution from scratch...")
+            self.logger.info("No forward solution file specified. Creating from scratch...")
+            fwd = None
+    
+        # Create the forward solution if not loaded
+        if fwd is None:
+            self.logger.info("Creating forward solution...")
             valid_kwargs = ["trans", "eeg", "meg", "mindist", "ignore_ref", "n_jobs", "verbose"]
             kwargs = {key: value for key, value in forward_solution_cfg.items() if key in valid_kwargs}
             fwd = mne.make_forward_solution(
@@ -202,20 +213,28 @@ class DipoleSimulation:
                 bem=bem,
                 **kwargs
             )
+            self.logger.info("Forward solution created successfully.")
     
-            # Save the forward solution if configured
-            if forward_solution_cfg.get("save", False):
-                save_path = self.save_path / f"{self.subject}-fwd.fif"
-                verbose = forward_solution_cfg.get("verbose", None)
-                overwrite = forward_solution_cfg.get("overwrite", False)
+        # Fix orientation if configured
+        if forward_solution_cfg.get("convert_ori", False):
+            surf_ori = forward_solution_cfg.get("surf_ori", True)
+            force_fixed = forward_solution_cfg.get("force_fixed", True)
+            self.logger.info(f"Fixing orientation of the forward solution (surf_ori={surf_ori}, force_fixed={force_fixed})...")
+            fwd_fixed = mne.convert_forward_solution(fwd, force_fixed=force_fixed, surf_ori=surf_ori)
+            self.logger.info("Orientation fixed successfully.")
+            fwd = fwd_fixed
     
-                # Log the save operation
-                self.logger.info(f"Saving forward solution to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
+        # Save the forward solution if configured
+        if forward_solution_cfg.get("save", False):
+            save_path = self.save_path / f"{self.subject}-fwd.fif"
+            verbose = forward_solution_cfg.get("verbose", False)
+            overwrite = forward_solution_cfg.get("overwrite", False)
     
-                # Save the forward solution
-                mne.write_forward_solution(save_path, fwd, overwrite=overwrite, verbose=verbose)
+            self.logger.debug(f"Saving forward solution to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
+            mne.write_forward_solution(save_path, fwd, overwrite=overwrite, verbose=verbose)
+            self.logger.info("Forward solution saved successfully.")
     
-            return fwd
+        return fwd
 
     def handle_leadfield(self, fwd) -> np.ndarray:
         """
@@ -235,7 +254,11 @@ class DipoleSimulation:
             load_path = Path(fname)
             if load_path.exists():
                 self.logger.info(f"Loading leadfield matrix from file: {load_path}")
-                leadfield = np.load(load_path)
+                with np.load(load_path) as data:
+                    if "leadfield" not in data:
+                        self.logger.error(f"File {load_path} does not contain 'leadfield' key.")
+                        raise ValueError(f"Invalid .npz file: 'leadfield' key not found in {load_path}")
+                    leadfield = data["leadfield"]
                 self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
                 return leadfield
             else:
@@ -249,14 +272,20 @@ class DipoleSimulation:
         # Extract the leadfield matrix from the forward solution
         self.logger.info("Extracting leadfield matrix from the forward solution...")
         leadfield = fwd["sol"]["data"]
-        self.logger.info(f"Leadfield extracted with shape {leadfield.shape}")
+        
+        if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI: # 1
+            self.logger.info("Leadfield matrix is fixed orientation.")
+            self.logger.info(f"Leadfield extracted with shape {leadfield.shape[0]} sensors x {leadfield.shape[1]} sources")
+        
+        if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI: # 2
+            self.logger.info("Leadfield matrix is free orientation.")
+            self.logger.info(f"Leadfield extracted with shape {leadfield.shape[0]} sensors x {leadfield.shape[1]} sources x 3 orientations")
     
         # Save the leadfield matrix if configured
         if leadfield_cfg.get("save", False):
-            save_path = self.save_path / f"{self.subject}-leadfield.npy"
-            self.logger.info(f"Saving leadfield matrix to file: {save_path}")
-            allow_pickle = leadfield_cfg.get("allow_pickle", False)
-            np.save(save_path, leadfield, allow_pickle)
+            save_path = self.save_path / f"{self.subject}-leadfield.npz"
+            self.logger.debug(f"Saving leadfield matrix to file: {save_path}")
+            np.savez(save_path, leadfield=leadfield)
     
         return leadfield
         
@@ -285,7 +314,7 @@ class DipoleSimulation:
             leadfield = self.handle_leadfield(fwd)
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}")
-            raise
+            raise 
 
         self.logger.info("Pipeline completed successfully.")
         return leadfield
@@ -317,44 +346,16 @@ def main(args=None):
     config = load_config(config_path)
 
     # Determine log level
+    valid_log_levels = ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     log_level = args.log_level or config.get("log_level", "INFO").upper()
-    if log_level not in ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-        raise ValueError(f"Invalid log level: {log_level}")
+    if log_level not in valid_log_levels:
+        logger.warning(f"Invalid log level '{log_level}' in configuration. Defaulting to 'INFO'.")
+        log_level = "INFO"
 
     # Configure logging
     logging.basicConfig(level=getattr(logging, log_level), format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
     logger.info(f"Using configuration file: {config_path}")
-
-    # Validate and update paths in the configuration
-    data_cfg = config.get("data", {})
-    if "data_path" not in data_cfg or "subjects_dir" not in data_cfg or "subject" not in data_cfg:
-        logger.error("The configuration file must include 'data_path', 'subjects_dir', and 'subject' in the 'data' section.")
-        raise ValueError("Invalid configuration file: Missing required keys in the 'data' section.")
-
-    # Ensure paths are valid
-    data_path = Path(data_cfg["data_path"])
-    subjects_dir = Path(data_cfg["subjects_dir"])
-    subject = data_cfg["subject"]
-
-    if not data_path.exists():
-        logger.error(f"Data path does not exist: {data_path}")
-        raise FileNotFoundError(f"Data path does not exist: {data_path}")
-    if not subjects_dir.exists():
-        logger.error(f"Subjects directory does not exist: {subjects_dir}")
-        raise FileNotFoundError(f"Subjects directory does not exist: {subjects_dir}")
-
-    # Ensure save_path exists
-    save_path = Path(data_cfg.get("save_path", "./results"))
-    if not save_path.exists():
-        logger.info(f"Save path does not exist. Creating: {save_path}")
-        save_path.mkdir(parents=True, exist_ok=True)
-
-    # Update config with validated paths
-    config["data"]["data_path"] = str(data_path)
-    config["data"]["subjects_dir"] = str(subjects_dir)
-    config["data"]["subject"] = subject
-    config["data"]["save_path"] = str(save_path)
 
     # Initialize simulation
     dipole_sim = DipoleSimulation(config=config, logger=logger)
@@ -365,11 +366,12 @@ def main(args=None):
         logger.info(f"Leadfield shape: {leadfield.shape}")
     except Exception as e:
         logger.error(f"An error occurred during the pipeline execution: {e}")
-        raise
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
-    # Programmatically specify arguments
+    # import sys
+    # main(sys.argv[1:])
     main([
         "--config", "examples/dipole_sim_cfg.yml",
         "--log-level", "INFO"
