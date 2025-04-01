@@ -7,6 +7,7 @@
 # - montage: Parameters for the montage.
 # - info: Parameters for the info.
 # - forward_solution: Parameters for the forward solution.
+# - leadfield: Parameters for the leadfield.
 
 # NOTE: The parameters in each section are used to configure the simulation.
 # fname: ""  # Leave empty to compute from scratch, or provide a valid file path, then other parameters in this key will be ignored. 
@@ -58,11 +59,14 @@ forward_solution:
   mindist: 0.0
   ignore_ref: false
   n_jobs: -1
+  convert_ori: true #  enable converting the dipole orientation.
+  surf_ori: True
+  force_fixed: True
   save: true # Save the forward solution to a file. If True, the file name will be ``{subject}-fwd.fif``.
   overwrite: true  # Overwrite the file if it already exists.
-  verbose: false
+  verbose: true
 
 leadfield:
-  fname: "" # npz file from which to read leadfield locations.
+  fname: "" #.npz file that contains the leadfield matrix stored under the key "leadfield".
   save: true
   allow_pickle: false
