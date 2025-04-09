@@ -19,7 +19,7 @@ data:
   save_path: "./results"
 
 source_space:
-  fname: ""  # Leave empty to compute from scratch, or provide a valid file path, then other parameters in this key will be ignored. The name of the file should end with ``-src.fif`` or ``-src.fif.gz``.
+  fname: "results/fsaverage-src.fif"  # Leave empty to compute from scratch, or provide a valid file path, then other parameters in this key will be ignored. The name of the file should end with ``-src.fif`` or ``-src.fif.gz``.
   spacing: "ico4" # default: "oct6"
   surface: "white"
   add_dist: true
@@ -29,7 +29,7 @@ source_space:
   verbose: false
 
 bem_model:
-  fname: ""  # If provided, other parameters in this key will be ignored.
+  fname: "results/fsaverage-bem.fif"  # If provided, other parameters in this key will be ignored.
   # ico: None # The surface ico downsampling to use, e.g. ``5=20484``, ``4=5120``,  ``3=1280``. If None, no subsampling is applied. MNE default is ``4``.
   conductivity: [0.3, 0.006, 0.3] # for 3 layer model.
   solver: "mne"
@@ -38,7 +38,7 @@ bem_model:
   verbose: false
 
 montage:
-  fname: ""  # If provided, other parameters in this key will be ignored. FIF file from which to read digitization locations.
+  fname: "results/fsaverage-montage.fif"  # If provided, other parameters in this key will be ignored. FIF file from which to read digitization locations.
   kind: "easycap-M43"
   head_size: 0.095
   save: true # Save the montage to a file. If True, the file name will be ``{subject}-montage.fif``.
@@ -46,27 +46,27 @@ montage:
   verbose: false
 
 info:
-  fname: ""  # If provided, other parameters in this key will be ignored
+  fname: "results/fsaverage-info.fif"  # If provided, other parameters in this key will be ignored
   sfreq: 150
   ch_types: "eeg"
   save: true # Save the info to a file. If True, the file name will be ``{subject}-info.fif``.
 
 forward_solution:
-  fname: ""  # If provided, other parameters in this key will be ignored. The file name should end with ``-fwd.fif``, ``-fwd.fif.gz``,
+  fname: "results/fsaverage-fixed-fwd.fif"  # If provided, other parameters in this key will be ignored. The file name should end with ``{orientation_type}-fwd.fif``, ``{orientation_type}-fwd.fif.gz``,
   trans: "fsaverage"
   eeg: true
   meg: false
   mindist: 0.0
   ignore_ref: false
   n_jobs: -1
-  convert_ori: true #  enable converting the dipole orientation.
+  orientation_type: "fixed" #  used for converting the dipole orientation.
   surf_ori: True
   force_fixed: True
-  save: true # Save the forward solution to a file. If True, the file name will be ``{subject}-fwd.fif``.
+  save: true # Save the forward solution to a file. If True, the file name will be ``{subject}-fwd-{orientation_type}.fif``.
   overwrite: true  # Overwrite the file if it already exists.
   verbose: true
 
 leadfield:
-  fname: "" #.npz file that contains the leadfield matrix stored under the key "leadfield".
+  fname: "results/fsaverage-leadfield-fixed.npz" # *_fixed.npz or *_free.npz. File that contains the leadfield matrix must be stored under the key ``leadfield``. Check npz file for the leadfield matrix for more info.
   save: true
   allow_pickle: false
