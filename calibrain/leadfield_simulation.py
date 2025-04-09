@@ -7,11 +7,11 @@ import mne
 from mne.datasets import sample
 from calibrain.utils import load_config
 
-# Mdular and configurable framework for setting up and running dipole simulations pipeline. Handle various MNE-Python components, such as source space, BEM model, montage, info object, forward solution, and leadfield matrix.
-class DipoleSimulation:
+# Mdular and configurable framework for setting up and running leadfield simulations pipeline. Handle various MNE-Python components, such as source space, BEM model, montage, info object, forward solution, and leadfield matrix.
+class LeadfieldSimulator:
     def __init__(self, config: dict, logger=None):
         """
-        Initialize the DipoleSimulation class with a configuration dictionary.
+        Initialize the LeadfieldSimulator class with a configuration dictionary.
 
         Parameters:
         - config (dict): Configuration dictionary.
@@ -36,7 +36,7 @@ class DipoleSimulation:
             self.logger.info(f"Save path does not exist. Creating: {self.save_path}")
             self.save_path.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info("DipoleSimulation initialized successfully.")
+        self.logger.info("LeadfieldSimulator initialized successfully.")
         
     def handle_source_space(self) -> mne.SourceSpaces:
         """
@@ -187,19 +187,24 @@ class DipoleSimulation:
         - fwd (mne.Forward): The forward solution object.
         """
         forward_solution_cfg = self.config.get("forward_solution", {})
-        fname = forward_solution_cfg.get("fname", "")
+        orientation_type = forward_solution_cfg.get("orientation_type")  
+        
+        fname = forward_solution_cfg.get("fname")
     
         # Load the forward solution if a file is specified
-        if fname:
+        if fname in forward_solution_cfg.get("fname"):
             load_path = Path(fname)
-            if load_path.exists():
-                self.logger.info(f"Loading forward solution from file: {load_path}")
-                fwd = mne.read_forward_solution(load_path)
+            if not load_path.name.endswith("fixed-fwd.fif") or load_path.name.endswith("free-fwd.fif"):
+                self.logger.warning("Forward solution file name does not match expected suffix")
+            if load_path.name.endswith("-fwd.fif"):
+                self.logger.info(f"Loading forward solution from file: {fname}")
+                fwd = mne.read_forward_solution(fname)
+                return fwd
             else:
-                self.logger.warning(f"Specified forward solution file does not exist: {load_path}. Creating from scratch...")
+                self.logger.warning(f"Forward solution file name does not match expected suffix '{orientation_type}'.")
                 fwd = None
         else:
-            self.logger.info("No forward solution file specified. Creating from scratch...")
+            self.logger.warning(f"Specified forward solution file does not exist: {fname}. Creating from scratch...")
             fwd = None
     
         # Create the forward solution if not loaded
@@ -216,80 +221,106 @@ class DipoleSimulation:
             self.logger.info("Forward solution created successfully.")
     
         # Fix orientation if configured
-        if forward_solution_cfg.get("convert_ori", False):
+        if orientation_type == "fixed":
             surf_ori = forward_solution_cfg.get("surf_ori", True)
             force_fixed = forward_solution_cfg.get("force_fixed", True)
             self.logger.info(f"Fixing orientation of the forward solution (surf_ori={surf_ori}, force_fixed={force_fixed})...")
-            fwd_fixed = mne.convert_forward_solution(fwd, force_fixed=force_fixed, surf_ori=surf_ori)
+            fwd = mne.convert_forward_solution(fwd, force_fixed=force_fixed, surf_ori=surf_ori)
             self.logger.info("Orientation fixed successfully.")
-            fwd = fwd_fixed
     
         # Save the forward solution if configured
         if forward_solution_cfg.get("save", False):
-            save_path = self.save_path / f"{self.subject}-fwd.fif"
+            save_path = self.save_path / f"{self.subject}-{orientation_type}-fwd.fif"
+            
             verbose = forward_solution_cfg.get("verbose", False)
             overwrite = forward_solution_cfg.get("overwrite", False)
     
             self.logger.debug(f"Saving forward solution to file: {save_path} (overwrite={overwrite}, verbose={verbose})")
             mne.write_forward_solution(save_path, fwd, overwrite=overwrite, verbose=verbose)
-            self.logger.info("Forward solution saved successfully.")
+            self.logger.info(f"Forward solution saved successfully to {save_path}.")
     
         return fwd
 
-    def handle_leadfield(self, fwd) -> np.ndarray:
+    def handle_leadfield(self, fwd=None) -> np.ndarray:
         """
         Handle the leadfield matrix by either loading it from a file or extracting it from the forward solution.
     
         Parameters:
-        - fwd (mne.Forward): The forward solution.
+        - fwd (mne.Forward, optional): The forward solution. If None, the leadfield matrix is computed.
     
         Returns:
         - leadfield (np.ndarray): The leadfield matrix.
+    
+        Raises:
+        - ValueError: If neither a valid forward solution nor a valid file path is provided.
         """
         leadfield_cfg = self.config.get("leadfield", {})
         fname = leadfield_cfg.get("fname", "")  # File path to load the leadfield matrix
     
-        # If a file path is provided and the file exists, load the leadfield matrix
+        # If a file path is provided, attempt to load the leadfield matrix
         if fname:
             load_path = Path(fname)
             if load_path.exists():
-                self.logger.info(f"Loading leadfield matrix from file: {load_path}")
-                with np.load(load_path) as data:
-                    if "leadfield" not in data:
-                        self.logger.error(f"File {load_path} does not contain 'leadfield' key.")
-                        raise ValueError(f"Invalid .npz file: 'leadfield' key not found in {load_path}")
-                    leadfield = data["leadfield"]
-                self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
-                return leadfield
-            else:
-                self.logger.warning(f"Specified leadfield file does not exist: {load_path}")
+                try:
+                    self.logger.info(f"Loading leadfield matrix from file: {load_path}")
+                    with np.load(load_path) as data:
+                        if "leadfield" not in data:
+                            self.logger.error(f"File {load_path} does not contain 'leadfield' key.")
+                            raise ValueError(f"Invalid .npz file: 'leadfield' key not found in {load_path}")
+                        leadfield = data["leadfield"]
     
-        # Ensure the forward solution is provided
+                    # Validate and reshape the leadfield matrix based on its orientation
+                    if leadfield.ndim == 2:  # Fixed orientation
+                        self.logger.info("Loaded leadfield matrix is fixed orientation.")
+                        self.logger.info(f"Leadfield shape: {leadfield.shape[0]} sensors x {leadfield.shape[1]} sources")
+                    elif leadfield.ndim == 3 and leadfield.shape[2] == 3:  # Free orientation
+                        self.logger.info("Loaded leadfield matrix is free orientation.")
+                        self.logger.info(f"Leadfield shape: {leadfield.shape[0]} sensors x {leadfield.shape[1]} orientations x {leadfield.shape[2]} sources")
+                    else:
+                        self.logger.error(f"Invalid leadfield matrix shape: {leadfield.shape}")
+                        raise ValueError(f"Invalid leadfield matrix shape: {leadfield.shape}")
+    
+                    return leadfield
+                except Exception as e:
+                    self.logger.warning(f"Failed to load leadfield matrix from file: {e}. Proceeding to compute it.")
+    
+        # If no file path is provided or loading fails, compute the leadfield matrix
         if fwd is None:
-            self.logger.error("Forward solution not found. Generate it first.")
-            raise ValueError("Forward solution is missing. Cannot extract leadfield matrix.")
+            self.logger.error("Forward solution not provided. Cannot compute leadfield matrix.")
+            raise ValueError("Forward solution is missing. Cannot compute leadfield matrix.")
     
-        # Extract the leadfield matrix from the forward solution
         self.logger.info("Extracting leadfield matrix from the forward solution...")
         leadfield = fwd["sol"]["data"]
-        
-        if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI: # 1
+    
+        # Determine the orientation type and reshape/save accordingly
+        if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:  # Fixed orientation
             self.logger.info("Leadfield matrix is fixed orientation.")
             self.logger.info(f"Leadfield extracted with shape {leadfield.shape[0]} sensors x {leadfield.shape[1]} sources")
-        
-        if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI: # 2
+            orientation_type = "fixed"
+        elif fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:  # Free orientation
             self.logger.info("Leadfield matrix is free orientation.")
-            self.logger.info(f"Leadfield extracted with shape {leadfield.shape[0]} sensors x {leadfield.shape[1]} sources x 3 orientations")
+            n_sensors, n_sources_times_orientations = leadfield.shape
+            n_orientations = 3  # Free orientation implies 3 orientations per source
+            n_sources = n_sources_times_orientations // n_orientations
     
-        # Save the leadfield matrix if configured
-        if leadfield_cfg.get("save", False):
-            save_path = self.save_path / f"{self.subject}-leadfield.npz"
-            self.logger.debug(f"Saving leadfield matrix to file: {save_path}")
+            # Reshape the leadfield to sensors x sources x n_orientations
+            leadfield = leadfield.reshape(n_sensors, n_sources, n_orientations)
+            self.logger.info(f"Leadfield reshaped to {leadfield.shape[0]} sensors x {leadfield.shape[1]} sourcess x {leadfield.shape[2]} orientations")
+            orientation_type = "free"
+        else:
+            self.logger.warning("Unknown leadfield orientation type. Proceeding without saving.")
+            orientation_type = None
+    
+        # Save the computed leadfield matrix if configured
+        if leadfield_cfg.get("save", False) and orientation_type:
+            save_path = self.save_path / f"{self.subject}-leadfield-{orientation_type}.npz"
+            self.logger.info(f"Saving computed leadfield matrix to file: {save_path}")
             np.savez(save_path, leadfield=leadfield)
     
+        self.logger.info(f"Leadfield computed with shape {leadfield.shape}")
         return leadfield
         
-    def run_pipeline(self) -> np.ndarray:
+    def simulate(self) -> np.ndarray:
         """
         Run the full simulation pipeline using the configuration.
         This includes loading or creating the source space, BEM model, info object,
@@ -313,8 +344,8 @@ class DipoleSimulation:
             # Extract the leadfield matrix
             leadfield = self.handle_leadfield(fwd)
         except Exception as e:
-            self.logger.error(f"Pipeline failed: {e}")
-            raise 
+            self.logger.error(f"Pipeline failed at step: {e}")
+            raise RuntimeError("Simulation pipeline failed.") from e
 
         self.logger.info("Pipeline completed successfully.")
         return leadfield
@@ -322,12 +353,12 @@ class DipoleSimulation:
 
 def main(args=None):
     # Set up argument parser
-    parser = argparse.ArgumentParser(description="Run the dipole simulation pipeline.")
+    parser = argparse.ArgumentParser(description="Run the Leadfield simulation pipeline.")
     parser.add_argument(
         "--config",
         type=str,
         required=True,
-        help="Path to the YAML configuration file of dipole simulation."
+        help="Path to the YAML configuration file of leadfield simulation."
     )
     parser.add_argument(
         "--log-level",
@@ -338,12 +369,7 @@ def main(args=None):
 
     # Parse arguments (use provided args if given, otherwise use sys.argv)
     args = parser.parse_args(args)
-
-    # Load configuration
-    config_path = Path(args.config)
-    if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file does not exist: {config_path}")
-    config = load_config(config_path)
+    config = load_config(Path(args.config))
 
     # Determine log level
     valid_log_levels = ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -355,14 +381,14 @@ def main(args=None):
     # Configure logging
     logging.basicConfig(level=getattr(logging, log_level), format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
-    logger.info(f"Using configuration file: {config_path}")
+    logger.info(f"Using configuration file: {Path(args.config)}")
 
     # Initialize simulation
-    dipole_sim = DipoleSimulation(config=config, logger=logger)
+    leadfield_sim = LeadfieldSimulator(config=config, logger=logger)
 
     # Run the pipeline
     try:
-        leadfield = dipole_sim.run_pipeline()
+        leadfield = leadfield_sim.simulate()
         logger.info(f"Leadfield shape: {leadfield.shape}")
     except Exception as e:
         logger.error(f"An error occurred during the pipeline execution: {e}")
@@ -373,6 +399,6 @@ if __name__ == "__main__":
     # import sys
     # main(sys.argv[1:])
     main([
-        "--config", "examples/dipole_sim_cfg.yml",
+        "--config", "configs/leadfield_sim_cfg.yml",
         "--log-level", "INFO"
     ])
