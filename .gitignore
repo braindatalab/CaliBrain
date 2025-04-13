@@ -5,6 +5,7 @@
 *.h5
 *.hdf
 *.csv
+*.png
 
 .DS_Store
 
