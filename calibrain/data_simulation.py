@@ -4,7 +4,7 @@ from scipy.stats import wishart
 from pathlib import Path
 import logging
 
-from calibrain.leadfield_simulation import LeadfieldSimulator
+from calibrain import LeadfieldSimulator
 from calibrain.utils import load_config
 
 class DataSimulator:
@@ -140,12 +140,50 @@ class DataSimulator:
             raise ValueError(f"Invalid leadfield mode '{self.leadfield_mode}'. Options are 'load', 'simulate', or 'random'.")
 
     def _generate_sources(self, L):
+        """
+        Generate synthetic source activity and corresponding sensor measurements.
+    
+        This function generates synthetic source activity (`x`) and computes the corresponding sensor measurements (`y`) using the provided leadfield matrix (`L`). The source activity can be generated for either "fixed" or "free" orientation types, and the number of active sources (`nnz`) is determined randomly.
+    
+        Parameters:
+        - L (np.ndarray): Leadfield matrix.
+            - For "fixed" orientation: Shape `(n_sensors, n_sources)`.
+            - For "free" orientation: Shape `(n_sensors, n_sources, 3)`, where the last dimension corresponds to the three orientations (X, Y, Z).
+    
+        Returns:
+        - x (np.ndarray): Source activity.
+            - For "fixed" orientation: Shape `(n_sources, n_times)`.
+            - For "free" orientation: Shape `(n_sources, 3, n_times)`, where the second dimension corresponds to the three orientations (X, Y, Z).
+    
+        - y (np.ndarray): Sensor measurements.
+            - Shape: `(n_sensors, n_times)`.
+    
+        Notes:
+        - The number of active sources (`nnz`) is randomly selected using `self.rng.choice`.
+        - If `n_times = 1`, the output shapes of `x` and `y` remain consistent with the multi-time-point 
+          case, ensuring compatibility with downstream processing.
+    
+        Example:
+        - For `orientation_type = "fixed"`, `n_sources = 100`, `n_times = 10`, and `nnz = 5`:
+            - `x` will have shape `(100, 10)`.
+            - `y` will have shape `(n_sensors, 10)`.
+    
+        - For `orientation_type = "free"`, `n_sources = 100`, `n_times = 10`, and `nnz = 5`:
+            - `x` will have shape `(100, 3, 10)`.
+            - `y` will have shape `(n_sensors, 10)`.
+    
+        Raises:
+        - ValueError: If the leadfield matrix (`L`) has an unexpected shape for the specified 
+          orientation type.
+        """
         if self.orientation_type == "fixed":
             self.n_sensors, self.n_sources = L.shape
         elif self.orientation_type == "free":
             self.n_sensors, self.n_sources, _ = L.shape
+    
+        # Select random indices for active sources
         idx = self.rng.choice(self.n_sources, size=self.nnz, replace=False)
-        
+    
         if self.orientation_type == "fixed":
             x = np.zeros((self.n_sources, self.n_times))
             x[idx] = self.rng.randn(self.nnz, self.n_times)
@@ -155,6 +193,7 @@ class DataSimulator:
             x = np.zeros((self.n_sources, n_orient, self.n_times))
             x[idx] = self.rng.randn(self.nnz, n_orient, self.n_times)
             y = np.einsum("nmr,mrd->nd", L, x)
+    
         return x, y
 
     def _add_noise(self, y):
@@ -185,9 +224,9 @@ class DataSimulator:
         if self.orientation_type == "free":
             L = L.reshape(L.shape[0], -1)
 
-        if self.n_times == 1 and self.orientation_type == "fixed":
-            y_noisy = y_noisy[:, 0]
-            x = x[:, 0]
+        # if self.n_times == 1 and self.orientation_type == "fixed":
+        #     y_noisy = y_noisy[:, 0]
+        #     x = x[:, 0]
 
         return y_noisy, L, x, cov_scaled, noise_scaled
 
