@@ -187,17 +187,14 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "n_times": [1, 2],
+        "n_times": [100],
         "nnz": [5],
-        "orientation_type": ["fixed"], # fixed, free
+        "orientation_type": ["fixed"],
         "alpha_snr": [0.5],
-        "noise_type": ["scaled"], # random, scaled
-        "cov_type": ["scaled_identity"], # diag, scaled_identity
     }
     gamma_map_params = {
-        "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)
-        "sigma_squared": ["oracle"], # CV, joint_learning, oracle
-        # "cov": [1.0],
+        "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
+        "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
     }
 
     estimators = [
