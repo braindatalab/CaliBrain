@@ -3,13 +3,14 @@ import pandas as pd
 from scipy import linalg
 from warnings import warn
 from sklearn.base import BaseEstimator, RegressorMixin
+from scipy import linalg
 
 
 def gamma_map(
     L,
     y,
-    cov=1.0,
-    sigma_squared=None,
+    noise_type="oracle",
+    cov=None, # covariance matrix of the noise
     n_orient=1,
     max_iter=1000,
     tol=1e-15,
@@ -19,15 +20,14 @@ def gamma_map(
     verbose=True,
     logger=None,
 ):
-    if isinstance(cov, float):
-        sigma_squared = 0.2
-        cov = sigma_squared * np.eye(L.shape[0])
-    
-    # if sigma_squared is None:
-    if sigma_squared == "oracle":
+    if noise_type == "oracle":
         sigma_squared = np.diag(cov)[0] # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
         
-    # Take care of whitening
+        # NOTE - TODO: hardcoded for now, but should be changed to use the covariance matrix and sigma_squared
+        sigma_squared = 0.01
+        cov = sigma_squared * np.eye(L.shape[0])
+        
+    # whiten the data
     whitener = linalg.inv(linalg.sqrtm(cov))
     y = whitener @ y
     L = whitener @ L   
@@ -105,18 +105,13 @@ def _gamma_map_opt(
     posterior_cov: array, shape=(n_active, n_active)
         Posterior coveriance matrix of estimated active sources
     """
-    from scipy import linalg
-
     G = G.copy()
     M = M.copy()
 
-    if gammas is None:
-        gammas = np.ones(G.shape[1], dtype=np.float64)
-
-    eps = np.finfo(float).eps
-
     n_sources = G.shape[1]
     n_sensors, n_times = M.shape
+    
+    eps = np.finfo(float).eps
 
     # apply normalization so the numerical values are sane
     M_normalize_constant = np.linalg.norm(np.dot(M, M.T), ord="fro")
@@ -210,18 +205,26 @@ def _gamma_map_opt(
 
         breaking = err < tol or n_active == 0
         if len(gammas) != last_size or breaking:
-            logger.info(
-                "Iteration: %d\t active set size: %d\t convergence: "
-                "%0.3e" % (itno, len(gammas), err)
-            )
+            # logger.info(
+            #     "Iteration: %d\t active set size: %d\t convergence: "
+            #     "%0.3e" % (itno, len(gammas), err)
+            # )
             last_size = len(gammas)
 
         if breaking:
             break
 
     if itno < maxit - 1:
+        logger.info(
+            "Iteration: %d\t active set size: %d\t convergence: "
+            "%0.3e" % (itno, len(gammas), err)
+        )
         logger.info("\nConvergence reached !\n")
     else:
+        logger.info(
+            "Iteration: %d\t active set size: %d\t convergence: "
+            "%0.3e" % (itno, len(gammas), err)
+        )
         warn("\nConvergence NOT reached !\n")
 
     # undo normalization and compute final posterior mean
@@ -283,8 +286,9 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         """
         if not hasattr(self, "L_") or not hasattr(self, "y_"):
             raise ValueError("The estimator must be fitted with `fit(L, y)` before calling `predict()`.")
-
-        if y is None:
+        
+        # enable the use to pass y for inference
+        if y is None: 
             y = self.y_
 
         # Apply the solver

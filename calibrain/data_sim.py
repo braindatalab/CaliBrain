@@ -194,8 +194,8 @@ def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_
         output_dir.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=300)
         print(f"Figure saved to {save_path}")
-
     plt.show()
+    plt.close()
    
 
 
