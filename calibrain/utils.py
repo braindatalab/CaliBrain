@@ -20,7 +20,7 @@ def load_config(config_file: str, logger=None) -> dict:
     - config (dict): The loaded configuration as a dictionary.
     """
     if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file does not exist: {config_path}")
+        raise FileNotFoundError(f"Configuration file does not exist: {config_file}")
     
     logger = logger if logger else logging.getLogger(__name__)
     logger.info(f"Loading configuration from file: {config_file}")
