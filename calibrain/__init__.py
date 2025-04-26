@@ -1,7 +1,8 @@
-from leadfield_simulation import LeadfieldSimulator
-from data_simulation import DataSimulator
-from source_estimation import SourceEstimator, gamma_map, eloreta
-from uncertainty_estimation import UncertaintyEstimator
+from calibrain.leadfield_simulation import LeadfieldSimulator
+from calibrain.data_simulation import DataSimulator
+from calibrain.source_estimation import SourceEstimator, gamma_map, eloreta
+from calibrain.uncertainty_estimation import UncertaintyEstimator
+from calibrain.benchmark import Benchmark
 
 __all__ = [
     "Benchmark",
