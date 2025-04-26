@@ -52,6 +52,8 @@ The following parameters are configurable in the framework:
 - **Number of Simulated Non-Zero Sources**: Number of active sources in the simulated data
 - **Noise Type**: Type of noise model used in the simulations (e.g., Scaled Identity, Cross Validation, Joint Learning)
 
+<img src="/docs/images/un-ca-param.jpg" alt="un-ca-param" width="75%">
+
 ---
 
 ### Outcome
