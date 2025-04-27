@@ -45,9 +45,10 @@ class Benchmark:
         Returns:
         - experiment_dir (str): Path to the experiment directory.
         """
-        # Sanitize params keys and values to ensure valid directory names
+        # Exclude 'cov' from the parameters
         sanitized_params = {
-            k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_") for k, v in params.items()
+            k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_")
+            for k, v in params.items() if k != "cov"
         }
     
         # Create subdirectories for each parameter
@@ -86,19 +87,34 @@ class Benchmark:
         ):
             solver_name = getattr(self.solver, "__name__", str(self.solver))
 
-            self.logger.info(f"Testing solver: {solver_name}")
+            self.logger.info(f"Evaluating solver: {solver_name}")
             self.logger.info(f"Solver parameters: {solver_params}")
             self.logger.info(f"Data parameters: {data_params}")
 
+            # Create experiment directory
+            self.logger.info("Creating experiment directory...")
+            
+            experiment_dir = self.create_experiment_directory(
+                base_dir="results/figures/uncertainty_analysis_figures",
+                params={
+                    "estimator": solver_name,
+                    **solver_params, 
+                    **data_params}
+            )
+            
             # Update data_simulator with data parameters
             self.data_simulator.seed = seed
             self.data_simulator.rng = rng
+            self.data_simulator.noise_type = solver_params.get("noise_type")
             self.data_simulator.__dict__.update(data_params)
 
             # Simulate data
             self.logger.info("Simulating data...")
-            y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate()
-
+            y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate(vizualise=True, save_path="results/figures/data_sim/")
+            
+            if solver_params.get("noise_type") == 'oracle':
+                solver_params["cov"] = cov_scaled
+            
             # Initialize SourceEstimator
             source_estimator = SourceEstimator(solver=self.solver, solver_params=solver_params, logger=self.logger)
 
@@ -109,17 +125,7 @@ class Benchmark:
             # Estimate sources
             self.logger.info("Estimating sources...")
             x_hat, active_set, posterior_cov = source_estimator.predict(y_noisy)
-                                    
-            # Create experiment directory
-            self.logger.info("Creating experiment directory...")
-            
-            experiment_dir = self.create_experiment_directory(
-                base_dir="results/uncertainty_analysis",
-                params={
-                    "estimator": solver_name,
-                    **solver_params, 
-                    **data_params}
-            )
+
             
             self.logger.info("Initializing uncertainty estimator...")
             uncertainty_estimator = UncertaintyEstimator(
@@ -132,21 +138,22 @@ class Benchmark:
                 logger=self.logger,
             )
 
+            self.logger.info("Creating figures for uncertainty analysis...")
             full_posterior_cov = uncertainty_estimator.construct_full_covariance()
             
             uncertainty_estimator.plot_sorted_posterior_variances(top_k=10)
             uncertainty_estimator.visualize_sorted_covariances(top_k=10)
+            uncertainty_estimator.plot_posterior_covariance_matrix()
+            uncertainty_estimator.plot_active_sources_single_time_step(time_step=0)
             
             if self.data_param_grid.get("orientation_type") == "free":
                 uncertainty_estimator.plot_top_relevant_CE_pairs(top_k=5, confidence_level=0.95)
-            
-            uncertainty_estimator.plot_active_sources_single_time_step(time_step=0)
-            uncertainty_estimator.plot_posterior_covariance_matrix()
-            
-            uncertainty_estimator.visualize_confidence_intervals()
+                
+            confidence_levels = np.arange(0.0, 1.1, 0.1)
+            uncertainty_estimator.visualize_confidence_intervals(confidence_levels, time_point=0)
 
 
-            # Evaluate metrics
+            # TBC: Evaluate metrics
             self.logger.info("Evaluating metrics...")
             run_results = {
                 "seed": seed,
@@ -167,86 +174,5 @@ class Benchmark:
             results.append(run_results)
 
         self.logger.info("Benchmarking completed.")
-        # Convert results to a DataFrame
+
         return pd.DataFrame(results)
-
-
-    
-def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    logger = logging.getLogger(__name__)
-    
-    # sfreq = 150  # Sampling frequency in Hz
-    # duration = 2 # 0.5  # Duration in seconds
-    # tstep = 1.0 / sfreq  # Time step between samples
-    # times = np.arange(0, duration, tstep)
-    # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
-
-    data_param_grid = {
-        "n_times": [100],
-        "nnz": [5],
-        "orientation_type": ["fixed"],
-        "alpha_snr": [0.5],
-    }
-    gamma_map_params = {
-        "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
-        "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
-    }
-
-    estimators = [
-        (gamma_map, gamma_map_params, data_param_grid),
-        # (eloreta, {}, {}), 
-    ]
-
-    metrics = [None]
-    nruns = 1
-    data_simulator = DataSimulator(
-        leadfield_mode='load',
-        leadfield_path='results/fsaverage-leadfield-fixed.npz',
-        n_sensors=None,
-        n_sources=None,
-        leadfield_config_path='configs/leadfield_sim_cfg.yml',
-    )
-    
-    df = []
-    
-    for solver, solver_param_grid, data_param_grid in estimators:
-        benchmark = Benchmark(
-            solver=solver,
-            solver_param_grid=solver_param_grid,
-            data_param_grid=data_param_grid,
-            data_simulator=data_simulator,
-            metrics=metrics,
-            logger=logger
-        )
-        results_df = benchmark.run(nruns=nruns)
-        df.append(results_df)
-
-    results_df = pd.concat(df)
-
-    os.makedirs("results/benchmark_results", exist_ok=True)
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
-    
-    print(results_df.head())
-
-if __name__ == "__main__":
-    main()
-    
-    
-    # def validate_source_space_dimensions(self):
-    #     """
-    #     Validate that the number of sources matches the source space.
-
-    #     Raises:
-    #     - ValueError: If the number of sources does not match the source space.
-    #     """
-    #     n_sources = sum(len(v) for v in self.vertices)
-    #     if self.orientation_type == "fixed" and self.x.shape[0] != n_sources:
-    #         raise ValueError(f"Data has {self.x.shape[0]} sources, but source space has {n_sources} sources!")
-    #     elif self.orientation_type == "free" and self.x.shape[0] != n_sources * 3:
-    #         raise ValueError(f"Data has {self.x.shape[0]} sources, but source space has {n_sources * 3} sources!")

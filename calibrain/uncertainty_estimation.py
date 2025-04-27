@@ -89,7 +89,7 @@ class UncertaintyEstimator:
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.tight_layout()
         plt.savefig(os.path.join(self.experiment_dir, 'sorted_variances.png'))
-
+        plt.close()
 # ------------------------------
     def _compute_top_covariance_pairs(self, cov, top_k=None):
         """
@@ -138,13 +138,13 @@ class UncertaintyEstimator:
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         plt.savefig(os.path.join(self.experiment_dir, 'sorted_covariances.png'))
-    
+        plt.close()
 # ------------------------------
     def _make_psd(self, cov, epsilon=1e-6):
         """
         Ensure that the covariance matrix is positive semi-definite by adding epsilon to the diagonal.
         """
-        print("Regularizing covariance matrix...")
+        # print("Regularizing covariance matrix...")
         max_iterations = 100
         iterations = 0
         while not np.all(np.linalg.eigvals(cov) >= 0):
@@ -152,6 +152,7 @@ class UncertaintyEstimator:
             epsilon *= 10
             iterations += 1
             if iterations > max_iterations:
+                self.logger.warning("Regularizing covariance matrix...")
                 self.logger.warning("Covariance matrix could not be made positive semi-definite.")
                 break
         return cov
@@ -255,7 +256,8 @@ class UncertaintyEstimator:
         fig.suptitle("Top Relevant Dimensional Pairs with Confidence Ellipses", fontsize=16)
         plt.tight_layout()
         plt.savefig(os.path.join(self.experiment_dir, 'top_relevant_CE_pairs.png'))
-
+        plt.close()
+        
 # ------------------------------
     def plot_active_sources_single_time_step(self, time_step=0):
         """
@@ -273,11 +275,12 @@ class UncertaintyEstimator:
                 ax.scatter(self.active_set[i::3] // 3, est_amplitudes, color='red', marker='x', alpha=0.6, label='Estimated')
                 ax.set_xlabel('Source Index')
                 ax.set_ylabel('Amplitude')
-                ax.set_title(f'Orientation {orientations[i]}')
+                ax.set_title(f'Active Sources for GT and Estimated Sources ({orientations[i]} Orientation)')
                 ax.legend(loc='upper left')
                 ax.grid(True, alpha=0.5)
             plt.tight_layout()
             plt.savefig(os.path.join(self.experiment_dir, 'active_sources_single_time_step.png'))
+            plt.close()
         else:
             gt_active_sources = np.where(self.x[:, time_step] != 0)[0]
             gt_amplitudes = self.x[gt_active_sources, time_step]
@@ -288,11 +291,12 @@ class UncertaintyEstimator:
             plt.scatter(self.active_set, est_amplitudes, color='red', marker='x', alpha=0.6, label='Estimated')
             plt.xlabel('Source Index')
             plt.ylabel('Amplitude')
-            plt.title('Active Sources for GT and Estimated Sources')
+            plt.title(f'Active Sources for GT and Estimated Sources (Fixed Orientation, time step {time_step})')
             plt.legend(loc='upper left')
             plt.grid(True, alpha=0.5)
             plt.tight_layout()
             plt.savefig(os.path.join(self.experiment_dir, 'active_sources_single_time_step.png'))
+            plt.close()
 
     def plot_posterior_covariance_matrix(self):
         """
@@ -312,6 +316,8 @@ class UncertaintyEstimator:
             fig.colorbar(im, ax=axes, orientation='vertical', fraction=0.02, pad=0.04)
             plt.tight_layout()
             plt.savefig(os.path.join(self.experiment_dir, 'posterior_covariance_matrix.png'))
+            plt.close()
+            
         else:
             plt.figure(figsize=(10, 8))
             im = plt.imshow(self.posterior_cov, cmap='viridis', aspect='auto')
@@ -319,6 +325,7 @@ class UncertaintyEstimator:
             plt.title('Posterior Covariance Matrix')
             plt.tight_layout()
             plt.savefig(os.path.join(self.experiment_dir, 'posterior_covariance_matrix.png'))
+            plt.close()
 
 # ------------------------------
     def _compute_confidence_intervals(self, mean, cov, confidence_level=0.95):
@@ -338,6 +345,7 @@ class UncertaintyEstimator:
                                  [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100]))[1]
     
         if self.orientation_type == "fixed":
+            cov = self._make_psd(cov)
             diag_cov = np.diag(cov)  # Extract diagonal elements of the covariance matrix
             std_dev = np.sqrt(diag_cov)  # Standard deviation for each source
             std_dev = std_dev[:, np.newaxis]  # Expand dimensions to match (n_sources, n_times)
@@ -360,25 +368,41 @@ class UncertaintyEstimator:
 
     def _count_values_within_ci(self, x, ci_lower, ci_upper):
         """
-        Count the number of ground truth values that lie within the confidence intervals.
+        Count the number of ground truth values that lie within the confidence intervals for each time point.
+    
+        Parameters:
+        - x (np.ndarray): Ground truth source activity with shape (n_sources, n_times).
+        - ci_lower (np.ndarray): Lower bounds of confidence intervals with shape (n_sources, n_times).
+        - ci_upper (np.ndarray): Upper bounds of confidence intervals with shape (n_sources, n_times).
+    
+        Returns:
+        - count_within_ci (np.ndarray): Count of values within confidence intervals for each time point.
+            - For "fixed" orientation: A 1D array with counts for each time point.
+            - For "free" orientation: A 2D array with counts for each orientation (X, Y, Z) and each time point.
         """
         if self.orientation_type == "fixed":
-            count_within_ci = np.sum((x >= ci_lower) & (x <= ci_upper))
+            # Count values within confidence intervals for each time point
+            count_within_ci = np.sum((x >= ci_lower) & (x <= ci_upper), axis=0)  # Sum over sources for each time point
         elif self.orientation_type == "free":
-            count_within_ci = np.zeros(3)
+            # Initialize counts for each orientation (X, Y, Z) and each time point
+            n_times = x.shape[1]
+            count_within_ci = np.zeros((3, n_times))
             for i in range(3):
-                x_orient = x[i::3]
-                ci_lower_orient = ci_lower[i::3]
-                ci_upper_orient = ci_upper[i::3]
-                count_within_ci[i] = np.sum((x_orient >= ci_lower_orient) & (x_orient <= ci_upper_orient))
+                # Extract values for the current orientation
+                x_orient = x[i::3, :]  # Shape: (n_sources // 3, n_times)
+                ci_lower_orient = ci_lower[i::3, :]  # Shape: (n_sources // 3, n_times)
+                ci_upper_orient = ci_upper[i::3, :]  # Shape: (n_sources // 3, n_times)
+    
+                # Count values within confidence intervals for the current orientation and each time point
+                count_within_ci[i, :] = np.sum((x_orient >= ci_lower_orient) & (x_orient <= ci_upper_orient), axis=0)
         else:
             raise ValueError("Unsupported orientation type")
-
+    
         return count_within_ci
 
     def _plot_ci_times(self, x, x_hat, active_set, ci_lower, ci_upper, confidence_level, figsize=(20, 15)):
         """
-        Plot the estimated source activity with confidence intervals.
+        Plot the estimated source activity with confidence intervals and save them in structured folders.
     
         Parameters:
         - x: Ground truth source activity (n_sources, n_times).
@@ -389,10 +413,9 @@ class UncertaintyEstimator:
         - confidence_level: Confidence level for the intervals.
         - figsize: Size of the plot.
         """
+        # Create the base directory for confidence intervals
         confidence_intervals_dir = os.path.join(self.experiment_dir, 'CI')
         os.makedirs(confidence_intervals_dir, exist_ok=True)
-        title = f'Confidence level {(confidence_level * 100):.0f}%'
-        filename = f'CI_{round(confidence_level, 2)}'
     
         n_sources, n_times = x.shape
     
@@ -400,6 +423,10 @@ class UncertaintyEstimator:
             # Plot for each time point and orientation
             orientations = ['X', 'Y', 'Z']
             for t in range(n_times):
+                # Create a folder for the current time point
+                time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
+                os.makedirs(time_point_dir, exist_ok=True)
+    
                 fig, axes = plt.subplots(3, 1, figsize=figsize, sharey=True)
                 for j, (ax, orient) in enumerate(zip(axes, orientations)):
                     for i in range(n_sources // 3):
@@ -413,7 +440,7 @@ class UncertaintyEstimator:
                             label='Confidence Interval' if i == 0 else ""
                         )
                         ax.scatter(i, x[idx, t], s=10, color='blue', label='Ground Truth' if i == 0 else "")
-                    ax.set_title(f'{title} (Time Point {t + 1}, Orientation {orient})')
+                    ax.set_title(f'Confidence Level {confidence_level:.2f} (Time Point {t}, Orientation {orient})')
                     ax.axhline(0, color='grey', lw=0.8, ls='-')
                     ax.legend(loc='upper right', title=f'(Total Sources: {n_sources // 3})')
                     ax.set_xticks(np.arange(n_sources // 3))
@@ -421,11 +448,18 @@ class UncertaintyEstimator:
                 fig.text(0.5, 0.04, 'Source index', ha='center')
                 fig.text(0.04, 0.5, 'Estimated Activity', va='center', rotation='vertical')
                 plt.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
-                plt.savefig(os.path.join(confidence_intervals_dir, f'{filename}_t{t + 1}_orientation_free.png'))
+    
+                # Save the figure in the time point folder
+                save_path = os.path.join(time_point_dir, f'confidence_intervals_t{t}_clvl{round(confidence_level, 2)}.png')
+                plt.savefig(save_path)
                 plt.close(fig)
         else:
             # Plot for each time point (fixed orientation)
             for t in range(n_times):
+                # Create a folder for the current time point
+                time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
+                os.makedirs(time_point_dir, exist_ok=True)
+    
                 fig, ax = plt.subplots(figsize=figsize)
                 for i in range(n_sources):
                     ax.scatter(i, x_hat[i, t], marker='x', color='red', label='Posterior Mean' if i == 0 else "")
@@ -439,69 +473,130 @@ class UncertaintyEstimator:
                     ax.scatter(i, x[i, t], s=10, color='blue', label='Ground Truth' if i == 0 else "")
                 ax.set_xticks(np.arange(n_sources))
                 ax.set_xticklabels([f'{idx}' for idx in active_set], rotation=45)
-                ax.set_title(f'{title} (Time Point {t + 1})')
+                ax.set_title(f'Confidence Level {confidence_level:.2f} (Time Point {t})')
                 ax.axhline(0, color='grey', lw=0.8, ls='-')
                 ax.legend(loc='upper right', title=f'(Total Sources: {n_sources}, Active Sources: {len(active_set)})')
                 fig.text(0.5, 0.04, 'Source index', ha='center')
                 fig.text(0.04, 0.5, 'Estimated Activity', va='center', rotation='vertical')
                 plt.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
-                plt.savefig(os.path.join(confidence_intervals_dir, f'{filename}_t{t + 1}.png'))
+    
+                # Save the figure in the time point folder
+                save_path = os.path.join(time_point_dir, f'confidence_intervals_t{t}_clvl{round(confidence_level, 2)}.png')
+                plt.savefig(save_path)
                 plt.close(fig)
+
+
     def _plot_proportion_of_hits(
         self,
         confidence_levels,
         CI_count_per_confidence_level,
         total_sources,
+        time_point=0,
         filename='proportion_of_hits',
-        ):
+    ):
         """
-        Internal method to plot the proportion of hits within confidence intervals at different confidence levels.
+        Internal method to plot the proportion of hits within confidence intervals for a specific time point.
+    
+        Parameters:
+        - confidence_levels (list or np.ndarray): Confidence levels to plot.
+        - CI_count_per_confidence_level (np.ndarray): Array of shape (confidence_levels, n_times) with counts of values within confidence intervals.
+        - total_sources (int): Total number of sources.
+        - time_point (int): The specific time point to plot.
+        - filename (str): Name of the file to save the plot.
         """
+        save_path = os.path.join(self.experiment_dir, f'{filename}_t{time_point}.png')
+            
         if self.orientation_type == 'free':
-            fig, axes = plt.subplots(3, 1, figsize=(10, 18), sharex=True, sharey=True)
+            # Create subplots for the three orientations (X, Y, Z)
+            fig, axes = plt.subplots(3, 1, figsize=(6, 18), sharex=True, sharey=True)
             orientations = ['X', 'Y', 'Z']
+    
             for i, ax in enumerate(axes):
-                hits = np.array(CI_count_per_confidence_level[:, i])
-                misses = total_sources // 3 - hits
-                proportions = hits / (hits + misses)
-                ax.bar(confidence_levels, proportions, width=0.05)
+                # Extract hits for the current orientation and time point
+                hits = CI_count_per_confidence_level[:, time_point, i]
+                proportions = hits / total_sources  # Normalize hits to proportions
+    
+                # Plot proportions and diagonal line y=x
+                ax.plot(confidence_levels, proportions, marker='o', linestyle='-', color='blue', label='Proportion of Hits')
+                ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x')
+    
+                # Set axis labels, title, and grid
                 ax.set_ylabel('Proportion of Hits')
                 ax.grid(True)
-                ax.set_xticks(ticks=confidence_levels)
-                ax.set_xticklabels([f'{int(cl*100)}%' for cl in confidence_levels])
-                ax.set_title(f'Orientation {orientations[i]}')
-
-            ax.set_xlabel('Confidence Level')
-            fig.suptitle('Proportion of Hits Within Confidence Intervals at Different Confidence Levels for Free Orientation\n')
-            fig.tight_layout()
-            plt.savefig(os.path.join(self.experiment_dir, f'{filename}.png'))
+                ax.set_xticks(confidence_levels)
+                ax.set_xticklabels([f'{int(cl * 100)}%' for cl in confidence_levels])
+                ax.set_title(f'Orientation {orientations[i]} (Time Point {time_point})')
+                ax.legend(loc='lower right')
+    
+                # Ensure axes are square
+                ax.set_xlim(-0.05, 1.05)  # Add margin to the right of the x-axis
+                ax.set_ylim-(0.05, 1.05)  # Add margin to the top of the y-axis
+                ax.set_aspect('equal', adjustable='box')
+    
+            # Add x-axis label to the last subplot
+            axes[-1].set_xlabel('Confidence Level')
+    
+            # Add a title for the entire figure
+            fig.suptitle(f'Proportion of Hits at Time Point {time_point} (Free Orientation)', fontsize=14)
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # Leave space for the title
+            plt.savefig(save_path)
+            plt.close(fig)
+    
         else:
-            hits = np.array(CI_count_per_confidence_level)
-            misses = total_sources - hits
-            proportions = hits / (hits + misses)
-
-            plt.figure(figsize=(10, 6))
-            plt.bar(confidence_levels, proportions, width=0.05)
-            plt.xlabel('Confidence Level')
-            plt.ylabel('Proportion of Hits (hits / (hits + misses))')
-            plt.title('Proportion of Hits Within Confidence Intervals')
-            plt.grid(True)
-            plt.xticks(ticks=confidence_levels, labels=[f'{int(cl*100)}%' for cl in confidence_levels])
-            plt.tight_layout()
-            plt.savefig(os.path.join(self.experiment_dir, f'{filename}.png'))
-
-    def visualize_confidence_intervals(self):
+            # Fixed orientation: single plot
+            hits = CI_count_per_confidence_level[:, time_point]
+            proportions = hits / total_sources  # Normalize hits to proportions
+    
+            # Add artificial zero values to proportions
+            # extended_proportions = np.concatenate(([0], proportions, [0]))
+    
+            fig, ax = plt.subplots(figsize=(6, 6))  # Square figure
+            ax.plot(confidence_levels, proportions, marker='o', linestyle='-', color='blue', label='Proportion of Hits')
+            ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x')
+    
+            # Set axis labels, title, and grid
+            ax.set_xlabel('Confidence Level')
+            ax.set_ylabel('Proportion of Hits')
+            ax.set_title(f'Proportion of Hits at Time Point {time_point} (Fixed Orientation)')
+            ax.grid(True)
+            ax.set_xticks(confidence_levels)
+            ax.set_xticklabels([f'{int(cl * 100)}%' for cl in confidence_levels])
+            ax.legend(loc='lower right')
+    
+            # Ensure axes are square
+            ax.set_xlim(-0.05, 1.05)  # Add margin to the right of the x-axis
+            ax.set_ylim(-0.05, 1.05)  # Add margin to the top of the y-axis
+            ax.set_aspect('equal', adjustable='box')
+    
+            fig.tight_layout()
+            plt.savefig(save_path)
+            plt.close(fig)
+    
+        print(f"Plot saved to {save_path}")
+    
+    def visualize_confidence_intervals(self, confidence_levels=None, time_point=0):
         """
         Visualize confidence intervals and save the results.
+        Parameters:
+        - confidence_levels (list, optional): List of confidence levels to visualize. If None, defaults to 10 levels from 0.1 to 0.99.
+        - time_point (int): Time point to visualize.
         """
-        confidence_levels = np.linspace(0.1, 0.99, 10)
-        CI_count_per_confidence_level = []
+        self.logger.info("Plotting confidence intervals...")
 
+        if confidence_levels is None:
+            confidence_levels = np.linspace(0.1, 0.99, 10)
+     
+        CI_count_per_confidence_level = []
         for confidence_level in confidence_levels:
             ci_lower, ci_upper = self._compute_confidence_intervals(
-                self.x_hat[self.active_set], self.posterior_cov, confidence_level=confidence_level
+                self.x_hat[self.active_set],
+                self.posterior_cov,
+                confidence_level=confidence_level
             )
-            count_within_ci = self._count_values_within_ci(self.x[self.active_set], ci_lower, ci_upper)
+            count_within_ci = self._count_values_within_ci(
+                self.x[self.active_set],
+                ci_lower, ci_upper
+            )
 
             self._plot_ci_times(
                 self.x[self.active_set],
@@ -520,6 +615,7 @@ class UncertaintyEstimator:
             confidence_levels=confidence_levels,
             CI_count_per_confidence_level=CI_count_per_confidence_level,
             total_sources=self.x[self.active_set].shape[0],
+            time_point=time_point,
         )
 
 # ------------------------------
