@@ -4,15 +4,19 @@ from scipy.stats import wishart
 from pathlib import Path
 import logging
 
+import os
+import mne
+import matplotlib.pyplot as plt
+
 from calibrain import LeadfieldSimulator
 from calibrain.utils import load_config
 
 class DataSimulator:
     def __init__(
         self,
-        n_sensors=50,
-        n_sources=100,
-        n_times=10,
+        n_sensors=60,
+        n_sources=3000,
+        n_times=100,
         nnz=3,
         orientation_type="fixed",
         alpha_snr=0.99,
@@ -110,8 +114,8 @@ class DataSimulator:
             self.logger.info(f"Simulating leadfield matrix using LeadfieldSimulator with config: {self.leadfield_config_path}")
     
             config = load_config(Path(self.leadfield_config_path))
-            simulator = LeadfieldSimulator(config=config, logger=self.logger)
-            leadfield = simulator.simulate()
+            L_simulator = LeadfieldSimulator(config=config, logger=self.logger)
+            leadfield = L_simulator.simulate()
             self.logger.info(f"Simulated leadfield matrix with shape {leadfield.shape}")
     
             # Validate the shape of the leadfield matrix
@@ -154,16 +158,14 @@ class DataSimulator:
         - The number of active sources (`nnz`) is randomly selected using `self.rng.choice`.
         - If `n_times = 1`, the output shapes of `x` remain consistent with the multi-time-point case, ensuring compatibility with downstream processing.
         """
-        # Validate orientation type
-        if self.orientation_type not in ["fixed", "free"]:
-            raise ValueError(f"Unsupported orientation type: {self.orientation_type}")
-    
         # Initialize source activity matrix
         if self.orientation_type == "fixed":
             x = np.zeros((self.n_sources, self.n_times))
         elif self.orientation_type == "free":
             n_orient = 3
             x = np.zeros((self.n_sources, n_orient, self.n_times))
+        else:
+            raise ValueError(f"Unsupported orientation type: {self.orientation_type}")
     
         # Select random indices for active sources
         idx = self.rng.choice(self.n_sources, size=self.nnz, replace=False)
@@ -174,8 +176,7 @@ class DataSimulator:
         elif self.orientation_type == "free":
             x[idx] = self.rng.randn(self.nnz, n_orient, self.n_times)
     
-        return x
-    
+        return x   
     
     def _project_to_sensor_space(self, L, x):
         """
@@ -219,7 +220,7 @@ class DataSimulator:
         
         return y_noisy, cov_scaled, noise_scaled
 
-    def simulate(self):
+    def simulate(self, vizualise=True, save_path="results/figures/data_sim/"):
         L = self._get_leadfield()
         x = self._generate_source_time_courses()
         y_clean = self._project_to_sensor_space(L, x)
@@ -232,272 +233,298 @@ class DataSimulator:
         #     y_noisy = y_noisy[:, 0]
         #     x = x[:, 0]
 
-        visualize_signals(x, y_clean, y_noisy)
-        visualize_leadfield(L, orientation_type=self.orientation_type, save_path="results/leadfield_matrix.png")
-        
-        
-        info = LeadfieldSimulator(
-            config=load_config(Path(self.leadfield_config_path)),
-            logger=self.logger
-        ).handle_info()
-        
-        visualize_leadfield(L, orientation_type=self.orientation_type, save_path="results/figures/leadfield_matrix.png")
-        
-        visualize_leadfield_topomap(
-            leadfield_matrix=L,
-            info=info,
-            x=x,
-            orientation_type=self.orientation_type,
-            save_path="results/figures/leadfield_nnzs_topomap_.png",  # Path to save the combined figure
-            title="Leadfield Topomap for active (Nonzero) Sources"  # Global title for the figure
-        )
+        if vizualise:
+            
+            info = LeadfieldSimulator(
+                config=load_config(Path(self.leadfield_config_path)),
+                logger=self.logger
+            ).handle_info()
+            
+            
+            self.visualize_signals(
+                x=x,
+                y_clean=y_clean,
+                y_noisy=y_noisy,
+                nnz_to_plot=self.nnz,
+                sfreq=info["sfreq"],
+                max_sensors=3,
+                plot_sensors_together=False,
+                show=False,
+                save_path=os.path.join(save_path, "data_sim.png"),
+            )
+            
+            self.visualize_leadfield(L, orientation_type=self.orientation_type, save_path=os.path.join(save_path, "leadfield.png"), show=False)
+            
+            self.visualize_leadfield_topomap(
+                leadfield_matrix=L,
+                info=info,
+                x=x,
+                orientation_type=self.orientation_type,
+                title="Leadfield Topomap for active (Nonzero) Sources",
+                save_path=os.path.join(save_path, "leadfield_topomap.png"),
+                show=False,
+            )
         
         return y_noisy, L, x, cov_scaled, noise_scaled
-    
-    
 
-import matplotlib.pyplot as plt
-def visualize_signals(
-    x, 
-    y_clean, 
-    y_noisy, 
-    active_sources=None, 
-    nnz_to_plot=-1, 
-    sfreq=100,  # Sampling frequency in Hz
-    max_sensors=3, 
-    plot_sensors_together=False, 
-    shift=20, 
-    figsize=(14, 10), 
-    save_path='results/figures/data_sim.png'  # Path to save the figure
-):
-    """
-    Visualize source activity and sensor measurements before and after adding noise.
+    def visualize_signals(
+        self,
+        x, 
+        y_clean, 
+        y_noisy, 
+        active_sources=None, 
+        nnz_to_plot=-1, 
+        sfreq=100,
+        max_sensors=3, 
+        plot_sensors_together=False, 
+        shift=20, 
+        figsize=(14, 10), 
+        save_path='results/figures/data_sim.png',
+        show=False
+    ):
+        """
+        Visualize source activity and sensor measurements before and after adding noise.
 
-    Parameters:
-    - x (np.ndarray): Source activity (shape depends on orientation type).
-    - y_clean (np.ndarray): Clean sensor measurements (n_sensors, n_times).
-    - y_noisy (np.ndarray): Noisy sensor measurements (n_sensors, n_times).
-    - active_sources (np.ndarray, optional): Indices of non-zero (active) sources.
-    - nnz_to_plot (int): Number of non-zero sources to plot. If -1, plot all non-zero sources.
-    - sfreq (float): Sampling frequency in Hz.
-    - max_sensors (int): Maximum number of sensors to plot.
-    - plot_sensors_together (bool): If True, plot all sensors on the same plot. If False, stack plots vertically.
-    - shift (float): Vertical shift between sensors for better visualization.
-    - figsize (tuple): Figure size for the plot.
-    - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
-    """
-    # Calculate the time vector based on sfreq and n_times
-    n_times = y_clean.shape[1]  # Number of samples
-    duration = n_times / sfreq  # Duration in seconds
-    times = np.linspace(0, duration, n_times)  # Time vector
+        Parameters:
+        - x (np.ndarray): Source activity (shape depends on orientation type).
+        - y_clean (np.ndarray): Clean sensor measurements (n_sensors, n_times).
+        - y_noisy (np.ndarray): Noisy sensor measurements (n_sensors, n_times).
+        - active_sources (np.ndarray, optional): Indices of non-zero (active) sources.
+        - nnz_to_plot (int): Number of non-zero sources to plot. If -1, plot all non-zero sources.
+        - sfreq (float): Sampling frequency in Hz.
+        - max_sensors (int): Maximum number of sensors to plot.
+        - plot_sensors_together (bool): If True, plot all sensors on the same plot. If False, stack plots vertically.
+        - shift (float): Vertical shift between sensors for better visualization.
+        - figsize (tuple): Figure size for the plot.
+        - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+        - show (bool): If True, display the plot. If False, do not display.
+        """
+        # Calculate the time vector based on sfreq and n_times
+        n_times = y_clean.shape[1]
+        if n_times == 1:
+            times = np.array([0])  # Single time point
+        else:
+            duration = n_times / sfreq
+            times = np.linspace(0, duration, n_times)
 
-    # Extract active sources if not provided
-    if active_sources is None:
-        active_sources = np.where(np.any(x != 0, axis=-1))[0]  # Find indices of non-zero sources
+        # Extract active sources if not provided
+        # Find indices of non-zero sources
+        if self.orientation_type == "fixed":
+            active_sources = np.where(np.any(x != 0, axis=-1))[0]
+        elif self.orientation_type == "free":
+            active_sources = np.where(np.any(np.linalg.norm(x, axis=1) != 0, axis=-1))[0]
 
-    # Limit the number of non-zero sources to plot
-    if nnz_to_plot != -1:
-        active_sources = active_sources[:nnz_to_plot]
+        # Limit the number of non-zero sources to plot
+        if nnz_to_plot != -1:
+            active_sources = active_sources[:nnz_to_plot]
 
-    # Calculate global y-axis limits for sensor signals
-    y_min = min(y_clean.min(), y_noisy.min())
-    y_max = max(y_clean.max(), y_noisy.max())
+        # Calculate global y-axis limits for sensor signals
+        y_min = min(y_clean.min(), y_noisy.min())
+        y_max = max(y_clean.max(), y_noisy.max())
 
-    # Create a figure with a dynamic number of subplots
-    num_sensors = min(max_sensors, y_clean.shape[0])
-    total_plots = 1 + (1 if plot_sensors_together else num_sensors)  # 1 for sources + sensors
-    fig, axes = plt.subplots(
-        total_plots, 
-        1, 
-        figsize=figsize, 
-        gridspec_kw={"height_ratios": [1] + [1] * (total_plots - 1)}, 
-        sharey=False  # Do not share y-axis for source signals
-    )
+        # Create a figure with a dynamic number of subplots
+        num_sensors = min(max_sensors, y_clean.shape[0])
+        total_plots = 1 + (1 if plot_sensors_together else num_sensors)  # 1 for sources + sensors
+        fig, axes = plt.subplots(
+            total_plots, 
+            1, 
+            figsize=figsize, 
+            gridspec_kw={"height_ratios": [1] + [1] * (total_plots - 1)}, 
+            sharey=False  # Do not share y-axis for source signals
+        )
 
-    # Plot source activity (always on the first subplot)
-    ax_sources = axes[0] if total_plots > 1 else axes
-    for i in active_sources:  # Plot only the selected active sources
-        ax_sources.plot(times, x[i].T, label=f"Source {i}")
-    ax_sources.set_title("Non-Zero Simulated Source Activity (x)")
-    ax_sources.set_ylabel("Amplitude (nAm)")  # Source signals in nanoamperes
-    ax_sources.grid(True)
+        # Plot source activity (always on the first subplot)
+        # Plot only the selected active sources
+        ax_sources = axes[0] if total_plots > 1 else axes
+        if self.orientation_type == "fixed":
+            for i in active_sources:
+                ax_sources.plot(times, x[i].T, label=f"Source {i}")
+        elif self.orientation_type == "free":
+            for i in active_sources:
+                for j, orient in enumerate(["X", "Y", "Z"]):
+                    ax_sources.plot(times, x[i, j], label=f"Source {i} ({orient})")
 
-    # Plot sensor measurements
-    if plot_sensors_together:
-        # Plot all selected sensors on the same subplot
-        ax_sensors = axes[1] if total_plots > 1 else axes
-        for i in range(num_sensors):
-            offset = i * shift  # Calculate vertical offset for each sensor
-            ax_sensors.plot(times, y_clean[i] + offset, label=f"Clean Signal (Sensor {i})", linewidth=2)
-            ax_sensors.plot(times, y_noisy[i] + offset, label=f"Noisy Signal (Sensor {i})", alpha=0.7)
-        ax_sensors.set_title("Sensor Measurements (y)")
-        ax_sensors.set_ylabel("Amplitude (µV)")  # Sensor signals in microvolts
-        ax_sensors.set_ylim(y_min, y_max)  # Apply global y-axis limits
-        ax_sensors.grid(True)
-    else:
-        # Plot each sensor on a separate subplot with shared y-axis
-        for i in range(num_sensors):
-            ax = axes[i + 1]  # Start from the second subplot
-            ax.plot(times, y_clean[i], label=f"y_clean", linewidth=2)
-            ax.plot(times, y_noisy[i], label=f"y_noisey", alpha=0.7)
-            ax.set_title(f"Sensor {i}")
-            ax.set_ylabel("Amplitude (µV)")  # Sensor signals in microvolts
-            ax.set_ylim(y_min, y_max)  # Apply global y-axis limits
-            ax.grid(True)
+        ax_sources.set_title(f"{nnz_to_plot} Non-Zero Simulated Source Activity (x)")
+        ax_sources.set_ylabel("Amplitude (nAm)")  # Source signals in nanoamperes
+        ax_sources.grid(True)
 
-    # Add x-axis label only to the bottom-most plot
-    if plot_sensors_together:
-        ax_sensors.set_xlabel("Time (s)")
-    else:
-        axes[-1].set_xlabel("Time (s)")  # Set x-axis label for the last subplot
+        # Plot sensor measurements
+        if plot_sensors_together:
+            # Plot all selected sensors on the same subplot
+            ax_sensors = axes[1] if total_plots > 1 else axes
+            for i in range(num_sensors):
+                offset = i * shift  # Calculate vertical offset for each sensor
+                ax_sensors.plot(times, y_clean[i] + offset, label=f"Clean Signal (Sensor {i})", linewidth=2)
+                ax_sensors.plot(times, y_noisy[i] + offset, label=f"Noisy Signal (Sensor {i})", alpha=0.7)
+            ax_sensors.set_title("Sensor Measurements (y)")
+            ax_sensors.set_ylabel("Amplitude (µV)")  # Sensor signals in microvolts
+            ax_sensors.set_ylim(y_min, y_max)  # Apply global y-axis limits
+            ax_sensors.grid(True)
+        else:
+            # Plot each sensor on a separate subplot with shared y-axis
+            for i in range(num_sensors):
+                ax = axes[i + 1]  # Start from the second subplot
+                ax.plot(times, y_clean[i], label=f"y_clean", linewidth=2)
+                ax.plot(times, y_noisy[i], label=f"y_noisey", alpha=0.7)
+                ax.set_title(f"Sensor {i}")
+                ax.set_ylabel("Amplitude (µV)")  # Sensor signals in microvolts
+                ax.set_ylim(y_min, y_max)  # Apply global y-axis limits
+                ax.grid(True)
 
-    # Add a shared legend to the right of the plots
-    handles, labels = ax_sensors.get_legend_handles_labels() if plot_sensors_together else ax.get_legend_handles_labels()
-    fig.legend(
-        handles, 
-        labels, 
-        loc="center right", 
-        bbox_to_anchor=(1.0, 0.5),  # Position the legend to the right of the plots
-        borderaxespad=0, 
-        frameon=False
-    )
+        # Add x-axis label only to the bottom-most plot
+        if plot_sensors_together:
+            ax_sensors.set_xlabel("Time (s)")
+        else:
+            axes[-1].set_xlabel("Time (s)")  # Set x-axis label for the last subplot
 
-    plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust layout to make space for the legend
+        # Add a shared legend to the right of the plots
+        handles, labels = ax_sensors.get_legend_handles_labels() if plot_sensors_together else ax.get_legend_handles_labels()
+        fig.legend(
+            handles, 
+            labels, 
+            loc="center right", 
+            bbox_to_anchor=(1.0, 0.5),  # Position the legend to the right of the plots
+            borderaxespad=0,
+            frameon=False
+        )
 
-    # Save the figure if a save path is provided
-    if save_path:
-        plt.savefig(save_path, bbox_inches="tight")
-        print(f"Figure saved to {save_path}")
+        plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust layout to make space for the legend
 
-    plt.show()
-    
-import matplotlib.pyplot as plt
-import numpy as np
+        # Save the figure if a save path is provided
+        if save_path:
+            save_dir = Path(save_path).parent
+            save_dir.mkdir(parents=True, exist_ok=True)
+            plt.savefig(save_path, bbox_inches="tight")
+            print(f"Figure saved to {save_path}")
 
-def visualize_leadfield(leadfield_matrix, orientation_type="fixed", save_path=None):
-    """
-    Visualize the leadfield matrix as a heatmap.
+        if show:
+            plt.show()
+        plt.close()
 
-    Parameters:
-    - leadfield_matrix (np.ndarray): The leadfield matrix.
-        - For "fixed" orientation: Shape (n_sensors, n_sources).
-        - For "free" orientation: Shape (n_sensors, n_sources, 3).
-    - orientation_type (str): Orientation type ("fixed" or "free").
-    - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+    def visualize_leadfield(self, leadfield_matrix, orientation_type="fixed", save_path=None, show=False):
+        """
+        Visualize the leadfield matrix as a heatmap.
 
-    Returns:
-    - None
-    """
-    if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray):
-        raise ValueError("Invalid leadfield matrix. It must be a non-empty numpy array.")
+        Parameters:
+        - leadfield_matrix (np.ndarray): The leadfield matrix.
+            - For "fixed" orientation: Shape (n_sensors, n_sources).
+            - For "free" orientation: Shape (n_sensors, n_sources, 3).
+        - orientation_type (str): Orientation type ("fixed" or "free").
+        - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+        - show (bool): If True, display the plot. If False, do not display.
 
-    if orientation_type == "fixed":
-        plt.figure(figsize=(10, 8))
-        plt.imshow(leadfield_matrix, aspect='auto', cmap='viridis', interpolation='nearest')
-        plt.colorbar(label="Amplitude")
-        plt.title("Leadfield Matrix (Fixed Orientation)")
-        plt.xlabel("Sources")
-        plt.ylabel("Sensors")
-    elif orientation_type == "free":
-        n_orient = leadfield_matrix.shape[-1]
-        fig, axes = plt.subplots(1, n_orient, figsize=(15, 5), sharey=True)
-        orientations = ["X", "Y", "Z"]
-        for i in range(n_orient):
-            ax = axes[i]
-            ax.imshow(leadfield_matrix[:, :, i], aspect='auto', cmap='viridis', interpolation='nearest')
-            ax.set_title(f"Leadfield Matrix (Orientation {orientations[i]})")
-            ax.set_xlabel("Sources")
-            if i == 0:
-                ax.set_ylabel("Sensors")
-        fig.colorbar(axes[0].images[0], ax=axes, location="right", label="Amplitude")
-    else:
-        raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
+        Returns:
+        - None
+        """
+        if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray):
+            raise ValueError("Invalid leadfield matrix. It must be a non-empty numpy array.")
 
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, bbox_inches="tight")
-        print(f"Leadfield matrix visualization saved to {save_path}")
-
-    plt.show()
-    
-import os
-import mne
-import numpy as np
-import matplotlib.pyplot as plt
-
-def visualize_leadfield_topomap(leadfield_matrix, info, x, orientation_type="fixed", save_path=None, title=None):
-    """
-    Visualize the leadfield matrix as topological maps for nonzero sources in a single figure.
-
-    Parameters:
-    - leadfield_matrix (np.ndarray): The leadfield matrix.
-        - For "fixed" orientation: Shape (n_sensors, n_sources).
-        - For "free" orientation: Shape (n_sensors, n_sources, 3).
-    - info (mne.Info): The MNE info object containing sensor locations.
-    - x (np.ndarray): Source activity matrix to determine nonzero sources.
-        - For "fixed" orientation: Shape (n_sources, n_times).
-        - For "free" orientation: Shape (n_sources, 3, n_times).
-    - orientation_type (str): Orientation type ("fixed" or "free").
-    - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
-    - title (str, optional): Title for the entire figure.
-
-    Returns:
-    - None
-    """
-    if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray):
-        raise ValueError("Invalid leadfield matrix. It must be a non-empty numpy array.")
-
-    if x is None or not isinstance(x, np.ndarray):
-        raise ValueError("Invalid source activity matrix. It must be a non-empty numpy array.")
-
-    # Find nonzero sources
-    if orientation_type == "fixed":
-        nonzero_sources = np.where(np.any(x != 0, axis=-1))[0]
-    elif orientation_type == "free":
-        nonzero_sources = np.where(np.any(np.linalg.norm(x, axis=1) != 0, axis=-1))[0]
-    else:
-        raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
-
-    # Create a figure with subplots for each nonzero source
-    n_sources = len(nonzero_sources)
-    n_cols = 5  # Number of columns in the figure
-    n_rows = int(np.ceil(n_sources / n_cols))  # Calculate the number of rows
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 4, n_rows * 4), constrained_layout=True)
-
-    # Flatten axes for easy indexing
-    axes = axes.flatten()
-
-    for i, source_idx in enumerate(nonzero_sources):
         if orientation_type == "fixed":
-            # Extract the leadfield for the specified source
-            leadfield_values = leadfield_matrix[:, source_idx]
+            plt.figure(figsize=(10, 8))
+            plt.imshow(leadfield_matrix, aspect='auto', cmap='viridis', interpolation='nearest')
+            plt.colorbar(label="Amplitude")
+            plt.title("Leadfield Matrix (Fixed Orientation)")
+            plt.xlabel("Sources")
+            plt.ylabel("Sensors")
         elif orientation_type == "free":
-            # Extract the leadfield for the specified source and orientation
-            leadfield_values = np.linalg.norm(leadfield_matrix[:, source_idx, :], axis=-1)
+            n_orient = leadfield_matrix.shape[-1]
+            fig, axes = plt.subplots(1, n_orient, figsize=(15, 5), sharey=True)
+            orientations = ["X", "Y", "Z"]
+            for i in range(n_orient):
+                ax = axes[i]
+                ax.imshow(leadfield_matrix[:, :, i], aspect='auto', cmap='viridis', interpolation='nearest')
+                ax.set_title(f"Leadfield Matrix (Orientation {orientations[i]})")
+                ax.set_xlabel("Sources")
+                if i == 0:
+                    ax.set_ylabel("Sensors")
+            fig.colorbar(axes[0].images[0], ax=axes, location="right", label="Amplitude")
         else:
             raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
 
-        # Plot the topomap for the current source
-        mne.viz.plot_topomap(leadfield_values, info, axes=axes[i], cmap="viridis", show=False)
-        axes[i].set_title(f"Source {source_idx}")
+        plt.tight_layout()
 
-    # Hide unused subplots
-    for j in range(i + 1, len(axes)):
-        axes[j].axis("off")
-
-    # Add a global title if provided
-    if title:
-        fig.suptitle(title, fontsize=16, weight="bold")
-
-    # Save the figure if a save path is provided
-    if save_path:
-        if not save_path.endswith(".png"):
-            save_path += ".png"
-        try:
+        if save_path:
             plt.savefig(save_path, bbox_inches="tight")
-            print(f"Combined leadfield topomap saved to {save_path}")
-        except Exception as e:
-            print(f"Failed to save the combined leadfield topomap: {e}")
+            print(f"Leadfield matrix visualization saved to {save_path}")
+        if show:
+            plt.show()
+        plt.close()
+        
+    def visualize_leadfield_topomap(self, leadfield_matrix, info, x, orientation_type="fixed", save_path=None, title=None, show=False):
+        """
+        Visualize the leadfield matrix as topological maps for nonzero sources in a single figure.
 
-    plt.show()
+        Parameters:
+        - leadfield_matrix (np.ndarray): The leadfield matrix.
+            - For "fixed" orientation: Shape (n_sensors, n_sources).
+            - For "free" orientation: Shape (n_sensors, n_sources, 3).
+        - info (mne.Info): The MNE info object containing sensor locations.
+        - x (np.ndarray): Source activity matrix to determine nonzero sources.
+            - For "fixed" orientation: Shape (n_sources, n_times).
+            - For "free" orientation: Shape (n_sources, 3, n_times).
+        - orientation_type (str): Orientation type ("fixed" or "free").
+        - save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+        - title (str, optional): Title for the entire figure.
+        - show (bool): If True, display the plot. If False, do not display.
+
+        Returns:
+        - None
+        """
+        if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray):
+            raise ValueError("Invalid leadfield matrix. It must be a non-empty numpy array.")
+
+        if x is None or not isinstance(x, np.ndarray):
+            raise ValueError("Invalid source activity matrix. It must be a non-empty numpy array.")
+
+        # Find nonzero sources
+        if orientation_type == "fixed":
+            nonzero_sources = np.where(np.any(x != 0, axis=-1))[0]
+        elif orientation_type == "free":
+            nonzero_sources = np.where(np.any(np.linalg.norm(x, axis=1) != 0, axis=-1))[0]
+        else:
+            raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
+
+        # Create a figure with subplots for each nonzero source
+        n_sources = len(nonzero_sources)
+        n_cols = 5  # Number of columns in the figure
+        n_rows = int(np.ceil(n_sources / n_cols))  # Calculate the number of rows
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 4, n_rows * 4), constrained_layout=True)
+
+        # Flatten axes for easy indexing
+        axes = axes.flatten()
+
+        for i, source_idx in enumerate(nonzero_sources):
+            if orientation_type == "fixed":
+                # Extract the leadfield for the specified source
+                leadfield_values = leadfield_matrix[:, source_idx]
+            elif orientation_type == "free":
+                # Extract the leadfield for the specified source and orientation
+                leadfield_values = np.linalg.norm(leadfield_matrix[:, source_idx, :], axis=-1)
+            else:
+                raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
+
+            # Plot the topomap for the current source
+            mne.viz.plot_topomap(leadfield_values, info, axes=axes[i], cmap="viridis", show=False)
+            axes[i].set_title(f"Source {source_idx}")
+
+        # Hide unused subplots
+        for j in range(i + 1, len(axes)):
+            axes[j].axis("off")
+
+        # Add a global title if provided
+        if title:
+            fig.suptitle(title, fontsize=16, weight="bold")
+
+        # Save the figure if a save path is provided
+        if save_path:
+            if not save_path.endswith(".png"):
+                save_path += ".png"
+            try:
+                plt.savefig(save_path, bbox_inches="tight")
+                print(f"Combined leadfield topomap saved to {save_path}")
+            except Exception as e:
+                print(f"Failed to save the combined leadfield topomap: {e}")
+
+        if show:
+            plt.show()
+        plt.close()
