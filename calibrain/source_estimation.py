@@ -23,14 +23,14 @@ def gamma_map(
     if noise_type == "oracle":
         sigma_squared = np.diag(cov)[0] # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
         
-        # NOTE - TODO: hardcoded for now, but should be changed to use the covariance matrix and sigma_squared
+        # NOTE - TODO: override and hardcode for now, but should be changed to use the computed covariance matrix and sigma_squared
         sigma_squared = 0.01
         cov = sigma_squared * np.eye(L.shape[0])
         
     # whiten the data
     whitener = linalg.inv(linalg.sqrtm(cov))
     y = whitener @ y
-    L = whitener @ L   
+    L = whitener @ L   # Note: L is already shaped into (n_sensors, n_sources * n_orient)
     
     if gammas is None:
         gammas = np.ones(L.shape[1], dtype=np.float64)
@@ -243,7 +243,7 @@ def eloreta(L, y, **kwargs):
     raise NotImplementedError("The eloreta solver is not yet implemented.")
 
 class SourceEstimator(BaseEstimator, RegressorMixin):
-    def __init__(self, solver, solver_params=None, logger=None):
+    def __init__(self, solver, solver_params=None, cov=None, n_orient=1, logger=None):
         """
         Initialize the SourceEstimator class.
 
@@ -251,10 +251,15 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
         - solver_params (dict, optional): Parameters for the solver function.
         - logger (logging.Logger, optional): Logger instance for logging messages.
+        - cov (np.ndarray, optional): Covariance matrix of the noise.
+        - n_orient (int, optional): Number of orientations for the sources.
+          Default is 1 (for fixed orientation) or 3 (for free orientation).
         """
         self.solver = solver
         self.solver_params = solver_params if solver_params else {}
         self.logger = logger
+        self.cov = cov
+        self.n_orient = n_orient
 
     def fit(self, L, y):
         """
@@ -292,6 +297,6 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
             y = self.y_
 
         # Apply the solver
-        x_hat, active_set, posterior_cov = self.solver(self.L_, y, logger=self.logger, **self.solver_params)
+        x_hat, active_set, posterior_cov = self.solver(self.L_, y, logger=self.logger, **self.solver_params, cov=self.cov, n_orient=self.n_orient)
         return x_hat, active_set, posterior_cov
 

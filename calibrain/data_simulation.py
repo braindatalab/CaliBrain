@@ -226,13 +226,6 @@ class DataSimulator:
         y_clean = self._project_to_sensor_space(L, x)
         y_noisy, cov_scaled, noise_scaled = self._add_noise(y_clean)
 
-        # if self.orientation_type == "free":
-        #     L = L.reshape(L.shape[0], -1)
-
-        # if self.n_times == 1 and self.orientation_type == "fixed":
-        #     y_noisy = y_noisy[:, 0]
-        #     x = x[:, 0]
-
         if vizualise:
             
             info = LeadfieldSimulator(
@@ -264,6 +257,15 @@ class DataSimulator:
                 save_path=os.path.join(save_path, "leadfield_topomap.png"),
                 show=False,
             )
+        
+        # Reshape leadfield matrix for free orientation. Needed when taking the norm of the leadfield matrix inside the estimator. Check `gamma_map_opt()`. This is a workaround for the current implementation of the leadfield simulator.
+        # TODO: check if this is still needed.
+        if self.orientation_type == "free":
+            L = L.reshape(L.shape[0], -1)
+
+        # if self.n_times == 1 and self.orientation_type == "fixed":
+        #     y_noisy = y_noisy[:, 0]
+        #     x = x[:, 0]
         
         return y_noisy, L, x, cov_scaled, noise_scaled
 
@@ -312,6 +314,7 @@ class DataSimulator:
         if self.orientation_type == "fixed":
             active_sources = np.where(np.any(x != 0, axis=-1))[0]
         elif self.orientation_type == "free":
+            self.logger.info("Calculating the norm of the source activity for free orientation.")
             active_sources = np.where(np.any(np.linalg.norm(x, axis=1) != 0, axis=-1))[0]
 
         # Limit the number of non-zero sources to plot
@@ -441,7 +444,7 @@ class DataSimulator:
         else:
             raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
 
-        plt.tight_layout()
+        # plt.tight_layout(rect=[0, 0, 0.85, 1])
 
         if save_path:
             plt.savefig(save_path, bbox_inches="tight")
@@ -480,6 +483,7 @@ class DataSimulator:
         if orientation_type == "fixed":
             nonzero_sources = np.where(np.any(x != 0, axis=-1))[0]
         elif orientation_type == "free":
+            self.logger.info("Calculating the norm of the source activity for free orientation.")
             nonzero_sources = np.where(np.any(np.linalg.norm(x, axis=1) != 0, axis=-1))[0]
         else:
             raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")

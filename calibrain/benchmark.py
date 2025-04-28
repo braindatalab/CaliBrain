@@ -112,11 +112,19 @@ class Benchmark:
             self.logger.info("Simulating data...")
             y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate(vizualise=True, save_path="results/figures/data_sim/")
             
-            if solver_params.get("noise_type") == 'oracle':
-                solver_params["cov"] = cov_scaled
             
-            # Initialize SourceEstimator
-            source_estimator = SourceEstimator(solver=self.solver, solver_params=solver_params, logger=self.logger)
+            # if solver_params.get("noise_type") == 'oracle':
+            #     solver_params["cov"] = cov_scaled
+            
+            n_orient = 3 if data_params.get("orientation_type") == "free" else 1
+            
+            source_estimator = SourceEstimator(
+                solver=self.solver,
+                solver_params=solver_params,
+                cov=cov_scaled,
+                n_orient=n_orient,
+                logger=self.logger
+            )
 
             # Fit the estimator
             self.logger.info("Fitting the solver...")
