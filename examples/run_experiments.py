@@ -22,10 +22,10 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "n_times": [1, 10],
-        "nnz": [5, 50],
+        "n_times": [2],
+        "nnz": [5],
         "orientation_type": ["fixed"],
-        "alpha_snr": [0.1, 0.5, 0.9],
+        "alpha_snr": [0.9],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   

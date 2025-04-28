@@ -200,7 +200,7 @@ def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_
 
 
 
-leadfield_path = "results/fsaverage-leadfield-fixed.npz"  
+leadfield_path = "results/forward/fsaverage-leadfield-fixed.npz"  
 with np.load(leadfield_path) as data:
     leadfield = data["leadfield"]
 
@@ -234,7 +234,7 @@ plot_active_sources(
     active_indices=active_indices,
     stim_onset=0.0,
     nnz=5,
-    save_path="results/figures/active_sources_subplots.png"
+    save_path="results/figures/data_sim/pre_post_stimulus_active_sources_subplots.png"
 )
 
 
@@ -244,5 +244,5 @@ plot_sensor_signals(
     y_noisy=y_noisy,
     sensor_indices=[0, 10, 20],  # Plot sensors 0, 1, and 2
     times=times,
-    save_path="results/figures/specific_sensor_signals.png"
+    save_path="results/figures/data_sim/pre_post_stimulus_specific_sensor_signals.png"
 )
