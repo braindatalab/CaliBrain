@@ -1,0 +1,2 @@
+seed,solver,solver_params,data_params,active_set_size
+1608637542,gamma_map,"{'gammas': 0.001, 'noise_type': 'oracle'}","{'alpha_snr': 0.9, 'n_times': 10, 'nnz': 8, 'orientation_type': 'fixed'}",216
