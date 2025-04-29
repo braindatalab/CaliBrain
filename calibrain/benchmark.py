@@ -110,7 +110,7 @@ class Benchmark:
 
             # Simulate data
             self.logger.info("Simulating data...")
-            y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate(vizualise=True, save_path="results/figures/data_sim/")
+            y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate(visualize=True, save_path="results/figures/data_sim/")
             
             
             # if solver_params.get("noise_type") == 'oracle':

@@ -1,0 +1,5 @@
+# filepath: /Users/orabe/0.braindata/CaliBrain/docs/requirements.txt
+sphinx>=4.0 # Or a specific recent version
+sphinx-rtd-theme
+sphinx-autodoc-typehints
+myst-parser

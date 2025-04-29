@@ -1,17 +1,27 @@
-.. CaliBrain documentation master file, created by
-   sphinx-quickstart on Mon Mar 10 01:11:28 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. CaliBrain documentation master file ...
 
 CaliBrain documentation
 =======================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+**CaliBrain** is a Python library designed for simulating realistic Magnetoencephalography (MEG) and Electroencephalography (EEG) data and evaluating the calibration and uncertainty quantification of brain source estimation algorithms.
 
+It provides tools to:
+
+*   Simulate source activity, leadfield matrices, and sensor-level measurements with controllable noise levels and source configurations (fixed or free orientation).
+*   Estimate and visualize confidence intervals for source estimates based on posterior covariance information.
+*   Analyze the calibration of source estimation methods by comparing confidence levels to the actual proportion of ground truth values captured.
+
+This documentation provides installation instructions, usage examples, and a detailed API reference.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Documentation
 
+   installation
+   usage
+   api
+   examples/index
+   readme
+   results
+   contributing
+   changelog
