@@ -54,7 +54,7 @@ info:
 forward_solution:
   # If provided, other parameters in this key will be ignored. The file name should end with ``{orientation_type}-fwd.fif``, ``{orientation_type}-fwd.fif.gz``,
   fname: "results/forward/fsaverage-fixed-fwd.fif"  
-  # fname: "results/forward/fsaverage-fixed-freww.fif"  
+  # fname: "results/forward/fsaverage-free-fwd.fif"  
   trans: "fsaverage"
   eeg: true
   meg: false
