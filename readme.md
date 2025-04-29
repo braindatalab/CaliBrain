@@ -65,7 +65,7 @@ It supports both:
 
 ## Installation
 
-Please see the [Installation Guide](docs/installation.rst).
+Please see the [Installation Guide](docs/source/installation.rst).
 
 ---
 
