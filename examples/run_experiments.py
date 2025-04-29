@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from calibrain import DataSimulator, gamma_map, eloreta
 from calibrain import Benchmark
+from pathlib import Path
 
 
 def main():
@@ -22,10 +23,10 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "n_times": [1, 10],
-        "nnz": [5, 50],
-        "orientation_type": ["fixed"],
-        "alpha_snr": [0.1, 0.5, 0.9],
+        "n_times": [10],
+        "nnz": [8],
+        "orientation_type": ["fixed"], # "fixed", "free"
+        "alpha_snr": [0.9],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
@@ -40,8 +41,8 @@ def main():
     metrics = [None]
     nruns = 1
     data_simulator = DataSimulator(
-        leadfield_mode='simulate', # simulate, random, load
-        leadfield_path=f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type']}.npz',
+        leadfield_mode='load', # simulate, random, load. if sumulate then align the config file of the leadfield simulation!
+        leadfield_path=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
         # n_sensors=None,
         # n_sources=None,
         leadfield_config_path='configs/leadfield_sim_cfg.yml',
