@@ -3,7 +3,7 @@ Convert this to readme.rst format:
 
 ## Uncertainty Calibration in Brain Source Imaging
 
-<img src="/docs/source/_static_/caliBrain.png" alt="CaliBrain Logo" width="25%">
+<img src="/docs/source/_static/caliBrain.png" alt="CaliBrain Logo" width="25%">
 
 ---
 
