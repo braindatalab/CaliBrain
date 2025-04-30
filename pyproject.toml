@@ -39,4 +39,4 @@ dev = [
 Homepage = "https://github.com/braindatalab/CaliBrain"
 Repository = "https://github.com/braindatalab/CaliBrain"
 Wiki = "https://github.com/braindatalab/CaliBrain/wiki"
-# Documentation = "https://calibrain.readthedocs.io/"
+Documentation = "https://calibrain.readthedocs.io/"
