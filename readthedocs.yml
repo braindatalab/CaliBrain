@@ -14,3 +14,4 @@ python:
     - requirements: docs/requirements.txt # Point to doc-specific requirements
     - method: pip
       path: . -e
+      editable: true
