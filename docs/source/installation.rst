@@ -4,8 +4,11 @@ Installation
 You can install **CaliBrain** using either **pip** or **Conda**, depending on your preferences.
 
 We provide the following installation options:
+
 - `pyproject.toml`: Standard modern pip-based installation (recommended).
+
 - `requirements.txt`: Simple pip-based installation (optional).
+
 - `environment.yml`: Conda-based environment installation (optional).
 
 Choose the method that best fits your workflow.
