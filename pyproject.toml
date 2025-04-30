@@ -1,5 +1,4 @@
 [build-system]
-# requires = ["wheel"]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -11,14 +10,13 @@ authors = [
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"}
 ]
-license = {text = "MIT"}
+license = "MIT"  # FIXED
 readme = "README.md"
 requires-python = ">=3.6"
 
 dependencies = [
     "numpy",
     "pandas",
-    # "scipy",
     "scikit-learn",
     "mne",
     "POT",
@@ -40,3 +38,7 @@ Homepage = "https://github.com/braindatalab/CaliBrain"
 Repository = "https://github.com/braindatalab/CaliBrain"
 Wiki = "https://github.com/braindatalab/CaliBrain/wiki"
 Documentation = "https://calibrain.readthedocs.io/"
+
+[tool.setuptools.packages.find]  # NEW SECTION TO FIX DISCOVERY
+include = ["calibrain"]
+exclude = ["configs", "results"]
