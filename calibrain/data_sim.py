@@ -7,27 +7,56 @@ from matplotlib.lines import Line2D # Import for custom legend
 import os
 import mne
 
+
 # Generate a smoothed ERP-like signal using bandpass-filtered noise and a Hanning window
 def generate_erp_signal(n_times, sfreq, freq_band, amplitude, seed):
     rng = np.random.RandomState(seed)
     white_noise = rng.randn(n_times)
-
-    # Bandpass filter between given frequency range
     b, a = butter(4, [f / (sfreq / 2) for f in freq_band], btype='band')
     erp = filtfilt(b, a, white_noise)
-
-    # Apply Hanning window to smooth the signal
     erp *= np.hanning(n_times)
-
-    # Normalize and scale the ERP to the desired amplitude
     erp /= np.std(erp)
     erp *= amplitude
     return erp
 
-# Simulate source-space signal and propagate to sensor space with controlled SNR
-def simulate_timeseries_with_snr_source_space(
+# Function to add noise based on SNR
+def add_noise_snr(y_clean, snr_db, rng=None):
+    """
+    Adds Gaussian noise to a clean signal based on a desired SNR level.
+
+    Parameters:
+    - y_clean (np.ndarray): The clean signal array (e.g., channels x times).
+    - snr_db (float): The desired signal-to-noise ratio in decibels (dB).
+    - rng (np.random.RandomState, optional): A random number generator state
+      for reproducible noise generation. If None, uses default numpy random state.
+
+    Returns:
+    - tuple: A tuple containing:
+        - y_noisy (np.ndarray): The signal with added noise.
+        - noise (np.ndarray): The generated noise array.
+        - noise_power (float): The calculated variance of the added noise.
+    """
+    if rng is None:
+        rng = np.random # Use default numpy random state if none provided
+
+    signal_power = np.mean(y_clean ** 2)
+    if signal_power == 0:
+        print("Warning: Clean signal power is zero. Cannot add noise based on SNR.")
+        noise_power = 0
+        noise = np.zeros_like(y_clean)
+    else:
+        snr_linear = 10 ** (snr_db / 10.0)
+        noise_power = signal_power / snr_linear
+        noise_std = np.sqrt(noise_power)
+        noise = rng.normal(0, noise_std, size=y_clean.shape)
+
+    y_noisy = y_clean + noise
+    return y_noisy, noise, noise_power
+
+
+# Simulate source-space signal and propagate to sensor space (CLEAN SIGNAL ONLY)
+def simulate_clean_signal_source_space( # Renamed function
     leadfield,
-    snr_db=10,
     sfreq=100,
     tmin=-0.5,
     tmax=0.5,
@@ -38,138 +67,175 @@ def simulate_timeseries_with_snr_source_space(
     amplitude=5.0,
     freq_band=(1, 30)
 ):
+    """ Simulates only the clean source and sensor signals. """
     rng = np.random.RandomState(seed)
     n_sensors = leadfield.shape[0]
-
-    # Define the time axis and number of time points
     times = np.arange(tmin, tmax, 1.0 / sfreq)
     n_times = len(times)
 
-    # Simulate source activity
     if orientation_type == "fixed":
         n_sources = leadfield.shape[1]
         active_indices = rng.choice(n_sources, size=nnz, replace=False)
-
         x = np.zeros((n_sources, n_times))
         for i, src_idx in enumerate(active_indices):
-            # Generate ERP for each active dipole, passing freq_band
             erp_signal = generate_erp_signal(
                 n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
             )
             stim_idx = np.where(times >= stim_onset)[0][0]
             x[src_idx, stim_idx:] = erp_signal[stim_idx:]
-
-        # Project to sensor space
         y_clean = leadfield @ x
-
     elif orientation_type == "free":
         n_sources, n_orient = leadfield.shape[1:3]
         assert n_orient == 3, "Expected 3 orientations for free orientation"
-
         active_indices = rng.choice(n_sources, size=nnz, replace=False)
         x = np.zeros((n_sources, n_orient, n_times))
-
         for i, src_idx in enumerate(active_indices):
-            # Generate ERP for each active dipole, passing freq_band
             erp_signal = generate_erp_signal(
                 n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
             )
             stim_idx = np.where(times >= stim_onset)[0][0]
-
-            # Random 3D orientation vector
             orient = rng.randn(3)
             orient /= np.linalg.norm(orient)
-
             for j in range(3):
                 x[src_idx, j, stim_idx:] = orient[j] * erp_signal[stim_idx:]
-
-        # Project to sensor space using tensor contraction
         y_clean = np.einsum("nmr,mrt->nt", leadfield, x)
-
     else:
         raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
 
-    # Compute noise level from signal power and desired SNR
-    signal_power = np.mean(y_clean ** 2)
-    snr_linear = 10 ** (snr_db / 10)
-    noise_power = signal_power / snr_linear
-    noise_std = np.sqrt(noise_power)
-
-    # Add Gaussian noise
-    noise = rng.normal(0, noise_std, size=y_clean.shape)
-    y_noisy = y_clean + noise
-
-    # Return all key components
+    # Return CLEAN components only
     return {
-        "sensor_data": y_noisy,              # Noisy sensor data
+        "clean_sensor_data": y_clean,        # Clean sensor signal
         "source_data": x,                    # Source signal in the brain
-        "clean_sensor_data": y_clean,        # Clean sensor signal before noise
-        "noise": noise,                      # Noise matrix
-        "noise_variance": noise_power,       # True noise variance used
         "times": times,                      # Time vector
         "leadfield": leadfield,              # Leadfield used
         "active_indices": active_indices,    # Indices of active sources
     }
 
-
-def plot_active_sources(x, times, active_indices, stim_onset, nnz, save_dir=None, figure_name=None):
+def inspect_matrix_values(matrix, matrix_name="Matrix"):
     """
-    Plot all active sources in subplots.
+    Prints summary statistics and checks for invalid values in a NumPy array.
 
     Parameters:
-    - x (np.ndarray): Source activity matrix (n_sources, n_times).
-    - times (np.ndarray): Time vector corresponding to the signals.
-    - active_indices (list or np.ndarray): Indices of active sources.
-    - stim_onset (float): Time of stimulus onset.
-    - nnz (int): Number of active sources.
-    - save_dir (str or Path, optional): Directory to save the figure. If None, the figure is not saved.
-    - figure_name (str, optional): Name of the figure file (without extension). Required if save_dir is provided.
-
-    Returns:
-    - None
+    - matrix (np.ndarray): The matrix to inspect.
+    - matrix_name (str): A name for the matrix used in print statements.
     """
-    n_cols = 3
-    n_rows = int(np.ceil(nnz / n_cols))
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), constrained_layout=True, sharex=True, sharey=True)
-    fig.suptitle("Active Source Signals (Subplots)", fontsize=16)
-    axes = axes.flatten()
+    print(f"--- Inspecting {matrix_name} Values ---")
+    if not isinstance(matrix, np.ndarray):
+        print(f"Error: Input is not a NumPy array.")
+        return
+    if matrix.size == 0:
+        print(f"Warning: {matrix_name} is empty.")
+        return
 
-    for i, src_idx in enumerate(active_indices):
-        axes[i].plot(times, x[src_idx], label=f"Source {src_idx}", linewidth=2)
-        axes[i].axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
-        axes[i].set_xlabel("Time (s)")
-        axes[i].set_ylabel("Amplitude (nAm)")
-        axes[i].set_title(f"Active Source {src_idx}")
-        axes[i].legend()
-        axes[i].grid(True)
+    try:
+        min_val = np.min(matrix)
+        max_val = np.max(matrix)
+        mean_val = np.mean(matrix)
+        mean_abs_val = np.mean(np.abs(matrix))
+        std_val = np.std(matrix)
 
-    for j in range(i + 1, len(axes)):
-        axes[j].axis("off")
+        print(f"{matrix_name} mean: {mean_val:.2e}, std: {std_val:.2e}")
+        print(f"{matrix_name} min: {min_val:.2e}, max: {max_val:.2e}")
+        # print(f"{matrix_name} std: {std_val:.1e}") # Redundant with first line
+        print(f"{matrix_name} mean abs: {mean_abs_val:.2e}")
 
-    if save_dir and figure_name:
-        output_dir = Path(save_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        save_path = output_dir / f"{figure_name}.png"
-        plt.savefig(save_path, dpi=300)
-        print(f"Subplots figure saved to {save_path}")
-    # plt.show()
-    plt.close()
+        nan_check = np.isnan(matrix).any()
+        inf_check = np.isinf(matrix).any()
 
-def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_dir=None, figure_name=None):
+        if nan_check:
+            print(f"WARNING: {matrix_name} contains NaN values!")
+        if inf_check:
+            print(f"WARNING: {matrix_name} contains Inf values!")
+        if not nan_check and not inf_check:
+            print(f"{matrix_name} contains valid numbers (no NaNs or Infs detected).")
+
+    except Exception as e:
+        print(f"Error during inspection of {matrix_name}: {e}")
+    print(f"--- End {matrix_name} Inspection ---")
+
+def load_and_validate_leadfield(leadfield_file_path, orientation_type):
     """
-    Plot clean and noisy sensor signals for specific sensors in subplots.
+    Loads a leadfield matrix from an .npz file and validates its shape
+    based on the expected orientation type. Includes value inspection.
 
     Parameters:
-    - y_clean (np.ndarray): Clean sensor measurements (n_sensors, n_times).
-    - y_noisy (np.ndarray): Noisy sensor measurements (n_sensors, n_times).
-    - sensor_indices (list or np.ndarray, optional): Indices of sensors to plot. If None, plot the first sensor.
-    - times (np.ndarray, optional): Time vector corresponding to the signals. If None, indices are used as the x-axis.
-    - save_dir (str or Path, optional): Directory to save the figure. If None, the figure is not saved.
-    - figure_name (str, optional): Name of the figure file (without extension). Required if save_dir is provided.
+    - leadfield_file_path (str or Path): Path to the .npz file containing the leadfield.
+    - orientation_type (str): The expected orientation type ("fixed" or "free").
 
     Returns:
-    - None
+    - np.ndarray: The loaded and validated leadfield matrix.
+
+    Raises:
+    - FileNotFoundError: If the leadfield file does not exist.
+    - KeyError: If the expected key is not found in the .npz file.
+    - ValueError: If the loaded leadfield matrix shape is inconsistent with the orientation_type.
+    - Exception: For other potential loading errors.
     """
+    print(f"Loading leadfield from: {leadfield_file_path}")
+    try:
+        with np.load(leadfield_file_path) as data:
+            # ... (loading logic as before) ...
+            if 'leadfield' in data:
+                 leadfield_matrix = data["leadfield"]
+            elif 'leadfield_fixed' in data and orientation_type == "fixed":
+                 leadfield_matrix = data['leadfield_fixed']
+            elif 'leadfield_free' in data and orientation_type == "free":
+                 leadfield_matrix = data['leadfield_free']
+            elif 'leadfield' in data:
+                 print("Warning: Loading generic 'leadfield' key. Ensure it matches orientation type.")
+                 leadfield_matrix = data["leadfield"]
+            else:
+                 keys_found = list(data.keys())
+                 raise KeyError(f"Could not find a suitable leadfield key ('leadfield', 'leadfield_fixed', 'leadfield_free') in .npz file. Found keys: {keys_found}")
+
+        print(f"Leadfield loaded successfully. Initial Shape: {leadfield_matrix.shape}", "dtype:", leadfield_matrix.dtype)
+
+        # --- Validate leadfield shape against orientation_type ---
+        # ... (validation logic as before) ...
+        if orientation_type == "fixed":
+            if leadfield_matrix.ndim != 2:
+                raise ValueError(f"Expected 2D leadfield for fixed orientation, got shape {leadfield_matrix.shape}")
+        elif orientation_type == "free":
+            if leadfield_matrix.ndim == 3:
+                if leadfield_matrix.shape[2] != 3:
+                     raise ValueError(f"Expected 3 components in last dimension for free orientation, got shape {leadfield_matrix.shape}")
+            elif leadfield_matrix.ndim == 2:
+                 if leadfield_matrix.shape[1] % 3 == 0:
+                      print("Warning: Reshaping potentially flattened free orientation leadfield.")
+                      n_sensors, n_sources_x_3 = leadfield_matrix.shape
+                      n_sources = n_sources_x_3 // 3
+                      leadfield_matrix = leadfield_matrix.reshape(n_sensors, n_sources, 3)
+                      print(f"Reshaped leadfield to {leadfield_matrix.shape}")
+                 else:
+                      raise ValueError(f"Cannot reshape 2D leadfield (shape {leadfield_matrix.shape}) to 3D free orientation.")
+            else:
+                 raise ValueError(f"Expected 2D or 3D leadfield for free orientation, got {leadfield_matrix.ndim} dimensions with shape {leadfield_matrix.shape}")
+        else:
+             raise ValueError(f"Invalid orientation_type specified: {orientation_type}. Choose 'fixed' or 'free'.")
+
+
+        print(f"Leadfield validated successfully. Final Shape: {leadfield_matrix.shape}")
+
+        # --- Inspect Leadfield Matrix Values using the function ---
+        inspect_matrix_values(leadfield_matrix, matrix_name="Leadfield")
+        # --- End Inspection ---
+
+        return leadfield_matrix
+
+    except FileNotFoundError:
+        print(f"Error: Leadfield file not found at {leadfield_file_path}")
+        raise # Re-raise the exception
+    except (KeyError, ValueError) as e:
+        print(f"Error loading or validating leadfield: {e}")
+        raise # Re-raise the specific error
+    except Exception as e:
+        print(f"An unexpected error occurred during leadfield loading: {e}")
+        raise 
+
+
+# --- Plotting Functions ---
+def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_dir=None, figure_name=None, trial_idx=None):
+    """ Plot clean and noisy sensor signals for specific sensors for a specific trial. """
     if sensor_indices is None:
         sensor_indices = [0]
     if times is None:
@@ -177,7 +243,8 @@ def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_
 
     n_sensors_to_plot = len(sensor_indices)
     fig, axes = plt.subplots(n_sensors_to_plot, 1, figsize=(10, n_sensors_to_plot * 3), sharex=True, sharey=True)
-    fig.suptitle("Specific Sensor Signals (Subplots)", fontsize=16)
+    title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
+    fig.suptitle(f"Specific Sensor Signals{title_suffix}", fontsize=16)
 
     if n_sensors_to_plot == 1:
         axes = [axes]
@@ -199,37 +266,30 @@ def plot_sensor_signals(y_clean, y_noisy, sensor_indices=None, times=None, save_
         save_path = output_dir / f"{figure_name}.png"
         plt.savefig(save_path, dpi=300)
         print(f"Sensor subplots figure saved to {save_path}")
-    # plt.show()
-    plt.close()
+    plt.close(fig)
 
-def plot_all_active_sources_single_figure(x, times, active_indices, stim_onset, save_dir=None, figure_name=None):
-    """
-    Plot all specified active source signals on a single figure.
-
-    Parameters:
-    - x (np.ndarray): Source activity matrix (n_sources, n_times).
-    - times (np.ndarray): Time vector corresponding to the signals.
-    - active_indices (list or np.ndarray): Indices of active sources to plot.
-    - stim_onset (float): Time of stimulus onset.
-    - save_dir (str or Path, optional): Directory to save the figure. If None, the figure is not saved.
-    - figure_name (str, optional): Name of the figure file (without extension). Required if save_dir is provided.
-
-    Returns:
-    - None
-    """
+def plot_all_active_sources_single_figure(x, times, active_indices, stim_onset, save_dir=None, figure_name=None, trial_idx=None):
+    """ Plot all specified active source signals on a single figure for a specific trial. """
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-    fig.suptitle("All Active Source Signals (Single Figure)", fontsize=16)
+    title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
+    fig.suptitle(f"All Active Source Signals{title_suffix}", fontsize=16)
     colors = cm.viridis(np.linspace(0, 1, len(active_indices)))
 
+    # Handle potential free orientation source data shape
+    if x.ndim == 3:
+        x_plot = np.linalg.norm(x, axis=1) # Plot magnitude
+    else:
+        x_plot = x
+
     for i, src_idx in enumerate(active_indices):
-        ax.plot(times, x[src_idx], label=f"Source {src_idx}", linewidth=1.5, color=colors[i])
+        ax.plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=1.5, color=colors[i])
 
     ax.axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude (nAm)")
     ax.legend(loc='best', fontsize='small')
     ax.grid(True, alpha=0.6)
-    ax.set_title("Overlay of Active Sources")
+    ax.set_title("Active Sources")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     if save_dir and figure_name:
@@ -238,49 +298,91 @@ def plot_all_active_sources_single_figure(x, times, active_indices, stim_onset, 
         save_path = output_dir / f"{figure_name}.png"
         plt.savefig(save_path, dpi=300)
         print(f"Single figure source plot saved to {save_path}")
-    # plt.show()
-    plt.close()
+    plt.close(fig)
 
-
-def plot_all_sensor_signals_single_figure(y_noisy, times, sensor_indices=None, save_dir=None, figure_name=None):
+def plot_all_sensor_signals_single_figure(y_data, times, sensor_indices=None, save_dir=None, figure_name=None, trial_idx=None, average_epochs=False):
     """
-    Plot all specified sensor signals (noisy) and their average on a single figure.
+    Plot sensor signals (overlay) for selected sensors.
+    If average_epochs is True and y_data is 3D, plots the average across epochs for each channel.
+    If average_epochs is False and y_data is 2D, plots the single trial data.
+    Does NOT average across channels.
 
     Parameters:
-    - y_noisy (np.ndarray): Noisy sensor measurements (n_sensors, n_times).
+    - y_data (np.ndarray): Sensor measurements. Can be 2D (n_channels, n_times) for a single trial
+                           or 3D (n_trials, n_channels, n_times) for multiple trials.
     - times (np.ndarray): Time vector corresponding to the signals.
     - sensor_indices (list or np.ndarray, optional): Indices of sensors to plot. If None, plots all sensors.
-    - save_dir (str or Path, optional): Directory to save the figure. If None, the figure is not saved.
-    - figure_name (str, optional): Name of the figure file (without extension). Required if save_dir is provided.
-
-    Returns:
-    - None
+    - save_dir (str or Path, optional): Directory to save the figure.
+    - figure_name (str, optional): Name of the figure file (without extension).
+    - trial_idx (int, optional): Index of the trial being plotted (used for title if y_data is 2D and average_epochs is False).
+    - average_epochs (bool): If True and y_data is 3D, plot the average across trials.
+                             If False and y_data is 3D, raises an error.
+                             If y_data is 2D, this primarily affects the title.
     """
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
-    if sensor_indices is None:
-        sensor_indices = np.arange(y_noisy.shape[0])
-        y_plot = y_noisy
+    title_suffix = ""
+    plot_individual_epochs = False # Flag to control plotting individual trials (currently always False)
+
+    if y_data.ndim == 2: # Input is single trial or already averaged data
+        y_plot = y_data # This is the data to plot (n_channels, n_times)
+        if not average_epochs and trial_idx is not None:
+             title_suffix = f" (Trial {trial_idx+1})"
+        elif average_epochs: # Assume 2D input might be an average if flag is set
+             title_suffix = " (Average across Trials)"
+        # If 2D and not average_epochs and no trial_idx, title is generic
+    elif y_data.ndim == 3: # Input is multi-trial data
+        if average_epochs:
+            y_plot = np.mean(y_data, axis=0) # Calculate average across trials (axis 0) -> shape (n_channels, n_times)
+            title_suffix = " (Average across Trials)"
+            # Do not plot individual epochs if averaging is requested
+            plot_individual_epochs = False
+        else:
+            # If 3D data is passed but averaging is not requested, it's ambiguous.
+            raise ValueError("Input y_data is 3D, but average_epochs is False. "
+                             "Provide 2D data (single trial) or set average_epochs=True.")
     else:
-        y_plot = y_noisy[sensor_indices, :]
+        raise ValueError("Input y_data must be 2D or 3D")
 
-    average_signal = np.mean(y_plot, axis=0)
-    colors = cm.plasma(np.linspace(0, 1, len(sensor_indices)))
+    # Select specific sensors if requested from the data to be plotted (y_plot)
+    if sensor_indices is None:
+        sensor_indices_to_plot = np.arange(y_plot.shape[0]) # Use all channels
+        y_plot_selected = y_plot
+    else:
+        # Ensure indices are valid for the potentially averaged data
+        sensor_indices_to_plot = np.array(sensor_indices)[np.array(sensor_indices) < y_plot.shape[0]]
+        if len(sensor_indices_to_plot) != len(sensor_indices):
+             print("Warning: Some requested sensor_indices are out of bounds for the provided data.")
+        y_plot_selected = y_plot[sensor_indices_to_plot, :]
 
-    for i, sensor_idx in enumerate(sensor_indices):
-        ax.plot(times, y_plot[i, :], linewidth=0.8, color=colors[i], alpha=0.5)
+    n_plot_sensors = y_plot_selected.shape[0]
 
-    ax.plot(times, average_signal, label="Average Signal", linewidth=2.0, color='black')
+    fig.suptitle(f"Sensor Signals {title_suffix}", fontsize=16)
+    colors = cm.turbo(np.linspace(0, 1, n_plot_sensors))
+
+    # --- Plotting Logic ---
+    # Plot the main traces (either single trial or trial-averaged)
+    for i in range(n_plot_sensors):
+        actual_sensor_idx = sensor_indices_to_plot[i] # Get original index
+        ax.plot(times, y_plot_selected[i, :], linewidth=1.0, color=colors[i], alpha=0.8, label=f"Ch {actual_sensor_idx}" if n_plot_sensors <= 15 else None)
+
+    # Optional: Plot individual epoch traces lightly in the background (currently disabled)
+    if plot_individual_epochs and y_data.ndim == 3:
+         y_plot_all_selected = y_data[:, sensor_indices_to_plot, :] # Select sensors from original 3D data
+         for i_trial in range(y_data.shape[0]):
+             for i_ch in range(n_plot_sensors):
+                 ax.plot(times, y_plot_all_selected[i_trial, i_ch, :], linewidth=0.2, color=colors[i_ch], alpha=0.1)
+
+
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude (µV)")
     ax.grid(True, alpha=0.6)
-    ax.set_title("Simulated EEG Sensor Signals and Average")
+    ax.set_title(f"{n_plot_sensors} channels")
 
-    legend_elements = [
-        Line2D([0], [0], color=colors[0], lw=0.8, alpha=0.5, label=f'Individual Signals ({len(sensor_indices)} channels)'),
-        Line2D([0], [0], color='black', lw=2.0, label='Average Signal across channels')
-    ]
-    ax.legend(handles=legend_elements, loc='best')
+    # Update legend
+    if n_plot_sensors <= 15: # Show legend only for fewer channels
+        ax.legend(loc='best', fontsize='small')
+
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     if save_dir and figure_name:
@@ -288,77 +390,99 @@ def plot_all_sensor_signals_single_figure(y_noisy, times, sensor_indices=None, s
         output_dir.mkdir(parents=True, exist_ok=True)
         save_path = output_dir / f"{figure_name}.png"
         plt.savefig(save_path, dpi=300)
-        print(f"Single figure sensor plot saved to {save_path}")
-    # plt.show()
-    plt.close()
+    plt.close(fig)
 
-# ... (previous code, including imports and other functions) ...
 
-def plot_stacked_sensor_signals(y_noisy, times, sensor_indices=None, offset_scale=1.5, save_dir=None, figure_name=None):
-    """
-    Plots specified sensor signals overlaid on a single figure, without vertical offset.
-    The individual signal values are plotted as provided (no scaling or smoothing applied here).
+# def plot_active_sources(x, times, active_indices, stim_onset, nnz, save_dir=None, figure_name=None, trial_idx=None):
+#     """ Plot active sources for a specific trial. """
+#     n_cols = 3
+#     n_rows = int(np.ceil(nnz / n_cols))
+#     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), constrained_layout=True, sharex=True, sharey=True)
+#     title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
+#     fig.suptitle(f"Active Source Signals{title_suffix}", fontsize=16)
+#     axes = axes.flatten()
 
-    Parameters:
-    - y_noisy (np.ndarray): Noisy sensor measurements (n_sensors, n_times). Values are plotted directly.
-    - times (np.ndarray): Time vector corresponding to the signals.
-    - sensor_indices (list or np.ndarray, optional): Indices of sensors to plot. If None, plots all sensors.
-    - offset_scale (float): This parameter is ignored in this version as signals are overlaid.
-    - save_dir (str or Path, optional): Directory to save the figure. If None, the figure is not saved.
-    - figure_name (str, optional): Name of the figure file (without extension). Required if save_dir is provided.
+#     # Handle potential free orientation source data shape (n_sources, n_orient, n_times)
+#     # Plot the norm or the first component for simplicity
+#     if x.ndim == 3:
+#         x_plot = np.linalg.norm(x, axis=1) # Plot magnitude for free orientation
+#         # Or plot first component: x_plot = x[:, 0, :]
+#     else:
+#         x_plot = x
 
-    Returns:
-    - None
-    """
-    fig, ax = plt.subplots(1, 1, figsize=(12, 6)) # Adjusted figsize for overlay
-    fig.suptitle("Overlay of Sensor Signals", fontsize=16) # Updated title
+#     for i, src_idx in enumerate(active_indices):
+#         axes[i].plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=2)
+#         axes[i].axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
+#         axes[i].set_xlabel("Time (s)")
+#         axes[i].set_ylabel("Amplitude (nAm)")
+#         axes[i].set_title(f"Active Source {src_idx}")
+#         axes[i].legend()
+#         axes[i].grid(True)
 
-    if sensor_indices is None:
-        sensor_indices = np.arange(y_noisy.shape[0]) # Plot all sensors if None
-        y_plot = y_noisy # Use all sensors
-    else:
-        y_plot = y_noisy[sensor_indices, :] # Use selected sensors
+#     for j in range(i + 1, len(axes)):
+#         axes[j].axis("off")
 
-    n_plot_sensors = y_plot.shape[0]
+#     if save_dir and figure_name:
+#         output_dir = Path(save_dir)
+#         output_dir.mkdir(parents=True, exist_ok=True)
+#         save_path = output_dir / f"{figure_name}.png"
+#         plt.savefig(save_path, dpi=300)
+#         print(f"Subplots figure saved to {save_path}")
+#     plt.close(fig)
 
-    # Generate colors for the plots
-    colors = cm.plasma(np.linspace(0, 1, n_plot_sensors))
 
-    # Plot each sensor signal directly without vertical offset
-    # The y_plot[i, :] values are plotted directly without scaling or smoothing
-    for i in range(n_plot_sensors):
-        sensor_idx = sensor_indices[i]
-        # Plotting the original signal values without any offset
-        ax.plot(times, y_plot[i, :], linewidth=1.0, color=colors[i], alpha=0.7, label=f"Sensor {sensor_idx}" if n_plot_sensors <= 15 else None) # Add label only if few sensors
+# def plot_stacked_sensor_signals(y_noisy, times, sensor_indices=None, offset_scale=1.5, save_dir=None, figure_name=None, trial_idx=None):
+#     """ Plots specified sensor signals stacked vertically for a specific trial. """
+#     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+#     title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
+#     fig.suptitle(f"Stacked Sensor Signals{title_suffix}", fontsize=16)
 
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude (µV)") # Updated y-axis label
-    ax.grid(True, alpha=0.6) # Grid on both axes is fine for overlay
+#     if sensor_indices is None:
+#         sensor_indices = np.arange(y_noisy.shape[0])
 
-    # Optional: Add legend if number of sensors is small
-    if n_plot_sensors <= 15:
-         ax.legend(loc='best', fontsize='x-small')
+#     # Ensure y_noisy is 2D (single trial data)
+#     if y_noisy.ndim != 2:
+#          raise ValueError("Input y_noisy must be 2D (single trial data) for stacked plot")
 
-    ax.set_title(f"Overlay of {n_plot_sensors} Sensor Signals") # Updated title
+#     y_plot = y_noisy[sensor_indices, :]
+#     n_plot_sensors = y_plot.shape[0]
 
-    # Remove frame spines for cleaner look (optional)
-    # ax.spines['top'].set_visible(False)
-    # ax.spines['right'].set_visible(False)
+#     max_abs_val = np.max(np.abs(y_plot)) if n_plot_sensors > 0 else 1.0
+#     offset = max_abs_val * offset_scale
+#     yticks = []
+#     yticklabels = []
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Adjust layout
+#     for i in range(n_plot_sensors):
+#         sensor_idx = sensor_indices[i]
+#         vertical_position = i * offset
+#         ax.plot(times, y_plot[i, :] + vertical_position, linewidth=1.0, label=f"Sensor {sensor_idx}")
+#         yticks.append(vertical_position)
+#         yticklabels.append(f"S{sensor_idx}")
 
-    # Save the figure if a save path is provided
-    if save_dir and figure_name:
-        output_dir = Path(save_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        # Adjust figure name if desired, e.g., append "_overlay"
-        save_path = output_dir / f"{figure_name}_overlay.png"
-        plt.savefig(save_path, dpi=300)
-        print(f"Overlay sensor plot saved to {save_path}")
-    # plt.show()
-    plt.close(fig) # Close the specific figure
+#     ax.set_xlabel("Time (s)")
+#     ax.set_ylabel("Sensor Index / Offset")
+#     ax.grid(True, alpha=0.4, axis='x')
+#     ax.set_yticks(yticks)
+#     ax.set_yticklabels(yticklabels)
+#     ax.tick_params(axis='y', length=0)
+#     ax.invert_yaxis()
+#     ax.set_title(f"Stacked Signals for {n_plot_sensors} Sensors")
+#     ax.spines['top'].set_visible(False)
+#     ax.spines['right'].set_visible(False)
+#     ax.spines['left'].set_visible(False)
+#     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-# ... (rest of the script, including simulation parameters, loading, simulation) ...
+#     if save_dir and figure_name:
+#         output_dir = Path(save_dir)
+#         output_dir.mkdir(parents=True, exist_ok=True)
+#         save_path = output_dir / f"{figure_name}.png"
+#         plt.savefig(save_path, dpi=300)
+#         print(f"Stacked sensor plot saved to {save_path}")
+#     plt.close(fig)
+
+
+
+
 
 
 
@@ -366,135 +490,327 @@ def plot_stacked_sensor_signals(y_noisy, times, sensor_indices=None, offset_scal
 # --------------------------------------------------------------
 # --- Simulation Parameters ---
 leadfield_file_path = "results/forward/fsaverage-leadfield-fixed.npz"
-orientation_type = "fixed"
+orientation_type = "fixed" # "fixed" or "free"
 tmin = -0.5
 tmax = 0.5
 stim_onset = 0.0
 sfreq = 250
-freq_band = (1, 30)
-snr_db = 6
-amplitude = 5.0
-nnz = 5
+fmin = 1
+fmax = 5
+freq_band = (fmin, fmax)
+snr_db = 6 # SNR for noise addition
+amplitude = 5.0 # nAm
+nnz = 5 # Number of active sources per trial
 seed = 42
+n_trials = 10 # <<<--- Number of trials to simulate
+
+leadfield_matrix = load_and_validate_leadfield(leadfield_file_path, orientation_type)
 
 # --- Plotting Parameters ---
 figure_save_dir = Path("results/figures/data_sim") # Define base directory for figures
+os.makedirs(figure_save_dir / "ERP_channels" , exist_ok=True)
+os.makedirs(figure_save_dir / "PSD_epochs" , exist_ok=True)
 sensor_subplots_indices = [0, 10, 20] # Indices for the subplot sensor plot
 
-# --- Load Leadfield ---
-# ... (Keep the leadfield loading and inspection code as before) ...
-print("="*50)
-print(f"Loading leadfield from: {leadfield_file_path}")
-try:
-    with np.load(leadfield_file_path) as data:
-        leadfield_matrix = data["leadfield"]
-    print(f"Leadfield loaded successfully. Shape: {leadfield_matrix.shape}", "dtype:", leadfield_matrix.dtype)
+# --- Simulate Multiple Trials (Clean Data First) ---
+print(f"Simulating {n_trials} trials (clean data)...")
+y_clean_all_trials = [] # Store clean sensor data per trial
+x_all_trials = [] # Store source data per trial
+active_indices_all_trials = [] # Store active indices per trial
 
-    # --- Inspect Leadfield Matrix Values ---
-    min_lf = np.min(leadfield_matrix)
-    max_lf = np.max(leadfield_matrix)
-    mean_abs_lf = np.mean(np.abs(leadfield_matrix))
-    std_lf = np.std(leadfield_matrix)
+for i_trial in range(n_trials):
+    print(f"  Simulating clean trial {i_trial + 1}/{n_trials}")
+    trial_seed = seed + i_trial if seed is not None else None
 
-    # -- Check for extreme values
-    print(f"Leadfield matrix mean: {np.mean(leadfield_matrix):.1e}, std: {std_lf:.2e}")
-    print(f"Leadfield matrix min: {min_lf:.1e}, max: {max_lf:.1e}")
-    print(f"Leadfield matrix std: {std_lf:.1e}")
-    print(f"Leadfield matrix mean abs: {mean_abs_lf:.1e}")
+    # Call the function that simulates ONLY clean data
+    simulation_results = simulate_clean_signal_source_space(
+        leadfield=leadfield_matrix,
+        sfreq=sfreq,
+        tmin=tmin,
+        tmax=tmax,
+        stim_onset=stim_onset,
+        nnz=nnz,
+        orientation_type=orientation_type,
+        seed=trial_seed,
+        amplitude=amplitude,
+        freq_band=freq_band
+    )
 
-    # Check for NaNs or Infs
-    if np.isnan(leadfield_matrix).any() or np.isinf(leadfield_matrix).any():
-        print("WARNING: Leadfield matrix contains NaN or Inf values!")
-    # --- End Inspection ---
+    y_clean_all_trials.append(simulation_results["clean_sensor_data"])
+    x_all_trials.append(simulation_results["source_data"])
+    active_indices_all_trials.append(simulation_results["active_indices"])
+    time_vector = simulation_results["times"] # Get time vector (same for all trials)
 
-except FileNotFoundError:
-    print(f"Error: Leadfield file not found at {leadfield_file_path}")
-    exit()
-except Exception as e:
-    print(f"Error loading or inspecting leadfield file: {e}")
-    exit()
+print("Clean simulation complete.")
 
+# Convert lists to NumPy arrays
+y_clean_all_trials = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
+x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
+active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
+time_vector = np.array(time_vector) # Shape: (n_times,)
 
-# --- Simulate Data ---
-print("Simulating time series data...")
-simulation_results = simulate_timeseries_with_snr_source_space(
-    leadfield=leadfield_matrix,
-    snr_db=snr_db,
-    sfreq=sfreq,
-    tmin=tmin,
-    tmax=tmax,
-    stim_onset=stim_onset,
-    nnz=nnz,
-    orientation_type=orientation_type,
-    seed=seed,
-    amplitude=amplitude,
-    freq_band=freq_band
-)
-print("Data simulation complete.")
+# --- Add Noise Separately ---
+print(f"Adding noise (SNR={snr_db} dB) to clean trials...")
+y_all_trials = [] # To store noisy data
+noise_all_trials = [] # Optional: store noise itself
+noise_power_all_trials = [] # Optional: store noise power per trial
 
-# --- Extract Simulation Results (Data is already in µV) ---
-source_data_x = simulation_results["source_data"]
-active_source_indices = simulation_results["active_indices"]
-clean_sensor_data_y = simulation_results["clean_sensor_data"]
-noisy_sensor_data_y = simulation_results["sensor_data"]
-time_vector = simulation_results["times"]
+noise_rng = np.random.RandomState(seed + n_trials) # Use a separate seed/state for noise if desired
 
-# --- Check Sensor Data Range (in µV) ---
-min_signal_uV = np.min(noisy_sensor_data_y)
-max_signal_uV = np.max(noisy_sensor_data_y)
-mean_abs_signal_uV = np.mean(np.abs(noisy_sensor_data_y))
-print(f"Simulated Sensor Data Range (µV): Min={min_signal_uV:.2f}, Max={max_signal_uV:.2f}, Mean Abs={mean_abs_signal_uV:.2f}")
-# ... (Keep checks for plausible range) ...
+for i_trial in range(n_trials):
+    # Get the clean data for this trial
+    y_clean_trial = y_clean_all_trials[i_trial]
+
+    # Add noise using the dedicated function
+    # Use a trial-specific RNG state derived from noise_rng for reproducibility per trial
+    trial_noise_rng = np.random.RandomState(noise_rng.randint(0, 2**32 - 1))
+    y_noisy_trial, noise_trial, noise_power_trial = add_noise_snr(
+        y_clean_trial,
+        snr_db,
+        rng=trial_noise_rng
+    )
+
+    y_all_trials.append(y_noisy_trial)
+    noise_all_trials.append(noise_trial) # Optional
+    noise_power_all_trials.append(noise_power_trial) # Optional
+
+# Convert noisy data list to NumPy array
+y_all_trials = np.array(y_all_trials) # Shape: (n_trials, n_channels, n_times)
+print("Noise addition complete.")
 
 
-# # --- Plot Active Sources (Single Figure) ---
-# print("Plotting active source signals (single figure)...")
-# plot_all_active_sources_single_figure(
-#     x=source_data_x,
-#     times=time_vector,
-#     active_indices=active_source_indices,
-#     stim_onset=stim_onset,
-#     save_dir=figure_save_dir,
-#     figure_name="active_sources_single_figure"
-# )
 
-# --- Plot Specific Sensor Signals (Subplots) ---
-print("Plotting specific sensor signals (subplots)...")
+# # Convert lists to NumPy arrays
+# y_all_trials_clean = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
+# x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
+# active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
+# time_vector = np.array(time_vector) # Shape: (n_times,)
+
+
+# --- Plotting Examples ---
+
+# Plot data from the first trial
+first_trial_idx = 0
+print(f"\nPlotting results for trial {first_trial_idx + 1}...")
+
+# Now plot_sensor_signals uses the clean and noisy data generated separately
 plot_sensor_signals(
-    y_clean=clean_sensor_data_y,
-    y_noisy=noisy_sensor_data_y,
+    y_clean=y_clean_all_trials[first_trial_idx], # Use stored clean data
+    y_noisy=y_all_trials[first_trial_idx],       # Use stored noisy data
     sensor_indices=sensor_subplots_indices,
     times=time_vector,
     save_dir=figure_save_dir,
-    figure_name="specific_sensor_signals_subplots"
+    figure_name=f"specific_sensor_signals_subplots_trial{first_trial_idx+1}",
+    trial_idx=first_trial_idx
 )
 
-# --- Plot All Sensor Signals (Single Figure - Overlay) ---
-print("Plotting all sensor signals and average (single figure)...")
+plot_all_active_sources_single_figure(
+    x=x_all_trials[first_trial_idx],
+    times=time_vector,
+    active_indices=active_indices_all_trials[first_trial_idx],
+    stim_onset=stim_onset,
+    save_dir=figure_save_dir,
+    figure_name=f"active_sources_single_figure_trial{first_trial_idx+1}",
+    trial_idx=first_trial_idx
+)
+
+# Plot data from the first trial (y_all_trials[first_trial_idx] is 2D)
+# average_epochs=False tells the function to treat the 2D data as a single trial
 plot_all_sensor_signals_single_figure(
-    y_noisy=noisy_sensor_data_y,
+    y_data=y_all_trials[first_trial_idx], # Pass single trial noisy data (2D)
     times=time_vector,
-    # sensor_indices=None, # Optional: Plot all sensors by default
     save_dir=figure_save_dir,
-    figure_name="all_sensor_signals_single_figure"
+    figure_name=f"all_sensor_signals_single_figure_trial{first_trial_idx+1}",
+    trial_idx=first_trial_idx,
+    average_epochs=False
 )
 
-# --- Plot All Sensor Signals (Single Figure - Stacked is now Overlay) ---
-print("Plotting all sensor signals (overlay figure)...") # Updated print message
-plot_stacked_sensor_signals(
-    y_noisy=noisy_sensor_data_y, # Pass the raw noisy data
+# Plot average across trials (y_all_trials is 3D)
+# average_epochs=True tells the function to average the 3D data across trials
+plot_all_sensor_signals_single_figure(
+    y_data=y_all_trials, # Pass all trial noisy data (3D array)
     times=time_vector,
-    # sensor_indices=None, # Optional: Plot all sensors by default
     save_dir=figure_save_dir,
-    figure_name="all_sensor_signals" # Adjusted figure name base
+    figure_name="all_sensor_signals_average_trials",
+    average_epochs=True
 )
 
-n_channels = leadfield_matrix.shape[0]
-ch_names = [f"EEG{n:02}" for n in range(1, n_channels + 1)]
-info = mne.create_info(sfreq=sfreq, ch_types="eeg", ch_names=ch_names)
+ 
 
-raw = mne.io.RawArray(noisy_sensor_data_y, info)
-fig = raw.plot()
-plt.show()
 
-print("Script finished.")
+# plot_active_sources(
+#     x=x_all_trials[first_trial_idx],
+#     times=time_vector,
+#     active_indices=active_indices_all_trials[first_trial_idx],
+#     stim_onset=stim_onset,
+#     nnz=nnz, # Pass nnz used in simulation
+#     save_dir=figure_save_dir,
+#     figure_name=f"active_sources_subplots_trial{first_trial_idx+1}",
+#     trial_idx=first_trial_idx
+# )
+
+# plot_stacked_sensor_signals(
+#     y_noisy=y_all_trials[first_trial_idx], # Pass single trial data
+#     times=time_vector,
+#     save_dir=figure_save_dir,
+#     figure_name=f"all_sensor_signals_stacked_figure_trial{first_trial_idx+1}",
+#     trial_idx=first_trial_idx
+# )
+
+# --- Create MNE Epochs Object ---
+print("\nCreating MNE Epochs object...")
+
+n_times = len(time_vector)
+
+
+montage = mne.channels.make_standard_montage("easycap-M43")
+info = mne.create_info(ch_names=montage.ch_names, sfreq=sfreq, ch_types="eeg")
+info.set_montage(montage)
+
+# Structure: [sample_index_within_epoch, previous_event_id, event_id]
+# Since the stimulus onset is at the same time relative to the start (tmin)
+# for all simulated trials, the sample index within the epoch is the same.
+event_id = 1 # Define an event ID for the stimulus onset
+
+# Find the sample index corresponding to stim_onset within the time_vector
+stim_sample_in_epoch = np.argmin(np.abs(time_vector - stim_onset))
+events = np.zeros((n_trials, 3), int)
+
+for i_trial in range(n_trials):
+    events[i_trial, 0] = stim_sample_in_epoch + i_trial * n_times
+
+# Assign the event ID to the third column for all trials
+events[:, 2] = event_id
+print("Generated events array for EpochsArray:")
+print(events) # Print to confirm
+
+# Create EpochsArray object
+# Data units are µV. MNE plotting functions usually handle this, but be aware.
+epochs = mne.EpochsArray(y_all_trials,
+                         info,
+                         events=events,
+                         tmin=tmin,
+                         event_id={'stim': event_id})
+print("\nMNE Epochs object created:")
+
+
+
+# -------------------------------------
+# --- Plot using MNE Epochs methods ---
+print("\nPlotting using MNE Epochs methods...")
+fig_epochs = epochs.plot(show=True, picks=info.ch_names, n_epochs=n_trials, n_channels=5, events=True, scalings=dict(eeg=2e3), event_color="red")
+fig_epochs.suptitle("Epochs across subset of channels (with Events Onset marked)", fontsize=16)
+plt.tight_layout()
+fig_epochs.savefig(figure_save_dir / "mne_epochs_plot.png")
+plt.close(fig_epochs)
+
+
+# ------------------------------------
+
+
+
+
+# ------------------------------------
+# spatial_colors=True helps visualize different channels
+fig_erp = epochs.average().plot(spatial_colors=True, show=False)
+fig_erp.suptitle("Average ERP across trials", fontsize=16)
+fig_erp.savefig(figure_save_dir / "mne_average_erp_plot.png")
+plt.close(fig_erp) # Close the figure after saving
+
+
+
+# -------------------------------------
+if True:
+    # plot_image shows each trial as a row in an image map (Plot ER[P/F])
+    # Draw the ER[P/F] below the image or not.
+    figs_img = epochs.plot_image(show=False, combine=None, group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F]", evoked=True)
+
+
+    for i, fig in enumerate(figs_img):
+        fig.suptitle(f"Epochs Image Plot (channel {i+1})", fontsize=16)
+        if figure_save_dir:
+            image_save_path = figure_save_dir / "ERP_channels" / f"mne_epochs_image_plot_channel_{i+1}.png"
+            fig.savefig(image_save_path)
+
+
+figs_img = epochs.plot_image(show=False, combine="mean", group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F] - average across channels", evoked=True)
+
+figs_img[0].savefig(figure_save_dir / "mne_epochs_image_plot_mean.png")
+for fig in figs_img:
+        plt.close(fig)
+
+
+# -------
+# Plot sensor locations (based on montage)
+print("Plotting sensor locations...")
+fig_topo = epochs.plot_sensors(show_names=True, show=False, kind='topomap', ch_type='eeg')
+fig_topo.savefig(figure_save_dir / "mne_sensor_locations.png")
+plt.close(fig_topo)
+
+
+# -------------------------------
+
+
+
+for i in range(len(epochs)):
+    fig = epochs[i].compute_psd(fmax=30).plot(
+        average=False, # average across channels
+        picks=info.ch_names,
+        show=False,
+        spatial_colors=True, 
+    )
+    fig.suptitle(f"PSD per channels - Epoch {i+1}", fontsize=16)
+    fig.savefig(figure_save_dir / "PSD_epochs" / f"epoch{i}_psd_plot.png")
+    plt.close(fig)
+
+
+
+fig = epochs.compute_psd(fmax=30).plot(
+    average=False,
+    picks=info.ch_names,
+    show=False,
+    spatial_colors=True, 
+)
+fig.suptitle("PSD per channels - averaged across epochs", fontsize=16)
+fig.savefig(figure_save_dir / "mne_psd_avg_across_epochs.png")
+plt.close(fig)
+
+
+# -# -------------------------------------
+# compute and plot time freuquency representation (TFR)
+# TFR using Morlet wavelets
+freqs = np.arange(fmin, fmax, 1)  # Frequencies from 1 to 100 Hz
+n_cycles = freqs / 2.0  # Different number of cycles per frequency
+time_bandwidth = 2.0  # Time-bandwidth product for Morlet wavelets
+
+fig = epochs.compute_tfr(
+    method="multitaper",
+    freqs=freqs,
+    n_cycles=n_cycles,
+    time_bandwidth=time_bandwidth,
+    return_itc=False,
+    average=True,  # Average across epochs
+    decim=3,  # Decimate the data for faster computation
+    picks=info.ch_names[0],
+).plot(picks=[0], mode="mean", title="TFR - (Average across epochs, channel 1)", colorbar=True, show=False)
+
+fig[0].savefig(figure_save_dir / "tfr_average_across_epochs.png")
+plt.close(fig[0])
+
+
+
+fig0 = epochs[0].compute_tfr(
+    method="multitaper",
+    freqs=freqs,
+    n_cycles=n_cycles,
+    time_bandwidth=time_bandwidth,
+    return_itc=False,
+    average=False,  # Average across epochs
+    decim=3,  # Decimate the data for faster computation
+    picks=info.ch_names[0],
+).plot([0], baseline=(None, None), title="TFR - (epoch 1, channel 1)", colorbar=True, show=False)
+
+fig0[0].savefig(figure_save_dir / "tfr_epoch0.png")
+plt.close(fig0[0])
+
+print("\n1")

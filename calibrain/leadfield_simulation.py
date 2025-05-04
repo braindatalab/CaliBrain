@@ -404,7 +404,7 @@ class LeadfieldSimulator:
             raise ValueError("Forward solution (fwd) must be provided to compute leadfield matrix when not loading from file.")
 
         self.logger.info("Extracting leadfield matrix from the forward solution...")
-        leadfield = fwd["sol"]["data"]
+        leadfield = fwd["sol"]["data"] # (µV / nAm)
         orientation_type = None
 
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:

@@ -257,10 +257,10 @@ class DataSimulator:
         Parameters
         ----------
         L : np.ndarray
-            Leadfield matrix.
+            Leadfield matrix (µV / nAm).
             - 'fixed': Shape (n_sensors, n_sources).
             - 'free': Shape (n_sensors, n_sources, 3).
-        x : np.ndarray
+        x : np.ndarray (nAm)
             Source activity.
             - 'fixed': Shape (n_sources, n_times).
             - 'free': Shape (n_sources, 3, n_times).
@@ -268,13 +268,14 @@ class DataSimulator:
         Returns
         -------
         np.ndarray
-            Sensor measurements (y_clean). Shape: (n_sensors, n_times).
+            Sensor measurements (y_clean). Shape: (n_sensors, n_times). => (µV / nAm) * nAm = µV
 
         Raises
         ------
         ValueError
             If `self.orientation_type` is unsupported.
         """
+        # (µV / nAm) * nAm = µV
         if self.orientation_type == "fixed":
             # Matrix multiplication: (n_sensors, n_sources) @ (n_sources, n_times) -> (n_sensors, n_times)
             y = L @ x
