@@ -330,7 +330,7 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
     Returns:
     --------
     K : ndarray, the eLORETA kernel (inverse operator) used to compute source estimates.
-    N : ndarray, the posterior source covariance matrix.
+    Sigma : ndarray, the posterior source covariance matrix.
     """
     options = dict(eps=1e-6, max_iter=max_iter, force_equal=False)  # taken from mne
     eps, max_iter = options["eps"], options["max_iter"]
@@ -490,7 +490,7 @@ def eloreta(L, y, cov=1, alpha = 1/9, n_orient=1):
 
     # Compute the eLORETA kernel and the posterior source covariance using the helper.
     # alpha is lambda2
-    K, Sigma = compute_eloreta_kernel(L, lambda2= 1.0, n_orient=n_orient, whitener=whitener)
+    K, Sigma = compute_eloreta_kernel(L, lambda2= alpha, n_orient=n_orient, whitener=whitener)
     # Compute the mean source estimates.
     x = K @ y # get the source time courses with simple dot product
 
