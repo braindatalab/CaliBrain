@@ -5,6 +5,15 @@ Convert this to readme.rst format:
 
 <img src="/docs/source/_static/caliBrain.png" alt="CaliBrain Logo" width="25%">
 
+<!-- [![Latest Release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases/latest) -->
+<!-- [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/) -->
+<!-- [![Python Version](https://img.shields.io/pypi/pyversions/calibrain.svg)](https://pypi.org/project/calibrain/) -->
+
+[![commits](https://badgen.net/github/commits/braindatalab/CaliBrain/main)](https://github.com/braindatalab/CaliBrain/commits/main?icon=github&color=green)
+[![Documentation (latest)](https://readthedocs.org/projects/calibrain/badge/?version=latest)](https://calibrain.readthedocs.io/en/latest/?badge=latest)
+<!-- [![Documentation (stable)](https://readthedocs.org/projects/calibrain/badge/?version=stable)](https://calibrain.readthedocs.io/en/stable/?badge=stable) -->
+
+
 ---
 
 ## Overview
