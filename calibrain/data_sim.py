@@ -9,15 +9,211 @@ import mne
 
 
 # Generate a smoothed ERP-like signal using bandpass-filtered noise and a Hanning window
-def generate_erp_signal(n_times, sfreq, freq_band, amplitude, seed):
-    rng = np.random.RandomState(seed)
-    white_noise = rng.randn(n_times)
-    b, a = butter(4, [f / (sfreq / 2) for f in freq_band], btype='band')
-    erp = filtfilt(b, a, white_noise)
-    erp *= np.hanning(n_times)
-    erp /= np.std(erp)
-    erp *= amplitude
-    return erp
+def generate_erp_signal(n_times, sfreq, freq_band, amplitude, seed, onset_sample=0,
+                        randomize_erp_timing_within_post_stim=True,
+                        min_erp_duration_samples=None):
+    """
+    Generates an ERP-like signal, with activity starting at or after onset_sample.
+
+    The actual ERP waveform (noise, filter, Hanning window) is applied to a
+    segment of the signal. The signal before `onset_sample` will be zero.
+    The Hanning window provides a smooth onset and offset for the activity.
+
+    If `randomize_erp_timing_within_post_stim` is True, the exact start time
+    (offset from `onset_sample`) and duration of the ERP waveform within the
+    post-`onset_sample` window are randomized. The ERP will still be contained
+    entirely within the `onset_sample` to `n_times` interval.
+
+    If `randomize_erp_timing_within_post_stim` is False, the ERP waveform
+    spans the entire duration from `onset_sample` to `n_times`.
+
+    Parameters:
+    - n_times (int): Total number of time points for the output signal.
+    - sfreq (float): Sampling frequency.
+    - freq_band (tuple): Frequency band for the bandpass filter (e.g., (1, 30)).
+    - amplitude (float): Amplitude of the ERP.
+    - seed (int or np.random.RandomState): Random seed or generator.
+    - onset_sample (int, optional): The sample index within n_times at or after which
+                                    ERP activity should occur. Defaults to 0.
+    - randomize_erp_timing_within_post_stim (bool, optional): If True, randomizes
+                                    the ERP's exact start and duration within the
+                                    post-onset_sample window. Defaults to True.
+    - min_erp_duration_samples (int, optional): Minimum number of samples for the
+                                    ERP activity segment. If None, uses an internal
+                                    default. This is used as the lower bound for
+                                    randomized duration.
+
+    Returns:
+    - np.ndarray: The generated ERP signal of length n_times.
+    """
+    _DEFAULT_MIN_ERP_LEN = 82  # For filter stability (filtfilt butter order 4) & meaningful Hanning window
+
+    if not isinstance(seed, np.random.RandomState):
+        rng = np.random.RandomState(seed)
+    else:
+        rng = seed
+    
+    output_signal = np.zeros(n_times)
+    
+    current_min_erp_len = min_erp_duration_samples if min_erp_duration_samples is not None else _DEFAULT_MIN_ERP_LEN
+
+    # Maximum available duration for ERP activity after onset_sample
+    max_available_post_stim_duration = n_times - onset_sample
+
+    if max_available_post_stim_duration < current_min_erp_len:
+        # Not enough samples in the post-stimulus window for a meaningful ERP
+        return output_signal
+
+    actual_placement_start_sample: int
+    n_times_for_erp_activity: int
+
+    if randomize_erp_timing_within_post_stim:
+        # Randomize ERP duration: from current_min_erp_len up to max_available_post_stim_duration (inclusive)
+        actual_erp_duration = rng.randint(current_min_erp_len, max_available_post_stim_duration + 1)
+        
+        # Randomize ERP start offset within the available post-stimulus window
+        # Max possible start offset (from onset_sample) for the chosen actual_erp_duration
+        max_start_offset_from_onset = max_available_post_stim_duration - actual_erp_duration
+        start_offset_from_onset = rng.randint(0, max_start_offset_from_onset + 1)
+            
+        actual_placement_start_sample = onset_sample + start_offset_from_onset
+        n_times_for_erp_activity = actual_erp_duration
+    else:
+        # ERP spans the entire available post-stimulus duration
+        n_times_for_erp_activity = max_available_post_stim_duration
+        actual_placement_start_sample = onset_sample
+
+    # Safeguard, though preceding logic should ensure this
+    if n_times_for_erp_activity < current_min_erp_len:
+        return output_signal
+
+    # Generate noise only for the determined duration of the ERP activity
+    white_noise_for_erp = rng.randn(n_times_for_erp_activity)
+    
+    # Design a Butterworth bandpass filter
+    lowcut, highcut = freq_band
+    low = lowcut / (sfreq / 2)
+    high = highcut / (sfreq / 2)
+    
+    epsilon = 1e-9
+    low = max(epsilon, low)
+    high = min(1.0 - epsilon, high)
+    if low >= high:
+        return output_signal # Invalid frequency band
+
+    try:
+        b, a = butter(4, [low, high], btype='band')
+    except ValueError as e:
+        return output_signal # Filter design failed
+
+    # Filter the noise segment
+    erp_segment = filtfilt(b, a, white_noise_for_erp)
+    
+    # Apply Hanning window over the ERP segment
+    erp_segment *= np.hanning(n_times_for_erp_activity) 
+    
+    std_erp_segment = np.std(erp_segment)
+    if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
+        return output_signal # Avoid division by zero; segment is flat
+        
+    erp_segment /= std_erp_segment # Normalize
+    erp_segment *= amplitude      # Scale
+    
+    # Place the generated ERP segment into the output signal at the determined start
+    end_sample_for_erp_segment = actual_placement_start_sample + len(erp_segment)
+    
+    # Ensure placement is within bounds (should be guaranteed by earlier logic)
+    if actual_placement_start_sample < n_times and end_sample_for_erp_segment <= n_times:
+        output_signal[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment
+    
+    return output_signal
+
+
+def simulate_clean_signal_source_space( # Renamed function
+    leadfield,
+    sfreq=100,
+    tmin=-0.5,
+    tmax=0.5,
+    stim_onset=0.0,
+    nnz=5,
+    orientation_type="fixed",
+    seed=None,
+    amplitude=5.0,
+    freq_band=(1, 30)
+):
+    """ Simulates only the clean source and sensor signals. """
+    if not isinstance(seed, np.random.RandomState):
+        rng = np.random.RandomState(seed)
+    else:
+        rng = seed
+        
+    n_sensors = leadfield.shape[0]
+    times = np.arange(tmin, tmax, 1.0 / sfreq)
+    n_times = len(times)
+
+    # Determine the sample index for stimulus onset
+    stim_indices = np.where(times >= stim_onset)[0]
+    if len(stim_indices) == 0:
+        # Stimulus onset is at or after tmax, effectively no ERP in this epoch
+        stim_idx_for_erp_onset = n_times 
+    else:
+        stim_idx_for_erp_onset = stim_indices[0]
+
+    if orientation_type == "fixed":
+        n_sources = leadfield.shape[1]
+        active_indices = rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_times))
+        for i, src_idx in enumerate(active_indices):
+            # Generate ERP signal with specified onset
+            # The seed for generate_erp_signal should be handled carefully if rng is passed
+            source_rng_seed = rng.randint(0, 2**32 -1) # Derive a new seed for this source
+            erp_waveform = generate_erp_signal(
+                n_times, 
+                sfreq, 
+                freq_band, 
+                amplitude=amplitude, 
+                seed=source_rng_seed, # Pass a derived seed
+                onset_sample=stim_idx_for_erp_onset
+            )
+            x[src_idx, :] = erp_waveform # Assign the full waveform (includes leading zeros)
+        y_clean = leadfield @ x
+    elif orientation_type == "free":
+        n_sources, n_orient = leadfield.shape[1:3]
+        assert n_orient == 3, "Expected 3 orientations for free orientation"
+        active_indices = rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_orient, n_times))
+        for i, src_idx in enumerate(active_indices):
+            source_rng_seed = rng.randint(0, 2**32 -1)
+            erp_waveform = generate_erp_signal(
+                n_times, 
+                sfreq, 
+                freq_band, 
+                amplitude=amplitude, 
+                seed=source_rng_seed,
+                onset_sample=stim_idx_for_erp_onset
+            )
+            orient_coeffs = rng.randn(3)
+            norm_orient = np.linalg.norm(orient_coeffs)
+            if norm_orient < 1e-9: # Avoid division by zero
+                orient_coeffs = np.array([1.0, 0.0, 0.0]) # Default orientation
+            else:
+                orient_coeffs /= norm_orient
+            
+            for j_orient in range(3):
+                x[src_idx, j_orient, :] = orient_coeffs[j_orient] * erp_waveform
+        y_clean = np.einsum("nmr,mrt->nt", leadfield, x)
+    else:
+        raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
+
+    # Return CLEAN components only
+    return {
+        "clean_sensor_data": y_clean,        # Clean sensor signal
+        "source_data": x,                    # Source signal in the brain
+        "times": times,                      # Time vector
+        "leadfield": leadfield,              # Leadfield used
+        "active_indices": active_indices,    # Indices of active sources
+    }
+
 
 # Function to add noise based on SNR
 def add_noise_snr(y_clean, snr_db, rng=None):
@@ -53,63 +249,6 @@ def add_noise_snr(y_clean, snr_db, rng=None):
     y_noisy = y_clean + noise
     return y_noisy, noise, noise_power
 
-
-# Simulate source-space signal and propagate to sensor space (CLEAN SIGNAL ONLY)
-def simulate_clean_signal_source_space( # Renamed function
-    leadfield,
-    sfreq=100,
-    tmin=-0.5,
-    tmax=0.5,
-    stim_onset=0.0,
-    nnz=5,
-    orientation_type="fixed",
-    seed=None,
-    amplitude=5.0,
-    freq_band=(1, 30)
-):
-    """ Simulates only the clean source and sensor signals. """
-    rng = np.random.RandomState(seed)
-    n_sensors = leadfield.shape[0]
-    times = np.arange(tmin, tmax, 1.0 / sfreq)
-    n_times = len(times)
-
-    if orientation_type == "fixed":
-        n_sources = leadfield.shape[1]
-        active_indices = rng.choice(n_sources, size=nnz, replace=False)
-        x = np.zeros((n_sources, n_times))
-        for i, src_idx in enumerate(active_indices):
-            erp_signal = generate_erp_signal(
-                n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
-            )
-            stim_idx = np.where(times >= stim_onset)[0][0]
-            x[src_idx, stim_idx:] = erp_signal[stim_idx:]
-        y_clean = leadfield @ x
-    elif orientation_type == "free":
-        n_sources, n_orient = leadfield.shape[1:3]
-        assert n_orient == 3, "Expected 3 orientations for free orientation"
-        active_indices = rng.choice(n_sources, size=nnz, replace=False)
-        x = np.zeros((n_sources, n_orient, n_times))
-        for i, src_idx in enumerate(active_indices):
-            erp_signal = generate_erp_signal(
-                n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
-            )
-            stim_idx = np.where(times >= stim_onset)[0][0]
-            orient = rng.randn(3)
-            orient /= np.linalg.norm(orient)
-            for j in range(3):
-                x[src_idx, j, stim_idx:] = orient[j] * erp_signal[stim_idx:]
-        y_clean = np.einsum("nmr,mrt->nt", leadfield, x)
-    else:
-        raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
-
-    # Return CLEAN components only
-    return {
-        "clean_sensor_data": y_clean,        # Clean sensor signal
-        "source_data": x,                    # Source signal in the brain
-        "times": times,                      # Time vector
-        "leadfield": leadfield,              # Leadfield used
-        "active_indices": active_indices,    # Indices of active sources
-    }
 
 def inspect_matrix_values(matrix, matrix_name="Matrix"):
     """
