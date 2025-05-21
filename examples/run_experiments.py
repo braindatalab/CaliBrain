@@ -23,10 +23,9 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "n_times": [10],
-        "nnz": [8],
+        "nnz": [4],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr": [0.9],
+        "alpha_snr_db": [0.3],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
@@ -41,10 +40,16 @@ def main():
     metrics = [None]
     nruns = 1
     data_simulator = DataSimulator(
-        leadfield_mode='load', # simulate, random, load. if sumulate then align the config file of the leadfield simulation!
+        tmin=-0.5,
+        tmax=0.5,
+        stim_onset=0.0,
+        sfreq=250,
+        fmin=1,
+        fmax=5,
+        amplitude=5,
+        n_trials=3,
+        leadfield_mode='load', # simulate, random, load. Important: if `simulate` then align the config file of the leadfield simulation!
         leadfield_path=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
-        # n_sensors=None,
-        # n_sources=None,
         leadfield_config_path='configs/leadfield_sim_cfg.yml',
     )
     
