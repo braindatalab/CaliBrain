@@ -444,8 +444,8 @@ class DataSimulator:
 
     def _add_noise(self, y_clean, rng=None):
         """
-        Adds Gaussian noise to a clean signal based on a desired SNR level.
-
+        Adds Homoscedastic  (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
+        
         Parameters:
         - y_clean (np.ndarray): The clean signal array (e.g., channels x times).
         - alpha_snr_db (float): The desired signal-to-noise ratio in decibels (dB).
@@ -468,9 +468,12 @@ class DataSimulator:
             noise = np.zeros_like(y_clean)
         else:
             snr_linear = 10 ** (self.alpha_snr_db / 10.0)
-            noise_power = signal_power / snr_linear
+            # Homoscedastic case: The standard deviation and thus the variance (noise_power) is the same for all sensors and all time points.
+            noise_power = signal_power / snr_linear # Variance of the noise
             noise_std = np.sqrt(noise_power)
-            noise = rng.normal(0, noise_std, size=y_clean.shape)
+            
+            # Draw noise from Gaussian distribution (independenet noise at each sensor and at each time point). -> The noise covariance matrix is diagonal. 
+            noise = rng.normal(0, noise_std, size=y_clean.shape) # White noise (uncorrelated across sensors and time) with a uniform power across sensors. shape: n_sensors x n_times. 
 
         y_noisy = y_clean + noise
         return y_noisy, noise, noise_power
