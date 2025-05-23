@@ -6,21 +6,267 @@ import matplotlib.cm as cm # Import colormap functionality
 from matplotlib.lines import Line2D # Import for custom legend
 import os
 import mne
-
+import logging
+logger = logging.getLogger(__name__)
 
 # Generate a smoothed ERP-like signal using bandpass-filtered noise and a Hanning window
-def generate_erp_signal(n_times, sfreq, freq_band, amplitude, seed):
-    rng = np.random.RandomState(seed)
-    white_noise = rng.randn(n_times)
-    b, a = butter(4, [f / (sfreq / 2) for f in freq_band], btype='band')
-    erp = filtfilt(b, a, white_noise)
-    erp *= np.hanning(n_times)
-    erp /= np.std(erp)
-    erp *= amplitude
-    return erp
+def _generate_erp_signal(n_times, sfreq, freq_band, amplitude, seed, onset_sample=0,
+                        randomize_erp_timing_within_post_stim=True,
+                        min_erp_duration_samples=None):
+    """
+    Generates an ERP-like signal, with activity starting at or after onset_sample.
+
+    The actual ERP waveform (noise, filter, Hanning window) is applied to a
+    segment of the signal. The signal before `onset_sample` will be zero.
+    The Hanning window provides a smooth onset and offset for the activity.
+
+    If `randomize_erp_timing_within_post_stim` is True, the exact start time
+    (offset from `onset_sample`) and duration of the ERP waveform within the
+    post-`onset_sample` window are randomized. The ERP will still be contained
+    entirely within the `onset_sample` to `n_times` interval.
+
+    If `randomize_erp_timing_within_post_stim` is False, the ERP waveform
+    spans the entire duration from `onset_sample` to `n_times`.
+
+    Parameters:
+    - n_times (int): Total number of time points for the output signal.
+    - sfreq (float): Sampling frequency.
+    - freq_band (tuple): Frequency band for the bandpass filter (e.g., (1, 30)).
+    - amplitude (float): Amplitude of the ERP.
+    - seed (int or np.random.RandomState): Random seed or generator.
+    - onset_sample (int, optional): The sample index within n_times at or after which
+                                    ERP activity should occur. Defaults to 0.
+    - randomize_erp_timing_within_post_stim (bool, optional): If True, randomizes
+                                    the ERP's exact start and duration within the
+                                    post-onset_sample window. Defaults to True.
+    - min_erp_duration_samples (int, optional): Minimum number of samples for the
+                                    ERP activity segment. If None, uses an internal
+                                    default. This is used as the lower bound for
+                                    randomized duration.
+
+    Returns:
+    - np.ndarray: The generated ERP signal of length n_times.
+    """
+    _DEFAULT_MIN_ERP_LEN = 82  # For filter stability (filtfilt butter order 4) & meaningful Hanning window
+
+    if not isinstance(seed, np.random.RandomState):
+        rng = np.random.RandomState(seed)
+    else:
+        rng = seed
+    
+    output_signal = np.zeros(n_times)
+    
+    current_min_erp_len = min_erp_duration_samples if min_erp_duration_samples is not None else _DEFAULT_MIN_ERP_LEN
+
+    # Maximum available duration for ERP activity after onset_sample
+    max_available_post_stim_duration = n_times - onset_sample
+
+    if max_available_post_stim_duration < current_min_erp_len:
+        # Not enough samples in the post-stimulus window for a meaningful ERP
+        return output_signal
+
+    actual_placement_start_sample: int
+    n_times_for_erp_activity: int
+
+    if randomize_erp_timing_within_post_stim:
+        # Randomize ERP duration: from current_min_erp_len up to max_available_post_stim_duration (inclusive)
+        actual_erp_duration = rng.randint(current_min_erp_len, max_available_post_stim_duration + 1)
+        
+        # Randomize ERP start offset within the available post-stimulus window
+        # Max possible start offset (from onset_sample) for the chosen actual_erp_duration
+        max_start_offset_from_onset = max_available_post_stim_duration - actual_erp_duration
+        start_offset_from_onset = rng.randint(0, max_start_offset_from_onset + 1)
+            
+        actual_placement_start_sample = onset_sample + start_offset_from_onset
+        n_times_for_erp_activity = actual_erp_duration
+    else:
+        # ERP spans the entire available post-stimulus duration
+        n_times_for_erp_activity = max_available_post_stim_duration
+        actual_placement_start_sample = onset_sample
+
+    # Safeguard, though preceding logic should ensure this
+    if n_times_for_erp_activity < current_min_erp_len:
+        return output_signal
+
+    # Generate noise only for the determined duration of the ERP activity
+    white_noise_for_erp = rng.randn(n_times_for_erp_activity)
+    
+    # Design a Butterworth bandpass filter
+    lowcut, highcut = freq_band
+    low = lowcut / (sfreq / 2)
+    high = highcut / (sfreq / 2)
+    
+    epsilon = 1e-9
+    low = max(epsilon, low)
+    high = min(1.0 - epsilon, high)
+    if low >= high:
+        return output_signal # Invalid frequency band
+
+    try:
+        b, a = butter(4, [low, high], btype='band')
+    except ValueError as e:
+        return output_signal # Filter design failed
+
+    # Filter the noise segment
+    erp_segment = filtfilt(b, a, white_noise_for_erp)
+    
+    # Apply Hanning window over the ERP segment
+    erp_segment *= np.hanning(n_times_for_erp_activity) 
+    
+    std_erp_segment = np.std(erp_segment)
+    if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
+        return output_signal # Avoid division by zero; segment is flat
+        
+    erp_segment /= std_erp_segment # Normalize
+    erp_segment *= amplitude      # Scale
+    
+    # Place the generated ERP segment into the output signal at the determined start
+    end_sample_for_erp_segment = actual_placement_start_sample + len(erp_segment)
+    
+    # Ensure placement is within bounds (should be guaranteed by earlier logic)
+    if actual_placement_start_sample < n_times and end_sample_for_erp_segment <= n_times:
+        output_signal[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment
+    
+    return output_signal
+
+# Function to project source activity to sensor space
+def project_sources_to_sensors(
+    source_activity: np.ndarray,
+    leadfield: np.ndarray,
+    orientation_type: str
+) -> np.ndarray:
+    """
+    Projects source activity to sensor space using the leadfield matrix.
+
+    Parameters:
+    - source_activity (np.ndarray): The source activity.
+        Shape (n_sources, n_times) for 'fixed' orientation.
+        Shape (n_sources, 3, n_times) for 'free' orientation.
+    - leadfield (np.ndarray): The leadfield matrix.
+        Shape (n_sensors, n_sources) for 'fixed' orientation.
+        Shape (n_sensors, n_sources, 3) for 'free' orientation.
+        If 'free' and leadfield is 2D (n_sensors, n_sources*3), it will be reshaped.
+    - orientation_type (str): 'fixed' or 'free'.
+
+    Returns:
+    - np.ndarray: The clean sensor data (n_sensors, n_times).
+    """
+    n_sensors = leadfield.shape[0]
+
+    if orientation_type == "fixed":
+        if source_activity.ndim != 2 or leadfield.ndim != 2:
+            raise ValueError("For fixed orientation, source_activity must be 2D and leadfield must be 2D.")
+        if leadfield.shape[1] != source_activity.shape[0]:
+            raise ValueError(
+                f"Leadfield n_sources ({leadfield.shape[1]}) mismatch with source_activity n_sources ({source_activity.shape[0]}) for fixed orientation."
+            )
+        y_clean = leadfield @ source_activity
+    elif orientation_type == "free":
+        if source_activity.ndim != 3 or source_activity.shape[1] != 3:
+            raise ValueError("For free orientation, source_activity must be 3D with 3 orientations (n_sources, 3, n_times).")
+
+        L_reshaped = leadfield
+        if leadfield.ndim == 2:  # Potentially (n_sensors, n_sources*3)
+            if leadfield.shape[1] % 3 != 0:
+                raise ValueError("Leadfield for 'free' orientation (if 2D) must have n_sources*3 columns.")
+            n_sources_calc = leadfield.shape[1] // 3
+            if n_sources_calc != source_activity.shape[0]:
+                raise ValueError(
+                    f"Leadfield n_sources ({n_sources_calc}) mismatch with source_activity n_sources ({source_activity.shape[0]}) for free orientation after reshape."
+                )
+            L_reshaped = leadfield.reshape(n_sensors, n_sources_calc, 3)
+        elif leadfield.ndim == 3:
+            if leadfield.shape[2] != 3:
+                raise ValueError("Leadfield for 'free' orientation (if 3D) must have 3 components in the last dimension.")
+            if leadfield.shape[1] != source_activity.shape[0]:
+                raise ValueError(
+                    f"Leadfield n_sources ({leadfield.shape[1]}) mismatch with source_activity n_sources ({source_activity.shape[0]}) for free orientation."
+                )
+        else:
+            raise ValueError("Leadfield for 'free' orientation must be 2D or 3D.")
+
+        # Project to sensor space: (n_sensors, n_sources, 3) @ (n_sources, 3, n_times) -> (n_sensors, n_times)
+        y_clean = np.einsum("nsr,srt->nt", L_reshaped, source_activity)
+    else:
+        raise ValueError(f"Invalid orientation_type: {orientation_type}. Choose 'fixed' or 'free'.")
+    return y_clean
+
+
+def _generate_source_time_courses( 
+    leadfield,
+    sfreq=100,
+    tmin=-0.5,
+    tmax=0.5,
+    stim_onset=0.0,
+    nnz=5,
+    orientation_type="fixed",
+    seed=None,
+    amplitude=5.0,
+    freq_band=(1, 30),
+    randomize_erp_timing_within_post_stim=True, # Added for consistency
+    min_erp_duration_samples=None # Added for consistency
+):
+    """ Generates true source activity time courses. """
+    if not isinstance(seed, np.random.RandomState):
+        rng = np.random.RandomState(seed)
+    else:
+        rng = seed
+        
+    times = np.arange(tmin, tmax, 1.0 / sfreq)
+    n_times = len(times)
+
+    stim_indices = np.where(times >= stim_onset)[0]
+    stim_idx_for_erp_onset = n_times if not stim_indices.size else stim_indices[0]
+
+    x: np.ndarray 
+    active_indices: np.ndarray
+
+    if orientation_type == "fixed":
+        n_sources = leadfield.shape[1]
+        active_indices = rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_times))
+        for i, src_idx in enumerate(active_indices):
+            source_rng_seed = rng.randint(0, 2**32 -1) 
+            erp_waveform = _generate_erp_signal(
+                n_times, sfreq, freq_band, amplitude,
+                seed=source_rng_seed, 
+                onset_sample=stim_idx_for_erp_onset,
+                randomize_erp_timing_within_post_stim=randomize_erp_timing_within_post_stim,
+                min_erp_duration_samples=min_erp_duration_samples
+            )
+            x[src_idx, :] = erp_waveform
+    elif orientation_type == "free":
+        if leadfield.ndim == 3:
+            n_sources = leadfield.shape[1]
+        elif leadfield.ndim == 2 and leadfield.shape[1] % 3 == 0:
+            n_sources = leadfield.shape[1] // 3
+        else:
+            raise ValueError(f"Cannot determine n_sources for free orientation from leadfield shape {leadfield.shape}")
+        
+        active_indices = rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, 3, n_times))
+        for i, src_idx in enumerate(active_indices):
+            source_rng_seed = rng.randint(0, 2**32 -1)
+            erp_waveform = _generate_erp_signal(
+                n_times, sfreq, freq_band, amplitude,
+                seed=source_rng_seed,
+                onset_sample=stim_idx_for_erp_onset,
+                randomize_erp_timing_within_post_stim=randomize_erp_timing_within_post_stim,
+                min_erp_duration_samples=min_erp_duration_samples
+            )
+            orient_coeffs = rng.randn(3)
+            norm_orient = np.linalg.norm(orient_coeffs)
+            orient_coeffs = np.array([1.0, 0.0, 0.0]) if norm_orient < 1e-9 else orient_coeffs / norm_orient
+            for j_orient in range(3):
+                x[src_idx, j_orient, :] = orient_coeffs[j_orient] * erp_waveform
+    else:
+        raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
+
+    return x, active_indices, times
+
 
 # Function to add noise based on SNR
-def add_noise_snr(y_clean, snr_db, rng=None):
+def _add_noise(y_clean, snr_db, rng=None):
     """
     Adds Gaussian noise to a clean signal based on a desired SNR level.
 
@@ -53,63 +299,6 @@ def add_noise_snr(y_clean, snr_db, rng=None):
     y_noisy = y_clean + noise
     return y_noisy, noise, noise_power
 
-
-# Simulate source-space signal and propagate to sensor space (CLEAN SIGNAL ONLY)
-def simulate_clean_signal_source_space( # Renamed function
-    leadfield,
-    sfreq=100,
-    tmin=-0.5,
-    tmax=0.5,
-    stim_onset=0.0,
-    nnz=5,
-    orientation_type="fixed",
-    seed=None,
-    amplitude=5.0,
-    freq_band=(1, 30)
-):
-    """ Simulates only the clean source and sensor signals. """
-    rng = np.random.RandomState(seed)
-    n_sensors = leadfield.shape[0]
-    times = np.arange(tmin, tmax, 1.0 / sfreq)
-    n_times = len(times)
-
-    if orientation_type == "fixed":
-        n_sources = leadfield.shape[1]
-        active_indices = rng.choice(n_sources, size=nnz, replace=False)
-        x = np.zeros((n_sources, n_times))
-        for i, src_idx in enumerate(active_indices):
-            erp_signal = generate_erp_signal(
-                n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
-            )
-            stim_idx = np.where(times >= stim_onset)[0][0]
-            x[src_idx, stim_idx:] = erp_signal[stim_idx:]
-        y_clean = leadfield @ x
-    elif orientation_type == "free":
-        n_sources, n_orient = leadfield.shape[1:3]
-        assert n_orient == 3, "Expected 3 orientations for free orientation"
-        active_indices = rng.choice(n_sources, size=nnz, replace=False)
-        x = np.zeros((n_sources, n_orient, n_times))
-        for i, src_idx in enumerate(active_indices):
-            erp_signal = generate_erp_signal(
-                n_times, sfreq, freq_band, amplitude=amplitude, seed=seed + i if seed else None
-            )
-            stim_idx = np.where(times >= stim_onset)[0][0]
-            orient = rng.randn(3)
-            orient /= np.linalg.norm(orient)
-            for j in range(3):
-                x[src_idx, j, stim_idx:] = orient[j] * erp_signal[stim_idx:]
-        y_clean = np.einsum("nmr,mrt->nt", leadfield, x)
-    else:
-        raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
-
-    # Return CLEAN components only
-    return {
-        "clean_sensor_data": y_clean,        # Clean sensor signal
-        "source_data": x,                    # Source signal in the brain
-        "times": times,                      # Time vector
-        "leadfield": leadfield,              # Leadfield used
-        "active_indices": active_indices,    # Indices of active sources
-    }
 
 def inspect_matrix_values(matrix, matrix_name="Matrix"):
     """
@@ -392,425 +581,382 @@ def plot_all_sensor_signals_single_figure(y_data, times, sensor_indices=None, sa
         plt.savefig(save_path, dpi=300)
     plt.close(fig)
 
-
-# def plot_active_sources(x, times, active_indices, stim_onset, nnz, save_dir=None, figure_name=None, trial_idx=None):
-#     """ Plot active sources for a specific trial. """
-#     n_cols = 3
-#     n_rows = int(np.ceil(nnz / n_cols))
-#     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), constrained_layout=True, sharex=True, sharey=True)
-#     title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
-#     fig.suptitle(f"Active Source Signals{title_suffix}", fontsize=16)
-#     axes = axes.flatten()
-
-#     # Handle potential free orientation source data shape (n_sources, n_orient, n_times)
-#     # Plot the norm or the first component for simplicity
-#     if x.ndim == 3:
-#         x_plot = np.linalg.norm(x, axis=1) # Plot magnitude for free orientation
-#         # Or plot first component: x_plot = x[:, 0, :]
-#     else:
-#         x_plot = x
-
-#     for i, src_idx in enumerate(active_indices):
-#         axes[i].plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=2)
-#         axes[i].axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
-#         axes[i].set_xlabel("Time (s)")
-#         axes[i].set_ylabel("Amplitude (nAm)")
-#         axes[i].set_title(f"Active Source {src_idx}")
-#         axes[i].legend()
-#         axes[i].grid(True)
-
-#     for j in range(i + 1, len(axes)):
-#         axes[j].axis("off")
-
-#     if save_dir and figure_name:
-#         output_dir = Path(save_dir)
-#         output_dir.mkdir(parents=True, exist_ok=True)
-#         save_path = output_dir / f"{figure_name}.png"
-#         plt.savefig(save_path, dpi=300)
-#         print(f"Subplots figure saved to {save_path}")
-#     plt.close(fig)
-
-
-# def plot_stacked_sensor_signals(y_noisy, times, sensor_indices=None, offset_scale=1.5, save_dir=None, figure_name=None, trial_idx=None):
-#     """ Plots specified sensor signals stacked vertically for a specific trial. """
-#     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-#     title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
-#     fig.suptitle(f"Stacked Sensor Signals{title_suffix}", fontsize=16)
-
-#     if sensor_indices is None:
-#         sensor_indices = np.arange(y_noisy.shape[0])
-
-#     # Ensure y_noisy is 2D (single trial data)
-#     if y_noisy.ndim != 2:
-#          raise ValueError("Input y_noisy must be 2D (single trial data) for stacked plot")
-
-#     y_plot = y_noisy[sensor_indices, :]
-#     n_plot_sensors = y_plot.shape[0]
-
-#     max_abs_val = np.max(np.abs(y_plot)) if n_plot_sensors > 0 else 1.0
-#     offset = max_abs_val * offset_scale
-#     yticks = []
-#     yticklabels = []
-
-#     for i in range(n_plot_sensors):
-#         sensor_idx = sensor_indices[i]
-#         vertical_position = i * offset
-#         ax.plot(times, y_plot[i, :] + vertical_position, linewidth=1.0, label=f"Sensor {sensor_idx}")
-#         yticks.append(vertical_position)
-#         yticklabels.append(f"S{sensor_idx}")
-
-#     ax.set_xlabel("Time (s)")
-#     ax.set_ylabel("Sensor Index / Offset")
-#     ax.grid(True, alpha=0.4, axis='x')
-#     ax.set_yticks(yticks)
-#     ax.set_yticklabels(yticklabels)
-#     ax.tick_params(axis='y', length=0)
-#     ax.invert_yaxis()
-#     ax.set_title(f"Stacked Signals for {n_plot_sensors} Sensors")
-#     ax.spines['top'].set_visible(False)
-#     ax.spines['right'].set_visible(False)
-#     ax.spines['left'].set_visible(False)
-#     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-#     if save_dir and figure_name:
-#         output_dir = Path(save_dir)
-#         output_dir.mkdir(parents=True, exist_ok=True)
-#         save_path = output_dir / f"{figure_name}.png"
-#         plt.savefig(save_path, dpi=300)
-#         print(f"Stacked sensor plot saved to {save_path}")
-#     plt.close(fig)
-
-
-
-
-
-
-
-
-# --------------------------------------------------------------
-# --- Simulation Parameters ---
-leadfield_file_path = "results/forward/fsaverage-leadfield-fixed.npz"
-orientation_type = "fixed" # "fixed" or "free"
-tmin = -0.5
-tmax = 0.5
-stim_onset = 0.0
-sfreq = 250
-fmin = 1
-fmax = 5
-freq_band = (fmin, fmax)
-snr_db = 6 # SNR for noise addition
-amplitude = 5.0 # nAm
-nnz = 5 # Number of active sources per trial
-seed = 42
-n_trials = 10 # <<<--- Number of trials to simulate
-
-leadfield_matrix = load_and_validate_leadfield(leadfield_file_path, orientation_type)
-
-# --- Plotting Parameters ---
-figure_save_dir = Path("results/figures/data_sim") # Define base directory for figures
-os.makedirs(figure_save_dir / "ERP_channels" , exist_ok=True)
-os.makedirs(figure_save_dir / "PSD_epochs" , exist_ok=True)
-sensor_subplots_indices = [0, 10, 20] # Indices for the subplot sensor plot
-
-# --- Simulate Multiple Trials (Clean Data First) ---
-print(f"Simulating {n_trials} trials (clean data)...")
-y_clean_all_trials = [] # Store clean sensor data per trial
-x_all_trials = [] # Store source data per trial
-active_indices_all_trials = [] # Store active indices per trial
-
-for i_trial in range(n_trials):
-    print(f"  Simulating clean trial {i_trial + 1}/{n_trials}")
-    trial_seed = seed + i_trial if seed is not None else None
-
-    # Call the function that simulates ONLY clean data
-    simulation_results = simulate_clean_signal_source_space(
-        leadfield=leadfield_matrix,
-        sfreq=sfreq,
-        tmin=tmin,
-        tmax=tmax,
-        stim_onset=stim_onset,
-        nnz=nnz,
-        orientation_type=orientation_type,
-        seed=trial_seed,
-        amplitude=amplitude,
-        freq_band=freq_band
-    )
-
-    y_clean_all_trials.append(simulation_results["clean_sensor_data"])
-    x_all_trials.append(simulation_results["source_data"])
-    active_indices_all_trials.append(simulation_results["active_indices"])
-    time_vector = simulation_results["times"] # Get time vector (same for all trials)
-
-print("Clean simulation complete.")
-
-# Convert lists to NumPy arrays
-y_clean_all_trials = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
-x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
-active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
-time_vector = np.array(time_vector) # Shape: (n_times,)
-
-# --- Add Noise Separately ---
-print(f"Adding noise (SNR={snr_db} dB) to clean trials...")
-y_all_trials = [] # To store noisy data
-noise_all_trials = [] # Optional: store noise itself
-noise_power_all_trials = [] # Optional: store noise power per trial
-
-noise_rng = np.random.RandomState(seed + n_trials) # Use a separate seed/state for noise if desired
-
-for i_trial in range(n_trials):
-    # Get the clean data for this trial
-    y_clean_trial = y_clean_all_trials[i_trial]
-
-    # Add noise using the dedicated function
-    # Use a trial-specific RNG state derived from noise_rng for reproducibility per trial
-    trial_noise_rng = np.random.RandomState(noise_rng.randint(0, 2**32 - 1))
-    y_noisy_trial, noise_trial, noise_power_trial = add_noise_snr(
-        y_clean_trial,
-        snr_db,
-        rng=trial_noise_rng
-    )
-
-    y_all_trials.append(y_noisy_trial)
-    noise_all_trials.append(noise_trial) # Optional
-    noise_power_all_trials.append(noise_power_trial) # Optional
-
-# Convert noisy data list to NumPy array
-y_all_trials = np.array(y_all_trials) # Shape: (n_trials, n_channels, n_times)
-print("Noise addition complete.")
-
-
-
-# # Convert lists to NumPy arrays
-# y_all_trials_clean = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
-# x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
-# active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
-# time_vector = np.array(time_vector) # Shape: (n_times,)
-
-
-# --- Plotting Examples ---
-
-# Plot data from the first trial
-first_trial_idx = 0
-print(f"\nPlotting results for trial {first_trial_idx + 1}...")
-
-# Now plot_sensor_signals uses the clean and noisy data generated separately
-plot_sensor_signals(
-    y_clean=y_clean_all_trials[first_trial_idx], # Use stored clean data
-    y_noisy=y_all_trials[first_trial_idx],       # Use stored noisy data
-    sensor_indices=sensor_subplots_indices,
-    times=time_vector,
-    save_dir=figure_save_dir,
-    figure_name=f"specific_sensor_signals_subplots_trial{first_trial_idx+1}",
-    trial_idx=first_trial_idx
-)
-
-plot_all_active_sources_single_figure(
-    x=x_all_trials[first_trial_idx],
-    times=time_vector,
-    active_indices=active_indices_all_trials[first_trial_idx],
-    stim_onset=stim_onset,
-    save_dir=figure_save_dir,
-    figure_name=f"active_sources_single_figure_trial{first_trial_idx+1}",
-    trial_idx=first_trial_idx
-)
-
-# Plot data from the first trial (y_all_trials[first_trial_idx] is 2D)
-# average_epochs=False tells the function to treat the 2D data as a single trial
-plot_all_sensor_signals_single_figure(
-    y_data=y_all_trials[first_trial_idx], # Pass single trial noisy data (2D)
-    times=time_vector,
-    save_dir=figure_save_dir,
-    figure_name=f"all_sensor_signals_single_figure_trial{first_trial_idx+1}",
-    trial_idx=first_trial_idx,
-    average_epochs=False
-)
-
-# Plot average across trials (y_all_trials is 3D)
-# average_epochs=True tells the function to average the 3D data across trials
-plot_all_sensor_signals_single_figure(
-    y_data=y_all_trials, # Pass all trial noisy data (3D array)
-    times=time_vector,
-    save_dir=figure_save_dir,
-    figure_name="all_sensor_signals_average_trials",
-    average_epochs=True
-)
-
- 
-
-
-# plot_active_sources(
-#     x=x_all_trials[first_trial_idx],
-#     times=time_vector,
-#     active_indices=active_indices_all_trials[first_trial_idx],
-#     stim_onset=stim_onset,
-#     nnz=nnz, # Pass nnz used in simulation
-#     save_dir=figure_save_dir,
-#     figure_name=f"active_sources_subplots_trial{first_trial_idx+1}",
-#     trial_idx=first_trial_idx
-# )
-
-# plot_stacked_sensor_signals(
-#     y_noisy=y_all_trials[first_trial_idx], # Pass single trial data
-#     times=time_vector,
-#     save_dir=figure_save_dir,
-#     figure_name=f"all_sensor_signals_stacked_figure_trial{first_trial_idx+1}",
-#     trial_idx=first_trial_idx
-# )
-
-# --- Create MNE Epochs Object ---
-print("\nCreating MNE Epochs object...")
-
-n_times = len(time_vector)
-
-
-montage = mne.channels.make_standard_montage("easycap-M43")
-info = mne.create_info(ch_names=montage.ch_names, sfreq=sfreq, ch_types="eeg")
-info.set_montage(montage)
-
-# Structure: [sample_index_within_epoch, previous_event_id, event_id]
-# Since the stimulus onset is at the same time relative to the start (tmin)
-# for all simulated trials, the sample index within the epoch is the same.
-event_id = 1 # Define an event ID for the stimulus onset
-
-# Find the sample index corresponding to stim_onset within the time_vector
-stim_sample_in_epoch = np.argmin(np.abs(time_vector - stim_onset))
-events = np.zeros((n_trials, 3), int)
-
-for i_trial in range(n_trials):
-    events[i_trial, 0] = stim_sample_in_epoch + i_trial * n_times
-
-# Assign the event ID to the third column for all trials
-events[:, 2] = event_id
-print("Generated events array for EpochsArray:")
-print(events) # Print to confirm
-
-# Create EpochsArray object
-# Data units are µV. MNE plotting functions usually handle this, but be aware.
-epochs = mne.EpochsArray(y_all_trials,
-                         info,
-                         events=events,
-                         tmin=tmin,
-                         event_id={'stim': event_id})
-print("\nMNE Epochs object created:")
-
-
-
-# -------------------------------------
-# --- Plot using MNE Epochs methods ---
-print("\nPlotting using MNE Epochs methods...")
-fig_epochs = epochs.plot(show=True, picks=info.ch_names, n_epochs=n_trials, n_channels=5, events=True, scalings=dict(eeg=2e3), event_color="red")
-fig_epochs.suptitle("Epochs across subset of channels (with Events Onset marked)", fontsize=16)
-plt.tight_layout()
-fig_epochs.savefig(figure_save_dir / "mne_epochs_plot.png")
-plt.close(fig_epochs)
-
-
-# ------------------------------------
-
-
-
-
-# ------------------------------------
-# spatial_colors=True helps visualize different channels
-fig_erp = epochs.average().plot(spatial_colors=True, show=False)
-fig_erp.suptitle("Average ERP across trials", fontsize=16)
-fig_erp.savefig(figure_save_dir / "mne_average_erp_plot.png")
-plt.close(fig_erp) # Close the figure after saving
-
-
-
-# -------------------------------------
-if True:
-    # plot_image shows each trial as a row in an image map (Plot ER[P/F])
-    # Draw the ER[P/F] below the image or not.
-    figs_img = epochs.plot_image(show=False, combine=None, group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F]", evoked=True)
-
-
-    for i, fig in enumerate(figs_img):
-        fig.suptitle(f"Epochs Image Plot (channel {i+1})", fontsize=16)
-        if figure_save_dir:
-            image_save_path = figure_save_dir / "ERP_channels" / f"mne_epochs_image_plot_channel_{i+1}.png"
-            fig.savefig(image_save_path)
-
-
-figs_img = epochs.plot_image(show=False, combine="mean", group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F] - average across channels", evoked=True)
-
-figs_img[0].savefig(figure_save_dir / "mne_epochs_image_plot_mean.png")
-for fig in figs_img:
-        plt.close(fig)
-
-
-# -------
-# Plot sensor locations (based on montage)
-print("Plotting sensor locations...")
-fig_topo = epochs.plot_sensors(show_names=True, show=False, kind='topomap', ch_type='eeg')
-fig_topo.savefig(figure_save_dir / "mne_sensor_locations.png")
-plt.close(fig_topo)
-
-
-# -------------------------------
-
-
-
-for i in range(len(epochs)):
-    fig = epochs[i].compute_psd(fmax=30).plot(
-        average=False, # average across channels
-        picks=info.ch_names,
-        show=False,
-        spatial_colors=True, 
-    )
-    fig.suptitle(f"PSD per channels - Epoch {i+1}", fontsize=16)
-    fig.savefig(figure_save_dir / "PSD_epochs" / f"epoch{i}_psd_plot.png")
+def plot_active_sources(x, times, active_indices, stim_onset, nnz, save_dir=None, figure_name=None, trial_idx=None):
+    """ Plot active sources for a specific trial. """
+    n_cols = 3
+    n_rows = int(np.ceil(nnz / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), constrained_layout=True, sharex=True, sharey=True)
+    title_suffix = f" (Trial {trial_idx+1})" if trial_idx is not None else ""
+    fig.suptitle(f"Active Source Signals{title_suffix}", fontsize=16)
+    axes = axes.flatten()
+
+    # Handle potential free orientation source data shape (n_sources, n_orient, n_times)
+    # Plot the norm or the first component for simplicity
+    if x.ndim == 3:
+        x_plot = np.linalg.norm(x, axis=1) # Plot magnitude for free orientation
+        # Or plot first component: x_plot = x[:, 0, :]
+    else:
+        x_plot = x
+
+    for i, src_idx in enumerate(active_indices):
+        axes[i].plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=2)
+        axes[i].axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
+        axes[i].set_xlabel("Time (s)")
+        axes[i].set_ylabel("Amplitude (nAm)")
+        axes[i].set_title(f"Active Source {src_idx}")
+        axes[i].legend()
+        axes[i].grid(True)
+
+    for j in range(i + 1, len(axes)):
+        axes[j].axis("off")
+
+    if save_dir and figure_name:
+        output_dir = Path(save_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        save_path = output_dir / f"{figure_name}.png"
+        plt.savefig(save_path, dpi=300)
+        print(f"Subplots figure saved to {save_path}")
     plt.close(fig)
 
 
 
-fig = epochs.compute_psd(fmax=30).plot(
-    average=False,
-    picks=info.ch_names,
-    show=False,
-    spatial_colors=True, 
-)
-fig.suptitle("PSD per channels - averaged across epochs", fontsize=16)
-fig.savefig(figure_save_dir / "mne_psd_avg_across_epochs.png")
-plt.close(fig)
+# --------------------------------------------------------------
 
 
-# -# -------------------------------------
-# compute and plot time freuquency representation (TFR)
-# TFR using Morlet wavelets
-freqs = np.arange(fmin, fmax, 1)  # Frequencies from 1 to 100 Hz
-n_cycles = freqs / 2.0  # Different number of cycles per frequency
-time_bandwidth = 2.0  # Time-bandwidth product for Morlet wavelets
+def main():
 
-fig = epochs.compute_tfr(
-    method="multitaper",
-    freqs=freqs,
-    n_cycles=n_cycles,
-    time_bandwidth=time_bandwidth,
-    return_itc=False,
-    average=True,  # Average across epochs
-    decim=3,  # Decimate the data for faster computation
-    picks=info.ch_names[0],
-).plot(picks=[0], mode="mean", title="TFR - (Average across epochs, channel 1)", colorbar=True, show=False)
+    # --- Simulation Parameters ---
+    leadfield_file_path = "results/forward/fsaverage-leadfield-fixed.npz"
+    orientation_type = "fixed" # "fixed" or "free"
+    tmin = -0.5
+    tmax = 0.5
+    stim_onset = 0.0
+    sfreq = 250
+    fmin = 1
+    fmax = 5
+    freq_band = (fmin, fmax)
+    snr_db = 6 # SNR for noise addition
+    amplitude = 5.0 # nAm
+    nnz = 5 # Number of active sources per trial
+    seed = 42
+    n_trials = 10 # <<<--- Number of trials to simulate
 
-fig[0].savefig(figure_save_dir / "tfr_average_across_epochs.png")
-plt.close(fig[0])
+    leadfield_matrix = load_and_validate_leadfield(leadfield_file_path, orientation_type)
+
+    # --- Plotting Parameters ---
+    figure_save_dir = Path("results/figures/data_sim") # Define base directory for figures
+    os.makedirs(figure_save_dir / "ERP_channels" , exist_ok=True)
+    os.makedirs(figure_save_dir / "PSD_epochs" , exist_ok=True)
+    sensor_subplots_indices = [0, 10, 20] # Indices for the subplot sensor plot
+
+    # --- Simulate Multiple Trials (Clean Data First) ---
+    print(f"Simulating {n_trials} trials (clean data)...")
+    y_clean_all_trials = [] # Store clean sensor data per trial
+    x_all_trials = [] # Store source data per trial
+    active_indices_all_trials = [] # Store active indices per trial
+
+    for i_trial in range(n_trials):
+        print(f"  Simulating clean trial {i_trial + 1}/{n_trials}")
+        trial_seed = seed + i_trial if seed is not None else None
+
+        # Call the function that generates true source activity
+        x_trial, active_indices, time_vector = _generate_source_time_courses(
+            leadfield=leadfield_matrix, # Still pass leadfield for shape info
+            sfreq=sfreq,
+            tmin=tmin,
+            tmax=tmax,
+            stim_onset=stim_onset,
+            nnz=nnz,
+            orientation_type=orientation_type,
+            seed=trial_seed,
+            amplitude=amplitude,
+            freq_band=freq_band
+        )
+        
+
+        # Project source activity to sensors
+        y_clean_trial = project_sources_to_sensors(
+            source_activity=x_trial,
+            leadfield=leadfield_matrix,
+            orientation_type=orientation_type
+        )
+
+        y_clean_all_trials.append(y_clean_trial)
+        x_all_trials.append(x_trial) # Store the source data
+        active_indices_all_trials.append(active_indices)
+    print("Clean simulation complete.")
+
+    # Convert lists to NumPy arrays
+    y_clean_all_trials = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
+    x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
+    active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
+    time_vector = np.array(time_vector) # Shape: (n_times,)
+
+    # --- Add Noise Separately ---
+    print(f"Adding noise (SNR={snr_db} dB) to clean trials...")
+    y_all_trials = [] # To store noisy data
+    noise_all_trials = [] # Optional: store noise itself
+    noise_power_all_trials = [] # Optional: store noise power per trial
+
+    noise_rng = np.random.RandomState(seed + n_trials) # Use a separate seed/state for noise if desired
+
+    for i_trial in range(n_trials):
+        # Get the clean data for this trial
+        y_clean_trial = y_clean_all_trials[i_trial]
+
+        # Add noise using the dedicated function
+        # Use a trial-specific RNG state derived from noise_rng for reproducibility per trial
+        trial_noise_rng = np.random.RandomState(noise_rng.randint(0, 2**32 - 1))
+        y_noisy_trial, noise_trial, noise_power_trial = _add_noise(
+            y_clean_trial,
+            snr_db,
+            rng=trial_noise_rng
+        )
+
+        y_all_trials.append(y_noisy_trial)
+        noise_all_trials.append(noise_trial) # Optional
+        noise_power_all_trials.append(noise_power_trial) # Optional
+
+    # Convert noisy data list to NumPy array
+    y_all_trials = np.array(y_all_trials) # Shape: (n_trials, n_channels, n_times)
+    print("Noise addition complete.")
 
 
 
-fig0 = epochs[0].compute_tfr(
-    method="multitaper",
-    freqs=freqs,
-    n_cycles=n_cycles,
-    time_bandwidth=time_bandwidth,
-    return_itc=False,
-    average=False,  # Average across epochs
-    decim=3,  # Decimate the data for faster computation
-    picks=info.ch_names[0],
-).plot([0], baseline=(None, None), title="TFR - (epoch 1, channel 1)", colorbar=True, show=False)
 
-fig0[0].savefig(figure_save_dir / "tfr_epoch0.png")
-plt.close(fig0[0])
 
-print("\n1")
+
+
+
+
+
+
+    # # Convert lists to NumPy arrays
+    # y_all_trials_clean = np.array(y_clean_all_trials) # Shape: (n_trials, n_channels, n_times)
+    # x_all_trials = np.array(x_all_trials) # Shape: (n_trials, n_sources, [n_orient,] n_times)
+    # active_indices_all_trials = np.array(active_indices_all_trials) # Shape: (n_trials, nnz)
+    # time_vector = np.array(time_vector) # Shape: (n_times,)
+
+
+    # --- Plotting Examples ---
+
+    # Plot data from the first trial
+    first_trial_idx = 0
+    print(f"\nPlotting results for trial {first_trial_idx + 1}...")
+
+    # Now plot_sensor_signals uses the clean and noisy data generated separately
+    plot_sensor_signals(
+        y_clean=y_clean_all_trials[first_trial_idx], # Use stored clean data
+        y_noisy=y_all_trials[first_trial_idx],       # Use stored noisy data
+        sensor_indices=sensor_subplots_indices,
+        times=time_vector,
+        save_dir=figure_save_dir,
+        figure_name=f"specific_sensor_signals_subplots_trial{first_trial_idx+1}",
+        trial_idx=first_trial_idx
+    )
+
+    plot_all_active_sources_single_figure(
+        x=x_all_trials[first_trial_idx],
+        times=time_vector,
+        active_indices=active_indices_all_trials[first_trial_idx],
+        stim_onset=stim_onset,
+        save_dir=figure_save_dir,
+        figure_name=f"active_sources_single_figure_trial{first_trial_idx+1}",
+        trial_idx=first_trial_idx
+    )
+
+    # Plot data from the first trial (y_all_trials[first_trial_idx] is 2D)
+    # average_epochs=False tells the function to treat the 2D data as a single trial
+    plot_all_sensor_signals_single_figure(
+        y_data=y_all_trials[first_trial_idx], # Pass single trial noisy data (2D)
+        times=time_vector,
+        save_dir=figure_save_dir,
+        figure_name=f"all_sensor_signals_single_figure_trial{first_trial_idx+1}",
+        trial_idx=first_trial_idx,
+        average_epochs=False
+    )
+
+    # Plot average across trials (y_all_trials is 3D)
+    # average_epochs=True tells the function to average the 3D data across trials
+    plot_all_sensor_signals_single_figure(
+        y_data=y_all_trials, # Pass all trial noisy data (3D array)
+        times=time_vector,
+        save_dir=figure_save_dir,
+        figure_name="all_sensor_signals_average_trials",
+        average_epochs=True
+    )    
+
+
+    plot_active_sources(
+        x=x_all_trials[first_trial_idx],
+        times=time_vector,
+        active_indices=active_indices_all_trials[first_trial_idx],
+        stim_onset=stim_onset,
+        nnz=nnz, # Pass nnz used in simulation
+        save_dir=figure_save_dir,
+        figure_name=f"active_sources_subplots_trial{first_trial_idx+1}",
+        trial_idx=first_trial_idx
+    )
+
+
+
+    # --- Create MNE Epochs Object ---
+    print("\nCreating MNE Epochs object...")
+
+    n_times = len(time_vector)
+
+
+    montage = mne.channels.make_standard_montage("easycap-M43")
+    info = mne.create_info(ch_names=montage.ch_names, sfreq=sfreq, ch_types="eeg")
+    info.set_montage(montage)
+
+    # Structure: [sample_index_within_epoch, previous_event_id, event_id]
+    # Since the stimulus onset is at the same time relative to the start (tmin)
+    # for all simulated trials, the sample index within the epoch is the same.
+    event_id = 1 # Define an event ID for the stimulus onset
+
+    # Find the sample index corresponding to stim_onset within the time_vector
+    stim_sample_in_epoch = np.argmin(np.abs(time_vector - stim_onset))
+    events = np.zeros((n_trials, 3), int)
+
+    for i_trial in range(n_trials):
+        events[i_trial, 0] = stim_sample_in_epoch + i_trial * n_times
+
+    # Assign the event ID to the third column for all trials
+    events[:, 2] = event_id
+    print("Generated events array for EpochsArray:")
+    print(events) # Print to confirm
+
+    # Create EpochsArray object
+    # Data units are µV. MNE plotting functions usually handle this, but be aware.
+    epochs = mne.EpochsArray(y_all_trials,
+                            info,
+                            events=events,
+                            tmin=tmin,
+                            event_id={'stim': event_id})
+    print("\nMNE Epochs object created:")
+
+
+
+    # -------------------------------------
+    # --- Plot using MNE Epochs methods ---
+    print("\nPlotting using MNE Epochs methods...")
+    fig_epochs = epochs.plot(show=True, picks=info.ch_names, n_epochs=n_trials, n_channels=5, events=True, scalings=dict(eeg=2e3), event_color="red")
+    fig_epochs.suptitle("Epochs across subset of channels (with Events Onset marked)", fontsize=16)
+    plt.tight_layout()
+    fig_epochs.savefig(figure_save_dir / "mne_epochs_plot.png")
+    plt.close(fig_epochs)
+
+
+    # ------------------------------------
+
+
+
+
+    # ------------------------------------
+    # spatial_colors=True helps visualize different channels
+    fig_erp = epochs.average().plot(spatial_colors=True, show=False)
+    fig_erp.suptitle("Average ERP across trials", fontsize=16)
+    fig_erp.savefig(figure_save_dir / "mne_average_erp_plot.png")
+    plt.close(fig_erp) # Close the figure after saving
+
+
+
+    # -------------------------------------
+    if True:
+        # plot_image shows each trial as a row in an image map (Plot ER[P/F])
+        # Draw the ER[P/F] below the image or not.
+        figs_img = epochs.plot_image(show=False, combine=None, group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F]", evoked=True)
+
+
+        for i, fig in enumerate(figs_img):
+            fig.suptitle(f"Epochs Image Plot (channel {i+1})", fontsize=16)
+            if figure_save_dir:
+                image_save_path = figure_save_dir / "ERP_channels" / f"mne_epochs_image_plot_channel_{i+1}.png"
+                fig.savefig(image_save_path)
+
+
+    figs_img = epochs.plot_image(show=False, combine="mean", group_by=None, picks=info.ch_names, colorbar=True, title="Epochs ER[P/F] - average across channels", evoked=True)
+
+    figs_img[0].savefig(figure_save_dir / "mne_epochs_image_plot_mean.png")
+    for fig in figs_img:
+            plt.close(fig)
+
+
+    # -------
+    # Plot sensor locations (based on montage)
+    print("Plotting sensor locations...")
+    fig_topo = epochs.plot_sensors(show_names=True, show=False, kind='topomap', ch_type='eeg')
+    fig_topo.savefig(figure_save_dir / "mne_sensor_locations.png")
+    plt.close(fig_topo)
+
+
+    # -------------------------------
+
+
+
+    for i in range(len(epochs)):
+        fig = epochs[i].compute_psd(fmax=30).plot(
+            average=False, # average across channels
+            picks=info.ch_names,
+            show=False,
+            spatial_colors=True, 
+        )
+        fig.suptitle(f"PSD per channels - Epoch {i+1}", fontsize=16)
+        fig.savefig(figure_save_dir / "PSD_epochs" / f"epoch{i}_psd_plot.png")
+        plt.close(fig)
+
+
+
+    fig = epochs.compute_psd(fmax=30).plot(
+        average=False,
+        picks=info.ch_names,
+        show=False,
+        spatial_colors=True, 
+    )
+    fig.suptitle("PSD per channels - averaged across epochs", fontsize=16)
+    fig.savefig(figure_save_dir / "mne_psd_avg_across_epochs.png")
+    plt.close(fig)
+
+
+    # -# -------------------------------------
+    # compute and plot time freuquency representation (TFR)
+    # TFR using Morlet wavelets
+    freqs = np.arange(fmin, fmax, 1)  # Frequencies from 1 to 100 Hz
+    n_cycles = freqs / 2.0  # Different number of cycles per frequency
+    time_bandwidth = 2.0  # Time-bandwidth product for Morlet wavelets
+
+    fig = epochs.compute_tfr(
+        method="multitaper",
+        freqs=freqs,
+        n_cycles=n_cycles,
+        time_bandwidth=time_bandwidth,
+        return_itc=False,
+        average=True,  # Average across epochs
+        decim=3,  # Decimate the data for faster computation
+        picks=info.ch_names[0],
+    ).plot(picks=[0], mode="mean", title="TFR - (Average across epochs, channel 1)", colorbar=True, show=False)
+
+    fig[0].savefig(figure_save_dir / "tfr_average_across_epochs.png")
+    plt.close(fig[0])
+
+
+
+    fig0 = epochs[0].compute_tfr(
+        method="multitaper",
+        freqs=freqs,
+        n_cycles=n_cycles,
+        time_bandwidth=time_bandwidth,
+        return_itc=False,
+        average=False,  # Average across epochs
+        decim=3,  # Decimate the data for faster computation
+        picks=info.ch_names[0],
+    ).plot([0], baseline=(None, None), title="TFR - (epoch 1, channel 1)", colorbar=True, show=False)
+
+    fig0[0].savefig(figure_save_dir / "tfr_epoch0.png")
+    plt.close(fig0[0])
+
+    print("\n1")
+    
+if __name__ == "__main__":
+    main()

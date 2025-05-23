@@ -105,23 +105,22 @@ class Benchmark:
             # Update data_simulator with data parameters
             self.data_simulator.seed = seed
             self.data_simulator.rng = rng
-            self.data_simulator.noise_type = solver_params.get("noise_type")
+            # self.data_simulator.noise_type = solver_params.get("noise_type")
             self.data_simulator.__dict__.update(data_params)
 
-            # Simulate data
+            # Simulate data (with n_trials!)
             self.logger.info("Simulating data...")
-            y_noisy, L, x, cov_scaled, noise_scaled = self.data_simulator.simulate(visualize=True, save_path="results/figures/data_sim/")
-            
+            y_noisy, L, x, active_indices, noise, noise_power = self.data_simulator.simulate(visualize=True, save_path=os.path.join(experiment_dir , "data"))
             
             # if solver_params.get("noise_type") == 'oracle':
             #     solver_params["cov"] = cov_scaled
             
-            n_orient = 3 if data_params.get("orientation_type") == "free" else 1
+            n_orient = 3 if data_params.get("orientation_type") == "free" else 1 # TODO: put this in the LeadfieldSimulator class
             
             source_estimator = SourceEstimator(
                 solver=self.solver,
                 solver_params=solver_params,
-                cov=cov_scaled,
+                # cov=cov_scaled,
                 n_orient=n_orient,
                 logger=self.logger
             )
@@ -132,14 +131,19 @@ class Benchmark:
 
             # Estimate sources
             self.logger.info("Estimating sources...")
-            x_hat, active_set, posterior_cov = source_estimator.predict(y_noisy)
-
+            trial_i = 0
+            
+            x_hat, active_set, posterior_cov = source_estimator.predict(
+                y=y_noisy[trial_i], noise_var=noise_power[trial_i])
+            
+            x_avg_time = np.mean(x, axis=2, keepdims=True) # TODO: check wheter keepdims=True is needed later
+            x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
             
             self.logger.info("Initializing uncertainty estimator...")
             uncertainty_estimator = UncertaintyEstimator(
                 orientation_type=self.data_simulator.orientation_type,
-                x=x,
-                x_hat=x_hat,
+                x=x_avg_time[trial_i],
+                x_hat=x_hat_avg_time,
                 active_set=active_set,
                 posterior_cov=posterior_cov,
                 experiment_dir=experiment_dir,

@@ -9,8 +9,8 @@ from scipy import linalg
 def gamma_map(
     L,
     y,
+    noise_var=None,
     noise_type="oracle",
-    cov=None, # covariance matrix of the noise
     n_orient=1,
     max_iter=1000,
     tol=1e-15,
@@ -20,18 +20,11 @@ def gamma_map(
     verbose=True,
     logger=None,
 ):
+    # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
     if noise_type == "oracle":
-        sigma_squared = np.diag(cov)[0] # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
-        
-        # NOTE - TODO: override and hardcode for now, but should be changed to use the computed covariance matrix and sigma_squared
-        sigma_squared = 0.01
-        cov = sigma_squared * np.eye(L.shape[0])
-        
-    # whiten the data
-    whitener = linalg.inv(linalg.sqrtm(cov))
-    y = whitener @ y
-    L = whitener @ L   # Note: L is already shaped into (n_sensors, n_sources * n_orient)
+        noise_cov = noise_var * np.eye(L.shape[0])
     
+    # TODO: check whether we still need this
     if gammas is None:
         gammas = np.ones(L.shape[1], dtype=np.float64)
     elif isinstance(gammas, (float, np.float64, int, np.int64)):
@@ -44,7 +37,7 @@ def gamma_map(
     x_hat_, active_set, posterior_cov = _gamma_map_opt(
         y,
         L,
-        sigma_squared=sigma_squared,
+        sigma_squared=noise_var,
         tol=tol,
         maxit=max_iter,
         gammas=gammas,
@@ -243,7 +236,7 @@ def eloreta(L, y, **kwargs):
     raise NotImplementedError("The eloreta solver is not yet implemented.")
 
 class SourceEstimator(BaseEstimator, RegressorMixin):
-    def __init__(self, solver, solver_params=None, cov=None, n_orient=1, logger=None):
+    def __init__(self, solver, solver_params=None, n_orient=1, logger=None):
         """
         Initialize the SourceEstimator class.
 
@@ -251,14 +244,13 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
         - solver_params (dict, optional): Parameters for the solver function.
         - logger (logging.Logger, optional): Logger instance for logging messages.
-        - cov (np.ndarray, optional): Covariance matrix of the noise.
         - n_orient (int, optional): Number of orientations for the sources.
           Default is 1 (for fixed orientation) or 3 (for free orientation).
         """
         self.solver = solver
         self.solver_params = solver_params if solver_params else {}
         self.logger = logger
-        self.cov = cov
+        # self.cov = cov
         self.n_orient = n_orient
 
     def fit(self, L, y):
@@ -276,13 +268,13 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         self.y_ = y
         return self
 
-    def predict(self, y=None):
+    def predict(self, y=None, noise_var=None):
         """
         Predict the source activity given the observed signals.
 
         Parameters:
-        - y (np.ndarray, optional): Observed EEG/MEG signals of shape (n_sensors, n_times).
-          If None, uses the signals provided during `fit`.
+        - y (np.ndarray, optional): Observed EEG/MEG signals of shape (n_sensors, n_times). If None, uses the signals provided during `fit`.
+        - noise_var (float): Noise variance.
 
         Returns:
         - x_hat (np.ndarray): Estimated source activity of shape (n_sources, n_times).
@@ -297,6 +289,6 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
             y = self.y_
 
         # Apply the solver
-        x_hat, active_set, posterior_cov = self.solver(self.L_, y, logger=self.logger, **self.solver_params, cov=self.cov, n_orient=self.n_orient)
+        x_hat, active_set, posterior_cov = self.solver(self.L_, y, noise_var, logger=self.logger, **self.solver_params, n_orient=self.n_orient)
+        
         return x_hat, active_set, posterior_cov
-
