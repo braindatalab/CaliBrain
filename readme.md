@@ -1,4 +1,4 @@
-Convert this to readme.rst format:
+<!-- TODO: Convert this to readme.rst format: -->
 # CaliBrain
 
 ## Uncertainty Calibration in Brain Source Imaging
