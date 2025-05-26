@@ -12,6 +12,9 @@ import mne
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm # Import colormap functionality
 from matplotlib.lines import Line2D # Import for custom legend
+import matplotlib.gridspec as gridspec
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable # For better colorbar placement
 
 from calibrain import LeadfieldSimulator
 from calibrain.utils import load_config
@@ -51,12 +54,13 @@ class DataSimulator:
         min_erp_duration_samples : int = None,
         n_trials: int = 3,
         orientation_type: str = "fixed",
+        n_orient: int = 1,
         # noise_type: str = "oracle",
         seed: Optional[int] = None,
         logger: Optional[logging.Logger] = None,
         rng: Optional[Generator] = None,
         leadfield_mode: str = "random",
-        leadfield_path: Optional[Union[str, Path]] = None,
+        leadfield_dir: Optional[Union[str, Path]] = None,
         leadfield_config_path: Optional[Union[str, Path]] = None,
     ):
         """
@@ -95,6 +99,8 @@ class DataSimulator:
             Number of trials to simulate, by default 3.
         orientation_type : str, optional
             Source orientation type ("fixed" or "free"), by default "fixed".
+        n_orient : int, optional
+            Number of orientations for free sources (1 for fixed, 3 for free), by default 1.
         # noise_type : str, optional
             # Noise type, by default "oracle".
         seed : Optional[int], optional
@@ -105,8 +111,8 @@ class DataSimulator:
             Random number generator, by default None.
         leadfield_mode : str, optional
             Leadfield generation mode ("random", "load", "simulate"), by default "random".
-        leadfield_path : Optional[Union[str, Path]], optional
-            Path to leadfield file, by default None.
+        leadfield_dir : Optional[Union[str, Path]], optional
+            Path to leadfield files, by default None.
         leadfield_config_path : Optional[Union[str, Path]], optional
             Path to leadfield config file, by default None.
         
@@ -131,22 +137,27 @@ class DataSimulator:
         self.min_erp_duration_samples = min_erp_duration_samples
         self.n_trials = n_trials
         self.orientation_type = orientation_type
+        self.n_orient = n_orient
         # self.noise_type = noise_type
         self.seed = seed
         self.logger = logger if logger else logging.getLogger(__name__)
         self.rng = rng if rng else np.random.default_rng(seed)
         self.leadfield_mode = leadfield_mode
-        self.leadfield_path = Path(leadfield_path) if leadfield_path else None
+        self.leadfield_dir = Path(leadfield_dir) if leadfield_dir else None
         self.leadfield_config_path = Path(leadfield_config_path) if leadfield_config_path else None
 
         self.logger.info(f"DataSimulator initialized with orientation: {self.orientation_type}, leadfield mode: {self.leadfield_mode}")
 
-    def _get_leadfield(self) -> np.ndarray:
+    def _get_leadfield(self, subject) -> np.ndarray:
         """
         Get or generate the leadfield matrix based on the specified mode.
 
         Updates self.n_sensors and self.n_sources based on the obtained leadfield.
 
+        Parameters
+        ----------
+        subject : str
+        
         Returns
         -------
         np.ndarray
@@ -160,30 +171,49 @@ class DataSimulator:
             If leadfield_mode is invalid, required paths are missing,
             or loaded/simulated leadfield has unexpected dimensions/format.
         FileNotFoundError
-            If leadfield_path does not exist when mode='load'.
+            If leadfield_dir does not exist when mode='load'.
         """
-        expected_suffix = "-free.npz" if self.orientation_type == "free" else "-fixed.npz"
-        expected_dimensions = 3 if self.orientation_type == "free" else 2
-
-        leadfield: np.ndarray
+        if self.orientation_type == "fixed":
+            self.n_orient = 1 
+            expected_dimensions = 2 # Fixed orientation leads to 2D leadfield (n_sensors, n_sources)
+            expected_suffix = "-fixed.npz"
+        elif self.orientation_type == "free":
+            expected_suffix = "-free.npz"
+            self.n_orient = 3
+            expected_dimensions = 3 # Free orientation leads to 3D leadfield (n_sensors, n_sources, 3)
+        else:
+            raise ValueError(f"Invalid orientation_type '{self.orientation_type}'. Choose 'fixed' or 'free'.")
+    
 
         if self.leadfield_mode == "load":
-            if not self.leadfield_path:
-                raise ValueError("Path to the leadfield file (leadfield_path) must be provided when leadfield_mode='load'.")
+            # Define the two specific patterns you were trying to match:
+            # Pattern 1: Includes orientation_type in the filename
+            path_option1 = self.leadfield_dir / f"lead_field_{self.orientation_type}_{subject}.npz"
+            
+            # Pattern 2: Excludes orientation_type from the filename
+            path_option2 = self.leadfield_dir / f"lead_field_{subject}.npz"
 
             try:
-                if not self.leadfield_path.exists():
-                    raise FileNotFoundError(f"Leadfield file does not exist: {self.leadfield_path}")
-
-                # Optional strict check:
-                # if not self.leadfield_path.name.endswith(expected_suffix):
-                #     self.logger.warning(f"Leadfield file name '{self.leadfield_path.name}' does not match expected suffix '{expected_suffix}' for orientation '{self.orientation_type}'.")
+                if path_option1.exists():
+                    self.leadfield_path = path_option1
+                elif path_option2.exists():
+                    self.leadfield_path = path_option2
+                else:
+                    self.logger.warning(
+                        f"Leadfield file not found for subject '{subject}' with orientation '{self.orientation_type}' "
+                        f"in directory '{self.leadfield_dir}'.\n"
+                        f"Checked specific patterns:\n"
+                        f"  - {path_option1}\n"
+                        f"  - {path_option2}")
+                    raise FileNotFoundError(
+                        f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
+                    )
 
                 self.logger.info(f"Loading leadfield matrix from file: {self.leadfield_path}")
                 with np.load(self.leadfield_path) as data:
-                    if "leadfield" not in data:
-                        raise ValueError(f"File {self.leadfield_path} does not contain 'leadfield' key.")
-                    leadfield = data["leadfield"]
+                    if "leadfield" not in data and "lead_field" not in data:
+                        raise ValueError(f"File {self.leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
+                    leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
@@ -228,9 +258,9 @@ class DataSimulator:
             raise ValueError(f"Invalid leadfield mode '{self.leadfield_mode}'. Options are 'load', 'simulate', or 'random'.")
 
         # Update n_sensors and n_sources based on the actual leadfield dimensions
-        if leadfield.ndim == 2: # Fixed
+        if leadfield.ndim == 2 == expected_dimensions: # Fixed
             self.n_sensors, self.n_sources = leadfield.shape
-        elif leadfield.ndim == 3: # Free
+        elif leadfield.ndim == 3 == expected_dimensions: # Free
             self.n_sensors, self.n_sources, _ = leadfield.shape
 
         self.logger.info(f"Leadfield obtained. Updated n_sensors={self.n_sensors}, n_sources={self.n_sources}")
@@ -478,7 +508,7 @@ class DataSimulator:
         y_noisy = y_clean + noise
         return y_noisy, noise, noise_power
 
-    def simulate(self, visualize: bool = True, save_path: str = "results/figures/data_sim/") -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def simulate(self, subject, visualize: bool = True, save_path: str = "results/figures/data_sim/") -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Run the full data simulation pipeline.
 
@@ -491,6 +521,7 @@ class DataSimulator:
 
         Parameters
         ----------
+        subject : str
         visualize : bool, optional
             Whether to generate and save visualization plots, by default True.
             Requires `leadfield_mode` to be 'simulate' or a valid `leadfield_config_path`
@@ -514,7 +545,7 @@ class DataSimulator:
             If visualization is requested but MNE info cannot be obtained
             (e.g., `leadfield_mode` is not 'simulate' and `leadfield_config_path` is missing).
         """
-        L = self._get_leadfield()
+        L = self._get_leadfield(subject)
         
         # --- Simulate Multiple Trials (Clean Data First) ---
         print(f"Simulating {self.n_trials} trials (clean data)...")
@@ -590,19 +621,59 @@ class DataSimulator:
                 y_clean=y_clean_all_trials[first_trial_idx],
                 y_noisy=y_noisy_all_trials[first_trial_idx],
                 nnz_to_plot=self.nnz,
-                sfreq=info["sfreq"] if info else 100.0, # Default sfreq if info missing
+                sfreq=info["sfreq"] if info else 250.0, # Default sfreq if info missing
                 max_sensors=3,
                 plot_sensors_together=False,
                 show=False,
                 save_path=os.path.join(save_path, "data_sim.png"),
             )
+            
+            # evoked_first_trial = mne.EvokedArray(
+            #     data=y_noisy_all_trials[first_trial_idx],
+            #     info=info,
+            #     tmin=self.tmin
+            # ) 
 
-            self.visualize_leadfield(
-                 L,
-                 orientation_type=self.orientation_type,
-                 save_path=os.path.join(save_path, "leadfield_matrix.png"),
-                 show=False
+            # fig = mne.viz.plot_evoked_topo(evoked_first_trial, show=False, )
+            # fig_path = os.path.join(save_path, "evoked_topo.png")
+            # fig.savefig(fig_path, dpi=300, bbox_inches="tight")
+            # plt.close(fig)
+            
+            # mne.viz.plot_evoked(evoked_first_trial)
+            
+            self.visualize_leadfield_summary(
+                L,
+                orientation_type=self.orientation_type,
+                bins=100,
+                sensor_indices_to_plot=list(range(self.n_sensors)),
+                # max_sensors_to_plot=10, # Let the function select if sensor_indices_to_plot is None
+                save_path=os.path.join(save_path, "leadfield_summary.png"),
+                show=False
             )
+                    
+            # self.visualize_leadfield_sensor_boxplot(
+            #     L,
+            #     orientation_type=self.orientation_type, 
+            #     sensor_indices_to_plot=list(range(self.n_sensors)), 
+            #     max_sensors_to_plot=20,
+            #     save_path=os.path.join(save_path, "leadfield_sensor_boxplot.png"),
+            #     show=False
+            # )
+            
+            # self.visualize_leadfield_distribution(
+            #     L,
+            #     orientation_type=self.orientation_type,
+            #     bins=100,
+            #     save_path=os.path.join(save_path, "leadfield_distribution.png"),
+            #     show=False
+            # )
+
+            # self.visualize_leadfield(
+            #      L,
+            #      orientation_type=self.orientation_type,
+            #      save_path=os.path.join(save_path, "leadfield_matrix.png"),
+            #      show=False
+            # )
 
             if info:
                 self.visualize_leadfield_topomap(
@@ -610,7 +681,7 @@ class DataSimulator:
                     info=info,
                     x=x_all_trials[first_trial_idx],
                     orientation_type=self.orientation_type,
-                    title="Leadfield Topomap for Active (Nonzero) Sources",
+                    title="Leadfield Topomap for Some Active (Nonzero) Sources",
                     save_path=os.path.join(save_path, "leadfield_topomap.png"),
                     show=False,
                 )
@@ -625,7 +696,7 @@ class DataSimulator:
             print(f"\nPlotting results for trial {first_trial_idx + 1}...")
 
             # Now plot_sensor_signals uses the clean and noisy data generated separately
-            self.plot_sensor_signals(
+            self.plot_sensor_signals( 
                 y_clean=y_clean_all_trials[first_trial_idx], # Use stored clean data
                 y_noisy=y_noisy_all_trials[first_trial_idx],       # Use stored noisy data
                 sensor_indices=sensor_subplots_indices,
@@ -696,7 +767,7 @@ class DataSimulator:
         y_noisy: np.ndarray,
         active_sources: Optional[np.ndarray] = None,
         nnz_to_plot: int = -1,
-        sfreq: float = 100.0,
+        sfreq: float = 100.0, # This sfreq is passed, consider using self.sfreq if more consistent
         max_sensors: int = 3,
         plot_sensors_together: bool = False,
         shift: float = 20.0,
@@ -708,6 +779,8 @@ class DataSimulator:
         Visualize source activity and sensor measurements.
 
         Plots active source time courses and compares clean vs. noisy sensor signals.
+        Includes a line indicating stimulus onset.
+        Uses self.tmin and self.tmax for the time axis.
 
         Parameters
         ----------
@@ -722,7 +795,7 @@ class DataSimulator:
         nnz_to_plot : int, optional
             Number of non-zero sources to plot. If -1, plot all non-zero sources found, by default -1.
         sfreq : float, optional
-            Sampling frequency in Hz, by default 100.0.
+            Sampling frequency in Hz, by default self.sfreq.
         max_sensors : int, optional
             Maximum number of sensors to plot, by default 3.
         plot_sensors_together : bool, optional
@@ -736,15 +809,32 @@ class DataSimulator:
         show : bool, optional
             If True, display the plot, by default False.
         """
-        n_times = y_clean.shape[1]
-        times = np.linspace(0, (n_times - 1) / sfreq, n_times) if n_times > 1 else np.array([0])
+        # Use self.sfreq if the passed sfreq is the default placeholder, otherwise use passed sfreq
+        current_sfreq = self.sfreq if sfreq == 100.0 and hasattr(self, 'sfreq') else sfreq
+        
+        n_times_from_data = y_clean.shape[1]
+        
+        # Generate time vector using self.tmin, self.tmax, and current_sfreq
+        # Ensure n_times matches the data provided. If tmin/tmax/sfreq imply a different
+        # n_times than the data, prioritize the data's n_times for indexing.
+        times_from_params = np.arange(self.tmin, self.tmax, 1.0 / current_sfreq)
+        
+        if len(times_from_params) != n_times_from_data:
+            self.logger.warning(
+                f"Mismatch between n_times from data ({n_times_from_data}) and "
+                f"n_times from tmin/tmax/sfreq ({len(times_from_params)}). "
+                f"Using time axis derived from data length and tmin, sfreq."
+            )
+            times = np.linspace(self.tmin, self.tmin + (n_times_from_data - 1) / current_sfreq, n_times_from_data)
+        else:
+            times = times_from_params
+
 
         if active_sources is None:
             if self.orientation_type == "fixed":
                 active_sources = np.where(np.any(x != 0, axis=-1))[0]
             elif self.orientation_type == "free":
                 self.logger.info("Calculating norm of source activity to find active sources for free orientation.")
-                # Check if any component (X, Y, Z) at any time point is non-zero for a source
                 active_sources = np.where(np.any(x != 0, axis=(1, 2)))[0]
             else:
                  raise ValueError(f"Unsupported orientation type: {self.orientation_type}")
@@ -755,11 +845,11 @@ class DataSimulator:
              self.logger.info(f"Plotting {nnz_to_plot} randomly selected active sources out of {len(active_sources)}.")
         else:
              plot_indices = active_sources
-             nnz_to_plot = len(plot_indices) # Update actual number plotted
+             nnz_to_plot = len(plot_indices)
 
         y_min = min(y_clean.min(), y_noisy.min())
         y_max = max(y_clean.max(), y_noisy.max())
-        y_range = y_max - y_min if y_max > y_min else 1.0 # Avoid zero range
+        y_range = y_max - y_min if y_max > y_min else 1.0
 
         num_sensors_to_plot = min(max_sensors, y_clean.shape[0])
         total_plots = 1 + (1 if plot_sensors_together else num_sensors_to_plot)
@@ -767,10 +857,9 @@ class DataSimulator:
             total_plots,
             1,
             figsize=figsize,
-            gridspec_kw={"height_ratios": [1] * total_plots}, # Equal height for now
-            sharex=True # Share x-axis
+            gridspec_kw={"height_ratios": [1] * total_plots}, 
+            sharex=True
         )
-        # Ensure axes is always an array
         if total_plots == 1:
             axes = [axes]
 
@@ -780,15 +869,12 @@ class DataSimulator:
                 ax_sources.plot(times, x[i].T, label=f"Source {i}")
         elif self.orientation_type == "free":
             for i in plot_indices:
-                # Plot norm or individual components? Plotting norm for simplicity.
                 source_norm = np.linalg.norm(x[i], axis=0)
                 ax_sources.plot(times, source_norm, label=f"Source {i} (Norm)")
-                # Alternatively, plot components:
-                # for j, orient in enumerate(["X", "Y", "Z"]):
-                #     ax_sources.plot(times, x[i, j], label=f"Source {i} ({orient})", alpha=0.7)
 
+        ax_sources.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
         ax_sources.set_title(f"{nnz_to_plot} Active Simulated Source Activity")
-        ax_sources.set_ylabel("Amplitude (a.u.)") # Arbitrary units for sources
+        ax_sources.set_ylabel("Amplitude (nAm)")
         ax_sources.grid(True)
         ax_sources.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
@@ -798,25 +884,32 @@ class DataSimulator:
             current_shift = 0
             for i in range(num_sensors_to_plot):
                 ax_sensors.plot(times, y_clean[i] + current_shift, label=f"Clean (Sensor {i})", linewidth=1.5)
-                ax_sensors.plot(times, y_noisy[i] + current_shift, label=f"Noisy (Sensor {i})", alpha=0.8, linewidth=1)
-                current_shift += shift # Use provided shift relative to previous signal
+                ax_sensors.plot(times, y_noisy[i] + current_shift, label=f"Noisy (Sensor {i})", linewidth=1.5)
+                current_shift += shift 
+            ax_sensors.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
             ax_sensors.set_title("Sensor Measurements")
-            ax_sensors.set_ylabel("Amplitude (a.u.)") # Arbitrary units for sensors
+            ax_sensors.set_ylabel("Amplitude (μV)") 
             ax_sensors.grid(True)
-            ax_sensors.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            # Consolidate legend for "Stimulus Onset" if it's plotted multiple times
+            handles, labels = ax_sensors.get_legend_handles_labels()
+            by_label = dict(zip(labels, handles)) # Remove duplicate labels
+            ax_sensors.legend(by_label.values(), by_label.keys(), loc='center left', bbox_to_anchor=(1, 0.5))
         else:
             for idx, ax_sens in enumerate(sensor_axes):
                 ax_sens.plot(times, y_clean[idx], label=f"Clean", linewidth=1.5)
-                ax_sens.plot(times, y_noisy[idx], label=f"Noisy", alpha=0.8, linewidth=1)
+                ax_sens.plot(times, y_noisy[idx], label=f"Noisy", linewidth=1)
+                ax_sens.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
                 ax_sens.set_title(f"Sensor {idx}")
-                ax_sens.set_ylabel("Amplitude (a.u.)")
-                ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) # Consistent ylim
+                ax_sens.set_ylabel("Amplitude (μV)")
+                ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) 
                 ax_sens.grid(True)
-                ax_sens.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                handles, labels = ax_sens.get_legend_handles_labels()
+                by_label = dict(zip(labels, handles))
+                ax_sens.legend(by_label.values(), by_label.keys(), loc='center left', bbox_to_anchor=(1, 0.5))
 
         axes[-1].set_xlabel("Time (s)")
 
-        plt.tight_layout(rect=[0, 0, 0.85, 1]) # Adjust layout for legends
+        plt.tight_layout(rect=[0, 0, 0.85, 1]) 
 
         if save_path:
             save_dir = Path(save_path).parent
@@ -828,83 +921,697 @@ class DataSimulator:
             plt.show()
         plt.close(fig)
 
-    def visualize_leadfield(
+    # def visualize_leadfield(
+    #     self,
+    #     leadfield_matrix: np.ndarray,
+    #     orientation_type: str = "fixed",
+    #     save_path: Optional[str] = None,
+    #     show: bool = False
+    # ) -> None:
+    #     """
+    #     Visualize the leadfield matrix as a heatmap.
+
+    #     Parameters
+    #     ----------
+    #     leadfield_matrix : np.ndarray
+    #         The leadfield matrix.
+    #         - 'fixed': Shape (n_sensors, n_sources).
+    #         - 'free': Shape (n_sensors, n_sources, 3).
+    #     orientation_type : str, optional
+    #         Orientation type ('fixed' or 'free'), by default "fixed".
+    #     save_path : Optional[str], optional
+    #         Path to save the figure. If None, not saved, by default None.
+    #     show : bool, optional
+    #         If True, display the plot, by default False.
+
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If leadfield_matrix is invalid or orientation_type is unsupported.
+    #     """
+    #     if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray) or leadfield_matrix.size == 0:
+    #         self.logger.error("Invalid leadfield matrix provided for visualization.")
+    #         return
+
+    #     fig = None # Initialize fig
+    #     try:
+    #         if orientation_type == "fixed":
+    #             if leadfield_matrix.ndim != 2:
+    #                  raise ValueError(f"Expected 2D leadfield for fixed orientation, got {leadfield_matrix.ndim}D")
+    #             fig, ax = plt.subplots(figsize=(10, 8))
+    #             im = ax.imshow(leadfield_matrix, aspect='auto', cmap='viridis', interpolation='nearest')
+    #             fig.colorbar(im, ax=ax, label="Amplitude (µV / nAm)", fraction=0.05, pad=0.04)
+    #             ax.set_title("Leadfield Matrix (Fixed Orientation)")
+    #             ax.set_xlabel("Sources")
+    #             ax.set_ylabel("Sensors")
+    #         elif orientation_type == "free":
+    #             if leadfield_matrix.ndim != 3 or leadfield_matrix.shape[-1] != 3:
+    #                  raise ValueError(f"Expected 3D leadfield (..., 3) for free orientation, got shape {leadfield_matrix.shape}")
+    #             n_orient = leadfield_matrix.shape[-1]
+    #             fig, axes = plt.subplots(1, n_orient, figsize=(15, 5), sharey=True)
+    #             if n_orient == 1: axes = [axes] # Ensure axes is iterable
+    #             orientations = ["X", "Y", "Z"]
+    #             images = []
+    #             for i in range(n_orient):
+    #                 im = axes[i].imshow(leadfield_matrix[:, :, i], aspect='auto', cmap='viridis', interpolation='nearest')
+    #                 images.append(im)
+    #                 axes[i].set_title(f"Leadfield Matrix ({orientations[i]})")
+    #                 axes[i].set_xlabel("Sources")
+    #             axes[0].set_ylabel("Sensors")
+    #             fig.colorbar(images[0], ax=axes, location="right", label="Amplitude (µV / nAm)", fraction=0.05, pad=0.04)
+    #         else:
+    #             raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
+
+    #         plt.tight_layout()
+
+    #         if save_path:
+    #             save_dir = Path(save_path).parent
+    #             save_dir.mkdir(parents=True, exist_ok=True)
+    #             plt.savefig(save_path, bbox_inches="tight")
+    #             self.logger.info(f"Leadfield matrix visualization saved to {save_path}")
+    #         if show:
+    #             plt.show()
+
+    #     except Exception as e:
+    #          self.logger.error(f"Failed during leadfield visualization: {e}")
+    #     finally:
+    #          if fig:
+    #              plt.close(fig)
+
+    # def visualize_leadfield_distribution(
+    #     self,
+    #     leadfield_matrix: np.ndarray,
+    #     orientation_type: str = "fixed",
+    #     bins: int = 100,
+    #     save_path: Optional[str] = None,
+    #     title: Optional[str] = None,
+    #     show: bool = False
+    # ) -> None:
+    #     """
+    #     Visualize the distribution of leadfield amplitude values using a histogram.
+
+    #     Parameters
+    #     ----------
+    #     leadfield_matrix : np.ndarray
+    #         The leadfield matrix.
+    #         - 'fixed': Shape (n_sensors, n_sources).
+    #         - 'free': Shape (n_sensors, n_sources, 3).
+    #     orientation_type : str, optional
+    #         Orientation type ('fixed' or 'free'), by default "fixed".
+    #         This mainly affects the title and interpretation.
+    #     bins : int, optional
+    #         Number of bins for the histogram, by default 100.
+    #     save_path : Optional[str], optional
+    #         Path to save the figure. If None, not saved, by default None.
+    #     title : Optional[str], optional
+    #         Custom title for the plot. If None, a default title is generated.
+    #     show : bool, optional
+    #         If True, display the plot, by default False.
+    #     """
+    #     if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray) or leadfield_matrix.size == 0:
+    #         self.logger.error("Invalid leadfield matrix provided for distribution visualization.")
+    #         return
+
+    #     fig = None # Initialize fig
+    #     try:
+    #         fig, ax = plt.subplots(figsize=(10, 6))
+
+    #         # Flatten the leadfield matrix to get all values for the histogram
+    #         # For 'free' orientation, this will include values from all X, Y, Z components.
+    #         leadfield_values_flat = leadfield_matrix.flatten()
+
+    #         ax.hist(leadfield_values_flat, bins=bins, color='skyblue', edgecolor='black', alpha=0.7)
+
+    #         if title is None:
+    #             default_title = f"Distribution of Leadfield Amplitudes ({orientation_type.capitalize()} Orientation)"
+    #             ax.set_title(default_title, fontsize=14)
+    #         else:
+    #             ax.set_title(title, fontsize=14)
+
+    #         ax.set_xlabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+    #         ax.set_ylabel("Frequency", fontsize=12)
+    #         ax.grid(True, linestyle='--', alpha=0.7)
+
+    #         # Add some statistics to the plot
+    #         mean_val = np.mean(leadfield_values_flat)
+    #         std_val = np.std(leadfield_values_flat)
+    #         median_val = np.median(leadfield_values_flat)
+    #         min_val = np.min(leadfield_values_flat)
+    #         max_val = np.max(leadfield_values_flat)
+
+    #         stats_text = (
+    #             f"Mean: {mean_val:.2e}\nStd: {std_val:.2e}\nMedian: {median_val:.2e}\n"
+    #             f"Min: {min_val:.2e}\nMax: {max_val:.2e}\nN Values: {len(leadfield_values_flat)}"
+    #         )
+    #         # Position the text box in the upper right corner
+    #         ax.text(0.95, 0.95, stats_text, transform=ax.transAxes, fontsize=9,
+    #                 verticalalignment='top', horizontalalignment='right',
+    #                 bbox=dict(boxstyle='round,pad=0.5', fc='wheat', alpha=0.5))
+
+
+    #         plt.tight_layout()
+
+    #         if save_path:
+    #             save_dir = Path(save_path).parent
+    #             save_dir.mkdir(parents=True, exist_ok=True)
+    #             plt.savefig(save_path, bbox_inches="tight")
+    #             self.logger.info(f"Leadfield distribution visualization saved to {save_path}")
+    #         if show:
+    #             plt.show()
+
+    #     except Exception as e:
+    #          self.logger.error(f"Failed during leadfield distribution visualization: {e}")
+    #     finally:
+    #          if fig:
+    #              plt.close(fig)
+   
+
+
+    # def visualize_leadfield_summary(
+    #     self,
+    #     leadfield_matrix: np.ndarray,
+    #     orientation_type: str = "fixed",
+    #     bins: int = 100,
+    #     sensor_indices_to_plot: Optional[List[int]] = None,
+    #     max_sensors_to_plot: int = 10,
+    #     main_title: Optional[str] = None,
+    #     save_path: Optional[str] = None,
+    #     show: bool = False
+    # ) -> None:
+    #     """
+    #     Visualize a summary of the leadfield matrix in a single figure:
+    #     1. Top: Heatmap of the leadfield (norm for 'free' orientation).
+    #     2. Bottom-Left: Box plots of leadfield amplitudes for selected sensors.
+    #     3. Bottom-Right: Rotated histogram of all leadfield amplitudes (marginal to boxplots).
+
+    #     Parameters
+    #     ----------
+    #     leadfield_matrix : np.ndarray
+    #         The leadfield matrix.
+    #         - 'fixed': Shape (n_sensors, n_sources).
+    #         - 'free': Shape (n_sensors, n_sources, 3).
+    #     orientation_type : str, optional
+    #         Orientation type ('fixed' or 'free'), by default "fixed".
+    #     bins : int, optional
+    #         Number of bins for the histogram subplot, by default 100.
+    #     sensor_indices_to_plot : Optional[List[int]], optional
+    #         Specific list of sensor indices for the box plot. If None, a subset is chosen.
+    #     max_sensors_to_plot : int, optional
+    #         Maximum number of sensors for the box plot if sensor_indices_to_plot is None.
+    #     main_title : Optional[str], optional
+    #         Overall title for the figure.
+    #     save_path : Optional[str], optional
+    #         Path to save the figure.
+    #     show : bool, optional
+    #         If True, display the plot.
+    #     """
+    #     if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray) or leadfield_matrix.size == 0:
+    #         self.logger.error("Invalid leadfield matrix provided for summary visualization.")
+    #         return
+
+    #     fig = None
+    #     try:
+    #         # Define the layout using GridSpec
+    #         # Figure will have 2 main rows. The second row is split into 2 columns.
+    #         # Heatmap takes more vertical space.
+    #         fig = plt.figure(figsize=(15, 18)) # Adjusted figsize
+    #         gs = gridspec.GridSpec(2, 2, height_ratios=[1.2, 1], width_ratios=[3, 1])
+
+    #         ax_heatmap = fig.add_subplot(gs[0, :])  # Heatmap spans both columns of the first row
+    #         ax_boxplot = fig.add_subplot(gs[1, 0])  # Boxplot in the second row, first column
+    #         ax_hist_y = fig.add_subplot(gs[1, 1], sharey=ax_boxplot) # Rotated histogram, shares y-axis with boxplot
+
+    #         if main_title is None:
+    #             default_main_title = f"Leadfield Matrix Summary ({orientation_type.capitalize()} Orientation)"
+    #             fig.suptitle(default_main_title, fontsize=18, y=0.99)
+    #         elif main_title:
+    #             fig.suptitle(main_title, fontsize=18, y=0.99)
+
+    #         # --- Subplot 1: Leadfield Heatmap (ax_heatmap) ---
+    #         if orientation_type == "fixed":
+    #             if leadfield_matrix.ndim != 2:
+    #                 raise ValueError(f"Heatmap: Expected 2D leadfield for fixed, got {leadfield_matrix.ndim}D")
+    #             lf_to_plot = leadfield_matrix
+    #             heatmap_title = "Leadfield Matrix (Fixed Orientation)"
+    #         elif orientation_type == "free":
+    #             if leadfield_matrix.ndim != 3 or leadfield_matrix.shape[-1] != 3:
+    #                 raise ValueError(f"Heatmap: Expected 3D leadfield (..., 3) for free, got {leadfield_matrix.shape}")
+    #             lf_to_plot = np.linalg.norm(leadfield_matrix, axis=-1)
+    #             heatmap_title = "Leadfield Matrix (Free Orientation - Norm)"
+    #         else:
+    #             raise ValueError("Heatmap: Invalid orientation type.")
+            
+    #         im = ax_heatmap.imshow(lf_to_plot, aspect='auto', cmap='viridis', interpolation='nearest')
+    #         # Add colorbar to the heatmap subplot
+    #         cbar = fig.colorbar(im, ax=ax_heatmap, label="Amplitude (µV / nAm)", fraction=0.046, pad=0.04, orientation='vertical')
+    #         ax_heatmap.set_title(heatmap_title, fontsize=14)
+    #         ax_heatmap.set_xlabel("Sources", fontsize=12)
+    #         ax_heatmap.set_ylabel("Sensors", fontsize=12)
+
+    #         # --- Data for Histogram and Boxplot ---
+    #         leadfield_values_flat = leadfield_matrix.flatten() # For overall distribution
+    #         num_total_sensors = leadfield_matrix.shape[0]
+    #         actual_sensor_indices_to_plot: np.ndarray
+
+    #         if sensor_indices_to_plot is None:
+    #             if num_total_sensors > max_sensors_to_plot:
+    #                 actual_sensor_indices_to_plot = np.linspace(0, num_total_sensors - 1, max_sensors_to_plot, dtype=int)
+    #             else:
+    #                 actual_sensor_indices_to_plot = np.arange(num_total_sensors)
+    #         else:
+    #             actual_sensor_indices_to_plot = np.array(sensor_indices_to_plot, dtype=int)
+    #             if np.any(actual_sensor_indices_to_plot < 0) or np.any(actual_sensor_indices_to_plot >= num_total_sensors):
+    #                 self.logger.error("Boxplot: Invalid sensor_indices_to_plot.")
+    #                 ax_boxplot.text(0.5, 0.5, "Error: Invalid sensor indices.", ha='center', va='center', color='red')
+    #                 actual_sensor_indices_to_plot = np.array([])
+
+    #         # --- Subplot 2: Leadfield Sensor Box Plots (ax_boxplot) ---
+    #         if len(actual_sensor_indices_to_plot) > 0:
+    #             data_for_boxplot = []
+    #             labels_for_boxplot = []
+    #             for sensor_idx in actual_sensor_indices_to_plot:
+    #                 if orientation_type == "fixed":
+    #                     sensor_values = leadfield_matrix[sensor_idx, :]
+    #                 elif orientation_type == "free":
+    #                     sensor_values_3d = leadfield_matrix[sensor_idx, :, :]
+    #                     sensor_values = np.linalg.norm(sensor_values_3d, axis=-1)
+    #                 else:
+    #                     raise ValueError("Boxplot: Invalid orientation type.")
+    #                 data_for_boxplot.append(sensor_values)
+    #                 labels_for_boxplot.append(str(sensor_idx))
+                
+    #             bp = ax_boxplot.boxplot(data_for_boxplot, patch_artist=True, medianprops=dict(color="black", linewidth=1.5), vert=True)
+    #             try:
+    #                 colors_list = cm.get_cmap('viridis', len(data_for_boxplot))
+    #                 for i, patch in enumerate(bp['boxes']):
+    #                     patch.set_facecolor(colors_list(i / len(data_for_boxplot)))
+    #             except AttributeError:
+    #                  self.logger.warning("Boxplot: Could not apply distinct colors.")
+                
+    #             ax_boxplot.set_title("Leadfield Amplitude per Sensor", fontsize=14)
+    #             ax_boxplot.set_xlabel("Sensor Index", fontsize=12)
+    #             ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+    #             ax_boxplot.set_xticklabels(labels_for_boxplot, rotation=45, ha="right" if len(labels_for_boxplot) > 5 else "center")
+    #             ax_boxplot.grid(True, linestyle='--', alpha=0.6, axis='y')
+    #         elif not (np.any(actual_sensor_indices_to_plot < 0) or np.any(actual_sensor_indices_to_plot >= num_total_sensors)):
+    #             ax_boxplot.text(0.5, 0.5, "No sensors for boxplot.", ha='center', va='center')
+    #             ax_boxplot.set_xlabel("Sensor Index", fontsize=12)
+    #             ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+
+
+    #         # --- Subplot 3: Rotated Histogram (ax_hist_y) ---
+    #         # This histogram shows the distribution of ALL leadfield values
+    #         ax_hist_y.hist(leadfield_values_flat, bins=bins, color='skyblue', edgecolor='black', alpha=0.7, orientation='horizontal')
+    #         ax_hist_y.set_title("Overall Distribution", fontsize=14)
+    #         ax_hist_y.set_xlabel("Frequency", fontsize=12)
+    #         # Remove y-tick labels for the histogram as it shares y-axis with boxplot
+    #         plt.setp(ax_hist_y.get_yticklabels(), visible=False)
+    #         ax_hist_y.grid(True, linestyle='--', alpha=0.7, axis='x')
+
+    #         mean_val = np.mean(leadfield_values_flat)
+    #         std_val = np.std(leadfield_values_flat)
+    #         median_val = np.median(leadfield_values_flat)
+    #         stats_text = (
+    #             f"Mean: {mean_val:.2e}\nStd: {std_val:.2e}\nMedian: {median_val:.2e}"
+    #         )
+    #         # Add stats text to the histogram plot, adjusting position for horizontal orientation
+    #         ax_hist_y.text(0.95, 0.95, stats_text, transform=ax_hist_y.transAxes, fontsize=9,
+    #                        verticalalignment='top', horizontalalignment='right',
+    #                        bbox=dict(boxstyle='round,pad=0.3', fc='wheat', alpha=0.5))
+
+
+    #         # Adjust layout
+    #         gs.tight_layout(fig, rect=[0, 0, 1, 0.96] if main_title else [0,0,1,1]) # Use GridSpec's tight_layout
+
+    #         if save_path:
+    #             save_dir = Path(save_path).parent
+    #             save_dir.mkdir(parents=True, exist_ok=True)
+    #             plt.savefig(save_path, bbox_inches="tight", dpi=150) # Added dpi
+    #             self.logger.info(f"Leadfield summary visualization saved to {save_path}")
+    #         if show:
+    #             plt.show()
+
+    #     except Exception as e:
+    #          self.logger.error(f"Failed during leadfield summary visualization: {e}", exc_info=True) # Added exc_info
+    #     finally:
+    #          if fig:
+    #              plt.close(fig)
+   
+
+    # def visualize_leadfield_sensor_boxplot(
+    #     self,
+    #     leadfield_matrix: np.ndarray,
+    #     orientation_type: str = "fixed",
+    #     sensor_indices_to_plot: Optional[List[int]] = None,
+    #     max_sensors_to_plot: int = 20,
+    #     save_path: Optional[str] = None,
+    #     custom_title: Optional[str] = None,
+    #     show: bool = False
+    # ) -> None:
+    #     """
+    #     Visualize the distribution of leadfield amplitudes for selected sensors using box plots.
+    #     Each box plot represents one sensor, showing the distribution of its leadfield
+    #     values across all sources. For 'free' orientation, the norm of the 3 components
+    #     is used for each source-sensor pair.
+
+    #     Parameters
+    #     ----------
+    #     leadfield_matrix : np.ndarray
+    #         The leadfield matrix.
+    #         - 'fixed': Shape (n_sensors, n_sources).
+    #         - 'free': Shape (n_sensors, n_sources, 3).
+    #     orientation_type : str, optional
+    #         Orientation type ('fixed' or 'free'), by default "fixed".
+    #     sensor_indices_to_plot : Optional[List[int]], optional
+    #         Specific list of sensor indices to plot. If None, a subset is chosen
+    #         based on max_sensors_to_plot, by default None.
+    #     max_sensors_to_plot : int, optional
+    #         Maximum number of sensors to create box plots for if sensor_indices_to_plot
+    #         is None, by default 20.
+    #     save_path : Optional[str], optional
+    #         Path to save the figure. If None, not saved, by default None.
+    #     custom_title : Optional[str], optional
+    #         Custom title for the plot. If None, a default title is generated.
+    #     show : bool, optional
+    #         If True, display the plot, by default False.
+    #     """
+    #     if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray) or leadfield_matrix.size == 0:
+    #         self.logger.error("Invalid leadfield matrix provided for box plot visualization.")
+    #         return
+
+    #     fig = None # Initialize fig
+    #     try:
+    #         num_total_sensors = leadfield_matrix.shape[0]
+
+    #         if sensor_indices_to_plot is None:
+    #             if num_total_sensors > max_sensors_to_plot:
+    #                 # Select evenly spaced sensors
+    #                 selected_indices = np.linspace(0, num_total_sensors - 1, max_sensors_to_plot, dtype=int)
+    #                 self.logger.info(f"Plotting box plots for {max_sensors_to_plot} selected sensors out of {num_total_sensors}.")
+    #             else:
+    #                 selected_indices = np.arange(num_total_sensors)
+    #         else:
+    #             selected_indices = np.array(sensor_indices_to_plot, dtype=int)
+    #             if np.any(selected_indices < 0) or np.any(selected_indices >= num_total_sensors):
+    #                 self.logger.error("Invalid sensor_indices_to_plot: indices out of bounds.")
+    #                 return
+            
+    #         if len(selected_indices) == 0:
+    #             self.logger.info("No sensors selected for box plot visualization.")
+    #             return
+
+    #         data_for_boxplot = []
+    #         labels_for_boxplot = []
+
+    #         for sensor_idx in selected_indices:
+    #             if orientation_type == "fixed":
+    #                 if leadfield_matrix.ndim != 2:
+    #                     raise ValueError(f"Expected 2D leadfield for fixed orientation, got {leadfield_matrix.ndim}D shape {leadfield_matrix.shape}")
+    #                 sensor_values = leadfield_matrix[sensor_idx, :]
+    #             elif orientation_type == "free":
+    #                 if leadfield_matrix.ndim != 3 or leadfield_matrix.shape[-1] != 3:
+    #                     raise ValueError(f"Expected 3D leadfield (..., 3) for free orientation, got shape {leadfield_matrix.shape}")
+    #                 sensor_values_3d = leadfield_matrix[sensor_idx, :, :] # Shape (n_sources, 3)
+    #                 sensor_values = np.linalg.norm(sensor_values_3d, axis=-1) # Shape (n_sources,)
+    #             else:
+    #                 raise ValueError(f"Invalid orientation_type '{orientation_type}'. Choose 'fixed' or 'free'.")
+                
+    #             data_for_boxplot.append(sensor_values)
+    #             labels_for_boxplot.append(str(sensor_idx))
+
+    #         # Adjust figure width based on the number of boxplots, with a max width
+    #         fig_width = min(max(10, len(selected_indices) * 0.7), 25)
+    #         fig, ax = plt.subplots(figsize=(fig_width, 7))
+            
+    #         bp = ax.boxplot(data_for_boxplot, patch_artist=True, medianprops=dict(color="black", linewidth=1.5))
+
+    #         # Optional: Color the boxes using a colormap
+    #         # Ensure you have `import matplotlib.cm as cm`
+    #         try:
+    #             colors_list = cm.get_cmap('viridis', len(data_for_boxplot))
+    #             for i, patch in enumerate(bp['boxes']):
+    #                 patch.set_facecolor(colors_list(i / len(data_for_boxplot))) # Normalize index for colormap
+    #         except AttributeError: # Fallback if get_cmap with number of colors is not supported (older matplotlib)
+    #              self.logger.warning("Could not apply distinct colors to boxplots; using default or single color.")
+
+
+    #         if custom_title is None:
+    #             default_title = f"Leadfield Amplitude Distribution per Sensor ({orientation_type.capitalize()} Orientation)"
+    #             ax.set_title(default_title, fontsize=14, pad=15)
+    #         else:
+    #             ax.set_title(custom_title, fontsize=14, pad=15)
+
+    #         ax.set_xlabel("Sensor Index", fontsize=12)
+    #         ax.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+    #         ax.set_xticklabels(labels_for_boxplot, rotation=45, ha="right" if len(labels_for_boxplot) > 10 else "center")
+    #         ax.grid(True, linestyle='--', alpha=0.6, axis='y')
+
+    #         plt.tight_layout()
+
+    #         if save_path:
+    #             save_dir = Path(save_path).parent
+    #             save_dir.mkdir(parents=True, exist_ok=True)
+    #             plt.savefig(save_path, bbox_inches="tight")
+    #             self.logger.info(f"Leadfield sensor box plot visualization saved to {save_path}")
+    #         if show:
+    #             plt.show()
+
+    #     except Exception as e:
+    #          self.logger.error(f"Failed during leadfield sensor box plot visualization: {e}")
+    #     finally:
+    #          if fig:
+    #              plt.close(fig)
+          
+          
+    def visualize_leadfield_summary(
         self,
         leadfield_matrix: np.ndarray,
         orientation_type: str = "fixed",
+        bins: int = 100,
+        sensor_indices_to_plot: Optional[List[int]] = None,
+        max_sensors_to_plot: int = 10,
+        main_title: Optional[str] = None,
         save_path: Optional[str] = None,
         show: bool = False
     ) -> None:
-        """
-        Visualize the leadfield matrix as a heatmap.
-
-        Parameters
-        ----------
-        leadfield_matrix : np.ndarray
-            The leadfield matrix.
-            - 'fixed': Shape (n_sensors, n_sources).
-            - 'free': Shape (n_sensors, n_sources, 3).
-        orientation_type : str, optional
-            Orientation type ('fixed' or 'free'), by default "fixed".
-        save_path : Optional[str], optional
-            Path to save the figure. If None, not saved, by default None.
-        show : bool, optional
-            If True, display the plot, by default False.
-
-        Raises
-        ------
-        ValueError
-            If leadfield_matrix is invalid or orientation_type is unsupported.
-        """
+        # ... (initial parameter validation and actual_sensor_indices_to_plot logic remains the same) ...
         if leadfield_matrix is None or not isinstance(leadfield_matrix, np.ndarray) or leadfield_matrix.size == 0:
-            self.logger.error("Invalid leadfield matrix provided for visualization.")
+            self.logger.error("Invalid leadfield matrix provided for summary visualization.")
             return
 
-        fig = None # Initialize fig
+        fig = None
         try:
+            num_total_sensors_in_lf = leadfield_matrix.shape[0]
+            actual_sensor_indices_to_plot: np.ndarray
+
+            if sensor_indices_to_plot is None:
+                if num_total_sensors_in_lf > max_sensors_to_plot:
+                    actual_sensor_indices_to_plot = np.linspace(0, num_total_sensors_in_lf - 1, max_sensors_to_plot, dtype=int)
+                else:
+                    actual_sensor_indices_to_plot = np.arange(num_total_sensors_in_lf)
+            else:
+                actual_sensor_indices_to_plot = np.array(sensor_indices_to_plot, dtype=int)
+                if np.any(actual_sensor_indices_to_plot < 0) or np.any(actual_sensor_indices_to_plot >= num_total_sensors_in_lf):
+                    self.logger.error("Summary Plot: Invalid sensor_indices_to_plot: indices out of bounds.")
+                    if num_total_sensors_in_lf > 0 :
+                        actual_sensor_indices_to_plot = np.arange(min(num_total_sensors_in_lf, max_sensors_to_plot))
+                        self.logger.warning(f"Defaulting to plotting first {len(actual_sensor_indices_to_plot)} sensors for heatmap/boxplot.")
+                    else:
+                        actual_sensor_indices_to_plot = np.array([])
+
+            fig = plt.figure(figsize=(16, 18)) # Adjust figsize as needed
+
+            # Main GridSpec: 2 rows, 1 column. Each row will be further divided.
+            gs_rows = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1, 1]) # Adjust height_ratios if needed
+
+            # --- Top Row: Heatmap and its Colorbar ---
+            # To make the heatmap image wider, increase the first ratio (e.g., 0.95)
+            # and decrease the second (e.g., 0.03), ensuring they make sense for the space.
+            gs_top_row = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_rows[0],
+                                                          width_ratios=[0.50, 0.03], # Example: Heatmap image gets 93%, colorbar 5% of top row width
+                                                          wspace=0.5) # Adjust space between heatmap image and its colorbar
+            ax_heatmap_img = fig.add_subplot(gs_top_row[0, 0])
+            cax_heatmap_cb = fig.add_subplot(gs_top_row[0, 1])
+
+            # --- Bottom Row: Boxplot and Histogram ---
+            gs_bottom_row = gridspec.GridSpecFromSubplotSpec(1, 2,
+                                                             subplot_spec=gs_rows[1],
+                                                             width_ratios=[0.75, 0.25], # Example: Boxplot 75%, histogram 25% of bottom row width
+                                                             wspace=0.02) # Adjust space between boxplot and histogram
+            ax_boxplot = fig.add_subplot(gs_bottom_row[0, 0], sharex=ax_heatmap_img) # Boxplot shares X with heatmap IMAGE
+            ax_hist_y = fig.add_subplot(gs_bottom_row[0, 1], sharey=ax_boxplot)  # Histogram shares Y with boxplot
+
+            if main_title is None:
+                default_main_title = f"Leadfield Matrix Summary ({orientation_type.capitalize()} Orientation)"
+                fig.suptitle(default_main_title, fontsize=18, y=0.99)
+            elif main_title:
+                fig.suptitle(main_title, fontsize=18, y=0.99)
+
+            # ... (rest of the plotting logic for heatmap, boxplot, histogram remains the same as the previous version) ...
+            # --- Prepare data for heatmap (lf_for_heatmap: sources on Y, selected sensors on X) ---
             if orientation_type == "fixed":
                 if leadfield_matrix.ndim != 2:
-                     raise ValueError(f"Expected 2D leadfield for fixed orientation, got {leadfield_matrix.ndim}D")
-                fig, ax = plt.subplots(figsize=(10, 8))
-                im = ax.imshow(leadfield_matrix, aspect='auto', cmap='viridis', interpolation='nearest')
-                fig.colorbar(im, ax=ax, label="Amplitude")
-                ax.set_title("Leadfield Matrix (Fixed Orientation)")
-                ax.set_xlabel("Sources")
-                ax.set_ylabel("Sensors")
+                    raise ValueError(f"Heatmap: Expected 2D leadfield for fixed, got {leadfield_matrix.ndim}D")
+                lf_norm_for_heatmap = leadfield_matrix
+                heatmap_title_suffix = "(Fixed Orientation)"
             elif orientation_type == "free":
                 if leadfield_matrix.ndim != 3 or leadfield_matrix.shape[-1] != 3:
-                     raise ValueError(f"Expected 3D leadfield (..., 3) for free orientation, got shape {leadfield_matrix.shape}")
-                n_orient = leadfield_matrix.shape[-1]
-                fig, axes = plt.subplots(1, n_orient, figsize=(15, 5), sharey=True)
-                if n_orient == 1: axes = [axes] # Ensure axes is iterable
-                orientations = ["X", "Y", "Z"]
-                images = []
-                for i in range(n_orient):
-                    im = axes[i].imshow(leadfield_matrix[:, :, i], aspect='auto', cmap='viridis', interpolation='nearest')
-                    images.append(im)
-                    axes[i].set_title(f"Leadfield Matrix ({orientations[i]})")
-                    axes[i].set_xlabel("Sources")
-                axes[0].set_ylabel("Sensors")
-                fig.colorbar(images[0], ax=axes, location="right", label="Amplitude", fraction=0.05, pad=0.04)
+                    raise ValueError(f"Heatmap: Expected 3D leadfield (..., 3) for free, got {leadfield_matrix.shape}")
+                lf_norm_for_heatmap = np.linalg.norm(leadfield_matrix, axis=-1)
+                heatmap_title_suffix = "(Free Orientation - Norm)"
             else:
-                raise ValueError("Invalid orientation type. Must be 'fixed' or 'free'.")
+                raise ValueError("Heatmap: Invalid orientation type.")
 
-            plt.tight_layout()
+            if len(actual_sensor_indices_to_plot) > 0:
+                lf_selected_sensors = lf_norm_for_heatmap[actual_sensor_indices_to_plot, :]
+                data_for_heatmap_display = lf_selected_sensors.T
+            else:
+                data_for_heatmap_display = np.array([[]])
+                ax_heatmap_img.text(0.5, 0.5, "No sensors for heatmap.", ha='center', va='center')
+
+            # --- Subplot 1: Flipped Leadfield Heatmap (ax_heatmap_img) & Colorbar (cax_heatmap_cb) ---
+            if data_for_heatmap_display.size > 0 :
+                im = ax_heatmap_img.imshow(data_for_heatmap_display, aspect='auto', cmap='viridis', interpolation='nearest')
+                fig.colorbar(im, cax=cax_heatmap_cb, label="Amplitude (µV / nAm)")
+                ax_heatmap_img.set_title(f"Leadfield Matrix {heatmap_title_suffix}", fontsize=14)
+                ax_heatmap_img.set_ylabel("Sources", fontsize=12)
+                ax_heatmap_img.set_xlabel("Sensor Index", fontsize=12)
+            else:
+                ax_heatmap_img.set_title(f"Leadfield Matrix {heatmap_title_suffix}", fontsize=14)
+                ax_heatmap_img.set_ylabel("Sources", fontsize=12)
+                ax_heatmap_img.set_xlabel("Sensor Index", fontsize=12) # Fallback if no data
+
+            # --- Data for Histogram (Overall Distribution) ---
+            leadfield_values_flat = leadfield_matrix.flatten()
+
+            # --- Subplot 2: Leadfield Sensor Box Plots (ax_boxplot) ---
+            labels_for_boxplot = [str(idx) for idx in actual_sensor_indices_to_plot]
+            all_q1_values_for_boxplot_sensors = [] 
+            all_q2_values_for_boxplot_sensors = [] 
+            all_min_no_outliers_per_sensor = [] # Store min (no outliers) for each sensor's boxplot data
+            all_max_no_outliers_per_sensor = [] # Store max (no outliers) for each sensor's boxplot data
+
+            if len(actual_sensor_indices_to_plot) > 0:
+                data_for_boxplot = []
+                for sensor_idx in actual_sensor_indices_to_plot:
+                    current_sensor_data = None
+                    if orientation_type == "fixed":
+                        current_sensor_data = leadfield_matrix[sensor_idx, :]
+                    elif orientation_type == "free":
+                        sensor_values_3d = leadfield_matrix[sensor_idx, :, :]
+                        current_sensor_data = np.linalg.norm(sensor_values_3d, axis=-1)
+                    else: 
+                        self.logger.error(f"Boxplot: Invalid orientation type '{orientation_type}' encountered unexpectedly. Raising ValueError.")
+                        raise ValueError("Boxplot: Invalid orientation type.")
+                    data_for_boxplot.append(current_sensor_data)
+
+                    if current_sensor_data.size > 0:
+                        all_q1_values_for_boxplot_sensors.append(np.percentile(current_sensor_data, 25))
+                        all_q2_values_for_boxplot_sensors.append(np.percentile(current_sensor_data, 50))
+
+                        # Calculate min/max without outliers for THIS sensor's data
+                        q1_sensor = np.percentile(current_sensor_data, 25)
+                        q3_sensor = np.percentile(current_sensor_data, 75)
+                        iqr_sensor = q3_sensor - q1_sensor
+                        lower_bound_sensor = q1_sensor - 1.5 * iqr_sensor
+                        upper_bound_sensor = q3_sensor + 1.5 * iqr_sensor
+                        
+                        sensor_data_no_outliers = current_sensor_data[
+                            (current_sensor_data >= lower_bound_sensor) &
+                            (current_sensor_data <= upper_bound_sensor)
+                        ]
+                        
+                        if sensor_data_no_outliers.size > 0:
+                            all_min_no_outliers_per_sensor.append(np.min(sensor_data_no_outliers))
+                            all_max_no_outliers_per_sensor.append(np.max(sensor_data_no_outliers))
+                        else:
+                            # If all data for a sensor are outliers or it's empty after filtering
+                            all_min_no_outliers_per_sensor.append(np.nan)
+                            all_max_no_outliers_per_sensor.append(np.nan)
+                    else: # current_sensor_data.size == 0
+                        all_min_no_outliers_per_sensor.append(np.nan)
+                        all_max_no_outliers_per_sensor.append(np.nan)
+                
+                boxprops = dict(facecolor='skyblue', alpha=0.7, edgecolor='black')
+                medianprops = dict(color="navy", linewidth=1.5)
+                
+                bp = ax_boxplot.boxplot(data_for_boxplot, patch_artist=True, labels=labels_for_boxplot,
+                                        boxprops=boxprops, medianprops=medianprops, vert=True)
+                
+                ax_boxplot.set_title("Leadfield Amplitude per Sensor", fontsize=14)
+                ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+                ax_boxplot.grid(True, linestyle='--', alpha=0.6, axis='y')
+                ax_boxplot.set_xlabel("Selected Sensor Index", fontsize=12) # This label will be visible
+                plt.setp(ax_boxplot.get_xticklabels(), rotation=45, ha="right" if len(labels_for_boxplot) > 5 else "center")
+            else:
+                ax_boxplot.text(0.5, 0.5, "No sensors for boxplot.", ha='center', va='center')
+                ax_boxplot.set_title("Leadfield Amplitude per Sensor", fontsize=14)
+                ax_boxplot.set_xlabel("Selected Sensor Index", fontsize=12)
+                ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+                self.logger.info("No boxplots generated as no sensors were selected.")
+
+            # Configure shared X-axis: Heatmap image X-ticks are based on boxplot's
+            if len(actual_sensor_indices_to_plot) > 0 and data_for_heatmap_display.size > 0:
+                ax_heatmap_img.set_xticks(np.arange(len(actual_sensor_indices_to_plot)))
+                plt.setp(ax_heatmap_img.get_xticklabels(), visible=False)
+            # ax_heatmap_img.set_xlabel("") # This was commented out in the provided context, keeping it so
+
+            # --- Subplot 3: Rotated Histogram (ax_hist_y) ---
+            ax_hist_y.hist(leadfield_values_flat, bins=bins, color='lightcoral', edgecolor='black', alpha=0.7, orientation='horizontal')
+            ax_hist_y.set_title("Overall Distribution", fontsize=14)
+            ax_hist_y.set_xlabel("Frequency", fontsize=12)
+            plt.setp(ax_hist_y.get_yticklabels(), visible=False)
+            ax_hist_y.grid(True, linestyle='--', alpha=0.7, axis='x')
+
+            mean_val = np.mean(leadfield_values_flat)
+            median_val = np.median(leadfield_values_flat)
+            mean_abs_val = np.mean(np.abs(leadfield_values_flat))
+            std_val = np.std(leadfield_values_flat)
+            min_val_flat = np.min(leadfield_values_flat) # Overall min (with outliers)
+            max_val_flat = np.max(leadfield_values_flat) # Overall max (with outliers)
+
+            # Calculate mean of Q1 and Q2 values from the boxplot data
+            mean_of_boxplot_q1s = np.nanmean(all_q1_values_for_boxplot_sensors) if all_q1_values_for_boxplot_sensors else np.nan
+            mean_of_boxplot_q2s = np.nanmean(all_q2_values_for_boxplot_sensors) if all_q2_values_for_boxplot_sensors else np.nan
+            
+            # Calculate mean of sensor-wise min/max (no outliers)
+            mean_of_sensor_mins_no_outliers = np.nanmean(all_min_no_outliers_per_sensor) if all_min_no_outliers_per_sensor else np.nan
+            mean_of_sensor_maxs_no_outliers = np.nanmean(all_max_no_outliers_per_sensor) if all_max_no_outliers_per_sensor else np.nan
+            
+            self.logger.info(f"Leadfield overall flat data stats: N_values={len(leadfield_values_flat)}, Mean={mean_val:.2e}, Std={std_val:.2e}, Median={median_val:.2e}, Min={min_val_flat:.2e}, Max={max_val_flat:.2e}, Mean Abs={mean_abs_val:.2e}")
+            self.logger.info(f"Leadfield boxplot sensors stats: Mean of Q1s={mean_of_boxplot_q1s:.2e}, Mean of Q2s (Medians)={mean_of_boxplot_q2s:.2e} (for {len(all_q1_values_for_boxplot_sensors)} sensors)")
+            self.logger.info(f"Leadfield boxplot sensors (no outliers): Mean of Mins={mean_of_sensor_mins_no_outliers:.2e}, Mean of Maxs={mean_of_sensor_maxs_no_outliers:.2e}")
+            
+            stats_text = (f"Overall Mean: {mean_val:.2e}\n"
+                          f"Overall Median: {median_val:.2e}\n"
+                          f"Overall Std: {std_val:.2e}\n"
+                          f"Overall Min: {min_val_flat:.2e}\n"
+                          f"Overall Max: {max_val_flat:.2e}\n"
+                          f"Mean Abs: {mean_abs_val:.2e}\n"
+                          f"Mean Boxplot Q1s: {mean_of_boxplot_q1s:.2e}\n"
+                          f"Mean Boxplot Q2s: {mean_of_boxplot_q2s:.2e}\n"
+                          f"Mean Sensor Min (no outliers): {mean_of_sensor_mins_no_outliers:.2e}\n"
+                          f"Mean Sensor Max (no outliers): {mean_of_sensor_maxs_no_outliers:.2e}")
+            
+            ax_hist_y.text(0.95, 0.95, stats_text, transform=ax_hist_y.transAxes, fontsize=9,verticalalignment='top', horizontalalignment='right', bbox=dict(boxstyle='round,pad=0.3', fc='wheat', alpha=0.5))
+
+            
+            fig.tight_layout(rect=[0, 0, 1, 0.97] if main_title else [0,0,1,1])
 
             if save_path:
                 save_dir = Path(save_path).parent
                 save_dir.mkdir(parents=True, exist_ok=True)
-                plt.savefig(save_path, bbox_inches="tight")
-                self.logger.info(f"Leadfield matrix visualization saved to {save_path}")
+                plt.savefig(save_path, bbox_inches="tight", dpi=150)
+                self.logger.info(f"Leadfield summary visualization saved to {save_path}")
             if show:
                 plt.show()
 
         except Exception as e:
-             self.logger.error(f"Failed during leadfield visualization: {e}")
+             self.logger.error(f"Failed during leadfield summary visualization: {e}", exc_info=True)
         finally:
              if fig:
                  plt.close(fig)
-
+                                      
     def visualize_leadfield_topomap(
         self,
         leadfield_matrix: np.ndarray,
@@ -992,19 +1699,21 @@ class DataSimulator:
                  self.logger.warning("Could not extract leadfield values for any active source.")
                  return
 
-            vmax = np.max(np.abs(all_leadfield_values))
-            vmin = -vmax
+            vmax = np.max(all_leadfield_values)
+            vmin = np.min(all_leadfield_values)
 
             for i, source_idx in enumerate(active_sources):
                 leadfield_values = all_leadfield_values[i]
                 im, _ = mne.viz.plot_topomap(
                     leadfield_values, info, axes=axes_flat[i], cmap="RdBu_r", # Use diverging colormap
-                    vlim=(vmin, vmax), show=False, contours=6
+                    # vlim=(vmin, vmax), 
+                    show=False,
+                    contours=6
                 )
                 axes_flat[i].set_title(f"Source {source_idx}")
 
             # Add a single colorbar
-            fig.colorbar(im, ax=axes.ravel().tolist(), label='Leadfield Amplitude', shrink=0.6, aspect=10)
+            fig.colorbar(im, ax=axes.ravel().tolist(), label='Leadfield Amplitude (µV / nAm)', shrink=0.6, aspect=10)
 
             # Hide unused subplots
             for j in range(n_active, len(axes_flat)):
@@ -1013,7 +1722,7 @@ class DataSimulator:
             if title:
                 fig.suptitle(title, fontsize=16) # Removed weight="bold"
 
-            plt.tight_layout(rect=[0, 0, 1, 0.95] if title else [0, 0, 1, 1]) # Adjust for suptitle
+            # plt.tight_layout(rect=[0, 0, 1, 0.95] if title else [0, 0, 1, 1])
 
             if save_path:
                 save_dir = Path(save_path).parent
@@ -1031,7 +1740,7 @@ class DataSimulator:
                  plt.close(fig)
                  
 
-    def inspect_matrix_values(matrix, matrix_name="Matrix"):
+    def inspect_matrix_values(self, matrix, matrix_name="Matrix"):
         """
         Prints summary statistics and checks for invalid values in a NumPy array.
 
@@ -1073,7 +1782,7 @@ class DataSimulator:
             print(f"Error during inspection of {matrix_name}: {e}")
         print(f"--- End {matrix_name} Inspection ---")
 
-    def load_and_validate_leadfield(leadfield_file_path, orientation_type):
+    def load_and_validate_leadfield(self, leadfield_file_path, orientation_type):
         """
         Loads a leadfield matrix from an .npz file and validates its shape
         based on the expected orientation type. Includes value inspection.
@@ -1095,18 +1804,18 @@ class DataSimulator:
         try:
             with np.load(leadfield_file_path) as data:
                 # ... (loading logic as before) ...
-                if 'leadfield' in data:
-                    leadfield_matrix = data["leadfield"]
-                elif 'leadfield_fixed' in data and orientation_type == "fixed":
-                    leadfield_matrix = data['leadfield_fixed']
-                elif 'leadfield_free' in data and orientation_type == "free":
-                    leadfield_matrix = data['leadfield_free']
-                elif 'leadfield' in data:
-                    print("Warning: Loading generic 'leadfield' key. Ensure it matches orientation type.")
-                    leadfield_matrix = data["leadfield"]
+                if 'lead_field' in data:
+                    leadfield_matrix = data["lead_field"]
+                elif 'lead_field_fixed' in data and orientation_type == "fixed":
+                    leadfield_matrix = data['lead_field_fixed']
+                elif 'lead_field_free' in data and orientation_type == "free":
+                    leadfield_matrix = data['lead_field_free']
+                elif 'lead_field' in data:
+                    print("Warning: Loading generic 'lead_field' key. Ensure it matches orientation type.")
+                    leadfield_matrix = data["lead_field"]
                 else:
                     keys_found = list(data.keys())
-                    raise KeyError(f"Could not find a suitable leadfield key ('leadfield', 'leadfield_fixed', 'leadfield_free') in .npz file. Found keys: {keys_found}")
+                    raise KeyError(f"Could not find a suitable leadfield key ('lead_field', 'lead_field_fixed', 'lead_field_free') in .npz file. Found keys: {keys_found}")
 
             print(f"Leadfield loaded successfully. Initial Shape: {leadfield_matrix.shape}", "dtype:", leadfield_matrix.dtype)
 
@@ -1137,7 +1846,7 @@ class DataSimulator:
             print(f"Leadfield validated successfully. Final Shape: {leadfield_matrix.shape}")
 
             # --- Inspect Leadfield Matrix Values using the function ---
-            inspect_matrix_values(leadfield_matrix, matrix_name="Leadfield")
+            self.inspect_matrix_values(leadfield_matrix, matrix_name="Leadfield")
             # --- End Inspection ---
 
             return leadfield_matrix
