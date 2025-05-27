@@ -70,27 +70,39 @@ class VBFA:
                 self._plot(i)
 
         # Final outputs
-        self.weight = self.b @ igam @ self.b.T @ np.diag(self.lam)
+        self.weight = (self.b @ igam @ self.b.T @ 
+                      np.diag(self.lam))
         self.sig = self.b @ self.b.T + np.diag(1.0 / self.lam)
         self.yc = self.b @ ubar
-        self.cy = self.b @ ruu @ self.b.T + np.diag(np.diag(self.sig) * np.trace(ruu @ inv(ruu + np.diag(self.bet))))
+        self.cy = (self.b @ ruu @ self.b.T + 
+                  np.diag(np.diag(self.sig) * 
+                         np.trace(ruu @ inv(ruu + np.diag(self.bet)))))
         self.mlike = self.likelihood[-1]
 
     def _compute_gamma(self, rbb: np.ndarray) -> np.ndarray:
         dlam = np.diag(self.lam)
-        return self.b.T @ dlam @ self.b + np.eye(self.nl) + self.b.shape[0] * rbb
+        return (self.b.T @ dlam @ self.b + 
+                np.eye(self.nl) + 
+                self.b.shape[0] * rbb)
 
-    def _compute_likelihood(self, y: np.ndarray, ryu: np.ndarray, ruu: np.ndarray, gam: np.ndarray) -> float:
+    def _compute_likelihood(self, y: np.ndarray, ryu: np.ndarray, 
+                          ruu: np.ndarray, gam: np.ndarray) -> float:
         nk, nt = y.shape
         _, d, _ = svd(gam)
         ldgam = np.sum(np.log(d))
-        temp1 = -0.5 * ldgam + 0.5 * np.sum(np.sum(ubar * (gam @ ubar), axis=0)) / nt
-        temp2 = 0.5 * np.sum(np.log(self.lam)) - 0.5 * (self.lam @ np.mean(y**2, axis=1))
-        f3 = 0.5 * self.nl * np.sum(np.log(self.lam)) + 0.5 * nk * np.sum(np.log(self.bet)) - 0.5 * np.trace(self.b.T @ np.diag(self.lam) @ self.b @ np.diag(self.bet))
+        temp1 = (-0.5 * ldgam + 
+                0.5 * np.sum(np.sum(ubar * (gam @ ubar), axis=0)) / nt)
+        temp2 = (0.5 * np.sum(np.log(self.lam)) - 
+                0.5 * (self.lam @ np.mean(y**2, axis=1)))
+        f3 = (0.5 * self.nl * np.sum(np.log(self.lam)) + 
+              0.5 * nk * np.sum(np.log(self.bet)) - 
+              0.5 * np.trace(self.b.T @ np.diag(self.lam) @ 
+                            self.b @ np.diag(self.bet)))
         return temp1 + temp2 + f3 / nt
 
     def _update_bet(self, ruu: np.ndarray) -> np.ndarray:
-        return 1.0 / (np.diag(self.b.T @ np.diag(self.lam) @ self.b) / self.b.shape[0] + np.diag(inv(ruu)))
+        return 1.0 / (np.diag(self.b.T @ np.diag(self.lam) @ self.b) / 
+                     self.b.shape[0] + np.diag(inv(ruu)))
 
     def _update_b(self, ryu: np.ndarray, ruu: np.ndarray) -> np.ndarray:
         return ryu @ inv(ruu + np.diag(self.bet))
@@ -104,7 +116,10 @@ class VBFA:
         fig, axes = plt.subplots(3, 3, figsize=(10, 8))
         axes[0, 0].plot(self.likelihood[: i+1])
         axes[0, 0].set_title('Likelihood')
-        axes[1, 0].plot(np.sqrt(np.vstack([np.mean(self.b**2, axis=0), 1.0 / self.bet]).T))
+        axes[1, 0].plot(np.sqrt(np.vstack([
+            np.mean(self.b**2, axis=0), 
+            1.0 / self.bet
+        ]).T))
         axes[1, 0].set_title('1/bet')
         axes[2, 0].plot(1.0 / self.lam)
         axes[2, 0].set_title('1/lam')
