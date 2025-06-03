@@ -60,6 +60,7 @@ class DataSimulator:
         logger: Optional[logging.Logger] = None,
         rng: Optional[Generator] = None,
         leadfield_mode: str = "random",
+        channel_type: str = "eeg",  # 'eeg' or 'meg' Required if leadfield_mode is 'load'
         leadfield_dir: Optional[Union[str, Path]] = None,
         leadfield_config_path: Optional[Union[str, Path]] = None,
     ):
@@ -116,6 +117,18 @@ class DataSimulator:
         leadfield_config_path : Optional[Union[str, Path]], optional
             Path to leadfield config file, by default None.
         
+        
+        Attributes to be set in other methods
+        -------------------------------------
+        source_units: str
+            Units for source activity (default is "nAm").
+        
+        channel_type : str
+            Type of sensors ('eeg' or 'meg').
+        
+        leadfield_units : str
+            Units for leadfield matrix (e.g., "µV / nAm" for EEG, "fT / nAm" for MEG).
+            
         Raises
         ------
         ValueError
@@ -143,9 +156,15 @@ class DataSimulator:
         self.logger = logger if logger else logging.getLogger(__name__)
         self.rng = rng if rng else np.random.default_rng(seed)
         self.leadfield_mode = leadfield_mode
+        self.channel_type = channel_type
         self.leadfield_dir = Path(leadfield_dir) if leadfield_dir else None
         self.leadfield_config_path = Path(leadfield_config_path) if leadfield_config_path else None
 
+        # Attributes to be set in other methods
+        self.source_units = "nAm"
+        self.channel_units = None
+        self.leadfield_units = None
+        
         self.logger.info(f"DataSimulator initialized with orientation: {self.orientation_type}, leadfield mode: {self.leadfield_mode}")
 
     def _get_leadfield(self, subject) -> np.ndarray:
@@ -221,6 +240,13 @@ class DataSimulator:
                         f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
                     )
                 self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
+                
+                if self.channel_type == "eeg":
+                    self.channel_units = "µV"
+                elif self.channel_type == "meg":
+                    self.channel_units = "fT"
+                else:
+                    raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")                
 
             except (FileNotFoundError, ValueError) as e:
                 self.logger.error(f"Failed to load leadfield matrix: {e}")
@@ -242,6 +268,13 @@ class DataSimulator:
                         f"Simulated leadfield matrix dimension mismatch for orientation '{self.orientation_type}': "
                         f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
                     )
+                if L_simulator.channel_type == "eeg":
+                    self.channel_units = "µV"
+                elif L_simulator.channel_type == "meg":
+                    self.channel_units = "fT"
+                else:
+                    raise ValueError(f"Invalid channel_type '{L_simulator.channel_type}'. Choose 'eeg' or 'meg'.")
+                
             except Exception as e:
                  self.logger.error(f"Failed to simulate leadfield matrix: {e}")
                  raise
@@ -254,6 +287,13 @@ class DataSimulator:
                 leadfield = self.rng.standard_normal((self.n_sensors, self.n_sources, 3))
             self.logger.info(f"Random leadfield generated with shape {leadfield.shape}")
 
+            if self.channel_type == "eeg":
+                self.channel_units = "µV"
+            elif self.channel_type == "meg":
+                self.channel_units = "fT"
+            else:
+                raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")
+                
         else:
             raise ValueError(f"Invalid leadfield mode '{self.leadfield_mode}'. Options are 'load', 'simulate', or 'random'.")
 
@@ -263,7 +303,10 @@ class DataSimulator:
         elif leadfield.ndim == 3 == expected_dimensions: # Free
             self.n_sensors, self.n_sources, _ = leadfield.shape
 
+        self.leadfield_units = f"{self.channel_units} / {self.source_units}"
+        
         self.logger.info(f"Leadfield obtained. Updated n_sensors={self.n_sensors}, n_sources={self.n_sources}")
+        
         return leadfield
 
     def _generate_erp_signal(self, seed, onset_sample):
@@ -369,6 +412,8 @@ class DataSimulator:
         # Ensure placement is within bounds (should be guaranteed by earlier logic)
         if actual_placement_start_sample < self.n_times and end_sample_for_erp_segment <= self.n_times:
             output_signal[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment
+            
+        self.source_units = "nAm" 
         
         return output_signal
 
@@ -445,21 +490,22 @@ class DataSimulator:
             - 'fixed': Shape (n_sources, n_times).
             - 'free': Shape (n_sources, 3, n_times).
         L : np.ndarray
-            Leadfield matrix (µV / nAm).
+            Leadfield matrix (µV / nAm for EEG or ft / nAm for MEG).
             - 'fixed': Shape (n_sensors, n_sources).
             - 'free': Shape (n_sensors, n_sources, 3).
 
         Returns
         -------
         np.ndarray
-            Sensor measurements (y_clean). Shape: (n_sensors, n_times). => (µV / nAm) * nAm = µV
-
+            Sensor measurements (y_clean). Shape: (n_sensors, n_times). The units depends on the channel type:
+            - 'eeg': µV
+            - 'meg': fT
+        
         Raises
         ------
         ValueError
             If `self.orientation_type` is unsupported.
         """
-        # (µV / nAm) * nAm = µV
         if self.orientation_type == "fixed":
             # Matrix multiplication: (n_sensors, n_sources) @ (n_sources, n_times) -> (n_sensors, n_times)
             y = L @ x
@@ -874,7 +920,7 @@ class DataSimulator:
 
         ax_sources.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
         ax_sources.set_title(f"{nnz_to_plot} Active Simulated Source Activity")
-        ax_sources.set_ylabel("Amplitude (nAm)")
+        ax_sources.set_ylabel(f"Amplitude ({self.source_units})")
         ax_sources.grid(True)
         ax_sources.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
@@ -888,7 +934,7 @@ class DataSimulator:
                 current_shift += shift 
             ax_sensors.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
             ax_sensors.set_title("Sensor Measurements")
-            ax_sensors.set_ylabel("Amplitude (μV)") 
+            ax_sensors.set_ylabel(f"Amplitude ({self.channel_units})") 
             ax_sensors.grid(True)
             # Consolidate legend for "Stimulus Onset" if it's plotted multiple times
             handles, labels = ax_sensors.get_legend_handles_labels()
@@ -900,7 +946,7 @@ class DataSimulator:
                 ax_sens.plot(times, y_noisy[idx], label=f"Noisy", linewidth=1)
                 ax_sens.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
                 ax_sens.set_title(f"Sensor {idx}")
-                ax_sens.set_ylabel("Amplitude (μV)")
+                ax_sens.set_ylabel(f"Amplitude ({self.channel_units})")
                 ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) 
                 ax_sens.grid(True)
                 handles, labels = ax_sens.get_legend_handles_labels()
@@ -1472,7 +1518,7 @@ class DataSimulator:
             # --- Subplot 1: Flipped Leadfield Heatmap (ax_heatmap_img) & Colorbar (cax_heatmap_cb) ---
             if data_for_heatmap_display.size > 0 :
                 im = ax_heatmap_img.imshow(data_for_heatmap_display, aspect='auto', cmap='viridis', interpolation='nearest')
-                fig.colorbar(im, cax=cax_heatmap_cb, label="Amplitude (µV / nAm)")
+                fig.colorbar(im, cax=cax_heatmap_cb, label=f"Amplitude ({self.leadfield_units})")
                 ax_heatmap_img.set_title(f"Leadfield Matrix {heatmap_title_suffix}", fontsize=14)
                 ax_heatmap_img.set_ylabel("Sources", fontsize=12)
                 ax_heatmap_img.set_xlabel("Sensor Index", fontsize=12)
@@ -1539,7 +1585,7 @@ class DataSimulator:
                                         boxprops=boxprops, medianprops=medianprops, vert=True)
                 
                 ax_boxplot.set_title("Leadfield Amplitude per Sensor", fontsize=14)
-                ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+                ax_boxplot.set_ylabel(f"Leadfield Amplitude ({self.leadfield_units})", fontsize=12)
                 ax_boxplot.grid(True, linestyle='--', alpha=0.6, axis='y')
                 ax_boxplot.set_xlabel("Selected Sensor Index", fontsize=12) # This label will be visible
                 plt.setp(ax_boxplot.get_xticklabels(), rotation=45, ha="right" if len(labels_for_boxplot) > 5 else "center")
@@ -1547,7 +1593,7 @@ class DataSimulator:
                 ax_boxplot.text(0.5, 0.5, "No sensors for boxplot.", ha='center', va='center')
                 ax_boxplot.set_title("Leadfield Amplitude per Sensor", fontsize=14)
                 ax_boxplot.set_xlabel("Selected Sensor Index", fontsize=12)
-                ax_boxplot.set_ylabel("Leadfield Amplitude (µV / nAm)", fontsize=12)
+                ax_boxplot.set_ylabel(f"Leadfield Amplitude ({self.leadfield_units})", fontsize=12)
                 self.logger.info("No boxplots generated as no sensors were selected.")
 
             # Configure shared X-axis: Heatmap image X-ticks are based on boxplot's
@@ -1713,7 +1759,7 @@ class DataSimulator:
                 axes_flat[i].set_title(f"Source {source_idx}")
 
             # Add a single colorbar
-            fig.colorbar(im, ax=axes.ravel().tolist(), label='Leadfield Amplitude (µV / nAm)', shrink=0.6, aspect=10)
+            fig.colorbar(im, ax=axes.ravel().tolist(), label=f'Leadfield Amplitude ({self.leadfield_units})', shrink=0.6, aspect=10)
 
             # Hide unused subplots
             for j in range(n_active, len(axes_flat)):
@@ -1883,7 +1929,7 @@ class DataSimulator:
             axes[i].plot(times, y_noisy[sensor_idx], label="y_noise")
             axes[i].set_title(f"Sensor {sensor_idx}")
             axes[i].set_xlabel("Time (s)")
-            axes[i].set_ylabel("Amplitude  (µV)")
+            axes[i].set_ylabel(f"Amplitude  ({self.channel_units})")
             axes[i].legend()
             axes[i].grid(True)
 
@@ -1916,7 +1962,7 @@ class DataSimulator:
 
         ax.axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
         ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Amplitude (nAm)")
+        ax.set_ylabel(f"Amplitude ({self.source_units})")
         ax.legend(loc='best', fontsize='small')
         ax.grid(True, alpha=0.6)
         ax.set_title("Active Sources")
@@ -2005,7 +2051,7 @@ class DataSimulator:
 
 
         ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Amplitude (µV)")
+        ax.set_ylabel(f"Amplitude ({self.channel_units})")
         ax.grid(True, alpha=0.6)
         ax.set_title(f"{n_plot_sensors} channels")
 
@@ -2043,7 +2089,7 @@ class DataSimulator:
             axes[i].plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=2)
             axes[i].axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
             axes[i].set_xlabel("Time (s)")
-            axes[i].set_ylabel("Amplitude (nAm)")
+            axes[i].set_ylabel(f"Amplitude ({self.source_units})")
             axes[i].set_title(f"Active Source {src_idx}")
             axes[i].legend()
             axes[i].grid(True)
