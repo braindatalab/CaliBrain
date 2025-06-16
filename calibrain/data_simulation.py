@@ -440,6 +440,7 @@ class DataSimulator:
         # active_indices: np.ndarray
 
         if self.orientation_type == "fixed":
+            # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
             active_indices = rng.choice(self.n_sources, size=self.nnz, replace=False)
             x = np.zeros((self.n_sources, self.n_times))
             for i, src_idx in enumerate(active_indices):
@@ -453,6 +454,7 @@ class DataSimulator:
                 x[src_idx, :] = erp_waveform # Assign the full waveform (includes leading zeros)
         elif self.orientation_type == "free":
             n_orientations_free = 3 # TODO: Make this configurable
+            # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
             active_indices = rng.choice(self.n_sources, size=self.nnz, replace=False)
             x = np.zeros((self.n_sources, self.n_orient, self.n_times))
             for i, src_idx in enumerate(active_indices):
