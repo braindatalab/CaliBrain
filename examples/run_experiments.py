@@ -23,10 +23,10 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "subject": ["caliBrain_fsaverage"], # "fsaverage", "CC120313"
-        "nnz": [1],
+        "subject": ['CC120313'], # ["caliBrain_fsaverage"], # "fsaverage", "CC120313"
+        "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr_db": [1],
+        "alpha_snr_db": [10],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
@@ -48,9 +48,10 @@ def main():
         fmin=1,
         fmax=5,
         amplitude=5,
-        n_trials=3,
+        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
         leadfield_mode='load', # simulate, random, load. Important: if `simulate` then align the config file of the leadfield simulation!
         # leadfield_dir=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
+        channel_type='meg',  # 'eeg', 'meg'
         leadfield_dir=Path(f'BSI-ZOO_forward_data'),
         leadfield_config_path='configs/leadfield_sim_cfg.yml',
     )
