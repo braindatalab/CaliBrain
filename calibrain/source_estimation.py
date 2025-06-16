@@ -264,6 +264,7 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         Returns:
         - self: The fitted estimator.
         """
+        self.logger.info("Fitting the solver...")
         self.L_ = L
         self.y_ = y
         return self
@@ -289,6 +290,7 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
             y = self.y_
 
         # Apply the solver
+        self.logger.info("Estimating sources...")
         x_hat, active_set, posterior_cov = self.solver(self.L_, y, noise_var, logger=self.logger, **self.solver_params, n_orient=self.n_orient)
         
         return x_hat, active_set, posterior_cov
