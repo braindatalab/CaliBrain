@@ -3,14 +3,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
-from itertools import combinations
+from itertools import combinations, zip_longest
 from matplotlib.patches import Ellipse
 import mne
 import logging
 
 
 class UncertaintyEstimator:
-    def __init__(self, orientation_type, x, x_hat, active_set, posterior_cov, experiment_dir=None, logger=None):
+    def __init__(self, orientation_type, x, x_hat, n_totl_sources, active_set, x_active_indices, posterior_cov, experiment_dir=None, confidence_levels=None, logger=None):
         """
         Initialize the uncertainty estimator.
         
@@ -18,7 +18,9 @@ class UncertaintyEstimator:
         - orientation_type (str): Orientation type ('fixed' or 'free').
         - x (np.ndarray): Ground truth source activity.
         - x_hat (np.ndarray): Estimated source activity.
-        - active_set (np.ndarray): Indices of active sources.
+        - active_set (np.ndarray): Indices of active sources of the posterior mean (of the estimated sources).
+        - n_totl_sources (int): Total number of sources in the source space.
+        - x_active_indices (np.ndarray, optional): Indices of active sources in the original source spac (Ground truth) based on number-non-zero sources parameter of the data simulation (nnz).
         - posterior_cov (np.ndarray, optional): Posterior covariance matrix.
         - experiment_dir (str, optional): Directory for experiment results.
         - logger (logging.Logger, optional): Logger instance for logging messages.
@@ -26,8 +28,11 @@ class UncertaintyEstimator:
         self.orientation_type = orientation_type
         self.x = x
         self.x_hat = x_hat
+        self.n_totl_sources = n_totl_sources
         self.active_set = active_set
+        self.x_active_indices = x_active_indices
         self.posterior_cov = posterior_cov
+        self.confidence_levels = confidence_levels
         self.experiment_dir = experiment_dir
         self.logger = logger
 
@@ -301,127 +306,125 @@ class UncertaintyEstimator:
         plt.savefig(os.path.join(self.experiment_dir, 'top_relevant_CE_pairs.png'))
         plt.close()
         
-# ------------------------------
 
-    def plot_active_sources_single_time_step(self, time_step=0):
+    def plot_active_sources_single_time_step(self, x, x_hat, time_step=0):
         """
-        Plot the active sources for a single time step, comparing ground truth and estimated sources.
-        Handles both 3D and 2D input shapes for x and x_hat.
+        Plot active sources for a single time step, comparing ground truth and estimates.
+
+        The input x are the ground truth values for components specified by
+        self.x_active_indices.
+        The input x_hat are the estimated values for components specified by
+        self.active_set.
+
+        Parameters:
+        - x (np.ndarray): Ground truth source activity values for active components.
+                                         Shape: (len(self.x_active_indices), n_times).
+        - x_hat (np.ndarray): Estimated source activity values for active components.
+                                          Shape: (len(self.active_set), n_times).
+        - time_step (int): The specific time step to plot. Defaults to 0.
         """
+        self.logger.info(f"Plotting active sources at time step {time_step} using provided active values.")
+
+        if x.ndim != 2 or x_hat.ndim != 2:
+            raise ValueError(
+                f"x and x_hat must be 2D arrays. "
+                f"Got shapes: x={x.shape}, x_hat={x_hat.shape}"
+            )
+
+        if self.x_active_indices is not None and x.shape[0] != len(self.x_active_indices):
+            raise ValueError(
+                f"Number of rows in x ({x.shape[0]}) "
+                f"must match length of self.x_active_indices ({len(self.x_active_indices)})."
+            )
+        if x_hat.shape[0] != len(self.active_set):
+            raise ValueError(
+                f"Number of rows in x_hat ({x_hat.shape[0]}) "
+                f"must match length of self.active_set ({len(self.active_set)})."
+            )
+        
+        if x.shape[1] <= time_step or x_hat.shape[1] <= time_step:
+            self.logger.error(f"time_step {time_step} is out of bounds for data with "
+                              f"{x.shape[1]} (GT) or {x_hat.shape[1]} (Est) time points.")
+            return
+
         if self.orientation_type == 'free':
-            if self.x_hat.ndim == 3:
-                n_sources, n_orient, n_times = self.x_hat.shape
-                x_hat_is_3d = True
-            elif self.x_hat.ndim == 2:
-                n_components, n_times = self.x_hat.shape
-                if n_components % 3 != 0:
-                        self.logger.warning(f"Free orientation: self.x_hat is 2D, but first dim ({n_components}) not divisible by 3.")
-                n_sources = n_components // 3
-                x_hat_is_3d = False
-            else:
-                raise ValueError(f"Unexpected number of dimensions for self.x_hat: {self.x_hat.ndim}")
-
-            # --- Handle self.x shape similarly ---
-            if self.x.ndim == 3:
-                x_is_3d = True
-            elif self.x.ndim == 2:
-                    x_is_3d = False
-
-            fig, axes = plt.subplots(3, 1, figsize=(12, 18), sharex=True) # Share x-axis
+            fig, axes = plt.subplots(3, 1, figsize=(12, 18), sharex=True)
             orientations = ['X', 'Y', 'Z']
 
-            for i, ax in enumerate(axes): # i is the orientation index (0, 1, 2)
-                # --- Ground Truth ---
-                if x_is_3d:
-                    # Find non-zero elements for this orientation at this time step
-                    gt_source_indices_orient = np.where(self.x[:, i, time_step] != 0)[0]
-                    gt_amplitudes = self.x[gt_source_indices_orient, i, time_step]
-                else: # x is 2D (n_sources*3, n_times)
-                    gt_indices_all = np.where(self.x[:, time_step] != 0)[0]
-                    gt_indices_orient_flat = gt_indices_all[gt_indices_all % 3 == i] # Flat indices for this orientation
-                    gt_source_indices_orient = gt_indices_orient_flat // 3 # Source indices
-                    gt_amplitudes = self.x[gt_indices_orient_flat, time_step]
 
-                # --- Estimated ---
-                # Get the flat indices from active_set corresponding to this orientation
-                active_indices_orient_flat = self.active_set[self.active_set % 3 == i]
-
-                # Derive source indices from the flat indices
-                est_source_indices_orient = active_indices_orient_flat // 3
-
-                # Get amplitudes using appropriate indexing based on x_hat shape
-                if x_hat_is_3d:
-                    # Check bounds before indexing 3D array
-                    valid_source_indices = est_source_indices_orient[est_source_indices_orient < n_sources]
-                    if len(valid_source_indices) < len(est_source_indices_orient):
-                        self.logger.warning(f"Orientation {i}: Some derived source indices from active_set were out of bounds for 3D x_hat. Filtering.")
-                    est_amplitudes = self.x_hat[valid_source_indices, i, time_step]
-                    # Use the valid source indices for plotting
-                    plot_est_source_indices = valid_source_indices
-                else: # x_hat is 2D (n_sources*3, n_times)
-                    # Check bounds before indexing 2D array
-                    max_idx_x_hat = self.x_hat.shape[0] - 1
-                    valid_flat_indices = active_indices_orient_flat[active_indices_orient_flat <= max_idx_x_hat]
-                    if len(valid_flat_indices) < len(active_indices_orient_flat):
-                            self.logger.warning(f"Orientation {i}: Some flat indices from active_set were out of bounds for 2D x_hat. Filtering.")
-                    est_amplitudes = self.x_hat[valid_flat_indices, time_step]
-                    # Use source indices derived from valid flat indices for plotting
-                    plot_est_source_indices = valid_flat_indices // 3
+            x_active_indices_flat = self.x_active_indices // 3
+            x_active_indices_orientations_flat = self.x_active_indices % 3
+            # Create a map from original source index to its value for each orientation
+            x_active_indices_map = [{} for _ in range(3)]
+            for idx, val in enumerate(x):
+                if val != 0: # Only consider non-zero ground truth
+                    orient = x_active_indices_orientations_flat[idx]
+                    src_idx = x_active_indices_flat[idx]
+                    x_active_indices_map[orient][src_idx] = val
+            
+            # For Estimated (x_hat)
+            active_set_flat = self.active_set // 3
+            active_set_orientations_flat = self.active_set % 3
+            active_set_map = [{} for _ in range(3)]
+            for idx, val in enumerate(x_hat):
+                orient = active_set_orientations_flat[idx]
+                src_idx = active_set_flat[idx]
+                active_set_map[orient][src_idx] = val
 
 
-                # --- Plotting ---
-                ax.scatter(gt_source_indices_orient, gt_amplitudes, color='blue', alpha=0.6, label='Ground Truth Active')
-                ax.scatter(plot_est_source_indices, est_amplitudes, color='red', marker='x', alpha=0.6, label='Estimated Active')
-                ax.set_xlabel('Source Index') # Label only needed on bottom plot due to sharex
-                ax.set_ylabel('Amplitude')
-                ax.set_title(f'Active Sources Comparison ({orientations[i]} Orientation, Time Step {time_step})')
-                ax.legend(loc='best')
+            for i, ax in enumerate(axes): # i is the target orientation index (0, 1, 2)
+                if not self.x_active_indices and not self.active_set:
+                    ax.set_title(f'Orientation {orientations[i]} (No active components to plot)')
+                    ax.grid(True, alpha=0.5)
+                    ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+                    continue
+                
+                ax.scatter(self.x_active_indices, x, color='blue', alpha=0.6, 
+                           label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
+                ax.scatter(self.active_set, x_hat, color='red', marker='x', alpha=0.6, 
+                           label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)')
+                
+                ax.set_xlabel('Index of Active (Non-zero) Sources')
+                ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
+                ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
+                
+                # all_unique_src_indices_on_axis = sorted(list(set(self.x_active_indices + self.active_set)))
+                all_unique_src_indices_on_axis = np.arange(self.n_totl_sources)
+                # n_sources_this_axis = len(all_unique_src_indices_on_axis)
+                ax.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+                
                 ax.grid(True, alpha=0.5)
-                ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+                # ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+                if all_unique_src_indices_on_axis:
+                    ax.set_xticks(all_unique_src_indices_on_axis)
+                    ax.set_xticklabels([str(s_idx) for s_idx in all_unique_src_indices_on_axis])
 
-            # Add shared x-label
-            fig.text(0.5, 0.04, 'Source Index', ha='center', va='center')
+            fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
             plt.tight_layout(rect=[0, 0.05, 1, 0.96]) 
-            fig.suptitle(f"Active Sources Comparison (Free Orientation, Time Step {time_step})", fontsize=16)
+            fig.suptitle(f"Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps", fontsize=16)
 
-            save_path = os.path.join(self.experiment_dir, f'active_sources_single_time_step_{time_step}.png')
+            save_path = os.path.join(self.experiment_dir, f'active_sources_ts{time_step}.png')
             plt.savefig(save_path)
             self.logger.debug(f"Saved active sources plot to {save_path}")
             plt.close(fig)
 
-        else: # Fixed orientation (assuming x and x_hat are 2D: n_sources, n_times)
-            if self.x.ndim != 2 or self.x_hat.ndim != 2:
-                    raise ValueError(f"Fixed orientation plotting expects 2D x ({self.x.shape}) and x_hat ({self.x_hat.shape})")
-            if self.x.shape[0] != self.x_hat.shape[0]:
-                    raise ValueError(f"Shape mismatch between x ({self.x.shape}) and x_hat ({self.x_hat.shape})")
-
-            n_sources = self.x.shape[0]
-            max_index_x_hat = n_sources - 1
-
-            gt_active_sources = np.where(self.x[:, time_step] != 0)[0]
-            gt_amplitudes = self.x[gt_active_sources, time_step]
-
-            # Filter active_set for valid indices
-            valid_mask = self.active_set <= max_index_x_hat
-            active_set_plot = self.active_set[valid_mask]
-            if not np.all(valid_mask):
-                invalid_indices = self.active_set[~valid_mask]
-                self.logger.warning(f"Fixed Orientation: Found indices in active_set {invalid_indices.tolist()} "
-                                f"that are out of bounds for x_hat (max index: {max_index_x_hat}). Filtering them out for plotting.")
-
-            est_amplitudes = self.x_hat[active_set_plot, time_step]
-
+        else: # Fixed orientation
             plt.figure(figsize=(12, 6))
-            plt.scatter(gt_active_sources, gt_amplitudes, color='blue', alpha=0.6, label='Ground Truth Active')
-            plt.scatter(active_set_plot, est_amplitudes, color='red', marker='x', alpha=0.6, label='Estimated Active')
-            plt.xlabel('Source Index')
-            plt.ylabel('Amplitude')
-            plt.title(f'Active Sources Comparison (Fixed Orientation, Time Step {time_step})')
-            plt.legend(loc='best')
+            
+            plt.scatter(self.x_active_indices, x, color='blue', alpha=0.6, label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')            
+            plt.scatter(self.active_set, x_hat, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)')
+            
+            plt.xlabel('Index of Active (Non-zero) Sources')
+            
+            plt.ylabel('Amplitude of averaged sources (across time) and their estimates')
+            plt.title(f'Active Sources Comparison for fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
+            plt.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+            
             plt.grid(True, alpha=0.5)
-            plt.axhline(0, color='grey', linestyle='--', linewidth=0.8)
             plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-            save_path = os.path.join(self.experiment_dir, f'active_sources_single_time_step_{time_step}.png')
+
+            # save_path = os.path.join(self.experiment_dir, f'active_sources_ts{time_step}.png')
+            save_path = os.path.join(self.experiment_dir, f'active_sources_AvgTime.png')
             plt.savefig(save_path)
             self.logger.debug(f"Saved active sources plot to {save_path}")
             plt.close()
@@ -560,8 +563,8 @@ class UncertaintyEstimator:
             - For "fixed" orientation: 1D array (n_times,) with counts per time point.
             - For "free" orientation: 2D array (3, n_times) with counts per orientation (X, Y, Z) per time point.
         """
-        if x.shape[0] != len(self.active_set) or ci_lower.shape[0] != len(self.active_set) or ci_upper.shape[0] != len(self.active_set):
-             raise ValueError("Input array dimensions do not match the length of the active_set.")
+        # if x.shape[0] != len(self.active_set) or ci_lower.shape[0] != len(self.active_set) or ci_upper.shape[0] != len(self.active_set):
+        #      raise ValueError("Input array dimensions do not match the length of the active_set.")
 
         n_times = x.shape[1]
 
@@ -597,7 +600,7 @@ class UncertaintyEstimator:
         return count_within_ci
 
 
-    def _plot_ci_times(self, x, x_hat, active_set, ci_lower, ci_upper, confidence_level, figsize=(20, 15)):
+    def _plot_ci_times(self, x, x_hat, ci_lower, ci_upper, confidence_level, figsize=(12, 6)):
         """
         Plot the estimated source activity with confidence intervals for active components and save them.
         Assumes input arrays correspond only to the active components.
@@ -611,24 +614,24 @@ class UncertaintyEstimator:
         - confidence_level (float): Confidence level for the intervals.
         - figsize (tuple): Size of the plot.
         """
-        logger = self.logger if hasattr(self, 'logger') and self.logger else logging.getLogger(__name__)
-
         # Create the base directory for confidence intervals
         confidence_intervals_dir = os.path.join(self.experiment_dir, 'CI')
         os.makedirs(confidence_intervals_dir, exist_ok=True)
-        logger.debug(f"Saving CI plots to: {confidence_intervals_dir}")
+        self.logger.debug(f"Saving CI plots to: {confidence_intervals_dir}")
 
         n_active_components, n_times = x.shape
 
         if n_active_components == 0:
-            logger.warning("No active components to plot for CI times.")
+            self.logger.warning("No active components to plot for CI times.")
             return
 
         if self.orientation_type == "free":
+            # TODO: Code has been adapted. It handles fixed orientation correctly, but free orientation needs to be checked.
+            
             orientations = ['X', 'Y', 'Z']
             # Map active component index (0 to n_active_components-1) to original source index and orientation
-            original_source_indices = active_set // 3
-            original_orient_indices = active_set % 3
+            original_source_indices = self.active_set // 3
+            original_orient_indices = self.active_set % 3
 
             for t in range(n_times):
                 time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
@@ -648,7 +651,7 @@ class UncertaintyEstimator:
 
                     # Use source_idx for x-coordinate
                     ax.scatter(source_idx, x_hat[i, t], marker='x', s=50, color='red',
-                                label='Posterior Mean' if add_label else "")
+                                label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)' if add_label else "")
                     # Use fill_between for the CI bar
                     ax.fill_between(
                         [source_idx - 2, source_idx + 2], # x-range for the bar
@@ -659,7 +662,7 @@ class UncertaintyEstimator:
                         label='Confidence Interval' if add_label else ""
                     )
                     ax.scatter(source_idx, x[i, t], s=30, color='blue', alpha=0.7,
-                                label='Ground Truth' if add_label else "")
+                                label=f'Non-Zero Posterior Mean (({len(self.active_set)} estimated sources)' if add_label else "")
 
                     # Mark that labels have been added for this subplot
                     if add_label:
@@ -675,12 +678,12 @@ class UncertaintyEstimator:
                     sources_on_this_axis = {original_source_indices[k] for k in range(n_active_components) if original_orient_indices[k] == j}
                     n_sources_this_axis = len(sources_on_this_axis)
                     # Add legend with total sources in the title
-                    ax.legend(title=f"Total Sources: {n_sources_this_axis}", loc='best')
+                    ax.legend(title=f"Total Sources: {self.n_totl_sources}", loc='best')
 
                     ax.grid(False)
                     # Set ticks only for sources actually plotted
-                    ax.set_xticks(all_plotted_source_indices)
-                    ax.set_xticklabels([str(idx) for idx in all_plotted_source_indices], rotation=45, ha='right')
+                    # ax.set_xticks(all_plotted_source_indices)
+                    # ax.set_xticklabels([str(idx) for idx in all_plotted_source_indices], rotation=45, ha='right')
                     # Limit x-axis slightly beyond plotted sources
                     if all_plotted_source_indices:
                             ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
@@ -692,255 +695,304 @@ class UncertaintyEstimator:
 
                 save_path = os.path.join(time_point_dir, f'ci_t{t}_clvl{round(confidence_level, 2)}.png')
                 plt.savefig(save_path)
-                logger.debug(f"Saved CI plot: {save_path}")
+                self.logger.debug(f"Saved CI plot: {save_path}")
                 plt.close(fig)
 
         else: # Fixed orientation
-            original_source_indices = active_set # These are the source indices
+            fig, ax = plt.subplots(figsize=figsize)
 
-            for t in range(n_times):
-                time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
-                os.makedirs(time_point_dir, exist_ok=True)
+            ax.scatter(self.active_set, x_hat, marker='x', s=50, color='red', label=f'Non-Zero Posterior Mean ({len(self.active_set)} estimated sources)')
+            
+            ax.scatter(self.x_active_indices, x, s=30, color='blue', alpha=0.7,
+                        label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
+            
+            for i, src_ix in enumerate(self.active_set):
+                ax.fill_between(
+                    [src_ix - 10, src_ix + 10], # Adjust width
+                    ci_lower[i, 0],
+                    ci_upper[i, 0],
+                    color='red',
+                    alpha=0.3,
+                    label='Confidence Interval' if i == 0 else ""
+                )
 
-                fig, ax = plt.subplots(figsize=figsize)
-                legend_labels_added = False # Track if labels added for this plot
+            all_plotted_source_indices = sorted(list(set(self.active_set)))
+            ax.set_title(f'Confidence Intervals (Level={confidence_level:.2f}')
+            ax.axhline(0, color='grey', lw=0.8, ls='--')
 
-                for i in range(n_active_components): # Loop through active components
-                    source_idx = original_source_indices[i]
+            ax.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+            ax.grid(True, alpha=0.5) 
+            ax.set_xlabel('Index of Active (Non-zero) Sources')
+            ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
+            ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
+            plt.tight_layout(rect=[0.05, 0.05, 1, 0.96]) # Adjust rect
 
-                    # Determine if labels should be added (only for the first point)
-                    add_label = not legend_labels_added
-
-                    # Use source_idx for x-coordinate
-                    ax.scatter(source_idx, x_hat[i, t], marker='x', s=50, color='red',
-                                label='Posterior Mean' if add_label else "")
-                    ax.fill_between(
-                        [source_idx - 0.4, source_idx + 0.4], # Adjust width
-                        ci_lower[i, t],
-                        ci_upper[i, t],
-                        color='red',
-                        alpha=0.3,
-                        label='Confidence Interval' if add_label else ""
-                    )
-                    ax.scatter(source_idx, x[i, t], s=30, color='blue', alpha=0.7,
-                                label='Ground Truth' if add_label else "")
-
-                    # Mark that labels have been added
-                    if add_label:
-                        legend_labels_added = True
-
-                # Configure axis after plotting
-                all_plotted_source_indices = sorted(list(set(original_source_indices)))
-                ax.set_title(f'Confidence Intervals (Level={confidence_level:.2f}, Time={t})')
-                ax.axhline(0, color='grey', lw=0.8, ls='--')
-
-                # Add legend with total active sources in the title
-                ax.legend(title=f'Total Active Sources: {n_active_components}', loc='best')
-
-                ax.grid(False) 
-                ax.set_xticks(all_plotted_source_indices)
-                ax.set_xticklabels([str(idx) for idx in all_plotted_source_indices], rotation=45, ha='right')
-                ax.set_xlabel('Original Source Index')
-                ax.set_ylabel('Activity')
-                if all_plotted_source_indices:
-                        ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
-
-                plt.tight_layout(rect=[0.05, 0.05, 1, 0.96]) # Adjust rect
-
-                save_path = os.path.join(time_point_dir, f'ci_t{t}_clvl{round(confidence_level, 2)}.png')
-                plt.savefig(save_path)
-                logger.debug(f"Saved CI plot: {save_path}")
-                plt.close(fig)
+            save_path = os.path.join(confidence_intervals_dir, f'clvl{round(confidence_level, 2)}.png')
+            plt.savefig(save_path)
+            self.logger.debug(f"Saved CI plot: {save_path}")
+            plt.close(fig)
 
 
-    def _plot_proportion_of_hits(
+
+    def vizualise_calibration_curve(
         self,
-        confidence_levels,
-        CI_count_per_confidence_level,
-        total_sources,
+        counts_within_ci, # This is the counts_array from get_confidence_intervals_data
         time_point=0,
-        filename='proportion_of_hits',
+        normalize_hits=True,
+        filename='calibration_curve' # Default filename
     ):
         """
-        Internal method to plot the proportion of hits within confidence intervals for a specific time point.
+        Generate a calibration curve. It counts the number of true values that fall within the confidence intervals for each onfidence level.
 
         Parameters:
-        - confidence_levels (list or np.ndarray): Confidence levels to plot.
-        - CI_count_per_confidence_level (np.ndarray): Array with counts of values within confidence intervals.
-            - For "fixed": shape (n_levels, n_times).
-            - For "free": shape (n_levels, 3, n_times).
-        - total_sources (int): Total number of sources (denominator for proportion).
-                                For 'free', this is typically the number of unique sources.
-                                For 'fixed', this is typically the number of active sources.
+        - counts_within_ci (np.ndarray): Counts of true values within CIs.
+            - For "fixed": shape (n_levels, 1, n_times)
+            - For "free": shape (n_levels, 3, n_times)
         - time_point (int): The specific time point to plot.
+        - normalize_hits (bool): If True, y-axis shows proportion of hits.
+                                 If False, y-axis shows raw number of hits.
         - filename (str): Name of the file to save the plot.
         """
+        self.logger.info(f"Starting hit calibration plot generation for time_point={time_point}, normalize={normalize_hits}.")
 
+        # 1. Calculate total_sources_for_plot
         if self.orientation_type == 'free':
-            # Create subplots for the three orientations (X, Y, Z)
-            fig, axes = plt.subplots(3, 1, figsize=(6, 18), sharex=True, sharey=True)
+            # For free orientation, total_sources is often the number of unique source locations
+            # if counts are aggregated per source location across orientations.
+            # If counts are per component (source x orientation), then it's len(self.active_set).
+            # The current _count_values_within_ci returns (3, n_times), implying counts per orientation.
+            # So, total_sources should be the number of active components per orientation.
+            # This is tricky. If total_sources was len(np.unique(self.active_set // 3)),
+            # it means we are normalizing by number of unique sources, assuming hits are summed over orientations for each source.
+            # However, CI_count_per_confidence_level for free is (n_levels, 3, n_times), meaning counts are already per orientation.
+            # So, total_sources for normalization should be the number of active components contributing to *each* orientation's count.
+            # This is not straightforward without knowing how active_set is structured relative to the 3 orientations.
+            total_sources_for_plot = len(np.unique(self.active_set // 3)) # Number of unique source locations
+            # This implies that for each orientation, we normalize by the number of unique source locations.
+        elif self.orientation_type == 'fixed':
+            # total_sources_for_plot = len(self.active_set) # 
+            total_sources_for_plot = self.x.shape[0] # 
+        else:
+            raise ValueError(f"Unsupported orientation_type: {self.orientation_type}")
+        self.logger.debug(f"Calculated total_sources_for_plot: {total_sources_for_plot}")
+
+        # 2. Prepare counts_for_plot
+        self.logger.debug(f"Input counts_within_ci shape: {counts_within_ci.shape}")
+        
+        # CI_count_per_confidence_level for plotting
+        # For fixed: (n_levels, n_times)
+        # For free: (n_levels, 3, n_times) - this is already the input shape for free.
+        counts_for_plot = counts_within_ci
+        if self.orientation_type == 'fixed':
+            if counts_within_ci.ndim == 3 and counts_within_ci.shape[1] == 1: # Expected (L, 1, T)
+                counts_for_plot = counts_within_ci.squeeze(axis=1) # Becomes (L, T)
+            elif counts_within_ci.ndim == 2: # Already (L,T)
+                counts_for_plot = counts_within_ci
+            else:
+                raise ValueError(f"Unexpected shape for counts_within_ci for fixed orientation: {counts_within_ci.shape}")
+        self.logger.debug(f"Processed counts_for_plot shape: {counts_for_plot.shape}")
+
+
+        # 3. Perform plotting (adapted from old _vizualise_calibration_curve)
+        if self.orientation_type == 'free':
+            # counts_for_plot is (n_levels, 3, n_times)
+            fig, axes = plt.subplots(3, 1, figsize=(6, 18), sharex=True)
             orientations = ['X', 'Y', 'Z']
+            plot_title_suffix = f'at Time Point {time_point} (Free Orientation)'
+            y_label = 'Proportion of Hits' if normalize_hits else 'Number of Hits'
 
-            for i, ax in enumerate(axes):
-                # Extract hits for the current orientation and time point
-                # Ensure time_point is within bounds
-                if time_point >= CI_count_per_confidence_level.shape[2]:
-                        self.logger.error(f"time_point {time_point} is out of bounds for CI_count_per_confidence_level with shape {CI_count_per_confidence_level.shape}")
-                        plt.close(fig)
-                        return
-                hits = CI_count_per_confidence_level[:, i, time_point] # Correct indexing order
-                proportions = hits / total_sources  # Normalize hits to proportions
+            for i, ax in enumerate(axes): # i is orientation index 0, 1, 2
+                if time_point >= counts_for_plot.shape[2]: # Check against 3rd dim (n_times)
+                    self.logger.error(f"time_point {time_point} is out of bounds for counts_for_plot with shape {counts_for_plot.shape}")
+                    plt.close(fig)
+                    return
+                
+                hits_at_t_orient = counts_for_plot[:, i, time_point] # (n_levels,)
+                
+                # For free orientation, total_sources_for_plot is num unique sources.
+                # If normalizing, we assume hits_at_t_orient are counts for *those unique sources* in that orientation.
+                # This part needs careful consideration of what total_sources_for_plot represents for free orientation.
+                # If total_sources_for_plot is #unique sources, and hits are per orientation for those sources.
+                # A more precise total_sources per orientation might be:
+                # num_active_in_orient_i = np.sum(self.active_set % 3 == i)
+                # However, the previous code used a single total_sources_for_plot.
+                
+                current_total_sources = total_sources_for_plot # Using the overall unique source count for normalization per orientation.
 
-                # Plot proportions and diagonal line y=x
-                ax.plot(confidence_levels, proportions, marker='o', linestyle='-', color='blue', label='Proportion of Hits')
-                ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x')
+                if normalize_hits:
+                    if current_total_sources == 0:
+                        self.logger.warning(f"Total sources for normalization is 0 for orientation {orientations[i]}. Plotting raw counts instead.")
+                        y_values = hits_at_t_orient
+                        current_y_label = 'Number of Hits (Normalization N/A)'
+                        ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)', alpha=0.3) # Dimmed
+                    else:
+                        y_values = hits_at_t_orient / current_total_sources
+                        current_y_label = y_label
+                        ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)')
+                    ax.set_ylim(-0.05, 1.05)
+                    ax.set_aspect('equal', adjustable='box')
+                else:
+                    y_values = hits_at_t_orient
+                    current_y_label = y_label
+                    # Auto-scaling for y-axis if not normalized
 
-                # Set axis labels, title, and grid
-                ax.set_ylabel('Proportion of Hits')
+                ax.plot(self.confidence_levels, y_values, marker='o', linestyle='-', color='blue', label='Observed Hit Rate' if normalize_hits and current_total_sources > 0 else 'Observed Hits')
+                
+                ax.set_ylabel(current_y_label)
                 ax.grid(True)
-                ax.set_xticks(confidence_levels)
-                ax.set_xticklabels([f'{cl:.0%}' for cl in confidence_levels]) # Use percentage format
-                ax.set_title(f'Orientation {orientations[i]} (Time Point {time_point})')
-                ax.legend(loc='lower right')
+                ax.set_xticks(self.confidence_levels)
+                ax.set_xticklabels([f'{cl:.0%}' for cl in self.confidence_levels])
+                ax.set_title(f'Orientation {orientations[i]}')
+                ax.legend(loc='best')
 
-                # Ensure axes are square
-                ax.set_xlim(-0.05, 1.05)
-                ax.set_ylim(-0.05, 1.05) # Corrected typo here
-                ax.set_aspect('equal', adjustable='box')
-
-            # Add x-axis label to the last subplot
             axes[-1].set_xlabel('Confidence Level')
-
-            # Add a title for the entire figure
-            fig.suptitle(f'Proportion of Hits at Time Point {time_point} (Free Orientation)', fontsize=14)
-            fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # Leave space for the title
-            plt.savefig(os.path.join(self.experiment_dir, filename + '.png'))
+            fig.suptitle(f'Calibration Curve', fontsize=14)
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            
+            save_path = os.path.join(self.experiment_dir, filename + f"normalized" if normalize_hits else filename + '.png')
+            plt.savefig(save_path)
             plt.close(fig)
 
         else: # Fixed orientation
-            hits = CI_count_per_confidence_level[:, time_point]
-            proportions = hits / total_sources  # Normalize hits to proportions
+            # counts_for_plot is (n_levels, n_times)
+            if time_point >= counts_for_plot.shape[1]: # Check against 2nd dim (n_times)
+                self.logger.error(f"time_point {time_point} is out of bounds for counts_for_plot with shape {counts_for_plot.shape}")
+                return
 
-            fig, ax = plt.subplots(figsize=(6, 6))  # Square figure
-            ax.plot(confidence_levels, proportions, marker='o', linestyle='-', color='blue', label='Proportion of Hits')
-            ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x')
+            hits_at_t = counts_for_plot[:, time_point] # (n_levels,)
+            y_label = 'Proportion of Hits' if normalize_hits else 'Number of Hits'
 
-            # Set axis labels, title, and grid
+            fig, ax = plt.subplots(figsize=(7, 7))
+            
+            if normalize_hits:
+                if total_sources_for_plot == 0:
+                    self.logger.warning("Total sources for normalization is 0. Plotting raw counts instead.")
+                    y_values = hits_at_t
+                    current_y_label = 'Number of Hits (Normalization N/A)'
+                    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)', alpha=0.3) # Dimmed
+                else:
+                    y_values = hits_at_t / total_sources_for_plot
+                    current_y_label = y_label
+                    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)')
+                ax.set_ylim(-0.05, 1.05)
+                ax.set_aspect('equal', adjustable='box')
+            else:
+                y_values = hits_at_t
+                current_y_label = y_label
+                # Auto-scaling for y-axis if not normalized
+
+            ax.plot(self.confidence_levels, y_values, marker='o', linestyle='-', color='blue', label='Observed Hit Rate' if normalize_hits and total_sources_for_plot > 0 else 'Observed Hits')
+
             ax.set_xlabel('Confidence Level')
-            ax.set_ylabel('Proportion of Hits')
-            ax.set_title(f'Proportion of Hits at Time Point {time_point} (Fixed Orientation)')
+            ax.set_ylabel(current_y_label)
+            ax.set_title(f'Calibration Curve')
             ax.grid(True)
-            ax.set_xticks(confidence_levels)
-            ax.set_xticklabels([f'{cl:.0%}' for cl in confidence_levels]) # Use percentage format
-            ax.legend(loc='lower right')
-
-            # Ensure axes are square
-            ax.set_xlim(-0.05, 1.05)
-            ax.set_ylim(-0.05, 1.05)
-            ax.set_aspect('equal', adjustable='box')
+            ax.set_xticks(self.confidence_levels)
+            ax.set_xticklabels([f'{cl:.0%}' for cl in self.confidence_levels])
+            ax.legend(loc='best')
 
             fig.tight_layout(rect=[0.05, 0.05, 1, 0.96])
-            plt.savefig(os.path.join(self.experiment_dir, filename + '.png'))
+            save_path = os.path.join(self.experiment_dir, filename + f"normalized" if normalize_hits else filename + '.png')
+            plt.savefig(save_path)
             plt.close(fig)
 
-        self.logger.info(f"Proportion of hits plot saved to {os.path.join(self.experiment_dir, filename + '.png')}")
+        self.logger.info(f"Hit calibration plot saved to {save_path}")
 
-
-
-    def visualize_confidence_intervals(self, confidence_levels=None, time_point=0):
+    def get_confidence_intervals_data(self, x, x_hat, full_posterior_cov):
         """
-        Visualize confidence intervals and save the results. Handles both fixed and free orientation.
+        Computes confidence intervals and hit counts.
+        NOTE: You should pass the active source activity and estimated source activity
+        (active_x and active_x_hat).
 
         Parameters:
-        - confidence_levels (list, optional): List of confidence levels to visualize. If None, defaults to 10 levels from 0.1 to 0.99.
-        - time_point (int): Time point to visualize for the proportion of hits plot.
+        - x (np.ndarray): Ground truth source activity for active components.
+                          Shape (n_active_components, n_times).
+        - x_hat (np.ndarray): Estimated source activity for active components.
+                             Shape (n_active_components, n_times).
+
+        Returns:
+        - tuple: A tuple containing three NumPy arrays:
+            - ci_lower_stacked (np.ndarray): Lower CI bounds.
+                Shape (n_levels, n_active_components, n_times).
+            - ci_upper_stacked (np.ndarray): Upper CI bounds.
+                Shape (n_levels, n_active_components, n_times).
+            - counts_array (np.ndarray): Counts of true values within CIs.
+                - For "fixed": shape (n_levels, 1, n_times)
+                - For "free": shape (n_levels, 3, n_times)
         """
-        if confidence_levels is None:
-            confidence_levels = np.linspace(0.1, 0.99, 10)
+        all_ci_lower_list = []
+        all_ci_upper_list = []
+        collected_counts_within_ci_list = []
 
-        # --- Prepare data based on orientation type ---
-        if self.orientation_type == 'free':
-            # Shapes: x=(5124, 3, 10), x_hat=(5124, 3, 10), active_set=(1515,), posterior_cov=(1515, 1515)
-            n_sources, n_orient, n_times = self.x.shape
-            n_total_components = n_sources * n_orient
-
-            # Reshape to (n_total_components, n_times)
-            x_proc = self.x.reshape(n_total_components, n_times)
-            x_hat_proc = self.x_hat.reshape(n_total_components, n_times)
-            self.logger.debug(f"Free orientation: Reshaped x to {x_proc.shape}, x_hat to {x_hat_proc.shape}")
-
-            # Index flattened data using active_set
-            active_x = x_proc[self.active_set]         # Shape: (1515, 10)
-            active_x_hat = x_hat_proc[self.active_set] # Shape: (1515, 10)
-
-            # Denominator for proportion plot (number of unique sources in active set)
-            total_sources_for_plot = len(np.unique(self.active_set // 3))
-
-        elif self.orientation_type == 'fixed':
-            # Shapes: x=(5124, 10), x_hat=(5124, 10), active_set=(1515,), posterior_cov=(1515, 1515)
-            n_sources, n_times = self.x.shape
-            n_total_components = n_sources
-
-            # Data is already 2D
-            x_proc = self.x
-            x_hat_proc = self.x_hat
-            self.logger.debug(f"Fixed orientation: Using x {x_proc.shape}, x_hat {x_hat_proc.shape}")
-
-            # Index data using active_set
-            active_x = x_proc[self.active_set]         # Shape: (1515, 10)
-            active_x_hat = x_hat_proc[self.active_set] # Shape: (1515, 10)
-
-            # Denominator for proportion plot (number of active sources)
-            total_sources_for_plot = len(self.active_set)
-
-        self.logger.debug(f"Indexed data using active_set. Shapes: "
-                        f"active_x={active_x.shape}, active_x_hat={active_x_hat.shape}")
-        self.logger.debug(f"Total sources for proportion plot denominator: {total_sources_for_plot}")
-
-        # --- Loop through confidence levels ---
-        self.logger.info("Computing and creating figures for confidence intervals; for each confidence level and time point. This may take a while...")
-        
-        CI_count_per_confidence_level = []
-        for confidence_level in confidence_levels:
-            # Compute CIs using active estimated data and the full posterior_cov for the active set
-            # _compute_confidence_intervals should handle orientation internally based on self.orientation_type
+        self.logger.info("Computing confidence intervals and hit counts for each confidence level.")
+        for cl_idx, confidence_level_val in enumerate(self.confidence_levels):
+            self.logger.debug(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
+            
+            # x_hat here is the active_x_hat
+            # self.posterior_cov is the covariance for the active set
             ci_lower, ci_upper = self._compute_confidence_intervals(
-                active_x_hat,               # Shape (1515, 10)
-                self.posterior_cov,         # Shape (1515, 1515)
-                confidence_level=confidence_level
-            ) # ci_lower/upper shape depends on _compute_confidence_intervals logic
+                x_hat, 
+                full_posterior_cov, 
+                confidence_level=confidence_level_val
+            )
+            all_ci_lower_list.append(ci_lower)
+            all_ci_upper_list.append(ci_upper)
 
-            # Count hits using active ground truth data
-            # _count_values_within_ci should handle orientation internally
+            # x here is the active_x
             count_within_ci = self._count_values_within_ci(
-                active_x,                   # Shape (1515, 10)
+                # x[self.x_active_indices],
+                # ci_lower[self.x_active_indices],
+                # ci_upper[self.x_active_indices]
+                x,
                 ci_lower,
                 ci_upper
-            ) # count_within_ci shape depends on _count_values_within_ci logic
-
-            # Plot CIs over time
-            # _plot_ci_times should handle orientation internally
-            self._plot_ci_times(
-                active_x,                   # Shape (1515, 10)
-                active_x_hat,               # Shape (1515, 10)
-                self.active_set,            # Shape (1515,) - Original indices
-                ci_lower,
-                ci_upper,
-                confidence_level,
             )
-            CI_count_per_confidence_level.append(count_within_ci)
+            collected_counts_within_ci_list.append(count_within_ci)
 
-        # --- Plot Proportion of Hits ---
-        CI_count_per_confidence_level = np.array(CI_count_per_confidence_level)
-        self.logger.debug(f"Shape of CI_count_per_confidence_level array: {CI_count_per_confidence_level.shape}")
+        counts_array = np.array(collected_counts_within_ci_list)
+        
+        # Ensure counts_array is 3D for consistent handling later,
+        # especially if it's (L, T) for fixed, make it (L, 1, T)
+        if self.orientation_type == 'fixed' and counts_array.ndim == 2: 
+            counts_array = counts_array[:, np.newaxis, :] 
+        
+        ci_lower_stacked = np.stack(all_ci_lower_list, axis=0)
+        ci_upper_stacked = np.stack(all_ci_upper_list, axis=0)
 
-        # _plot_proportion_of_hits should handle orientation internally
-        self._plot_proportion_of_hits(
-            confidence_levels=confidence_levels,
-            CI_count_per_confidence_level=CI_count_per_confidence_level,
-            total_sources=total_sources_for_plot, # Use the calculated denominator
-            time_point=time_point,
-        )
+        self.logger.debug(f"Shapes returned: counts_array={counts_array.shape}, ci_lower_stacked={ci_lower_stacked.shape}, ci_upper_stacked={ci_upper_stacked.shape}")
+        
+        # return ci_lower_stacked[:, self.active_set], ci_upper_stacked[:, self.active_set], counts_array
+        return ci_lower_stacked, ci_upper_stacked, counts_array
+
+    def visualize_confidence_intervals(self, ci_lower, ci_upper, x, x_hat):
+        """
+        Visualizes confidence intervals over time for active components, using pre-computed data.
+
+        Parameters:
+        - x (np.ndarray): Ground truth source activity for active components.
+            Shape (n_active_components, n_times).
+        - x_hat (np.ndarray): Estimated source activity for active components.
+            Shape (n_active_components, n_times).
+        - confidence_intervals_tuple (tuple): 
+            Tuple returned by get_confidence_intervals_data, containing (ci_lower_stacked, ci_upper_stacked).
+        """
+        self.logger.info("Starting confidence interval (CI times) visualization process...")
+
+        self.logger.info("Plotting CI activity for each confidence level. This may take a while...")
+        for idx, confidence_level_val in enumerate(self.confidence_levels):
+            self.logger.debug(f"Plotting CI times for confidence level: {confidence_level_val:.2f}")
+            ci_lower_current = ci_lower[idx] 
+            ci_upper_current = ci_upper[idx] 
+            
+            self._plot_ci_times(
+                x,
+                x_hat,
+                ci_lower_current,
+                ci_upper_current,
+                confidence_level_val,
+            )
+        self.logger.info("CI times visualization process finished.")
+
 
 # ------------------------------
     def plot_source_estimates(self, posterior_cov, orientations):
