@@ -36,7 +36,7 @@ class Benchmark:
     
     def create_experiment_directory(self, base_dir, params):
         """
-        Create a directory structure for the experiment, with subdirectories for each parameter.
+        Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.
     
         Parameters:
         - base_dir (str): Base directory for the experiment.
@@ -45,16 +45,33 @@ class Benchmark:
         Returns:
         - experiment_dir (str): Path to the experiment directory.
         """
-        # Exclude 'cov' from the parameters
-        sanitized_params = {
+        # Exclude 'cov' and sanitize values for directory names
+        sanitized_params_for_path = {
             k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_")
-            for k, v in params.items() if k != "cov"
+            for k, v in params.items() if k != "cov" 
+            # Add other keys to exclude from path if necessary, e.g. if k != "alpha_snr_db"
         }
     
-        # Create subdirectories for each parameter
+        # Desired order of parameters for the directory structure
+        # This list defines the specific order.
+        desired_order = ["subject", "estimator", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db"]
+        
+        path_components = []
+        
+        # Add parameters in the desired order if they exist in the sanitized params
+        for key in desired_order:
+            if key in sanitized_params_for_path:
+                path_components.append(f"{key}={sanitized_params_for_path[key]}")
+                del sanitized_params_for_path[key] # Remove to avoid adding them again
+                
+        # Add any remaining parameters, sorted by key for consistent ordering
+        for key, value in sorted(sanitized_params_for_path.items()):
+            path_components.append(f"{key}={value}")
+            
+        # Create subdirectories for each parameter component
         experiment_dir = base_dir
-        for param, value in sanitized_params.items():
-            experiment_dir = os.path.join(experiment_dir, f"{param}={value}")
+        for component in path_components:
+            experiment_dir = os.path.join(experiment_dir, component)
     
         try:
             # Create the directory structure if it doesn't exist
@@ -110,7 +127,7 @@ class Benchmark:
 
             # Simulate data (with n_trials!)
             self.logger.info("Simulating data...")
-            y_noisy, L, x, active_indices, noise, noise_power = self.data_simulator.simulate(visualize=True, save_path=os.path.join(experiment_dir , "data"))
+            y_noisy, L, x, active_indices, noise, noise_power = self.data_simulator.simulate(data_params['subject'], visualize=True, save_path=os.path.join(experiment_dir , "data"))
             
             # if solver_params.get("noise_type") == 'oracle':
             #     solver_params["cov"] = cov_scaled
@@ -168,6 +185,7 @@ class Benchmark:
             # TBC: Evaluate metrics
             self.logger.info("Evaluating metrics...")
             run_results = {
+                "run": len(results) + 1,
                 "seed": seed,
                 "solver": solver_name,
                 "solver_params": solver_params,

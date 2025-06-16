@@ -7,7 +7,7 @@ from calibrain import DataSimulator, gamma_map, eloreta
 from calibrain import Benchmark
 from pathlib import Path
 
-
+# print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -23,9 +23,10 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "nnz": [4],
+        "subject": ['CC120313'], # ["caliBrain_fsaverage"], # "fsaverage", "CC120313"
+        "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr_db": [0.3],
+        "alpha_snr_db": [10],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
@@ -47,9 +48,11 @@ def main():
         fmin=1,
         fmax=5,
         amplitude=5,
-        n_trials=3,
+        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
         leadfield_mode='load', # simulate, random, load. Important: if `simulate` then align the config file of the leadfield simulation!
-        leadfield_path=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
+        # leadfield_dir=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
+        channel_type='meg',  # 'eeg', 'meg'
+        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
         leadfield_config_path='configs/leadfield_sim_cfg.yml',
     )
     

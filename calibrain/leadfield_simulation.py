@@ -63,6 +63,12 @@ class LeadfieldSimulator:
         self.subject = data_cfg["subject"]
         self.subjects_dir = Path(data_cfg["subjects_dir"])
         self.save_path = Path(data_cfg["save_path"])
+        
+                    
+        # NOTE: The channel type is hardcoded to "eeg" for now.
+        # TODO: Make this configurable in the future. with something like:
+        # channel_type = "eeg" if self.config["data"].get("channel_type") == "eeg" else "meg" and use it in the montage and info creation
+        self.channel_type = "eeg" # Hardcoded for now, can be made configurable later
 
         if not self.data_path.exists():
             raise FileNotFoundError(f"Data path does not exist: {self.data_path}")
@@ -404,7 +410,7 @@ class LeadfieldSimulator:
             raise ValueError("Forward solution (fwd) must be provided to compute leadfield matrix when not loading from file.")
 
         self.logger.info("Extracting leadfield matrix from the forward solution...")
-        leadfield = fwd["sol"]["data"] # (µV / nAm)
+        leadfield = fwd["sol"]["data"] 
         orientation_type = None
 
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
