@@ -127,60 +127,90 @@ class Benchmark:
 
             # Simulate data (with n_trials!)
             self.logger.info("Simulating data...")
-            y_noisy, L, x, active_indices, noise, noise_power = self.data_simulator.simulate(data_params['subject'], visualize=True, save_path=os.path.join(experiment_dir , "data"))
+            data = self.data_simulator.simulate(
+                data_params['subject'], 
+                visualize=True,
+                save_path=os.path.join(experiment_dir , "data")
+            )
+            y_noisy, L, x, x_active_indices, noise, noise_power = data
+            trial_i = 0
             
             # if solver_params.get("noise_type") == 'oracle':
             #     solver_params["cov"] = cov_scaled
             
             n_orient = 3 if data_params.get("orientation_type") == "free" else 1 # TODO: put this in the LeadfieldSimulator class
             
+            self.logger.info("Initializing source estimator...")
             source_estimator = SourceEstimator(
                 solver=self.solver,
                 solver_params=solver_params,
                 # cov=cov_scaled,
                 n_orient=n_orient,
                 logger=self.logger
-            )
-
-            # Fit the estimator
-            self.logger.info("Fitting the solver...")
-            source_estimator.fit(L, y_noisy)
-
-            # Estimate sources
-            self.logger.info("Estimating sources...")
-            trial_i = 0
-            
-            x_hat, active_set, posterior_cov = source_estimator.predict(
+            )            
+            source_estimator.fit(L, y_noisy)            
+            x_hat, x_hat_active_set, posterior_cov = source_estimator.predict(
                 y=y_noisy[trial_i], noise_var=noise_power[trial_i])
             
-            x_avg_time = np.mean(x, axis=2, keepdims=True) # TODO: check wheter keepdims=True is needed later
+            # TODO: check wheter keepdims=True is needed later
+            x_avg_time = np.mean(x, axis=2, keepdims=True)
             x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
             
             self.logger.info("Initializing uncertainty estimator...")
-            uncertainty_estimator = UncertaintyEstimator(
+            uncert_est = UncertaintyEstimator(
                 orientation_type=self.data_simulator.orientation_type,
                 x=x_avg_time[trial_i],
                 x_hat=x_hat_avg_time,
-                active_set=active_set,
+                n_totl_sources=x_avg_time[trial_i].shape[0],
+                active_set=x_hat_active_set,
+                x_active_indices=x_active_indices[trial_i],
                 posterior_cov=posterior_cov,
                 experiment_dir=experiment_dir,
+                confidence_levels= np.arange(0.0, 1.1, 0.1),
                 logger=self.logger,
             )
-
             self.logger.info("Creating figures for uncertainty analysis...")
-            full_posterior_cov = uncertainty_estimator.construct_full_covariance()
             
-            uncertainty_estimator.plot_sorted_posterior_variances(top_k=10)
-            uncertainty_estimator.visualize_sorted_covariances(top_k=10)
-            uncertainty_estimator.plot_posterior_covariance_matrix()
-            uncertainty_estimator.plot_active_sources_single_time_step(time_step=0)
+            full_posterior_cov = uncert_est.construct_full_covariance()
+            # uncert_est.plot_sorted_posterior_variances(top_k=10)
+            # uncert_est.visualize_sorted_covariances(top_k=10)
+            # uncert_est.plot_posterior_covariance_matrix()
             
-            if self.data_param_grid.get("orientation_type") == "free":
-                uncertainty_estimator.plot_top_relevant_CE_pairs(top_k=5, confidence_level=0.95)
-                
-            confidence_levels = np.arange(0.0, 1.1, 0.1)
-            uncertainty_estimator.visualize_confidence_intervals(confidence_levels, time_point=0)
+            
+            # NOTE: since uncert_est.x = x_avg_time[trial_i], the following plots will have a single time step (and ofcourse one trial). So we can ignore the time_step parameter for now.
+            uncert_est.plot_active_sources_single_time_step(
+                uncert_est.x[x_active_indices[trial_i]],
+                uncert_est.x_hat[x_hat_active_set],
+            )
+            
+            # The counts_within_ci have the shape of (n_condifence_levels, n_ori, n_times)
+            ci_lower, ci_upper, counts_within_ci = uncert_est.get_confidence_intervals_data(
+                uncert_est.x, #[x_hat_active_set],
+                uncert_est.x_hat, #[x_hat_active_set]
+                full_posterior_cov,
+            )
 
+            uncert_est.visualize_confidence_intervals(
+                ci_lower, ci_upper,                            
+                uncert_est.x[x_active_indices[trial_i]],
+                uncert_est.x_hat[x_hat_active_set],
+            )
+            if self.data_param_grid.get("orientation_type") == "free":
+                uncert_est.plot_top_relevant_CE_pairs(top_k=5, confidence_level=0.95)
+                
+            # plot observed hit rate vs. confidence levels           
+            uncert_est.vizualise_calibration_curve(
+                counts_within_ci,
+                normalize_hits=False,
+            )
+            
+            uncert_est.vizualise_calibration_curve(
+                counts_within_ci,
+                normalize_hits=True, 
+            )
+            
+            
+            # uncert_est.visualize_confidence_intervals(confidence_levels, time_point=0)
 
             # TBC: Evaluate metrics
             self.logger.info("Evaluating metrics...")
@@ -190,7 +220,7 @@ class Benchmark:
                 "solver": solver_name,
                 "solver_params": solver_params,
                 "data_params": data_params,
-                "active_set_size": len(active_set),
+                "active_set_size": len(x_hat_active_set),
             }
             
             try:
