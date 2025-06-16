@@ -3,7 +3,7 @@ Changelog
 
 This document records notable changes to the CaliBrain project.
 
-Version 1.0.1 (2025-05-24) 
+Version 0.1.1 (2025-05-24) 
 --------------------------
 
 *   [FEATURE] Include ERP signal generation. Add Multi trial simulation and refactor DataSimulator (`Issue #6 <https://github.com/braindatalab/CaliBrain/issues/6>`_, implemented in `PR #7 <https://github.com/braindatalab/CaliBrain/pull/7>`_).
