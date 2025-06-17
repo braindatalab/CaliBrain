@@ -178,3 +178,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+-e "*.png\n*.csv\n*.py"   # Adjust patterns as needed
