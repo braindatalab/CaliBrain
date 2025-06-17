@@ -1,6 +1,5 @@
 [build-system]
-requires = ["wheel"]
-# requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -21,7 +20,7 @@ dependencies = [
     # "scipy",
     "scikit-learn",
     "mne",
-    "POT",
+    #"POT",
     "nibabel",
     "pyyaml",
 ]
