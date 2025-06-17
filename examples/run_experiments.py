@@ -23,22 +23,37 @@ def main():
     # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
 
     data_param_grid = {
-        "subject": ['CC120313'], # ["caliBrain_fsaverage"], # "fsaverage", "CC120313"
-        "nnz": [10],
+        "subject": ["CC120166", "CC120264"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
+        "nnz": [20, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr_db": [10],
+        "alpha_snr_db": [-40, 1, 40],
     }
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
         "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
     }
 
+    data_param_grid_2 = {
+        "subject": ['CC120309'], 
+        "nnz": [20],
+        "orientation_type": ["fixed"],
+        "alpha_snr_db": [-20, 20],
+    }
+    
     estimators = [
         (gamma_map, gamma_map_params, data_param_grid),
+        (gamma_map, gamma_map_params, data_param_grid_2),
         # (eloreta, {}, {}), 
     ]
 
-    metrics = [None]
+    metrics = [
+    "calibration_curve_metrics",
+    "mean_posterior_std",
+    "f1",
+    "emd",
+    "accuracy",  
+    ]
+    
     nruns = 1
     data_simulator = DataSimulator(
         tmin=-0.5,
