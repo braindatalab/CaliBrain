@@ -56,7 +56,6 @@ class DataSimulator:
         orientation_type: str = "fixed",
         n_orient: int = 1,
         # noise_type: str = "oracle",
-        seed: Optional[int] = None,
         logger: Optional[logging.Logger] = None,
         rng: Optional[Generator] = None,
         leadfield_mode: str = "random",
@@ -104,8 +103,6 @@ class DataSimulator:
             Number of orientations for free sources (1 for fixed, 3 for free), by default 1.
         # noise_type : str, optional
             # Noise type, by default "oracle".
-        seed : Optional[int], optional
-            Random seed, by default None.
         logger : Optional[logging.Logger], optional
             Logger instance, by default None.
         rng : Optional[Generator], optional
@@ -152,9 +149,8 @@ class DataSimulator:
         self.orientation_type = orientation_type
         self.n_orient = n_orient
         # self.noise_type = noise_type
-        self.seed = seed
         self.logger = logger if logger else logging.getLogger(__name__)
-        self.rng = rng if rng else np.random.default_rng(seed)
+        self.rng = rng
         self.leadfield_mode = leadfield_mode
         self.channel_type = channel_type
         self.leadfield_dir = Path(leadfield_dir) if leadfield_dir else None
@@ -309,7 +305,7 @@ class DataSimulator:
         
         return leadfield
 
-    def _generate_erp_signal(self, seed, onset_sample):
+    def _generate_erp_signal(self, source_seed, onset_sample):
         """
         Generate a smoothed ERP-like signal using bandpass-filtered noise and a Hanning window.
         
@@ -327,22 +323,18 @@ class DataSimulator:
         
         Parameters:
         ----------
-        - seed (int or np.random.RandomState): Random seed or state for reproducibility.
+        - source_seed (int or np.random.RandomState): Random seed or state for reproducibility.
         - onset_sample (int): The sample index at which the ERP activity starts.
         
         Returns:
         -------
         - np.ndarray: The generated ERP signal of length n_times.
         """
-        _DEFAULT_MIN_ERP_LEN = 82  # For filter stability (filtfilt butter order 4) & meaningful Hanning window
-
-        if not isinstance(seed, np.random.RandomState):
-            rng = np.random.RandomState(seed)
-        else:
-            rng = seed
+        # For filter stability (filtfilt butter order 4) & meaningful Hanning window
+        _DEFAULT_MIN_ERP_LEN = 82
+        source_duration_rng = np.random.RandomState(source_seed)
         
         output_signal = np.zeros(self.n_times)
-        
         current_min_erp_len = self.min_erp_duration_samples if self.min_erp_duration_samples is not None else _DEFAULT_MIN_ERP_LEN
 
         # Maximum available duration for ERP activity after onset_sample
@@ -357,12 +349,13 @@ class DataSimulator:
 
         if self.randomize_erp_timing_within_post_stim:
             # Randomize ERP duration: from current_min_erp_len up to max_available_post_stim_duration (inclusive)
-            actual_erp_duration = rng.randint(current_min_erp_len, max_available_post_stim_duration + 1)
-            
+            actual_erp_duration = source_duration_rng.randint(low=current_min_erp_len, high=max_available_post_stim_duration + 1)
+            self.logger.info(f"Randomized ERP duration: {actual_erp_duration} samples")
             # Randomize ERP start offset within the available post-stimulus window
             # Max possible start offset (from onset_sample) for the chosen actual_erp_duration
             max_start_offset_from_onset = max_available_post_stim_duration - actual_erp_duration
-            start_offset_from_onset = rng.randint(0, max_start_offset_from_onset + 1)
+            start_offset_from_onset = source_duration_rng.randint(0, max_start_offset_from_onset + 1)
+            self.logger.info(f"Randomized ERP start offset from onset: {start_offset_from_onset} samples")
                 
             actual_placement_start_sample = onset_sample + start_offset_from_onset
             n_times_for_erp_activity = actual_erp_duration
@@ -376,7 +369,8 @@ class DataSimulator:
             return output_signal
 
         # Generate noise only for the determined duration of the ERP activity
-        white_noise_for_erp = rng.randn(n_times_for_erp_activity)
+        white_noise_for_erp = source_duration_rng.randn(n_times_for_erp_activity)
+        self.logger.info(f"Generated white noise for ERP with {n_times_for_erp_activity} samples.")
         
         # Design a Butterworth bandpass filter
         low = self.fmin / (self.sfreq / 2)
@@ -417,12 +411,9 @@ class DataSimulator:
         
         return output_signal
 
-    def _generate_source_time_courses(self, seed):
+    def _generate_source_time_courses(self, trial_seed):
         """ Generates true source activity time courses. """
-        if not isinstance(seed, np.random.RandomState):
-            rng = np.random.RandomState(seed)
-        else:
-            rng = seed
+        trial_rng = np.random.RandomState(trial_seed)
             
         # n_sensors = leadfield.shape[0] # Not directly needed here anymore for y_clean
         times = np.arange(self.tmin, self.tmax, 1.0 / self.sfreq)
@@ -441,29 +432,29 @@ class DataSimulator:
 
         if self.orientation_type == "fixed":
             # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = rng.choice(self.n_sources, size=self.nnz, replace=False)
+            active_indices = trial_rng.choice(self.n_sources, size=self.nnz, replace=False)
             x = np.zeros((self.n_sources, self.n_times))
             for i, src_idx in enumerate(active_indices):
                 # Generate ERP signal with specified onset
-                # The seed for _generate_erp_signal should be handled carefully if rng is passed
-                source_rng_seed = rng.randint(0, 2**32 -1) # Derive a new seed for this source
+                source_seed = trial_rng.randint(low=0, high=2**32 -1) # Derive a new seed for this source
+                self.logger.info(f"Generating ERP for source index {src_idx} with seed {source_seed}")
                 erp_waveform = self._generate_erp_signal(
-                    seed=source_rng_seed, # Pass a derived seed
+                    source_seed, # Pass a derived seed
                     onset_sample=stim_idx_for_erp_onset
                 )
                 x[src_idx, :] = erp_waveform # Assign the full waveform (includes leading zeros)
         elif self.orientation_type == "free":
             n_orientations_free = 3 # TODO: Make this configurable
             # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = rng.choice(self.n_sources, size=self.nnz, replace=False)
+            active_indices = trial_rng.choice(self.n_sources, size=self.nnz, replace=False)
             x = np.zeros((self.n_sources, self.n_orient, self.n_times))
             for i, src_idx in enumerate(active_indices):
-                source_rng_seed = rng.randint(0, 2**32 -1)
+                source_seed = trial_rng.randint(0, 2**32 -1)
                 erp_waveform = self._generate_erp_signal(
-                    seed=source_rng_seed,
+                    source_seed,
                     onset_sample=stim_idx_for_erp_onset
                 )
-                orient_coeffs = rng.randn(n_orientations_free)
+                orient_coeffs = trial_rng.randn(n_orientations_free)
                 norm_orient = np.linalg.norm(orient_coeffs)
                 if norm_orient < 1e-9: # Avoid division by zero
                     orient_coeffs = np.array([1.0, 0.0, 0.0]) # Default orientation
@@ -473,7 +464,7 @@ class DataSimulator:
                 for j_orient in range(n_orientations_free):
                     x[src_idx, j_orient, :] = orient_coeffs[j_orient] * erp_waveform
 
-                # Alternatively, if you want to assign the same waveform to all orientations
+                # Alternatively, if we want to assign the same waveform to all orientations
                 # for j_orient in range(n_orientations_free):
                 #     x[src_idx, j_orient, :] = erp_waveform
         else:
@@ -520,15 +511,14 @@ class DataSimulator:
 
         return y
 
-    def _add_noise(self, y_clean, rng=None):
+    def _add_noise(self, y_clean, noise_seed):
         """
         Adds Homoscedastic  (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
         
         Parameters:
         - y_clean (np.ndarray): The clean signal array (e.g., channels x times).
-        - alpha_snr_db (float): The desired signal-to-noise ratio in decibels (dB).
-        - rng (np.random.RandomState, optional): A random number generator state
         for reproducible noise generation. If None, uses default numpy random state.
+        - noise_seed (int): Seed for the random number generator to ensure reproducibility.
 
         Returns:
         - tuple: A tuple containing:
@@ -536,9 +526,8 @@ class DataSimulator:
             - noise (np.ndarray): The generated noise array.
             - noise_power (float): The calculated variance of the added noise.
         """
-        if rng is None:
-            rng = np.random # Use default numpy random state if none provided
-
+        noise_rng = np.random.RandomState(noise_seed)
+        
         signal_power = np.mean(y_clean ** 2)
         if signal_power == 0:
             print("Warning: Clean signal power is zero. Cannot add noise based on SNR.")
@@ -551,12 +540,13 @@ class DataSimulator:
             noise_std = np.sqrt(noise_power)
             
             # Draw noise from Gaussian distribution (independenet noise at each sensor and at each time point). -> The noise covariance matrix is diagonal. 
-            noise = rng.normal(0, noise_std, size=y_clean.shape) # White noise (uncorrelated across sensors and time) with a uniform power across sensors. shape: n_sensors x n_times. 
+            noise = noise_rng.normal(0, noise_std, size=y_clean.shape) # White noise (uncorrelated across sensors and time) with a uniform power across sensors. shape: n_sensors x n_times. 
+            self.logger.info(f"Noise: {noise.shape}, noise power: {noise_power:.4f}, noise std: {noise_std:.4f}")
 
         y_noisy = y_clean + noise
         return y_noisy, noise, noise_power
 
-    def simulate(self, subject, visualize: bool = True, save_path: str = "results/figures/data_sim/") -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def simulate(self, subject, global_seed, visualize: bool = True, save_path: str = "results/figures/data_sim/") -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Run the full data simulation pipeline.
 
@@ -570,6 +560,7 @@ class DataSimulator:
         Parameters
         ----------
         subject : str
+        global_seed : int
         visualize : bool, optional
             Whether to generate and save visualization plots, by default True.
             Requires `leadfield_mode` to be 'simulate' or a valid `leadfield_config_path`
@@ -601,11 +592,12 @@ class DataSimulator:
         x_all_trials = [] # Store source data per trial
         active_indices_all_trials = [] # Store active indices per trial
 
-        for i_trial in range(self.n_trials):
-            print(f"  Simulating clean trial {i_trial + 1}/{self.n_trials}")
-            trial_seed = self.seed + i_trial if self.seed is not None else None
+        experiment_rng = np.random.RandomState(global_seed)
+        trial_data_seeds = experiment_rng.randint(0, 2**32 - 1, size=self.n_trials)
+        for i_trial, trial_data_seed in enumerate(trial_data_seeds):
+            self.logger.info(f"Generating trial {i_trial + 1}/{self.n_trials} with seed {trial_data_seed}.")
             
-            x_trial, active_indices = self._generate_source_time_courses(trial_seed)
+            x_trial, active_indices = self._generate_source_time_courses(trial_data_seed)
             y_clean_trial = self._project_sources_to_sensors(x=x_trial, L=L)
 
             x_all_trials.append(x_trial)
@@ -620,25 +612,25 @@ class DataSimulator:
         
         time_vector = np.arange(self.tmin, self.tmax, 1.0 / self.sfreq)
 
-        # --- Add Noise Separately ---
+        # --- Add Noise Separately. Compare and vizualise later with clean y ---
         y_noisy_all_trials = [] # To store noisy data
         noise_all_trials = [] # Optional: store noise itself
         noise_power_all_trials = [] # Optional: store noise power per trial
 
-        noise_rng = np.random.RandomState(self.seed + self.n_trials) # TODO: Use a separate seed/state for noise
-
-        for i_trial in range(self.n_trials):
+        # noise_rng = np.random.RandomState(global_seed + self.n_trials)
+        noise_rng = np.random.RandomState(global_seed + 123456)
+        trial_noise_seeds = noise_rng.randint(0, 2**32 - 1, size=self.n_trials)
+        for i_trial, trial_noise_seed in enumerate(trial_noise_seeds):
+            self.logger.info(f"Adding noise to trial {i_trial + 1}/{self.n_trials} with seed {trial_noise_seed}.")
+            
             # Get the clean data for this trial
             y_clean_trial = y_clean_all_trials[i_trial]
 
-            # Add noise using the dedicated function
-            # Use a trial-specific RNG state derived from noise_rng for reproducibility per trial
-            trial_noise_rng = np.random.RandomState(noise_rng.randint(0, 2**32 - 1))
+            # Add noise ans use a trial-specific RNG state derived from noise_rng for reproducibility per trial
             y_noisy_trial, noise_trial, noise_power_trial = self._add_noise(
                 y_clean_trial,
-                rng=trial_noise_rng
+                noise_seed=trial_noise_seed
             )
-
             y_noisy_all_trials.append(y_noisy_trial)
             noise_all_trials.append(noise_trial) 
             noise_power_all_trials.append(noise_power_trial)
@@ -736,11 +728,6 @@ class DataSimulator:
             else:
                  self.logger.info("Skipping leadfield topomap visualization due to missing MNE info.")
 
-
-
-
-
-
             print(f"\nPlotting results for trial {first_trial_idx + 1}...")
 
             # Now plot_sensor_signals uses the clean and noisy data generated separately
@@ -806,7 +793,6 @@ class DataSimulator:
             L = L.reshape(L.shape[0], -1)
 
         return y_noisy_all_trials, L, x_all_trials, active_indices_all_trials, noise_all_trials, noise_power_all_trials
-
 
     def visualize_signals(
         self,
