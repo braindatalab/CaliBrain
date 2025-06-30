@@ -19,7 +19,7 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "mne",
-    "POT",
+    #"POT",
     "nibabel",
     "pyyaml",
 ]
