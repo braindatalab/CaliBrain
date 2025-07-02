@@ -3,9 +3,10 @@ import datetime
 import logging
 import numpy as np
 import pandas as pd
+from pathlib import Path
+
 from calibrain import DataSimulator, gamma_map, eloreta
 from calibrain import Benchmark
-from pathlib import Path
 
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
 def main():
@@ -22,35 +23,71 @@ def main():
         ]
     )
     logger = logging.getLogger(__name__)
+     
+    # run this only once, to save the subjects' info if not already saved
+    # save_subjects_mne_info(
+    #     subjects=["CC120166", "CC120264", "CC120309", "CC120313"],
+    #     fwd_dir='BSI-ZOO_forward_data'
+    # )
     
-    # sfreq = 150  # Sampling frequency in Hz
-    # duration = 2 # 0.5  # Duration in seconds
-    # tstep = 1.0 / sfreq  # Time step between samples
-    # times = np.arange(0, duration, tstep)
-    # n_times = len(times) # = int(sfreq * duration)  # Total number of time points
-
-    data_param_grid = {
-        "subject": ["CC120166", "CC120264"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
+    data_simulator_eeg = DataSimulator(
+        tmin=-0.5,
+        tmax=0.5,
+        stim_onset=0.0,
+        sfreq=250,
+        fmin=1,
+        fmax=5,
+        amplitude=5,
+        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
+        leadfield_mode='load', # (simulate, random, load). NOTE: if `simulate` then align the config file of the leadfield simulation!
+        channel_type='eeg',
+        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
+        leadfield_config_path='configs/leadfield_sim_cfg.yml',
+        mne_info_path='configs/mne_info.yml',
+        logger=logger
+    )
+    
+    data_simulator_meg = DataSimulator(
+        tmin=-0.5,
+        tmax=0.5,
+        stim_onset=0.0,
+        sfreq=250,
+        fmin=1,
+        fmax=5,
+        amplitude=5,
+        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
+        leadfield_mode='load', # (simulate, random, load). NOTE: if `simulate` then align the config file of the leadfield simulation!
+        channel_type='meg',
+        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
+        leadfield_config_path='configs/leadfield_sim_cfg.yml',
+        mne_info_path='configs/mne_info.yml',
+        logger=logger
+    )
+        
+    data_param_grid_meg = {
+        "subject": ["CC120166", "fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
         "nnz": [3, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_snr_db": [-40, 40],
     }
+    
+    data_param_grid_eeg = {
+        "subject": ["caliBrain_fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
+        "nnz": [3, 5],
+        "orientation_type": ["fixed"], # "fixed", "free"
+        "alpha_snr_db": [-40, 40],
+    }
+        
     gamma_map_params = {
         "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
         "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
     }
-
-    # data_param_grid_2 = {
-    #     "subject": ['CC120309'], 
-    #     "nnz": [20],
-    #     "orientation_type": ["fixed"],
-    #     "alpha_snr_db": [-20, 0],
-    # }
     
     estimators = [
-        (gamma_map, gamma_map_params, data_param_grid),
-        # (gamma_map, gamma_map_params, data_param_grid_2),
-        # (eloreta, {}, {}), 
+        (gamma_map, gamma_map_params, data_param_grid_meg, data_simulator_meg),
+        (gamma_map, gamma_map_params, data_param_grid_eeg, data_simulator_eeg),
+        # (gamma_map, gamma_map_params, data_param_grid_2, data_simulator2),
+        # (eloreta, {}, {}, data_simulator), 
     ]
 
     metrics = [
@@ -62,25 +99,8 @@ def main():
     ]
     
     nruns = 2
-    data_simulator = DataSimulator(
-        tmin=-0.5,
-        tmax=0.5,
-        stim_onset=0.0,
-        sfreq=250,
-        fmin=1,
-        fmax=5,
-        amplitude=5,
-        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
-        leadfield_mode='load', # simulate, random, load. Important: if `simulate` then align the config file of the leadfield simulation!
-        # leadfield_dir=Path(f'results/forward/fsaverage-leadfield-{data_param_grid['orientation_type'][0]}.npz'),
-        channel_type='meg',  # 'eeg', 'meg'
-        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
-        leadfield_config_path='configs/leadfield_sim_cfg.yml',
-        logger=logger
-    )
-    
     df = []
-    for solver, solver_param_grid, data_param_grid in estimators:
+    for solver, solver_param_grid, data_param_grid, data_simulator in estimators:
         benchmark = Benchmark(
             solver=solver,
             solver_param_grid=solver_param_grid,
@@ -100,17 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-    
-    # def validate_source_space_dimensions(self):
-    #     """
-    #     Validate that the number of sources matches the source space.
-
-    #     Raises:
-    #     - ValueError: If the number of sources does not match the source space.
-    #     """
-    #     n_sources = sum(len(v) for v in self.vertices)
-    #     if self.orientation_type == "fixed" and self.x.shape[0] != n_sources:
-    #         raise ValueError(f"Data has {self.x.shape[0]} sources, but source space has {n_sources} sources!")
-    #     elif self.orientation_type == "free" and self.x.shape[0] != n_sources * 3:
-    #         raise ValueError(f"Data has {self.x.shape[0]} sources, but source space has {n_sources * 3} sources!")
