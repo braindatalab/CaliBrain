@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2
 from itertools import combinations, zip_longest
 from matplotlib.patches import Ellipse
+import matplotlib.lines as mlines # For creating custom legend handles
 import mne
 import logging
 
@@ -732,171 +733,91 @@ class UncertaintyEstimator:
             self.logger.debug(f"Saved CI plot: {save_path}")
             plt.close(fig)
 
-
-
     def vizualise_calibration_curve(
         self,
-        counts_within_ci, # This is the counts_array from get_confidence_intervals_data
-        time_point=0,
-        normalize_hits=True,
-        filename='calibration_curve' # Default filename
+        empirical_coverage,
+        results=None, # This dictionary is expected to contain the metrics
+        which_legend="active_set", # or "all_sources"
+        filename='calibration_curve' 
     ):
         """
-        Generate a calibration curve. It counts the number of true values that fall within the confidence intervals for each onfidence level.
+        Visualizes the calibration curve.
 
         Parameters:
-        - counts_within_ci (np.ndarray): Counts of true values within CIs.
-            - For "fixed": shape (n_levels, 1, n_times)
-            - For "free": shape (n_levels, 3, n_times)
-        - time_point (int): The specific time point to plot.
-        - normalize_hits (bool): If True, y-axis shows proportion of hits.
-                                 If False, y-axis shows raw number of hits.
-        - filename (str): Name of the file to save the plot.
-        """
-        self.logger.info(f"Starting hit calibration plot generation for time_point={time_point}, normalize={normalize_hits}.")
+        - empirical_coverage (np.ndarray): 1D array of empirical coverage values,
+                                            corresponding to each confidence level in self.confidence_levels.
+        - results (dict): Dictionary possibly containing calibration metrics.
+        - which_legend (str): Specifies which set of metrics to display in the legend.
+        - filename (str): Base name for the saved plot file.
+        """            
+        fig, ax = plt.subplots(figsize=(8, 6))
 
-        # 1. Calculate total_sources_for_plot
-        if self.orientation_type == 'free':
-            # For free orientation, total_sources is often the number of unique source locations
-            # if counts are aggregated per source location across orientations.
-            # If counts are per component (source x orientation), then it's len(self.active_set).
-            # The current _count_values_within_ci returns (3, n_times), implying counts per orientation.
-            # So, total_sources should be the number of active components per orientation.
-            # This is tricky. If total_sources was len(np.unique(self.active_set // 3)),
-            # it means we are normalizing by number of unique sources, assuming hits are summed over orientations for each source.
-            # However, CI_count_per_confidence_level for free is (n_levels, 3, n_times), meaning counts are already per orientation.
-            # So, total_sources for normalization should be the number of active components contributing to *each* orientation's count.
-            # This is not straightforward without knowing how active_set is structured relative to the 3 orientations.
-            total_sources_for_plot = len(np.unique(self.active_set // 3)) # Number of unique source locations
-            # This implies that for each orientation, we normalize by the number of unique source locations.
-        elif self.orientation_type == 'fixed':
-            # total_sources_for_plot = len(self.active_set) # 
-            total_sources_for_plot = self.x.shape[0] # 
-        else:
-            raise ValueError(f"Unsupported orientation_type: {self.orientation_type}")
-        self.logger.debug(f"Calculated total_sources_for_plot: {total_sources_for_plot}")
+        # Plot the empirical coverage line and scatter points
+        ax.plot(self.confidence_levels, empirical_coverage, label="Empirical Coverage", marker='o', linestyle='-')
+        ax.scatter(self.confidence_levels, empirical_coverage, color='blue', s=50, zorder=5)
 
-        # 2. Prepare counts_for_plot
-        self.logger.debug(f"Input counts_within_ci shape: {counts_within_ci.shape}")
+        # Plot the ideal calibration line (diagonal)
+        ax.plot(self.confidence_levels, self.confidence_levels, '--', label="Ideal Calibration", color='gray')
         
-        # CI_count_per_confidence_level for plotting
-        # For fixed: (n_levels, n_times)
-        # For free: (n_levels, 3, n_times) - this is already the input shape for free.
-        counts_for_plot = counts_within_ci
-        if self.orientation_type == 'fixed':
-            if counts_within_ci.ndim == 3 and counts_within_ci.shape[1] == 1: # Expected (L, 1, T)
-                counts_for_plot = counts_within_ci.squeeze(axis=1) # Becomes (L, T)
-            elif counts_within_ci.ndim == 2: # Already (L,T)
-                counts_for_plot = counts_within_ci
-            else:
-                raise ValueError(f"Unexpected shape for counts_within_ci for fixed orientation: {counts_within_ci.shape}")
-        self.logger.debug(f"Processed counts_for_plot shape: {counts_for_plot.shape}")
+        # Fill the area between empirical and ideal calibration
+        ax.fill_between(
+            self.confidence_levels, 
+            empirical_coverage, 
+            self.confidence_levels, 
+            color='orange', 
+            alpha=0.3, 
+            label="AUC Deviation Area" # Changed label for clarity
+        )
+        
+        ax.set_xlabel("Nominal Confidence Level")
+        ax.set_ylabel("Empirical Coverage")
+        ax.set_title(filename.replace('_', ' ').title())
+        ax.grid(True, linestyle=':', alpha=0.7)
+        ax.set_aspect('equal', adjustable='box')
 
+        # Prepare legend: start with existing plot elements
+        handles, labels = ax.get_legend_handles_labels()
+        
 
-        # 3. Perform plotting (adapted from old _vizualise_calibration_curve)
-        if self.orientation_type == 'free':
-            # counts_for_plot is (n_levels, 3, n_times)
-            fig, axes = plt.subplots(3, 1, figsize=(6, 18), sharex=True)
-            orientations = ['X', 'Y', 'Z']
-            plot_title_suffix = f'at Time Point {time_point} (Free Orientation)'
-            y_label = 'Proportion of Hits' if normalize_hits else 'Number of Hits'
+        # Determine which set of metrics to display
+        if which_legend == "active_set":
+            metrics_to_display = {
+                'AUC_deviation_active_indices': 'AUC area',
+                'max_positive_deviation_active_indices': 'Max Positive Dev.',
+                'max_negative_deviation_active_indices': 'Max Negative Dev.',
+                'max_absolute_deviation_active_indices': 'Max Abs Dev.',
+            }
+        elif which_legend == "all_sources":
+            metrics_to_display = {
+                'AUC_deviation_all_sources': 'AUC area',
+                'max_positive_deviation_all_sources': 'Max Positive Dev.',
+                'max_negative_deviation_all_sources': 'Max Negative Dev.',
+                'max_absolute_deviation_all_sources': 'Max Abs Dev.',
+            }
+        else:
+            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_set' or 'all_sources'.")
+            return
 
-            for i, ax in enumerate(axes): # i is orientation index 0, 1, 2
-                if time_point >= counts_for_plot.shape[2]: # Check against 3rd dim (n_times)
-                    self.logger.error(f"time_point {time_point} is out of bounds for counts_for_plot with shape {counts_for_plot.shape}")
-                    plt.close(fig)
-                    return
-                
-                hits_at_t_orient = counts_for_plot[:, i, time_point] # (n_levels,)
-                
-                # For free orientation, total_sources_for_plot is num unique sources.
-                # If normalizing, we assume hits_at_t_orient are counts for *those unique sources* in that orientation.
-                # This part needs careful consideration of what total_sources_for_plot represents for free orientation.
-                # If total_sources_for_plot is #unique sources, and hits are per orientation for those sources.
-                # A more precise total_sources per orientation might be:
-                # num_active_in_orient_i = np.sum(self.active_set % 3 == i)
-                # However, the previous code used a single total_sources_for_plot.
-                
-                current_total_sources = total_sources_for_plot # Using the overall unique source count for normalization per orientation.
+        if results:
+            separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
+            handles.append(separator_handle)
+            labels.append(separator_handle.get_label())
 
-                if normalize_hits:
-                    if current_total_sources == 0:
-                        self.logger.warning(f"Total sources for normalization is 0 for orientation {orientations[i]}. Plotting raw counts instead.")
-                        y_values = hits_at_t_orient
-                        current_y_label = 'Number of Hits (Normalization N/A)'
-                        ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)', alpha=0.3) # Dimmed
-                    else:
-                        y_values = hits_at_t_orient / current_total_sources
-                        current_y_label = y_label
-                        ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)')
-                    ax.set_ylim(-0.05, 1.05)
-                    ax.set_aspect('equal', adjustable='box')
-                else:
-                    y_values = hits_at_t_orient
-                    current_y_label = y_label
-                    # Auto-scaling for y-axis if not normalized
+            for key, display_name in metrics_to_display.items():
+                if key in results and results[key] is not None:
+                    value = results[key]
+                    dummy_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label=f"{display_name}: {value:.3f}")
+                    handles.append(dummy_handle)
+                    labels.append(f"{display_name}: {value:.3f}")
 
-                ax.plot(self.confidence_levels, y_values, marker='o', linestyle='-', color='blue', label='Observed Hit Rate' if normalize_hits and current_total_sources > 0 else 'Observed Hits')
-                
-                ax.set_ylabel(current_y_label)
-                ax.grid(True)
-                ax.set_xticks(self.confidence_levels)
-                ax.set_xticklabels([f'{cl:.0%}' for cl in self.confidence_levels])
-                ax.set_title(f'Orientation {orientations[i]}')
-                ax.legend(loc='best')
+        # Create the legend with potentially added metric values
+        ax.legend(handles, labels, loc='best', fontsize='small')
+    
+        fig.tight_layout(rect=[0.05, 0.05, 1, 0.96]) 
 
-            axes[-1].set_xlabel('Confidence Level')
-            fig.suptitle(f'Calibration Curve', fontsize=14)
-            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-            
-            save_path = os.path.join(self.experiment_dir, filename + f"normalized" if normalize_hits else filename + '.png')
-            plt.savefig(save_path)
-            plt.close(fig)
-
-        else: # Fixed orientation
-            # counts_for_plot is (n_levels, n_times)
-            if time_point >= counts_for_plot.shape[1]: # Check against 2nd dim (n_times)
-                self.logger.error(f"time_point {time_point} is out of bounds for counts_for_plot with shape {counts_for_plot.shape}")
-                return
-
-            hits_at_t = counts_for_plot[:, time_point] # (n_levels,)
-            y_label = 'Proportion of Hits' if normalize_hits else 'Number of Hits'
-
-            fig, ax = plt.subplots(figsize=(7, 7))
-            
-            if normalize_hits:
-                if total_sources_for_plot == 0:
-                    self.logger.warning("Total sources for normalization is 0. Plotting raw counts instead.")
-                    y_values = hits_at_t
-                    current_y_label = 'Number of Hits (Normalization N/A)'
-                    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)', alpha=0.3) # Dimmed
-                else:
-                    y_values = hits_at_t / total_sources_for_plot
-                    current_y_label = y_label
-                    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='y=x (Ideal Calibration)')
-                ax.set_ylim(-0.05, 1.05)
-                ax.set_aspect('equal', adjustable='box')
-            else:
-                y_values = hits_at_t
-                current_y_label = y_label
-                # Auto-scaling for y-axis if not normalized
-
-            ax.plot(self.confidence_levels, y_values, marker='o', linestyle='-', color='blue', label='Observed Hit Rate' if normalize_hits and total_sources_for_plot > 0 else 'Observed Hits')
-
-            ax.set_xlabel('Confidence Level')
-            ax.set_ylabel(current_y_label)
-            ax.set_title(f'Calibration Curve')
-            ax.grid(True)
-            ax.set_xticks(self.confidence_levels)
-            ax.set_xticklabels([f'{cl:.0%}' for cl in self.confidence_levels])
-            ax.legend(loc='best')
-
-            fig.tight_layout(rect=[0.05, 0.05, 1, 0.96])
-            save_path = os.path.join(self.experiment_dir, filename + f"normalized" if normalize_hits else filename + '.png')
-            plt.savefig(save_path)
-            plt.close(fig)
-
-        self.logger.info(f"Hit calibration plot saved to {save_path}")
+        save_path = os.path.join(self.experiment_dir, f"{filename}.png")
+        plt.savefig(save_path)
+        plt.close(fig)
 
     def get_confidence_intervals_data(self, x, x_hat, full_posterior_cov):
         """
@@ -976,9 +897,7 @@ class UncertaintyEstimator:
         - confidence_intervals_tuple (tuple): 
             Tuple returned by get_confidence_intervals_data, containing (ci_lower_stacked, ci_upper_stacked).
         """
-        self.logger.info("Starting confidence interval (CI times) visualization process...")
-
-        self.logger.info("Plotting CI activity for each confidence level. This may take a while...")
+        self.logger.info("Plotting CI values for each confidence level. This may take a while...")
         for idx, confidence_level_val in enumerate(self.confidence_levels):
             self.logger.debug(f"Plotting CI times for confidence level: {confidence_level_val:.2f}")
             ci_lower_current = ci_lower[idx] 
