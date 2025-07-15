@@ -17,7 +17,7 @@ from calibrain import EvaluationMetrics
 from calibrain import SourceEstimator, DataSimulator, UncertaintyEstimator, gamma_map, eloreta
 
 class Benchmark:
-    def __init__(self, solver, solver_param_grid, data_param_grid, data_simulator, metrics, logger=None):
+    def __init__(self, solver, solver_param_grid, data_param_grid, data_simulator, metrics, random_state=42, logger=None):
         """
         Initialize the Benchmark class.
 
@@ -25,7 +25,9 @@ class Benchmark:
         - solver (callable): The solver function (e.g., gamma_map, eloreta).
         - solver_param_grid (dict): Grid of solver hyperparameters.
         - data_param_grid (dict): Grid of data generation hyperparameters.
+        - data_simulator (DataSimulator): Instance of DataSimulator for generating data.
         - metrics (list of callables): List of metric functions to evaluate the results.
+        - random_state (int, optional): Random seed for reproducibility.
         - logger (logging.Logger, optional): Logger instance for logging messages.
         """
         self.solver = solver
@@ -33,15 +35,17 @@ class Benchmark:
         self.data_param_grid = data_param_grid
         self.data_simulator = data_simulator
         self.metrics = metrics
+        self.random_state = random_state
         self.logger = logger if logger else logging.getLogger(__name__)
     
-    def create_experiment_directory(self, base_dir, params):
+    def create_experiment_directory(self, base_dir, params, desired_order):
         """
         Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.
     
         Parameters:
         - base_dir (str): Base directory for the experiment.
         - params (dict): Dictionary of parameters.
+        - desired_order (list): List of parameter keys in the desired order for the directory structure.
     
         Returns:
         - experiment_dir (str): Path to the experiment directory.
@@ -49,13 +53,14 @@ class Benchmark:
         # Exclude 'cov' and sanitize values for directory names
         sanitized_params_for_path = {
             k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_")
-            for k, v in params.items() if k != "cov" 
-            # Add other keys to exclude from path if necessary, e.g. if k != "alpha_snr_db"
+            for k, v in params.items() if k not in ("cov", "run_id")
+            # Add other keys to exclude from path if necessary
         }
     
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
-        desired_order = ["subject", "estimator", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db"]
+        if desired_order is None:
+            desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db", "seed"]
         
         path_components = []
         
@@ -84,14 +89,14 @@ class Benchmark:
         self.logger.info(f"Experiment directory created: {experiment_dir}")
         return experiment_dir
              
-    def run(self, nruns=1):
+    def run(self, nruns=2, fig_path="results/figures/uncertainty_analysis_figures"):
         """
         Run benchmarking by iterating over combinations of solver and data parameters.
 
         Returns:
         - results (pd.DataFrame): DataFrame containing the results for each parameter combination.
         """
-        rng = check_random_state(42)
+        rng = check_random_state(self.random_state)
         seeds = rng.randint(low=0, high=2 ** 32, size=nruns)
         results_list = []
         
@@ -107,35 +112,30 @@ class Benchmark:
             self.logger.info(f"Solver parameters: {solver_params}")
             self.logger.info(f"Data parameters: {data_params}")
             
-            experiment_dir = self.create_experiment_directory(
-                base_dir="results/figures/uncertainty_analysis_figures",
-                params={
-                    "estimator": solver_name,
-                    **solver_params, 
-                    **data_params
-                }
-            )
-            
-            self.data_simulator.seed = seed
-            self.data_simulator.rng = rng
-            self.data_simulator.__dict__.update(data_params)
-            # self.data_simulator.noise_type = solver_params.get("noise_type")
-
             this_result = {
-                "run_id": len(results_list) + 1,
+                'run_id': len(results_list) + 1,
                 "seed": seed,
                 "solver": solver_name,
                 **solver_params,
                 **data_params,
             }
+            experiment_dir = self.create_experiment_directory(
+                base_dir=fig_path,
+                params=this_result,
+                desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db", "seed"]
+            )
             
+            self.data_simulator.__dict__.update(data_params)
+            # self.data_simulator.noise_type = solver_params.get("noise_type")
+
             try:
                 # Simulate data (with n_trials!)
                 self.logger.info("Simulating data...")
                 data = self.data_simulator.simulate(
                     data_params['subject'], 
+                    seed,
                     visualize=True,
-                    save_path=os.path.join(experiment_dir , "simulated_data")
+                    save_path=os.path.join(experiment_dir , "data_simulation")
                 )
                 y_noisy, L, x, x_active_indices, noise, noise_power = data
                 trial_i = 0
