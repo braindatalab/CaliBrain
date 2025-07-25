@@ -48,7 +48,7 @@ class DataSimulator:
         fmin: int = 1,
         fmax: int = 5,
         nnz: int = 3,
-        alpha_snr_db: float = 6.0,
+        alpha_SNR: float = 6.0,
         amplitude: float = 5.0, # nAm
         randomize_erp_timing_within_post_stim: bool = True,
         min_erp_duration_samples : int = None,
@@ -88,7 +88,7 @@ class DataSimulator:
             Maximum frequency for bandpass filter, by default 5.
         nnz : int, optional
             Number of active sources, by default 3.
-        alpha_snr_db : float, optional
+        alpha_SNR : float, optional
             Signal-to-noise ratio in dB, by default 6.0.
         amplitude : float, optional
             Amplitude of the ERP, by default 5.0.
@@ -142,7 +142,7 @@ class DataSimulator:
         self.sfreq = sfreq
         self.fmin = fmin
         self.fmax = fmax
-        self.alpha_snr_db = alpha_snr_db
+        self.alpha_SNR = alpha_SNR
         self.amplitude = amplitude
         self.randomize_erp_timing_within_post_stim = randomize_erp_timing_within_post_stim
         self.min_erp_duration_samples = min_erp_duration_samples
@@ -514,38 +514,73 @@ class DataSimulator:
 
     def _add_noise(self, y_clean, noise_seed):
         """
-        Adds Homoscedastic  (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
+        Adds Homoscedastic (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
         
         Parameters:
         - y_clean (np.ndarray): The clean signal array (e.g., channels x times).
-        for reproducible noise generation. If None, uses default numpy random state.
+        for reproducible noise generation.
         - noise_seed (int): Seed for the random number generator to ensure reproducibility.
 
         Returns:
         - tuple: A tuple containing:
-            - y_noisy (np.ndarray): The signal with added noise.
-            - noise (np.ndarray): The generated noise array.
-            - noise_power (float): The calculated variance of the added noise.
+            - y_noisy (np.ndarray): The noisy signal with added Gaussian noise.
+            - noise (np.ndarray): The noise added to the clean signal.
+            - noise_var (float): The variance of the noise added to the clean signal.
         """
+        if not (0.0 <= self.alpha_SNR <= 1.0):
+            raise ValueError("alpha_SNR must be in [0, 1].")
+
         noise_rng = np.random.RandomState(noise_seed)
         
-        signal_power = np.mean(y_clean ** 2)
-        if signal_power == 0:
-            print("Warning: Clean signal power is zero. Cannot add noise based on SNR.")
-            noise_power = 0
-            noise = np.zeros_like(y_clean)
-        else:
-            snr_linear = 10 ** (self.alpha_snr_db / 10.0)
-            # Homoscedastic case: The standard deviation and thus the variance (noise_power) is the same for all sensors and all time points.
-            noise_power = signal_power / snr_linear # Variance of the noise
-            noise_std = np.sqrt(noise_power)
-            
-            # Draw noise from Gaussian distribution (independenet noise at each sensor and at each time point). -> The noise covariance matrix is diagonal. 
-            noise = noise_rng.normal(0, noise_std, size=y_clean.shape) # White noise (uncorrelated across sensors and time) with a uniform power across sensors. shape: n_sensors x n_times. 
-            self.logger.info(f"Noise: {noise.shape}, noise power: {noise_power:.4f}, noise std: {noise_std:.4f}")
+        # Generate base noise with variance = noise_std^2
+        noise_std = 1.0 # 0.01 # Standard deviation of the noise
+        
+        if self.alpha_SNR == 0.0:
+            # Full noise, no signal
+            eps = noise_rng.normal(loc=0.0, scale=noise_std, size=y_clean.shape)
+            return eps, eps, noise_std ** 2
+        
+        elif self.alpha_SNR == 1.0:
+            # No noise added
+            eps = np.zeros_like(y_clean)
+            return y_clean.copy(), eps, 0.0
 
-        y_noisy = y_clean + noise
-        return y_noisy, noise, noise_power
+        # Sample noise from a Gaussian distribution
+        eps = noise_rng.normal(loc=0.0, scale=noise_std, size=y_clean.shape)
+        
+        # Compute frobenius norms
+        signal_norm = np.linalg.norm(y_clean, ord='fro')
+        eps_norm = np.linalg.norm(eps, ord='fro')
+        
+        # Alpha-SNR noise scaling
+        eta = ((1 - self.alpha_SNR) / self.alpha_SNR) * (signal_norm / eps_norm)
+        
+        eps_scaled = eta * eps # Scaled noise
+        y_noisy = y_clean + eps_scaled # Add to signal
+
+        # Noise variance (per entry)
+        noise_var = (eta * noise_std) ** 2
+    
+        # signal_power = np.mean(y_clean ** 2)
+        
+        # if signal_power == 0:
+        #     print("Warning: Clean signal power is zero. Cannot add noise based on SNR.")
+        #     noise_power = 0
+        #     noise = np.zeros_like(y_clean)
+        # else:
+        #     snr_linear = 10 ** (self.alpha_SNR / 10.0)
+        #     # Homoscedastic case: The standard deviation and thus the variance (noise_power) is the same for all sensors and all time points.
+        #     noise_power = signal_power / snr_linear # Variance of the noise
+        #     noise_std = np.sqrt(noise_power)
+            
+        #     # Draw noise from Gaussian distribution (independenet noise at each sensor and at each time point). -> The noise covariance matrix is diagonal. 
+        #     noise = noise_rng.normal(0, noise_std, size=y_clean.shape) # White noise (uncorrelated across sensors and time) with a uniform power across sensors. shape: n_sensors x n_times. 
+        #     self.logger.info(f"Noise: {noise.shape}, noise power: {noise_power:.4f}, noise std: {noise_std:.4f}")
+
+        # y_noisy = y_clean + noise
+        # return y_noisy, noise, noise_power
+        
+        return y_noisy, eps_scaled, noise_var
 
     def simulate(self, subject, global_seed, visualize: bool = True, save_path: str = "results/figures/data_sim/") -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -614,9 +649,9 @@ class DataSimulator:
 
         # --- Add Noise Separately. Compare and vizualise later with clean y ---
         y_noisy_all_trials = [] # To store noisy data
-        noise_all_trials = [] # Optional: store noise itself
-        noise_power_all_trials = [] # Optional: store noise power per trial
-
+        noise_all_trials = [] # To store noise itself
+        noise_var_all_trials = [] # To store noise power per trial
+        
         # noise_rng = np.random.RandomState(global_seed + self.n_trials)
         noise_rng = np.random.RandomState(global_seed + 123456)
         trial_noise_seeds = noise_rng.randint(0, 2**32 - 1, size=self.n_trials)
@@ -627,19 +662,19 @@ class DataSimulator:
             y_clean_trial = y_clean_all_trials[i_trial]
 
             # Add noise ans use a trial-specific RNG state derived from noise_rng for reproducibility per trial
-            y_noisy_trial, noise_trial, noise_power_trial = self._add_noise(
+            y_noisy_trial, noise_trial, noise_var_trial = self._add_noise(
                 y_clean_trial,
                 noise_seed=trial_noise_seed
             )
             y_noisy_all_trials.append(y_noisy_trial)
-            noise_all_trials.append(noise_trial) 
-            noise_power_all_trials.append(noise_power_trial)
+            noise_all_trials.append(noise_trial)
+            noise_var_all_trials.append(noise_var_trial)
 
         # Convert noisy data list to NumPy array
         y_noisy_all_trials = np.array(y_noisy_all_trials) # Shape: (n_trials, n_channels, n_times)
         noise_all_trials = np.array(noise_all_trials) # Shape: (n_trials, n_channels, n_times)
-        noise_power_all_trials = np.array(noise_power_all_trials) # Shape: (n_trials,)
-                
+        noise_var_all_trials = np.array(noise_var_all_trials) # Shape: (n_trials,)
+        
         print("Noise addition complete.")
 
 
@@ -764,7 +799,7 @@ class DataSimulator:
             self.logger.debug("Reshaping free orientation leadfield from (sensors, sources, 3) to (sensors, sources*3)")
             L = L.reshape(L.shape[0], -1)
 
-        return y_noisy_all_trials, L, x_all_trials, active_indices_all_trials, noise_all_trials, noise_power_all_trials
+        return y_noisy_all_trials, L, x_all_trials, active_indices_all_trials, noise_all_trials, noise_var_all_trials
 
     def visualize_signals(
         self,
