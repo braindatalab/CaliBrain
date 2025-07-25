@@ -8,7 +8,9 @@ from pathlib import Path
 from calibrain import DataSimulator, gamma_map, eloreta
 from calibrain import Benchmark
 
+# https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
+
 def main():
     os.makedirs("results/benchmark_results", exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -37,7 +39,7 @@ def main():
         sfreq=250,
         fmin=1,
         fmax=5,
-        amplitude=5,
+        amplitude=1,
         n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
         leadfield_mode='load', # (simulate, random, load). NOTE: if `simulate` then align the config file of the leadfield simulation!
         channel_type='eeg',
@@ -66,16 +68,16 @@ def main():
         
     data_param_grid_meg = {
         "subject": ["CC120166", "fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
-        "nnz": [3, 5],
+        "nnz": [1, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr_db": [-40, 40],
+        "alpha_SNR": [0.0, 0.5, 1.0],
     }
     
     data_param_grid_eeg = {
         "subject": ["caliBrain_fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
-        "nnz": [3, 5],
+        "nnz": [1, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_snr_db": [-40, 40],
+        "alpha_SNR": [0.0, 0.5, 1.0],
     }
         
     gamma_map_params = {
@@ -98,7 +100,7 @@ def main():
     # "accuracy",  
     ]
     
-    nruns = 2
+    nruns = 1
     df = []
     for solver, solver_param_grid, data_param_grid, data_simulator in estimators:
         benchmark = Benchmark(

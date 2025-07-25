@@ -60,7 +60,7 @@ class Benchmark:
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db", "seed"]
+            desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_SNR", "seed"]
         
         path_components = []
         
@@ -122,7 +122,7 @@ class Benchmark:
             experiment_dir = self.create_experiment_directory(
                 base_dir=fig_path,
                 params=this_result,
-                desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_snr_db", "seed"]
+                desired_order = ["subject", "solver", "gammas", "orientation_type", "nnz", "noise_type", "alpha_SNR", "seed"]
             )
             
             self.data_simulator.__dict__.update(data_params)
@@ -137,7 +137,7 @@ class Benchmark:
                     visualize=True,
                     save_path=os.path.join(experiment_dir , "data_simulation")
                 )
-                y_noisy, L, x, x_active_indices, noise, noise_power = data
+                y_noisy, L, x, x_active_indices, noise, noise_var = data
                 trial_i = 0
                 
                 # if solver_params.get("noise_type") == 'oracle':
@@ -155,7 +155,7 @@ class Benchmark:
                 )            
                 source_estimator.fit(L, y_noisy)            
                 x_hat, x_hat_active_set, posterior_cov = source_estimator.predict(
-                    y=y_noisy[trial_i], noise_var=noise_power[trial_i]
+                    y=y_noisy[trial_i], noise_var=noise_var[trial_i]
                 )
                 this_result['active_set_size'] = len(x_hat_active_set)
                 
