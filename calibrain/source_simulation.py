@@ -1,3 +1,13 @@
+"""
+source_simulation.py
+Module for simulating synthetic brain activity data for source-level measurements.
+
+Specifically simulating event-related potential (ERP)-like signals for use in 
+neuroimaging research (e.g., MEG/EEG source simulation). It supports flexible 
+configuration of ERP waveform properties, source orientation (fixed or free), 
+and trial-based simulation with reproducible randomization.
+"""
+
 import os
 from pathlib import Path
 import logging
@@ -21,9 +31,11 @@ from calibrain.utils import load_config
 
 
 class SourceSimulator:
+    """Simulates synthetic brain activity data for source-level measurements.
+    """
     def __init__(
         self,
-        n_trials: int = 4,
+        n_trials: int = 3,
         logger: Optional[logging.Logger] = None,
     ):
         """
@@ -31,6 +43,8 @@ class SourceSimulator:
         
         Parameters
         ----------
+        n_trials : int, optional
+            Number of trials to simulate. Each trial will generate its own source activity and sensor data. Default is 3.
         logger : Optional[logging.Logger], optional
             Logger instance, by default None.
             
@@ -41,6 +55,7 @@ class SourceSimulator:
         """
         self.logger = logger if logger else logging.getLogger(__name__)
         self.n_trials = n_trials
+        
         # Attributes to be set in other methods
         self.source_units = "nAm"
 
@@ -64,14 +79,31 @@ class SourceSimulator:
         
         Parameters:
         ----------
-        source_seed : int, optional
-            Seed for the random number generator to ensure reproducibility of the ERP waveform. Default is 512.
-        stim_onset_sample : int, optional
-            The sample index within `n_times` at or after which the ERP activity should start. Default is 0.
+        timin : float
+            Start time of the ERP segment in seconds. Default is -0.5.
+        tmax : float
+            End time of the ERP segment in seconds. Default is 0.5.
+        stim_onset_sample : int
+            Sample index where the stimulus onset occurs. Default is 0.
+        sfreq : float
+            Sampling frequency in Hz. Default is 250.
+        fmin : int
+            Minimum frequency for the bandpass filter in Hz. Default is 1.
+        fmax : int
+            Maximum frequency for the bandpass filter in Hz. Default is 5.
+        amplitude : float
+            Amplitude of the ERP waveform. Default is 5.0.
+        random_erp_timing : bool
+            If True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized. If False, the ERP will span the entire duration from `stim_onset_sample` to `n_times`. Default is True.
+        erp_min_length : int, optional
+            Minimum length of the ERP waveform in samples. If None, a default value is used.
+        source_seed : int
+            Seed for the random number generator to ensure reproducibility of the ERP waveform generation. Default is 512.
         
         Returns:
         -------
-        - np.ndarray: The generated ERP signal of length n_times.
+        np.ndarray
+            The generated ERP signal of length n_times.
         
         Notes:
         - The output signal is zero-padded before the `stim_onset_sample` to ensure it starts with zeros, simulating the pre-stimulus baseline.
@@ -182,18 +214,21 @@ class SourceSimulator:
         """
         Generate simulated source time courses for a single trial.
 
-        This method creates ERP-like signals for a subset of active sources, determined by `nnz`.
-        For each active source, an ERP waveform is generated using a bandpass-filtered noise segment,
-        optionally randomized in onset and duration, and scaled by the specified amplitude.
-        The ERP waveform is placed at the appropriate time index based on `stim_onset_sample`.
-
-        For "fixed" orientation, each active source has a single time course.
-        For "free" orientation, each active source has three orientation components, with random orientation coefficients.
+        This method creates ERP-like signals for a subset of active sources, determined by `nnz`. For each active source, an ERP waveform is generated using a bandpass-filtered noise segment, optionally randomized in onset and duration, and scaled by the specified amplitude. The ERP waveform is placed at the appropriate time index based on `stim_onset_sample`.
 
         Parameters
         ----------
+        orientation_type : str
+            Orientation of the sources, either "fixed" or "free". Default is "fixed".
+        n_sources : int
+            Total number of sources to simulate. Default is 100.
+        nnz : int
+            Number of non-zero (active) sources in the trial. Must be less than or equal to `n_sources`. Default is 5.
         trial_seed : int
-            Seed for the random number generator to ensure reproducibility of source selection and ERP generation. Default is 256.
+            Seed for the random number generator to ensure reproducibility of the source activity. Default is 256.
+        ERP_config : Optional[dict]
+            Configuration dictionary for the ERP waveform generation. Should include keys like `tmin`, `tmax`, `stim_onset_sample`, `sfreq`, `fmin`, `fmax`, `amplitude`, `random_erp_timing`, and `erp_min_length`. If None,
+            default values will be used.
 
         Returns
         -------
@@ -203,16 +238,16 @@ class SourceSimulator:
             - Shape (n_sources, n_orient, n_times) for "free" orientation.
         active_indices : np.ndarray
             Indices of the sources that were activated in this trial.
-        """        
+            
+        Notes
+        -------
+        - For "fixed" orientation, each active source has a single time course.
+        - For "free" orientation, each active source has three orientation components, with random orientation coefficients.
+        """
         tmin = ERP_config.get('tmin', -0.5)
         tmax = ERP_config.get('tmax', 0.5)
         stim_onset_sample = ERP_config.get('stim_onset_sample', 0)
         sfreq = ERP_config.get('sfreq', 250)
-        fmin = ERP_config.get('fmin', 1)
-        fmax = ERP_config.get('fmax', 5)
-        amplitude = ERP_config.get('amplitude', 5.0)
-        random_erp_timing = ERP_config.get('random_erp_timing', True)
-        erp_min_length = ERP_config.get('erp_min_length', None)
         
         trial_rng = np.random.RandomState(trial_seed)
 
@@ -227,18 +262,7 @@ class SourceSimulator:
         else:
             stim_onset_sample = stim_indices[0]
 
-        # Pass the ERP config into a dict
-        ERP_config = {
-            "tmin": tmin,
-            "tmax": tmax,
-            "stim_onset_sample": stim_onset_sample,
-            "sfreq": sfreq,
-            "fmin": fmin,
-            "fmax": fmax,
-            "amplitude": amplitude,
-            "random_erp_timing": random_erp_timing,
-            "erp_min_length": erp_min_length,
-        }
+        ERP_config['stim_onset_sample'] = stim_onset_sample  # Update ERP config with the actual onset sample
         
         if orientation_type == "fixed":
             # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
@@ -287,10 +311,9 @@ class SourceSimulator:
         self.logger.debug(f"Active source indices: {active_indices}")
         
         return x, active_indices
-    
-    def simulate_multiple_source_trials(
+
+    def simulate_source_trials(
         self,
-        n_trials: int = 4,
         orientation_type: str = "fixed",
         n_sources: int = 100,
         nnz: int = 5,
@@ -306,10 +329,16 @@ class SourceSimulator:
 
         Parameters
         ----------
-        n_trials : int
-            Number of trials to simulate.
+        orientation_type : str
+            Orientation of the sources, either "fixed" or "free". Default is "fixed".
+        n_sources : int
+            Total number of sources to simulate. Default is 100.
+        nnz : int
+            Number of non-zero (active) sources in each trial. Must be less than or equal to `n_sources`. Default is 5.
         global_seed : int
-            Global seed for reproducibility; used to generate per-trial seeds. Default is 42.
+            Seed for the random number generator to ensure reproducibility across trials. Default is 42.
+        ERP_config : Optional[dict]
+            Configuration dictionary for the ERP waveform generation. Should include keys like `tmin`, `tmax`, `stim_onset_sample`, `sfreq`, `fmin`, `fmax`, `amplitude`, `random_erp_timing`, and `erp_min_length`. If None,
 
         Returns
         -------
@@ -323,13 +352,13 @@ class SourceSimulator:
                 Array of shape (n_trials, nnz) containing indices of active sources per trial.
         """
         source_rng = np.random.RandomState(global_seed)
-        source_seeds = source_rng.randint(0, 2**32 - 1, size=n_trials)
+        source_seeds = source_rng.randint(0, 2**32 - 1, size=self.n_trials)
 
         x_all_trials = []
         active_indices_all_trials = []
 
         for i, seed in enumerate(source_seeds):
-            self.logger.debug(f"Simulating trial {i + 1}/{n_trials} with seed {seed}")
+            self.logger.debug(f"Simulating trial {i + 1}/{self.n_trials} with seed {seed}")
             x, active_indices = self.simulate_source_time_courses(
                 orientation_type=orientation_type,
                 n_sources=n_sources,
@@ -345,9 +374,9 @@ class SourceSimulator:
         active_indices_all_trials = np.array(active_indices_all_trials)
         
         # Log the shapes of the results
-        self.logger.info(f"Completed simulating source time courses for {n_trials} trials.")
-        self.logger.info(f"Shape of source time courses of all trials {n_trials} trials: {x_all_trials.shape}")
-        self.logger.info(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
+        self.logger.info(f"Completed simulating source time courses for {self.n_trials} trials.")
+        self.logger.info(f"Shape of source time courses of all trials {self.n_trials} trials: {x_all_trials.shape}")
+        self.logger.info(f"Shape of active indices for all {self.n_trials} trials: {active_indices_all_trials.shape}")
 
         # Print active indices for all trials, each trial on a new line
         self.logger.info("Active indices for all trials:")
@@ -382,7 +411,7 @@ def main():
         "erp_min_length": None,
     }
 
-    ss = SourceSimulator(
+    source_sim = SourceSimulator(
         logger=logger,
     )
 
@@ -392,17 +421,17 @@ def main():
     nnz=5
     global_seed=42
 
-    waveform = ss.simulate_erp_waveform(**ERP_config, source_seed=512)
+    waveform = source_sim.simulate_erp_waveform(**ERP_config, source_seed=512)
     
-    x, active_indices = ss.simulate_source_time_courses(
+    x, active_indices = source_sim.simulate_source_time_courses(
         orientation_type=orientation_type,
         n_sources=n_sources,
         nnz=nnz,
         trial_seed=256,
         ERP_config=ERP_config,
     )
-    
-    x_trials, active_indices_trials = ss.simulate_multiple_source_trials(
+
+    x_trials, active_indices_trials = source_sim.simulate_source_trials(
         n_trials=n_trials,
         orientation_type=orientation_type,
         n_sources=n_sources,
