@@ -3,7 +3,7 @@ from mne.datasets import sample
 from calibrain.utils import load_config
 import logging
 from pathlib import Path
-from calibrain import LeadfieldSimulator
+from calibrain import LeadfieldBuilder
 
 
 def main(args=None):
@@ -39,7 +39,7 @@ def main(args=None):
     logger.info(f"Using configuration file: {Path(args.config)}")
 
     # Initialize simulation
-    leadfield_sim = LeadfieldSimulator(config=config, logger=logger)
+    leadfield_sim = LeadfieldBuilder(config=config, logger=logger)
 
     # Run the pipeline
     try:
