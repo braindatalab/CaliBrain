@@ -1,16 +1,20 @@
-from calibrain.leadfield_simulation import LeadfieldSimulator
-from calibrain.data_simulation import DataSimulator
+from calibrain.leadfield_simulation import LeadfieldBuilder
+from calibrain.source_simulation import SourceSimulator
+from calibrain.data_simulation import SensorSimulator
 from calibrain.source_estimation import SourceEstimator, gamma_map, eloreta
 from calibrain.uncertainty_estimation import UncertaintyEstimator
-from calibrain.evaluation import EvaluationMetrics
+from calibrain.evaluation import MetricEvaluator
+from calibrain.visualization import Visualizer
 
 __all__ = [
     "Benchmark",
-    "LeadfieldSimulator",
-    "DataSimulator",
+    "LeadfieldBuilder",
+    "SourceSimulator",
+    "SensorSimulator",
     "SourceEstimator",
     "UncertaintyEstimator",
-    "EvaluationMetrics",
+    "MetricEvaluator",
+    "Visualizer"
     "eloreta",
     "gamma_map",
 ]
