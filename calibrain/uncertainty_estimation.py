@@ -11,30 +11,18 @@ import logging
 
 
 class UncertaintyEstimator:
-    def __init__(self, orientation_type, x, x_hat, n_totl_sources, active_set, x_active_indices, posterior_cov, experiment_dir=None, confidence_levels=None, logger=None):
+    def __init__(self, confidence_levels : np.ndarray = None, logger : logging.Logger = None):
         """
         Initialize the uncertainty estimator.
         
         Parameters:
-        - orientation_type (str): Orientation type ('fixed' or 'free').
-        - x (np.ndarray): Ground truth source activity.
-        - x_hat (np.ndarray): Estimated source activity.
-        - active_set (np.ndarray): Indices of active sources of the posterior mean (of the estimated sources).
-        - n_totl_sources (int): Total number of sources in the source space.
-        - x_active_indices (np.ndarray, optional): Indices of active sources in the original source spac (Ground truth) based on number-non-zero sources parameter of the data simulation (nnz).
-        - posterior_cov (np.ndarray, optional): Posterior covariance matrix.
-        - experiment_dir (str, optional): Directory for experiment results.
-        - logger (logging.Logger, optional): Logger instance for logging messages.
+        -----------
+        confidence_levels : list, optional
+            List of confidence levels to compute confidence ellipses. Default is np.arange(0.0, 1.1, 0.1).
+        logger : logging.Logger, optional
+            Logger instance for logging messages.
         """
-        self.orientation_type = orientation_type
-        self.x = x
-        self.x_hat = x_hat
-        self.n_totl_sources = n_totl_sources
-        self.active_set = active_set
-        self.x_active_indices = x_active_indices
-        self.posterior_cov = posterior_cov
         self.confidence_levels = confidence_levels
-        self.experiment_dir = experiment_dir
         self.logger = logger
 
     def reshape_source_data(self, n_times):
@@ -54,60 +42,75 @@ class UncertaintyEstimator:
         return self.x, self.x_hat
 
 
-    def construct_full_covariance(self):
+    def construct_full_covariance(
+        self,
+        x : np.ndarray = None,
+        x_hat_active_indices : np.ndarray = None,
+        posterior_cov : np.ndarray = None,
+        orientation_type : str = 'fixed',
+    ) -> np.ndarray:
         """
         Create a full covariance matrix corresponding to all source components,
         embedding the posterior covariance of the active set.
-    
-        Handles both 'fixed' and 'free' orientation types by inspecting the
-        shape of self.x and the self.orientation_type attribute.
-    
+
+        Parameters:
+        ----------
+        x : np.ndarray
+            Ground truth source activity values for active components.
+            Shape: (n_sources, n_times) for fixed orientation or (n_sources, 3, n_times) for free orientation.
+        x_hat_active_indices : np.ndarray
+            Indices of the active reconstructed sources in the original x_hat.
+        posterior_cov : np.ndarray
+            Full Posterior covariance matrix.
+            Shape: (n_active_sources, n_active_sources) for fixed orientation or
+                   (n_active_sources*3, n_active_sources*3) for free orientation.
+        orientation_type : str
+            Orientation type of the sources, either 'fixed' or 'free'.
+        
         Returns:
-        - full_posterior_cov (np.ndarray): Full posterior covariance matrix.
-                                            Shape: (n_total_components, n_total_components).
-    
-        Raises:
-        - ValueError: If input shapes, orientation_type, or active_set indices are inconsistent.
-        - AttributeError: If required attributes (x, active_set, posterior_cov, orientation_type) are missing.
+        -------
+        full_posterior_cov : np.ndarray
+            Full covariance matrix of shape (n_total_components, n_total_components),
+            where n_total_components is the total number of source components.
         """
     
         # Determine the total number of source components based on orientation type and x shape
         n_total_components = 0
-        if self.orientation_type == 'fixed':
-            if self.x.ndim != 2:
-                raise ValueError(f"For fixed orientation, expected self.x to be 2D (n_sources, n_times), but got shape {self.x.shape}")
-            n_total_components = self.x.shape[0] # n_sources
-        elif self.orientation_type == 'free':
+        if orientation_type == 'fixed':
+            if x.ndim != 2:
+                raise ValueError(f"For fixed orientation, expected x to be 2D (n_sources, n_times), but got shape {x.shape}")
+            n_total_components = x.shape[0] # n_sources
+        elif orientation_type == 'free':
             # Expects original shape (n_sources, 3, n_times) or reshaped (n_sources*3, n_times)
-            if self.x.ndim == 3: # Original shape
-                 if self.x.shape[1] != 3:
-                     raise ValueError(f"For free orientation with 3D self.x, expected shape (n_sources, 3, n_times), but got {self.x.shape}")
-                 n_total_components = self.x.shape[0] * self.x.shape[1] # n_sources * 3
+            if x.ndim == 3: # Original shape
+                 if x.shape[1] != 3:
+                     raise ValueError(f"For free orientation with 3D x, expected shape (n_sources, 3, n_times), but got {x.shape}")
+                 n_total_components = x.shape[0] * x.shape[1] # n_sources * 3
 
     
         # Initialize the full covariance matrix
-        full_posterior_cov = np.zeros((n_total_components, n_total_components), dtype=self.posterior_cov.dtype)
+        full_posterior_cov = np.zeros((n_total_components, n_total_components), dtype=posterior_cov.dtype)
         self.logger.debug(f"Initialized full_posterior_cov with shape {full_posterior_cov.shape}")
     
-        # Embed the active set covariance using nested loops (safe for unsorted active_set)
-        #    Alternative: If performance critical and active_set is sorted:
-        #    idx = np.ix_(self.active_set, self.active_set)
+        # Embed the active set covariance using nested loops (safe for unsorted active_indices)
+        #    Alternative: If performance critical and active_indices is sorted:
+        #    idx = np.ix_(self.active_indices, self.active_indices)
         #    full_posterior_cov[idx] = self.posterior_cov
         try:
-            for i, idx_i in enumerate(self.active_set):
-                for j, idx_j in enumerate(self.active_set):
-                    full_posterior_cov[idx_i, idx_j] = self.posterior_cov[i, j]
+            for i, idx_i in enumerate(x_hat_active_indices):
+                for j, idx_j in enumerate(x_hat_active_indices):
+                    full_posterior_cov[idx_i, idx_j] = posterior_cov[i, j]
             self.logger.debug("Successfully embedded posterior_cov into full_posterior_cov.")
         except IndexError as e:
-             self.logger.error(f"IndexError during covariance embedding: {e}. "
-                          f"i={i}, j={j}, idx_i={idx_i}, idx_j={idx_j}, "
-                          f"posterior_cov shape={self.posterior_cov.shape}, active_set size={self.active_set.size}")
-             raise IndexError(f"Error accessing elements during covariance embedding. Check active_set indices ({idx_i}, {idx_j}) against posterior_cov shape {self.posterior_cov.shape} using indices ({i}, {j}).") from e
-      
+            self.logger.error(f"IndexError during covariance embedding: {e}. "
+                              f"i={i}, j={j}, idx_i={idx_i}, idx_j={idx_j}, "
+                              f"posterior_cov shape={posterior_cov.shape}, x_hat_active_indices size={x_hat_active_indices.size}")
+            raise IndexError(f"Error accessing elements during covariance embedding. Check x_hat_active_indices indices ({idx_i}, {idx_j}) against posterior_cov shape {posterior_cov.shape} using indices ({i}, {j}).") from e
+
         try:
             # This assertion holds true if posterior_cov is dense and square for the active set
-            assert self.posterior_cov.size == self.active_set.size ** 2, \
-                f"Size of posterior_cov ({self.posterior_cov.size}) should be square of active_set size ({self.active_set.size}^2 = {self.active_set.size**2})."
+            assert posterior_cov.size == x_hat_active_indices.size ** 2, \
+                f"Size of posterior_cov ({posterior_cov.size}) should be square of x_hat_active_indices size ({x_hat_active_indices.size}^2 = {x_hat_active_indices.size**2})."
         except AssertionError as e:
             self.logger.error(f"Assertion failed: {e}")
             raise AssertionError(f"Validation failed: {e}") from e
@@ -189,7 +192,7 @@ class UncertaintyEstimator:
         plt.savefig(os.path.join(self.experiment_dir, 'sorted_covariances.png'))
         plt.close()
 # ------------------------------
-    def _make_psd(self, cov, epsilon=1e-6):
+    def _make_psd(self, cov: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:
         """
         Ensure that the covariance matrix is positive semi-definite by adding epsilon to the diagonal.
         """
@@ -276,7 +279,7 @@ class UncertaintyEstimator:
         Identify the top-k relevant pairs of dimensions (based on covariance magnitude)
         and plot their confidence ellipses.
         """
-        mean = self.x_hat[self.active_set]
+        mean = self.x_hat[self.active_indices]
         cov = self.posterior_cov
 
         n = len(mean)
@@ -315,13 +318,13 @@ class UncertaintyEstimator:
         The input x are the ground truth values for components specified by
         self.x_active_indices.
         The input x_hat are the estimated values for components specified by
-        self.active_set.
+        self.active_indices.
 
         Parameters:
         - x (np.ndarray): Ground truth source activity values for active components.
                                          Shape: (len(self.x_active_indices), n_times).
         - x_hat (np.ndarray): Estimated source activity values for active components.
-                                          Shape: (len(self.active_set), n_times).
+                                          Shape: (len(self.active_indices), n_times).
         - time_step (int): The specific time step to plot. Defaults to 0.
         """
         self.logger.info(f"Plotting active sources at time step {time_step} using provided active values.")
@@ -337,10 +340,10 @@ class UncertaintyEstimator:
                 f"Number of rows in x ({x.shape[0]}) "
                 f"must match length of self.x_active_indices ({len(self.x_active_indices)})."
             )
-        if x_hat.shape[0] != len(self.active_set):
+        if x_hat.shape[0] != len(self.active_indices):
             raise ValueError(
                 f"Number of rows in x_hat ({x_hat.shape[0]}) "
-                f"must match length of self.active_set ({len(self.active_set)})."
+                f"must match length of self.active_indices ({len(self.active_indices)})."
             )
         
         if x.shape[1] <= time_step or x_hat.shape[1] <= time_step:
@@ -364,17 +367,17 @@ class UncertaintyEstimator:
                     x_active_indices_map[orient][src_idx] = val
             
             # For Estimated (x_hat)
-            active_set_flat = self.active_set // 3
-            active_set_orientations_flat = self.active_set % 3
-            active_set_map = [{} for _ in range(3)]
+            active_indices_flat = self.active_indices // 3
+            active_indices_orientations_flat = self.active_indices % 3
+            active_indices_map = [{} for _ in range(3)]
             for idx, val in enumerate(x_hat):
-                orient = active_set_orientations_flat[idx]
-                src_idx = active_set_flat[idx]
-                active_set_map[orient][src_idx] = val
+                orient = active_indices_orientations_flat[idx]
+                src_idx = active_indices_flat[idx]
+                active_indices_map[orient][src_idx] = val
 
 
             for i, ax in enumerate(axes): # i is the target orientation index (0, 1, 2)
-                if not self.x_active_indices and not self.active_set:
+                if not self.x_active_indices and not self.active_indices:
                     ax.set_title(f'Orientation {orientations[i]} (No active components to plot)')
                     ax.grid(True, alpha=0.5)
                     ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
@@ -382,17 +385,17 @@ class UncertaintyEstimator:
                 
                 ax.scatter(self.x_active_indices, x, color='blue', alpha=0.6, 
                            label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
-                ax.scatter(self.active_set, x_hat, color='red', marker='x', alpha=0.6, 
-                           label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)')
+                ax.scatter(self.active_indices, x_hat, color='red', marker='x', alpha=0.6, 
+                           label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)')
                 
                 ax.set_xlabel('Index of Active (Non-zero) Sources')
                 ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
                 ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
                 
-                # all_unique_src_indices_on_axis = sorted(list(set(self.x_active_indices + self.active_set)))
-                all_unique_src_indices_on_axis = np.arange(self.n_totl_sources)
+                # all_unique_src_indices_on_axis = sorted(list(set(self.x_active_indices + self.active_indices)))
+                all_unique_src_indices_on_axis = np.arange(self.n_total_sources)
                 # n_sources_this_axis = len(all_unique_src_indices_on_axis)
-                ax.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+                ax.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
                 
                 ax.grid(True, alpha=0.5)
                 # ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
@@ -413,13 +416,13 @@ class UncertaintyEstimator:
             plt.figure(figsize=(12, 6))
             
             plt.scatter(self.x_active_indices, x, color='blue', alpha=0.6, label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')            
-            plt.scatter(self.active_set, x_hat, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)')
+            plt.scatter(self.active_indices, x_hat, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)')
             
             plt.xlabel('Index of Active (Non-zero) Sources')
             
             plt.ylabel('Amplitude of averaged sources (across time) and their estimates')
             plt.title(f'Active Sources Comparison for fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
-            plt.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+            plt.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
             
             plt.grid(True, alpha=0.5)
             plt.tight_layout(rect=[0, 0.05, 1, 0.96])
@@ -458,7 +461,7 @@ class UncertaintyEstimator:
                 images = [] # Store image objects for colorbar
                 for i, ax in enumerate(axes):
                     # Select the block corresponding to the orientation
-                    # This assumes active_set components are ordered [src0_x, src0_y, src0_z, src1_x, ...]
+                    # This assumes active_indices components are ordered [src0_x, src0_y, src0_z, src1_x, ...]
                     # which might not be true. A safer plot might show the full matrix.
                     # Let's plot the diagonal blocks for now, assuming structure.
                     try:
@@ -498,19 +501,26 @@ class UncertaintyEstimator:
 
 
 # ------------------------------
-    def _compute_confidence_intervals(self, mean, cov, confidence_level=0.95):
-        """
-        Compute confidence intervals based on the diagonal of the covariance matrix.
+    def _compute_confidence_intervals(self, mean : np.ndarray, cov : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
+        """Compute confidence intervals based on the diagonal of the covariance matrix.
         Assumes inputs correspond only to the active components.
 
-        Parameters:
-        - mean (np.ndarray): Mean array for active components, shape (n_active_components, n_times).
-        - cov (np.ndarray): Covariance matrix for active components, shape (n_active_components, n_active_components).
-        - confidence_level (float): Confidence level for the intervals (e.g., 0.95 for 95%).
+        Parameters
+        ----------
+        mean : np.ndarray
+            Mean array for active components, shape (n_sources, n_times).
+        cov : np.ndarray
+            Covariance matrix for active components, shape (n_sources, n_sources).
+        confidence_level : float, optional
+            Confidence level for the intervals (e.g., 0.95 for 95%), by default 0.95
 
-        Returns:
-        - ci_lower (np.ndarray): Lower bounds of confidence intervals, shape (n_active_components, n_times).
-        - ci_upper (np.ndarray): Upper bounds of confidence intervals, shape (n_active_components, n_times).
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+        ci_lower : np.ndarray
+            Lower bounds of confidence intervals, shape (n_sources, n_times).
+        ci_upper : np.ndarray
+            Upper bounds of confidence intervals, shape (n_sources, n_times).
         """
         # Calculate the Z-score corresponding to the confidence level for a normal distribution
         # Example: 0.95 -> z = 1.96
@@ -549,38 +559,51 @@ class UncertaintyEstimator:
 
         return ci_lower, ci_upper
 
-    def _count_values_within_ci(self, x, ci_lower, ci_upper):
-        """
-        Count the number of ground truth values that lie within the confidence intervals for each time point.
+    def _count_values_within_ci(self, x : np.ndarray, ci_lower : np.ndarray, ci_upper : np.ndarray, orientation_type : str) -> np.ndarray:
+        """Count the number of ground truth values that lie within the confidence intervals for each time point.
         Assumes input arrays correspond only to the active components.
 
-        Parameters:
-        - x (np.ndarray): Ground truth source activity for active components, shape (n_active_components, n_times).
-        - ci_lower (np.ndarray): Lower bounds of confidence intervals for active components, shape (n_active_components, n_times).
-        - ci_upper (np.ndarray): Upper bounds of confidence intervals for active components, shape (n_active_components, n_times).
+        Parameters
+        ----------
+        x : np.ndarray
+            Ground truth source activity for active components, shape (n_sources, n_times).
+        ci_lower : np.ndarray
+            Lower bounds of confidence intervals for active components, shape (n_sources, n_times).
+        ci_upper : np.ndarray
+            Upper bounds of confidence intervals for active components, shape (n_sources, n_times).
+        orientation_type : str
+            Orientation type of the sources, either 'fixed' or 'free'.
 
-        Returns:
-        - count_within_ci (np.ndarray): Count of values within confidence intervals.
+        Returns
+        -------
+        np.ndarray
+            Count of values within confidence intervals.
             - For "fixed" orientation: 1D array (n_times,) with counts per time point.
             - For "free" orientation: 2D array (3, n_times) with counts per orientation (X, Y, Z) per time point.
+        
+        Notes
+        -----
+        - active_indices is used only for "free" orientation to determine the orientation of each active component.            
         """
-        # if x.shape[0] != len(self.active_set) or ci_lower.shape[0] != len(self.active_set) or ci_upper.shape[0] != len(self.active_set):
-        #      raise ValueError("Input array dimensions do not match the length of the active_set.")
+        # if x.shape[0] != len(self.active_indices) or ci_lower.shape[0] != len(self.active_indices) or ci_upper.shape[0] != len(self.active_indices):
+        #      raise ValueError("Input array dimensions do not match the length of the active_indices.")
 
         n_times = x.shape[1]
 
-        if self.orientation_type == "fixed":
+        if orientation_type == "fixed":
             # Sum over all active sources for each time point
             count_within_ci = np.sum((x >= ci_lower) & (x <= ci_upper), axis=0)
             self.logger.debug(f"Fixed orientation counts shape: {count_within_ci.shape}")
 
-        elif self.orientation_type == "free":
+        elif orientation_type == "free":
             # Initialize counts for each orientation (X, Y, Z) and each time point
             count_within_ci = np.zeros((3, n_times))
 
-            # Determine the orientation for each row in the input arrays based on the original active_set indices
-            orientations = self.active_set % 3 # Shape: (n_active_components,)
-
+            # Determine the orientation for each row in the input arrays based on the original active_indices
+            # orientations = active_indices % 3 # Shape: (n_active_components,)
+            # TODO: hardcoded synthetic orientations for free orientation as active_indices are not used in this function
+            orientations = np.array([0, 1, 2] * (x.shape[0] // 3))
+            
             for i in range(3): # Iterate through X, Y, Z
                 # Create a mask for rows corresponding to the current orientation
                 orient_mask = (orientations == i)
@@ -609,7 +632,7 @@ class UncertaintyEstimator:
         Parameters:
         - x (np.ndarray): Ground truth source activity for active components, shape (n_active_components, n_times).
         - x_hat (np.ndarray): Estimated source activity for active components, shape (n_active_components, n_times).
-        - active_set (np.ndarray): Original indices (flattened for free orientation) of active components, shape (n_active_components,).
+        - active_indices (np.ndarray): Original indices (flattened for free orientation) of active components, shape (n_active_components,).
         - ci_lower (np.ndarray): Lower bounds of confidence intervals for active components, shape (n_active_components, n_times).
         - ci_upper (np.ndarray): Upper bounds of confidence intervals for active components, shape (n_active_components, n_times).
         - confidence_level (float): Confidence level for the intervals.
@@ -631,8 +654,8 @@ class UncertaintyEstimator:
             
             orientations = ['X', 'Y', 'Z']
             # Map active component index (0 to n_active_components-1) to original source index and orientation
-            original_source_indices = self.active_set // 3
-            original_orient_indices = self.active_set % 3
+            original_source_indices = self.active_indices // 3
+            original_orient_indices = self.active_indices % 3
 
             for t in range(n_times):
                 time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
@@ -652,7 +675,7 @@ class UncertaintyEstimator:
 
                     # Use source_idx for x-coordinate
                     ax.scatter(source_idx, x_hat[i, t], marker='x', s=50, color='red',
-                                label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_set)} sources)' if add_label else "")
+                                label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)' if add_label else "")
                     # Use fill_between for the CI bar
                     ax.fill_between(
                         [source_idx - 2, source_idx + 2], # x-range for the bar
@@ -663,7 +686,7 @@ class UncertaintyEstimator:
                         label='Confidence Interval' if add_label else ""
                     )
                     ax.scatter(source_idx, x[i, t], s=30, color='blue', alpha=0.7,
-                                label=f'Non-Zero Posterior Mean (({len(self.active_set)} estimated sources)' if add_label else "")
+                                label=f'Non-Zero Posterior Mean (({len(self.active_indices)} estimated sources)' if add_label else "")
 
                     # Mark that labels have been added for this subplot
                     if add_label:
@@ -679,7 +702,7 @@ class UncertaintyEstimator:
                     sources_on_this_axis = {original_source_indices[k] for k in range(n_active_components) if original_orient_indices[k] == j}
                     n_sources_this_axis = len(sources_on_this_axis)
                     # Add legend with total sources in the title
-                    ax.legend(title=f"Total Sources: {self.n_totl_sources}", loc='best')
+                    ax.legend(title=f"Total Sources: {self.n_total_sources}", loc='best')
 
                     ax.grid(False)
                     # Set ticks only for sources actually plotted
@@ -702,12 +725,12 @@ class UncertaintyEstimator:
         else: # Fixed orientation
             fig, ax = plt.subplots(figsize=figsize)
 
-            ax.scatter(self.active_set, x_hat, marker='x', s=50, color='red', label=f'Non-Zero Posterior Mean ({len(self.active_set)} estimated sources)')
+            ax.scatter(self.active_indices, x_hat, marker='x', s=50, color='red', label=f'Non-Zero Posterior Mean ({len(self.active_indices)} estimated sources)')
             
             ax.scatter(self.x_active_indices, x, s=30, color='blue', alpha=0.7,
                         label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
             
-            for i, src_ix in enumerate(self.active_set):
+            for i, src_ix in enumerate(self.active_indices):
                 ax.fill_between(
                     [src_ix - 10, src_ix + 10], # Adjust width
                     ci_lower[i, 0],
@@ -717,11 +740,11 @@ class UncertaintyEstimator:
                     label='Confidence Interval' if i == 0 else ""
                 )
 
-            all_plotted_source_indices = sorted(list(set(self.active_set)))
+            all_plotted_source_indices = sorted(list(set(self.active_indices)))
             ax.set_title(f'Confidence Intervals (Level={confidence_level:.2f}')
             ax.axhline(0, color='grey', lw=0.8, ls='--')
 
-            ax.legend(title=f'Total Sources: {self.n_totl_sources}', loc='best')
+            ax.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
             ax.grid(True, alpha=0.5) 
             ax.set_xlabel('Index of Active (Non-zero) Sources')
             ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
@@ -737,7 +760,7 @@ class UncertaintyEstimator:
         self,
         empirical_coverage,
         results=None, # This dictionary is expected to contain the metrics
-        which_legend="active_set", # or "all_sources"
+        which_legend="active_indices", # or "all_sources"
         filename='calibration_curve' 
     ):
         """
@@ -780,7 +803,7 @@ class UncertaintyEstimator:
         
 
         # Determine which set of metrics to display
-        if which_legend == "active_set":
+        if which_legend == "active_indices":
             metrics_to_display = {
                 'AUC_deviation_active_indices': 'AUC area',
                 'max_positive_deviation_active_indices': 'Max Positive Dev.',
@@ -795,7 +818,7 @@ class UncertaintyEstimator:
                 'max_absolute_deviation_all_sources': 'Max Abs Dev.',
             }
         else:
-            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_set' or 'all_sources'.")
+            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_indices' or 'all_sources'.")
             return
 
         if results:
@@ -819,27 +842,39 @@ class UncertaintyEstimator:
         plt.savefig(save_path)
         plt.close(fig)
 
-    def get_confidence_intervals_data(self, x, x_hat, full_posterior_cov):
+    def get_confidence_intervals_data(
+        self,
+        x : np.ndarray,
+        x_hat: np.ndarray,
+        posterior_cov: np.ndarray,
+        orientation_type: str
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Computes confidence intervals and hit counts.
-        NOTE: You should pass the active source activity and estimated source activity
-        (active_x and active_x_hat).
+        Computes confidence intervals and counts of true values within those intervals.
 
         Parameters:
-        - x (np.ndarray): Ground truth source activity for active components.
-                          Shape (n_active_components, n_times).
-        - x_hat (np.ndarray): Estimated source activity for active components.
-                             Shape (n_active_components, n_times).
+        ----------
+        x : np.ndarray
+            Ground truth source activity.
+            Shape (n_sources, n_times).
+        x_hat : np.ndarray
+            Estimated source activity (posterior mean).
+            Shape (n_sources, n_times).
+        posterior_cov : np.ndarray
+            Posterior covariance matrix of shape (n_sources, n_sources).
+        orientation_type : str
+            Orientation type, either 'free' or 'fixed'.
 
         Returns:
-        - tuple: A tuple containing three NumPy arrays:
-            - ci_lower_stacked (np.ndarray): Lower CI bounds.
-                Shape (n_levels, n_active_components, n_times).
-            - ci_upper_stacked (np.ndarray): Upper CI bounds.
-                Shape (n_levels, n_active_components, n_times).
-            - counts_array (np.ndarray): Counts of true values within CIs.
-                - For "fixed": shape (n_levels, 1, n_times)
-                - For "free": shape (n_levels, 3, n_times)
+        --------
+        tuple
+            - ci_lower_stacked (np.ndarray): Lower bounds of confidence intervals for each confidence level.
+                Shape (n_confidence_levels, n_active_components, n_times).
+            - ci_upper_stacked (np.ndarray): Upper bounds of confidence intervals for each confidence level.
+                Shape (n_confidence_levels, n_active_components, n_times).  
+            - counts_array (np.ndarray): Counts of true values within confidence intervals for each confidence level.
+                Shape (n_confidence_levels, 3, n_times) for free orientation,
+                or (n_confidence_levels, 1, n_times) for fixed orientation.
         """
         all_ci_lower_list = []
         all_ci_upper_list = []
@@ -852,29 +887,31 @@ class UncertaintyEstimator:
             # x_hat here is the active_x_hat
             # self.posterior_cov is the covariance for the active set
             ci_lower, ci_upper = self._compute_confidence_intervals(
-                x_hat, 
-                full_posterior_cov, 
+                mean=x_hat, 
+                cov=posterior_cov, 
                 confidence_level=confidence_level_val
             )
-            all_ci_lower_list.append(ci_lower)
-            all_ci_upper_list.append(ci_upper)
 
             # x here is the active_x
             count_within_ci = self._count_values_within_ci(
                 # x[self.x_active_indices],
                 # ci_lower[self.x_active_indices],
                 # ci_upper[self.x_active_indices]
-                x,
-                ci_lower,
-                ci_upper
+                x=x,
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+                orientation_type=orientation_type
             )
+            
+            all_ci_lower_list.append(ci_lower)
+            all_ci_upper_list.append(ci_upper)
             collected_counts_within_ci_list.append(count_within_ci)
 
         counts_array = np.array(collected_counts_within_ci_list)
         
         # Ensure counts_array is 3D for consistent handling later,
         # especially if it's (L, T) for fixed, make it (L, 1, T)
-        if self.orientation_type == 'fixed' and counts_array.ndim == 2: 
+        if orientation_type == 'fixed' and counts_array.ndim == 2: 
             counts_array = counts_array[:, np.newaxis, :] 
         
         ci_lower_stacked = np.stack(all_ci_lower_list, axis=0)
@@ -882,7 +919,7 @@ class UncertaintyEstimator:
 
         self.logger.debug(f"Shapes returned: counts_array={counts_array.shape}, ci_lower_stacked={ci_lower_stacked.shape}, ci_upper_stacked={ci_upper_stacked.shape}")
         
-        # return ci_lower_stacked[:, self.active_set], ci_upper_stacked[:, self.active_set], counts_array
+        # return ci_lower_stacked[:, self.active_indices], ci_upper_stacked[:, self.active_indices], counts_array
         return ci_lower_stacked, ci_upper_stacked, counts_array
 
     def visualize_confidence_intervals(self, ci_lower, ci_upper, x, x_hat):

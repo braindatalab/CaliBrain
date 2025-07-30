@@ -13,8 +13,10 @@ from pathlib import Path
 from mne.io.constants import FIFF
 import mne
 from typing import Dict, Optional, Union
+from calibrain.utils import load_config
+from sklearn.utils import check_random_state
 
-class LeadfieldSimulator:
+class LeadfieldBuilder:
     """
     Simulates leadfield matrices based on a configuration dictionary.
 
@@ -25,7 +27,7 @@ class LeadfieldSimulator:
     ----------
     config : dict
         The configuration dictionary driving the simulation process.
-    logger : logging.Logger
+    self.logger : logging.Logger
         Logger instance for logging messages.
     data_path : Path
         Path to the data directory.
@@ -36,9 +38,9 @@ class LeadfieldSimulator:
     save_path : Path
         Base path where generated files (source space, BEM, etc.) will be saved.
     """
-    def __init__(self, config: Dict, logger: Optional[logging.Logger] = None):
+    def __init__(self, config: Dict = None, logger: Optional[logging.Logger] = None, channel_type: str = None, leadfield_dir: str = None):
         """
-        Initialize the LeadfieldSimulator.
+        Initialize the LeadfieldBuilder.
 
         Parameters
         ----------
@@ -46,8 +48,8 @@ class LeadfieldSimulator:
             Configuration dictionary containing paths and parameters for
             each simulation step (data, source_space, bem_model, montage,
             info, forward_solution, leadfield).
-        logger : logging.Logger, optional
-            Custom logger instance. If None, a default logger is created,
+        self.logger : logging.Logger, optional
+            Custom self.logger instance. If None, a default self.logger is created,
             by default None.
 
         Raises
@@ -57,28 +59,25 @@ class LeadfieldSimulator:
         """
         self.logger = logger if logger else logging.getLogger(__name__)
         self.config = config
+        if self.config:
+            data_cfg = config["data"]
+            self.data_path = Path(data_cfg["data_path"])
+            self.subject = data_cfg["subject"]
+            self.subjects_dir = Path(data_cfg["subjects_dir"])
+            self.save_path = Path(data_cfg["save_path"])
 
-        data_cfg = config["data"]
-        self.data_path = Path(data_cfg["data_path"])
-        self.subject = data_cfg["subject"]
-        self.subjects_dir = Path(data_cfg["subjects_dir"])
-        self.save_path = Path(data_cfg["save_path"])
+            if not self.data_path.exists():
+                raise FileNotFoundError(f"Data path does not exist: {self.data_path}")
+            if not self.subjects_dir.exists():
+                raise FileNotFoundError(f"Subjects directory does not exist: {self.subjects_dir}")
+            if not self.save_path.exists():
+                self.logger.info(f"Save path does not exist. Creating: {self.save_path}")
+                self.save_path.mkdir(parents=True, exist_ok=True)
+                
+        self.leadfield_dir = Path(leadfield_dir)
+        self.channel_type = channel_type
         
-                    
-        # NOTE: The channel type is hardcoded to "eeg" for now.
-        # TODO: Make this configurable in the future. with something like:
-        # channel_type = "eeg" if self.config["data"].get("channel_type") == "eeg" else "meg" and use it in the montage and info creation
-        self.channel_type = "eeg" # Hardcoded for now, can be made configurable later
-
-        if not self.data_path.exists():
-            raise FileNotFoundError(f"Data path does not exist: {self.data_path}")
-        if not self.subjects_dir.exists():
-            raise FileNotFoundError(f"Subjects directory does not exist: {self.subjects_dir}")
-        if not self.save_path.exists():
-            self.logger.info(f"Save path does not exist. Creating: {self.save_path}")
-            self.save_path.mkdir(parents=True, exist_ok=True)
-
-        self.logger.info("LeadfieldSimulator initialized successfully.")
+        self.logger.info("LeadfieldBuilder initialized successfully.")
 
     def handle_source_space(self) -> mne.SourceSpaces:
         """
@@ -467,4 +466,153 @@ class LeadfieldSimulator:
             raise RuntimeError("Simulation pipeline failed.") from e
 
         self.logger.info("Leadfield simulation pipeline completed successfully.")
+        return leadfield
+
+    def get_leadfield(self, subject: str = "fsaverage", orientation_type: str = "fixed", retrieve_mode: str = "load") -> np.ndarray:
+        """
+        Get or generate the leadfield matrix based on the specified mode.
+
+        Updates self.n_sensors and self.n_sources based on the obtained leadfield.
+
+        Parameters
+        ----------
+        subject : str
+        
+        Returns
+        -------
+        np.ndarray
+            The leadfield matrix (L). Shape depends on orientation_type:
+            - 'fixed': (n_sensors, n_sources)
+            - 'free': (n_sensors, n_sources, 3)
+
+        Raises
+        ------
+        ValueError
+            If retrieve_mode is invalid, required paths are missing,
+            or loaded/simulated leadfield has unexpected dimensions/format.
+        FileNotFoundError
+            If leadfield_dir does not exist when mode='load'.
+        """
+        if orientation_type == "fixed":
+            n_orient = 1 
+            expected_dimensions = 2 # Fixed orientation leads to 2D leadfield (n_sensors, n_sources)
+            expected_suffix = "-fixed.npz"
+        elif orientation_type == "free":
+            expected_suffix = "-free.npz"
+            n_orient = 3
+            expected_dimensions = 3 # Free orientation leads to 3D leadfield (n_sensors, n_sources, 3)
+        else:
+            raise ValueError(f"Invalid orientation_type '{orientation_type}'. Choose 'fixed' or 'free'.")
+
+
+        if retrieve_mode == "load":
+            # Define the two specific patterns you were trying to match:
+            # Pattern 1: Includes orientation_type in the filename
+            path_option1 = self.leadfield_dir / f"lead_field_{orientation_type}_{subject}.npz"
+
+            # Pattern 2: Excludes orientation_type from the filename
+            path_option2 = self.leadfield_dir / f"lead_field_{subject}.npz"
+
+            try:
+                if path_option1.exists():
+                    leadfield_path = path_option1
+                elif path_option2.exists():
+                    leadfield_path = path_option2
+                else:
+                    self.logger.warning(
+                        f"Leadfield file not found for subject '{subject}' with orientation '{orientation_type}' "
+                        f"in directory '{self.leadfield_dir}'.\n"
+                        f"Checked specific patterns:\n"
+                        f"  - {path_option1}\n"
+                        f"  - {path_option2}")
+                    raise FileNotFoundError(
+                        f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
+                    )
+
+                self.logger.info(f"Loading leadfield matrix from file: {leadfield_path}")
+                with np.load(leadfield_path) as data:
+                    if "leadfield" not in data and "lead_field" not in data:
+                        raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
+                    leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
+
+                if leadfield.ndim != expected_dimensions:
+                    raise ValueError(
+                        f"Loaded leadfield matrix dimension mismatch for orientation '{orientation_type}': "
+                        f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
+                    )
+                self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
+
+                if self.channel_type == "eeg":
+                    channel_units = "µV"
+                elif self.channel_type == "meg":
+                    channel_units = "fT"
+                elif not self.channel_type:
+                    channel_units = "unknown"
+                    self.logger.warning("Channel type not specified. Defaulting to 'unknown'.")
+                else:
+                    raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")
+
+            except (FileNotFoundError, ValueError) as e:
+                self.logger.error(f"Failed to load leadfield matrix: {e}")
+                raise
+
+        elif retrieve_mode == "simulate":
+            if not config:
+                raise ValueError("Path to the configuration file (config) must be provided when retrieve_mode='simulate'.")
+            self.logger.info(f"Simulating leadfield matrix using LeadfieldBuilder with config: {config}")
+
+            try:
+                config = load_config(Path(config))
+                L_simulator = LeadfieldBuilder(config=config, logger=self.logger)
+                leadfield = L_simulator.simulate()
+                self.logger.info(f"Simulated leadfield matrix with shape {leadfield.shape}")
+
+                if leadfield.ndim != expected_dimensions:
+                    raise ValueError(
+                        f"Simulated leadfield matrix dimension mismatch for orientation '{orientation_type}': "
+                        f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
+                    )
+                if L_simulator.channel_type == "eeg":
+                    channel_units = "µV"
+                elif L_simulator.channel_type == "meg":
+                    channel_units = "fT"
+                elif not L_simulator.channel_type:
+                    channel_units = "unknown"
+                    self.logger.warning("Channel type not specified. Defaulting to 'unknown'.")
+                else:
+                    raise ValueError(f"Invalid channel_type '{L_simulator.channel_type}'. Choose 'eeg' or 'meg'.")
+                
+            except Exception as e:
+                    self.logger.error(f"Failed to simulate leadfield matrix: {e}")
+                    raise
+
+        elif retrieve_mode == "random":
+            self.logger.info(f"Generating a random leadfield matrix (n_sensors={n_sensors}, n_sources={n_sources}).")
+            rng = check_random_state(64)
+            if orientation_type == "fixed":
+                leadfield = rng.standard_normal((n_sensors, n_sources))
+            else:
+                leadfield = rng.standard_normal((n_sensors, n_sources, 3))
+            self.logger.info(f"Random leadfield generated with shape {leadfield.shape}")
+
+            if self.channel_type == "eeg":
+                channel_units = "µV"
+            elif self.channel_type == "meg":
+                channel_units = "fT"
+            else:
+                raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")
+                
+        else:
+            raise ValueError(f"Invalid leadfield mode '{self.retrieve_mode}'. Options are 'load', 'simulate', or 'random'.")
+
+        # Update n_sensors and n_sources based on the actual leadfield dimensions
+        if leadfield.ndim == 2 == expected_dimensions: # Fixed
+            n_sensors, n_sources = leadfield.shape
+        elif leadfield.ndim == 3 == expected_dimensions: # Free
+            n_sensors, n_sources, _ = leadfield.shape
+
+        # self.leadfield_units = f"{channel_units} / {source_units}"
+        
+        self.logger.info(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
+
         return leadfield
