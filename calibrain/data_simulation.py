@@ -30,23 +30,18 @@ class SensorSimulator:
     """
     def __init__(
         self,
-        n_trials: int = 3,
         logger: Optional[logging.Logger] = None,
     ):
         """
         Initialize the SensorSimulator.
         Parameters
         ----------
-        n_trials : int
-            Number of trials to simulate. Each trial will generate its own source activity and sensor data. Default is 3.
         logger : Optional[logging.Logger]
             Logger instance for logging messages. If None, a default logger will be created.
         """
-        self.n_trials = n_trials
         self.logger = logger if logger else logging.getLogger(__name__)
         # self.channel_type = channel_type
         # self.leadfield_units = None
-
 
     def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray, orientation_type: str) -> np.ndarray:
         """
@@ -162,12 +157,13 @@ class SensorSimulator:
         
         return y_noisy, eps_scaled, noise_var
 
-    def simulate_sensor_trials(
+    def simulate(
         self,
         x_trials: List[np.ndarray],
         L: np.ndarray,
         orientation_type: str = "fixed",
         alpha_SNR: float = 0.5,
+        n_trials: int = 1,
         global_seed: int = 42,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -187,6 +183,8 @@ class SensorSimulator:
             Desired signal-to-noise ratio between 0 and 1.
             - 0.0 means full noise, no signal.
             - 1.0 means no noise, only signal.
+        n_trials : int
+            Number of trials to simulate. Default is 1.
         global_seed : int
             Global seed for random number generation to ensure reproducibility across trials.
             
@@ -203,16 +201,16 @@ class SensorSimulator:
                 Noise variance for each trial. Shape: (n_trials,).
         """
         noise_rng = np.random.RandomState(global_seed + 123456)
-        noise_seeds = noise_rng.randint(0, 2**32 - 1, size=self.n_trials)
+        noise_seeds = noise_rng.randint(0, 2**32 - 1, size=n_trials)
 
         y_clean_all_trials, y_noisy_all_trials = [], []
         noise_all_trials, noise_var_all_trials = [], []
         
-        for i in range(self.n_trials):
+        for i in range(n_trials):
             x_trial = x_trials[i]  # Source time courses for this trial
             noise_seed = noise_seeds[i]
 
-            self.logger.debug(f"[Trial {i+1}/{self.n_trials}] Adding noise with seed {noise_seed}")
+            self.logger.debug(f"[Trial {i+1}/{n_trials}] Adding noise with seed {noise_seed}")
 
             # Generate source time courses for this trial
             y_clean = self._project_sources_to_sensors(x=x_trial, L=L, orientation_type='fixed')
@@ -257,25 +255,27 @@ def main():
     logger = logging.getLogger("SensorSimulator")
 
     simulator = SensorSimulator(
-        n_trials=3,
         logger=logger
     )
 
     # Example source activity (randomly generated for demonstration)
+    n_trials = 4
     n_sources = 10
     n_times = 1000
-    x_trials = np.array([np.random.randn(n_sources, n_times) for _ in range(simulator.n_trials)])
+    x_trials = np.array([np.random.randn(n_sources, n_times) for _ in range(n_trials)])
 
     # Example leadfield matrix (randomly generated for demonstration)
     n_sensors = 5
     L = np.random.randn(n_sensors, n_sources)
 
     # Simulate sensor data
-    y_clean, y_noisy, noise, noise_var = simulator.simulate_sensor_trials(
+    y_clean, y_noisy, noise, noise_var = simulator.simulate(
         x_trials,
         L,
         orientation_type="fixed",
-        alpha_SNR=0.5
+        alpha_SNR=0.5,
+        n_trials=n_trials,
+        global_seed=42
     )
 
     logger.info(f"Clean sensor data shape: {y_clean.shape}")

@@ -371,8 +371,7 @@ viz.plot_source_signals(
 )
 
 
-simulator = SensorSimulator(
-    n_trials= n_trials,
+sensor_simulator = SensorSimulator(
     logger=logger
 )
 
@@ -380,11 +379,12 @@ n_sensors = 5
 L = np.random.randn(n_sensors, n_sources)
 
 # Simulate sensor data
-y_clean, y_noisy, noise, noise_var = simulator.simulate_sensor_trials(
+y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
     x_trials,
     L,
     orientation_type="fixed",
-    alpha_SNR=0.5
+    alpha_SNR=0.5,
+    n_trials=n_trials,
 )
 
 
