@@ -5,6 +5,7 @@ import numpy as np
 from typing import Optional, List, Tuple, Union, Sequence, Literal
 from matplotlib import cm, gridspec
 import mne
+from mne.io.constants import FIFF
 
 
 class Visualizer:
@@ -40,12 +41,20 @@ class Visualizer:
         ERP_config: dict,
         x: np.ndarray,
         active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
+        units: Optional[str] = None,
         trial_idx: Optional[int] = None,
         title: Optional[str] = "Source Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
     ):
+        # convert the data from A to nAm for better readability
+        if units == FIFF.FIFF_UNIT_AM:
+            x = x * 1e9  # Convert Amperes to nanoAmperes (nA)
+            units = "nAm"
+        else:
+            raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
+
         if trial_idx is not None:
             indices = None
             if active_indices is not None:
@@ -55,6 +64,7 @@ class Visualizer:
                 ERP_config=ERP_config,
                 x_trial=x if x.ndim < 3 else x[trial_idx],
                 active_indices=indices,
+                units=units,
                 trial_idx=trial_idx,
                 title=title,
             )
@@ -64,26 +74,23 @@ class Visualizer:
                 ERP_config=ERP_config,
                 x_trials=x,
                 active_indices=active_indices,
+                units=units,
                 title=title,
             )
             file_name = file_name or "source_signals_all_trials"
 
         self._handle_figure_output(fig, file_name, save_dir, show)
 
-
     def _plot_sources_single_trial(
         self,
         ERP_config: dict,
         x_trial: np.ndarray,
         active_indices: Optional[Sequence[int]],
+        units: Optional[str],
         trial_idx: int,
         title: str,
     ) -> plt.Figure:
-        tmin, tmax = ERP_config['tmin'], ERP_config['tmax']
-        stim_onset = ERP_config['stim_onset']
-        sfreq = ERP_config['sfreq']
-        units = ERP_config['units']
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_trial.shape[-1])
 
         x_plot = np.linalg.norm(x_trial, axis=1) if x_trial.ndim == 3 else x_trial
         if active_indices is None:
@@ -108,22 +115,18 @@ class Visualizer:
         ax.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), borderaxespad=0., fontsize='small')
         return fig
 
-
     def _plot_sources_all_trials(
         self,
         ERP_config: dict,
         x_trials: np.ndarray,
         active_indices: Optional[Sequence[Sequence[int]]] = None,
+        units: Optional[str] = None,
         title: str = "Source Signals"
     ) -> plt.Figure:
-        tmin, tmax = ERP_config['tmin'], ERP_config['tmax']
-        stim_onset = ERP_config['stim_onset']
-        sfreq = ERP_config['sfreq']
-        units = ERP_config['units']
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_trials.shape[-1])        
         n_trials = x_trials.shape[0]
 
-        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True)
+        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True, sharey=True)
         if n_trials == 1:
             axes = [axes]
 
@@ -159,48 +162,66 @@ class Visualizer:
         y_trials: np.ndarray,
         trial_idx: Optional[int] = None,
         channels: Optional[Union[Sequence[int], str]] = None,
+        units: Optional[str] = None,
+        mode: str = "stack",  # "stack" | "concatenate"
         title: str = "Sensor Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
-        mode: str = "stack",  # "stack" | "concatenate"
     ):
+
+        # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
+        if units == FIFF.FIFF_UNIT_T:
+            y_trials = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
+            units = "fT"
+        elif units == FIFF.FIFF_UNIT_T_M:
+            y_trials = y_trials * 1e15  # Convert T/m to fT/m
+            units = "fT/m"
+        elif units == FIFF.FIFF_UNIT_V:
+            y_trials = y_trials * 1e6  # Convert V to μV
+            units = "μV"
+        else:
+            raise ValueError(f"Unsupported units for sensor signals: {units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
+
         if mode == "stack":
             self._plot_sensors_all_trials(
-                ERP_config, y_trials, channels, title, save_dir, file_name, show
+                ERP_config, y_trials, channels, units, title, save_dir, file_name, show
             )
         elif mode == "concatenate":
             self._plot_concatenated_sensor_trials(
-                y_trials, ERP_config, channels, title, save_dir, file_name, show
+                y_trials, ERP_config, channels, units, title, save_dir, file_name, show
             )
         elif mode == "single":
             if trial_idx is None:
                 trial_idx = 0
                 self.logger.warning("No trial index provided, defaulting to 0.")
             self._plot_sensors_single_trial(
-                ERP_config, y_trials[trial_idx], trial_idx, channels, title, save_dir, file_name, show
+                ERP_config, y_trials[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
             )
         else:
             raise ValueError(f"Unknown mode: {mode}")
         
-
     def _plot_sensors_single_trial(
         self,
         ERP_config: dict,
         y: np.ndarray,
         trial_idx: int,
         channels: Optional[Union[Sequence[int], str]],
+        units: Optional[str],
         title: str,
         save_dir: Optional[str],
         file_name: Optional[str],
         show: bool
     ):
-        times, stim_onset, tmin, tmax, units = self._get_plot_params(ERP_config, y.shape[-1])
+        tmin, tmax, stim_onset, _, times= self._get_plot_params(ERP_config, y.shape[-1])
         channels_to_plot = self._resolve_channels(y.shape[0], channels)
         
         fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
-        self._plot_sensors(ax, y[channels_to_plot], times, stim_onset, tmin, tmax, units, channels_to_plot)
+        self._plot_sensors(
+            ax, y[channels_to_plot], times, stim_onset, tmin, tmax, channels_to_plot, units
+        )
         ax.set_title(f"{title} (Trial {trial_idx + 1})")
+        
         self._handle_figure_output(fig, file_name or f"{title.lower().replace(' ', '_')}_trial_{trial_idx + 1}", save_dir, show)
         
     def _plot_sensors_all_trials(
@@ -208,21 +229,22 @@ class Visualizer:
         ERP_config: dict,
         y_trials: np.ndarray,
         channels: Optional[Union[Sequence[int], str]],
+        units: Optional[str],
         title: str,
         save_dir: Optional[str],
         file_name: Optional[str],
         show: bool
     ):
         n_trials = y_trials.shape[0]
-        times, stim_onset, tmin, tmax, units = self._get_plot_params(ERP_config, y_trials.shape[-1])
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, y_trials.shape[-1])
         channels_to_plot = self._resolve_channels(y_trials.shape[1], channels)
 
-        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True)
+        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True, sharey=True)
         if n_trials == 1:
             axes = [axes]
 
         for i, ax in enumerate(axes):
-            self._plot_sensors(ax, y_trials[i, channels_to_plot], times, stim_onset, tmin, tmax, units, channels_to_plot)
+            self._plot_sensors(ax, y_trials[i, channels_to_plot], times, stim_onset, tmin, tmax, channels_to_plot, units)
             ax.set_title(f"Trial {i + 1}")
 
         axes[-1].set_xlabel("Time (s)")
@@ -234,16 +256,13 @@ class Visualizer:
         y_trials: np.ndarray,
         ERP_config: dict,
         channels: Optional[Union[Sequence[int], str]],
+        units: Optional[str],
         title: str,
         save_dir: Optional[str],
         file_name: Optional[str],
         show: bool
     ):
-        tmin = ERP_config["tmin"]
-        tmax = ERP_config["tmax"]
-        stim_onset = ERP_config["stim_onset"]
-        sfreq = ERP_config["sfreq"]
-        units = ERP_config["units"]
+        tmin, tmax, stim_onset, sfreq, _ = self._get_plot_params(ERP_config, y_trials.shape[-1])
 
         n_trials, n_sensors, _ = y_trials.shape
         trial_duration = tmax - tmin
@@ -274,16 +293,15 @@ class Visualizer:
         tmax = ERP_config['tmax']
         stim_onset = ERP_config['stim_onset']
         sfreq = ERP_config['sfreq']
-        units = ERP_config['units']
         times = np.arange(tmin, tmax, 1.0 / sfreq)[:n_times]
-        return times, stim_onset, tmin, tmax, units
+        return tmin, tmax, stim_onset, sfreq, times
 
     def _resolve_channels(self, n_sensors, channels):
         if channels is None or channels == "all":
             return np.arange(n_sensors)
         return np.array(channels)
 
-    def _plot_sensors(self, ax, y: np.ndarray, times: np.ndarray, stim_onset: float, tmin: float, tmax: float, units: str, channels: Sequence[int]):
+    def _plot_sensors(self, ax, y: np.ndarray, times: np.ndarray, stim_onset: float, tmin: float, tmax: float, channels: Sequence[int], units: str):
         for i, ch in enumerate(y):
             label = f"Ch {channels[i]}" if len(channels) <= 10 else None
             ax.plot(times, ch, linewidth=1.0, alpha=0.8, label=label)
@@ -298,169 +316,185 @@ class Visualizer:
             ax.legend(loc="upper right", fontsize="small")
 
 
-from calibrain.source_simulation import SourceSimulator
-from calibrain.data_simulation import SensorSimulator
-from calibrain.leadfield_simulation import LeadfieldBuilder
+def main():
+    from calibrain import SourceSimulator
+    from calibrain import SensorSimulator
 
-logging.basicConfig(
-    level=logging.INFO,  # or DEBUG
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # Console
-        logging.FileHandler("Vizualisation.log", mode="w")  # Log to file
-    ]
-)
-logger = logging.getLogger("SourceSimulator")
+    logging.basicConfig(
+        level=logging.INFO,  # or DEBUG
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        handlers=[
+            logging.StreamHandler(),  # Console
+            logging.FileHandler("Vizualisation.log", mode="w")  # Log to file
+        ]
+    )
+    logger = logging.getLogger("SourceSimulator")
 
-ERP_config = {
-    "tmin": -0.5,
-    "tmax": 0.5,
-    "stim_onset": 0.0,
-    "sfreq": 250,
-    "fmin": 1,
-    "fmax": 5,
-    "amplitude": 5.0,
-    "random_erp_timing": True,
-    "erp_min_length": None,
-    "units": "nAm",
-}
+    ERP_config = {
+        "tmin": -0.5,
+        "tmax": 0.5,
+        "stim_onset": 0.0,
+        "sfreq": 250,
+        "fmin": 1,
+        "fmax": 5,
+        "amplitude": 10.0, # 30.0
+        "random_erp_timing": True,
+        "erp_min_length": None,
+    }
 
-n_trials=4
-orientation_type="fixed"
-n_sources=10
-nnz=5
-global_seed=42
+    n_trials=4
+    orientation_type="fixed"
+    n_sources=10
+    nnz=5
+    global_seed=42
 
-source_simulator = SourceSimulator(
-    ERP_config=ERP_config,
-    logger=logger
-)
+    source_simulator = SourceSimulator(
+        ERP_config=ERP_config,
+        logger=logger
+    )
+    print(f"Default units for source signals: {source_simulator.source_units}")
 
-x_trials, active_indices_trials = source_simulator.simulate(
-    orientation_type=orientation_type,
-    n_sources=n_sources,
-    nnz=nnz,
-    n_trials=n_trials,
-    global_seed=global_seed,
-)
-trial_idx = 0
+    x_trials, active_indices_trials = source_simulator.simulate(
+        orientation_type=orientation_type,
+        n_sources=n_sources,
+        nnz=nnz,
+        n_trials=n_trials,
+        global_seed=global_seed,
+    )
+    # source_simulator.source_units = "Am"  # Set units for source signals
+    trial_idx = 0
 
+    viz = Visualizer(base_save_path="testViz", logger=logger)
 
-viz = Visualizer(base_save_path="testViz", logger=logger)
+    # Plot sources (single trial)
+    viz.plot_source_signals(
+        ERP_config=ERP_config,
+        x=x_trials,
+        active_indices=active_indices_trials,
+        units=source_simulator.source_units,
+        trial_idx=trial_idx,
+        title=f"Source Trial {trial_idx+1}",
+        save_dir="data_simulation",
+        file_name=f"source_trial_{trial_idx+1}",
+        show=False,
+    )
 
-# Plot sources (single trial)
-viz.plot_source_signals(
-    ERP_config=ERP_config,
-    x=x_trials,
-    active_indices=active_indices_trials,
-    trial_idx=trial_idx,
-    title=f"Source Trial {trial_idx+1}",
-    file_name=f"source_trial_{trial_idx+1}",
-    show=False,
-)
-
-# Plot sources (all trials)
-viz.plot_source_signals(
-    ERP_config=ERP_config,
-    x=x_trials,
-    active_indices=active_indices_trials,
-    trial_idx=None,
-    title="Source Trials (All)",
-    file_name="source_trials_all",
-    show=False,
-)
-
-
-sensor_simulator = SensorSimulator(
-    logger=logger
-)
-
-n_sensors = 5
-L = np.random.randn(n_sensors, n_sources)
-
-# Simulate sensor data
-y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
-    x_trials,
-    L,
-    orientation_type="fixed",
-    alpha_SNR=0.5,
-    n_trials=n_trials,
-)
+    # Plot sources (all trials)
+    viz.plot_source_signals(
+        ERP_config=ERP_config,
+        x=x_trials,
+        active_indices=active_indices_trials,
+        units=source_simulator.source_units,
+        trial_idx=None,
+        title="Source Trials (All)",
+        save_dir="data_simulation",
+        file_name="source_trials_all",
+        show=False,
+    )
 
 
-# Plot sensors (single trial) with selected channels: y_clean
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials=y_clean,
-    trial_idx=trial_idx,
-    # channels=[0, 1],  # or "all"
-    mode="single",
-    title=f"Sensor Trial {trial_idx+1}",
-    save_dir="data_simulation",
-    file_name=f"sensor_trial_{trial_idx+1}_clean",
-    show=False
-)
+    sensor_simulator = SensorSimulator(
+        logger=logger,
+    )
+    print(f"Default units for sensor signals: {sensor_simulator.sensor_units}")
 
-# Plot sensors (all trials) with selected channels: y_clean
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials=y_clean,
-    mode="stack",
-    channels=[2, 3],
-    title="Sensor Signals (All Trials)",
-    save_dir="data_simulation",
-    file_name="sensor_all_trials_clean",
-    show=False
-)
+    n_sensors = 10
+    L = np.random.randn(n_sensors, n_sources)
 
-# Concatenated trials: y_clean
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials=y_clean,
-    mode="concatenate",
-    channels=[0, 2, 3],  # or "all"
-    title="Sensor Signals (Concatenated)",
-    save_dir="data_simulation",
-    file_name="sensor_concatenated_clean",
-    show=False
-)
+    # Simulate sensor data
+    y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
+        x_trials,
+        L,
+        orientation_type="fixed",
+        alpha_SNR=0.5,
+        n_trials=n_trials,
+    )
+    # sensor_simulator.sensor_units = "T"
 
-# Plot sensors (single trial) with selected channels: y_noisy
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials= y_noisy,
-    trial_idx=trial_idx,
-    channels=[0, 1],  # or "all"
-    mode="single",
-    title=f"Sensor Trial {trial_idx+1}",
-    save_dir="data_simulation",
-    file_name=f"sensor_trial_{trial_idx+1}_noisy",
-    show=False
-)
 
-# Plot sensors (all trials) with selected channels: y_noisy
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials=y_noisy,
-    mode="stack",
-    channels="all",  # or "all"
-    title="Sensor Signals (All Trials)",
-    save_dir="data_simulation",
-    file_name="sensor_all_trials_noisy",
-    show=False
-)
+    # Plot sensors (single trial) with selected channels: y_clean
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials=y_clean,
+        trial_idx=trial_idx,
+        # channels=[0, 1],  # or "all"
+        units=sensor_simulator.sensor_units,
+        mode="single",
+        title=f"Sensor Trial {trial_idx+1}",
+        save_dir="data_simulation",
+        file_name=f"sensor_trial_{trial_idx+1}_clean",
+        show=True
+    )
 
-# Concatenated trials: y_noisy
-viz.plot_sensor_signals(
-    ERP_config=ERP_config,
-    y_trials=y_noisy,
-    mode="concatenate",
-    channels=[0, 2],  # or "all"
-    title="Sensor Signals (Concatenated)",
-    save_dir="data_simulation",
-    file_name="sensor_concatenated_noisy",
-    show=False
-)
+    # Plot sensors (all trials) with selected channels: y_clean
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials=y_clean,
+        mode="stack",
+        channels=[2, 3],
+        units=sensor_simulator.sensor_units,
+        save_dir="data_simulation",
+        title="Sensor Signals (All Trials)",
+        file_name="sensor_all_trials_clean",
+        show=False
+    )
+
+    # Concatenated trials: y_clean
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials=y_clean,
+        mode="concatenate",
+        channels=[0, 2, 3],  # or "all"
+        units=sensor_simulator.sensor_units,
+        title="Sensor Signals (Concatenated)",
+        save_dir="data_simulation",
+        file_name="sensor_concatenated_clean",
+        show=False
+    )
+
+    # Plot sensors (single trial) with selected channels: y_noisy
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials= y_noisy,
+        trial_idx=trial_idx,
+        channels=[0, 1],  # or "all"
+        units=sensor_simulator.sensor_units,
+        mode="single",
+        title=f"Sensor Trial {trial_idx+1}",
+        save_dir="data_simulation",
+        file_name=f"sensor_trial_{trial_idx+1}_noisy",
+        show=False
+    )
+
+    # Plot sensors (all trials) with selected channels: y_noisy
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials=y_noisy,
+        mode="stack",
+        channels="all",  # or "all"
+        units=sensor_simulator.sensor_units,
+        title="Sensor Signals (All Trials)",
+        save_dir="data_simulation",
+        file_name="sensor_all_trials_noisy",
+        show=False
+    )
+
+    # Concatenated trials: y_noisy
+    viz.plot_sensor_signals(
+        ERP_config=ERP_config,
+        y_trials=y_noisy,
+        mode="concatenate",
+        channels=[0, 2],  # or "all"
+        units=sensor_simulator.sensor_units,
+        title="Sensor Signals (Concatenated)",
+        save_dir="data_simulation",
+        file_name="sensor_concatenated_noisy",
+        show=False
+    )
+
+
+if __name__ == "__main__":
+    main()
 
 
 
@@ -683,7 +717,7 @@ def visualize_signals(
             current_shift += shift 
         ax_sensors.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
         ax_sensors.set_title("Sensor Measurements")
-        ax_sensors.set_ylabel(f"Amplitude ({self.channel_units})") 
+        ax_sensors.set_ylabel(f"Amplitude ({self.sensor_units})") 
         ax_sensors.grid(True)
         # Consolidate legend for "Stimulus Onset" if it's plotted multiple times
         handles, labels = ax_sensors.get_legend_handles_labels()
@@ -695,7 +729,7 @@ def visualize_signals(
             ax_sens.plot(times, y_noisy[idx], label=f"Noisy", linewidth=1)
             ax_sens.axvline(self.stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
             ax_sens.set_title(f"Sensor {idx}")
-            ax_sens.set_ylabel(f"Amplitude ({self.channel_units})")
+            ax_sens.set_ylabel(f"Amplitude ({self.sensor_units})")
             ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) 
             ax_sens.grid(True)
             handles, labels = ax_sens.get_legend_handles_labels()
@@ -1232,7 +1266,7 @@ def plot_sensor_signals(self, y_clean, y_noisy, sensor_indices=None, times=None,
         axes[i].plot(times, y_noisy[sensor_idx], label="y_noise")
         axes[i].set_title(f"Sensor {sensor_idx}")
         axes[i].set_xlabel("Time (s)")
-        axes[i].set_ylabel(f"Amplitude  ({self.channel_units})")
+        axes[i].set_ylabel(f"Amplitude  ({self.sensor_units})")
         axes[i].legend()
         axes[i].grid(True)
 
@@ -1354,7 +1388,7 @@ def plot_all_sensor_signals_single_figure(self, y_data, times, sensor_indices=No
 
 
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel(f"Amplitude ({self.channel_units})")
+    ax.set_ylabel(f"Amplitude ({self.sensor_units})")
     ax.grid(True, alpha=0.6)
     ax.set_title(f"{n_plot_sensors} channels")
 

@@ -14,6 +14,7 @@ from numpy.random import Generator
 from scipy.stats import wishart
 from scipy.signal import butter, filtfilt
 import mne
+from mne.io.constants import FIFF
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm # Import colormap functionality
@@ -40,9 +41,10 @@ class SensorSimulator:
             Logger instance for logging messages. If None, a default logger will be created.
         """
         self.logger = logger if logger else logging.getLogger(__name__)
-        # self.channel_type = channel_type
-        # self.leadfield_units = None
-
+        
+        #  Prameters that will be set during simulation
+        self.sensor_units = FIFF.FIFF_UNIT_T  # Default unit for MEG (mag) sensors (T)
+                
     def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray, orientation_type: str) -> np.ndarray:
         """
         Project the source activity to the sensor space using the leadfield matrix.
@@ -108,14 +110,9 @@ class SensorSimulator:
         noise_rng = np.random.RandomState(noise_seed)
         
         # Generate base noise with variance = noise_std^2
-        noise_std = 1.0 # 0.01 # Standard deviation of the noise
+        noise_std = 0.1 # 0.01 # Standard deviation of the noise
 
-        if alpha_SNR == 0.0:
-            # Full noise, no signal
-            eps = noise_rng.normal(loc=0.0, scale=noise_std, size=y_clean.shape)
-            return eps, eps, noise_std ** 2
-
-        elif alpha_SNR == 1.0:
+        if alpha_SNR == 1.0:
             # No noise added
             eps = np.zeros_like(y_clean)
             return y_clean.copy(), eps, 0.0
@@ -127,15 +124,21 @@ class SensorSimulator:
         signal_norm = np.linalg.norm(y_clean, ord='fro')
         eps_norm = np.linalg.norm(eps, ord='fro')
         
-        # Alpha-SNR noise scaling
+        if alpha_SNR == 0.0:
+            # Avoid division by zero, treat as full noise
+            # Pure noise with same norm as clean signal
+            eta = signal_norm / eps_norm
+            eps_scaled = eta * eps
+            return eps_scaled.copy(), eps_scaled, (eta * noise_std) ** 2
+            
+        # General case: scaled noise added to clean signal
+        # Scale the noise to achieve the desired SNR
         eta = ((1 - alpha_SNR) / alpha_SNR) * (signal_norm / eps_norm)
-
         eps_scaled = eta * eps # Scaled noise
-        y_noisy = y_clean + eps_scaled # Add to signal
-
-        # Noise variance (per entry)
+        y_noisy = y_clean + eps_scaled # Add noise to signal
         noise_var = (eta * noise_std) ** 2
     
+        # OLD APPROACH:
         # signal_power = np.mean(y_clean ** 2)
         
         # if signal_power == 0:
@@ -254,10 +257,9 @@ def main():
     )
     logger = logging.getLogger("SensorSimulator")
 
-    simulator = SensorSimulator(
-        logger=logger
-    )
-
+    sensor_simulator = SensorSimulator(
+        logger=logger,
+    )    
     # Example source activity (randomly generated for demonstration)
     n_trials = 4
     n_sources = 10
@@ -269,7 +271,7 @@ def main():
     L = np.random.randn(n_sensors, n_sources)
 
     # Simulate sensor data
-    y_clean, y_noisy, noise, noise_var = simulator.simulate(
+    y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
         x_trials,
         L,
         orientation_type="fixed",
@@ -277,6 +279,7 @@ def main():
         n_trials=n_trials,
         global_seed=42
     )
+    # sensor_simulator.sensor_units = "T"
 
     logger.info(f"Clean sensor data shape: {y_clean.shape}")
     logger.info(f"Noisy sensor data shape: {y_noisy.shape}")

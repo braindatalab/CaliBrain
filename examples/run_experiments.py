@@ -5,12 +5,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import SensorSimulator, gamma_map, eloreta
-from calibrain import Benchmark
-from calibrain.source_simulation import SourceSimulator
-from calibrain.leadfield_simulation import LeadfieldBuilder
-from calibrain.uncertainty_estimation import UncertaintyEstimator
-from calibrain.evaluation import MetricEvaluator
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
 
 # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
@@ -29,9 +24,9 @@ def main():
             logging.StreamHandler()                   # Also print to console
         ]
     )
-    logger = logging.getLogger(__name__)    
+    logger = logging.getLogger(__name__)
 
-    n_trials = 4
+    # n_trials = 4
     ERP_config = {
         "tmin": -0.5,
         "tmax": 0.5,
@@ -39,10 +34,9 @@ def main():
         "sfreq": 250,
         "fmin": 1,
         "fmax": 5,
-        "amplitude": 5.0,
+        "amplitude": 20.0,
         "random_erp_timing": True,
         "erp_min_length": None,
-        "units": "nAm",
     }
     
     source_simulator = SourceSimulator(
@@ -51,13 +45,12 @@ def main():
     )
 
     leadfield_builder = LeadfieldBuilder(
-        logger=logger,
         leadfield_dir=Path("BSI-ZOO_forward_data"),
+        logger=logger,
     )
     
     sensor_simulator = SensorSimulator(
-        n_trials=n_trials,
-        logger=logger
+        logger=logger,
     )
 
     uncertainty_estimator = UncertaintyEstimator(
@@ -68,16 +61,16 @@ def main():
     # Define parameter grids for different data types
     data_param_grid_meg = {
         "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-        "nnz": [1, 5, 20],
+        "nnz": [1, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5, 0.8, 1.0],
+        "alpha_SNR": [0.0, 0.5, 1.0],
     }
     
     data_param_grid_eeg = {
-        "subject": ["caliBrain_fsaverage", "fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 5, 20],
+        "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
+        "nnz": [1, 5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5, 0.8, 1.0],
+        "alpha_SNR": [0.0, 0.5, 1.0],
     }
         
     gamma_map_params = {
@@ -112,7 +105,7 @@ def main():
         logger=logger
     )
                     
-    nruns = 2
+    nruns = 1
     df = []
     for solver, solver_param_grid, data_param_grid in estimators:
         benchmark = Benchmark(
