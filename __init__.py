@@ -14,7 +14,7 @@ __all__ = [
     "SourceEstimator",
     "UncertaintyEstimator",
     "MetricEvaluator",
-    "Visualizer"
+    "Visualizer",
     "eloreta",
     "gamma_map",
 ]
