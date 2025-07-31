@@ -15,8 +15,8 @@ from matplotlib.patches import Ellipse
 from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
-from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, gamma_map, eloreta
-from calibrain.leadfield_simulation import LeadfieldBuilder
+from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta
+# from calibrain.leadfield_simulation import LeadfieldBuilder
 from calibrain.utils import inspect_object
 
 
@@ -152,7 +152,7 @@ class Benchmark:
                 **solver_params,
                 **data_params,
             }
-            n_trials = 4
+            n_trials = 5
             
             global_source_rng = np.random.RandomState(seed)
             global_source_seeds = global_source_rng.randint(0, 2**32 - 1, n_trials)
@@ -182,6 +182,7 @@ class Benchmark:
                     retrieve_mode="load"
                 )
                 n_sensors, n_sources = L.shape
+                sensor_units = self.leadfield_builder.sensor_units
 
                 # -------------------------------------------------------------
                 # 5. Simulate source and sensor data
@@ -201,14 +202,16 @@ class Benchmark:
                 # -------------------------------------------------------------
                 self.logger.info("Simulating sensor trials...")                
                 y_clean_trials, y_noisy_trials, noise_trials, noise_var_trials =\
-                    self.sensor_simulator.simulate_sensor_trials(
+                    self.sensor_simulator.simulate(
                         x_trials=x_trials,
                         L=L,
                         orientation_type=data_params['orientation_type'],
                         alpha_SNR=data_params['alpha_SNR'],
+                        n_trials=n_trials,
                         global_seed=global_noise_seeds,
                 )
-                
+                self.sensor_simulator.sensor_units = sensor_units  # Set units based on leadfield
+
                 # -------------------------------------------------------------
                 # 7. Fit the source estimator and predict posterior mean & covariance
                 # -------------------------------------------------------------
@@ -220,98 +223,100 @@ class Benchmark:
                 noise_var = noise_var_trials[trial_idx]
 
                 n_orient = 3 if data_params.get("orientation_type") == "free" else 1
-                
-                self.logger.info("Fitting source estimator...")
-                source_estimator = SourceEstimator(
-                    solver=self.solver,
-                    solver_params=solver_params,
-                    n_orient=n_orient,
-                    logger=self.logger
-                )            
-                source_estimator.fit(L, y_noisy)            
-                x_hat, x_hat_active_indices, posterior_cov = source_estimator.predict(
-                    y=y_noisy, noise_var=noise_var
-                )
-                this_result['active_indices_size'] = len(x_hat_active_indices)
-                
-                # -------------------------------------------------------------
-                # 8. Estimate uncertainty (confidence intervals)
-                # -------------------------------------------------------------
-                # TODO: check whether we still need to set keepdims=True.
-                x_avg_time = np.mean(x, axis=1, keepdims=True)
-                x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
-                
-                self.logger.info("Estimating uncertainty...")
-                self.logger.debug("Constructing full posterior covariance matrix...")
-                full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
-                    x=x_avg_time,
-                    x_hat_active_indices=x_hat_active_indices,
-                    posterior_cov=posterior_cov,
-                    orientation_type=data_params.get("orientation_type"),
-                )
-                # uncert_est.plot_sorted_posterior_variances(top_k=10)
-                # uncert_est.visualize_sorted_covariances(top_k=10)
-                # uncert_est.plot_posterior_covariance_matrix()
 
-                
-                # NOTE: since uncert_est.x = x_avg_time[trial_idx], the following plots will have a single time step (and ofcourse one trial). So we can ignore the time_step parameter for now.
-                # uncert_est.plot_active_sources_single_time_step(
-                #     uncert_est.x[x_active_indices[trial_idx]],
-                #     uncert_est.x_hat[x_hat_active_indices],
+                # self.logger.info("Fitting source estimator...")
+                # source_estimator = SourceEstimator(
+                #     solver=self.solver,
+                #     solver_params=solver_params,
+                #     n_orient=n_orient,
+                #     logger=self.logger
+                # )            
+                # source_estimator.fit(L, y_noisy)            
+                # x_hat, x_hat_active_indices, posterior_cov = source_estimator.predict(
+                #     y=y_noisy, noise_var=noise_var
                 # )
+                # this_result['active_indices_size'] = len(x_hat_active_indices)
+                
+                # # -------------------------------------------------------------
+                # # 8. Estimate uncertainty (confidence intervals)
+                # # -------------------------------------------------------------
+                # # TODO: check whether we still need to set keepdims=True.
+                # x_avg_time = np.mean(x, axis=1, keepdims=True)
+                # x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
+                
+                # self.logger.info("Estimating uncertainty...")
+                # self.logger.debug("Constructing full posterior covariance matrix...")
+                # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
+                #     x=x_avg_time,
+                #     x_hat_active_indices=x_hat_active_indices,
+                #     posterior_cov=posterior_cov,
+                #     orientation_type=data_params.get("orientation_type"),
+                # )
+                # # uncert_est.plot_sorted_posterior_variances(top_k=10)
+                # # uncert_est.visualize_sorted_covariances(top_k=10)
+                # # uncert_est.plot_posterior_covariance_matrix()
+
+                
+                # # NOTE: since uncert_est.x = x_avg_time[trial_idx], the following plots will have a single time step (and ofcourse one trial). So we can ignore the time_step parameter for now.
+                # # uncert_est.plot_active_sources_single_time_step(
+                # #     uncert_est.x[x_active_indices[trial_idx]],
+                # #     uncert_est.x_hat[x_hat_active_indices],
+                # # )
                 
                 
-                # Evaluate metrics: ALL SOURCES
-                self.logger.debug("Computing CI and empirical coverage for all sources")
-                # counts_within_ci: (n_condifence_levels, n_ori, n_times)
-                ci_lower, ci_upper, counts_within_ci =\
-                self.uncertainty_estimator.get_confidence_intervals_data(
-                    x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
-                    x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
-                    posterior_cov=full_posterior_cov, #posterior_cov
-                    orientation_type=data_params.get("orientation_type")
-                )                            
+                # # Evaluate metrics: ALL SOURCES
+                # self.logger.debug("Computing CI and empirical coverage for all sources")
+                # # counts_within_ci: (n_condifence_levels, n_ori, n_times)
+                # ci_lower, ci_upper, counts_within_ci =\
+                # self.uncertainty_estimator.get_confidence_intervals_data(
+                #     x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
+                #     x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
+                #     posterior_cov=full_posterior_cov, #posterior_cov
+                #     orientation_type=data_params.get("orientation_type")
+                # )                            
 
-                # Evaluate metrics: ACTIVE SOURCES
-                self.logger.debug("Computing CI and empirical coverage for active sources")
-                _, _, counts_within_ci_active = \
-                self.uncertainty_estimator.get_confidence_intervals_data(
-                    x=x_avg_time[x_hat_active_indices], # x_active_indices
-                    x_hat=x_hat_avg_time[x_hat_active_indices],
-                    posterior_cov=posterior_cov,
-                    orientation_type=data_params.get("orientation_type")
-                )                      
+                # # Evaluate metrics: ACTIVE SOURCES
+                # self.logger.debug("Computing CI and empirical coverage for active sources")
+                # _, _, counts_within_ci_active = \
+                # self.uncertainty_estimator.get_confidence_intervals_data(
+                #     x=x_avg_time[x_hat_active_indices], # x_active_indices
+                #     x_hat=x_hat_avg_time[x_hat_active_indices],
+                #     posterior_cov=posterior_cov,
+                #     orientation_type=data_params.get("orientation_type")
+                # )                      
 
-                # -------------------------------------------------------------
-                # 9. Evaluate metrics and store results
-                # -------------------------------------------------------------
-                # Normalize by the number of sources and take the first orientation and time step
-                time_idx = 0 # As we average x across time, the time index is always 0.
-                all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
+                # # -------------------------------------------------------------
+                # # 9. Evaluate metrics and store results
+                # # -------------------------------------------------------------
+                # # Normalize by the number of sources and take the first orientation and time step
+                # time_idx = 0 # As we average x across time, the time index is always 0.
+                # all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
                 
-                # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
-                self.metric_evaluator.evaluate_and_store_metrics(
-                    this_result,
-                    metric_suffix="_all_sources",
-                    empirical_coverage=all_sources_empirical_coverage,
-                    cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
-                )
+                # # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
+                # self.metric_evaluator.evaluate_and_store_metrics(
+                #     this_result,
+                #     metric_suffix="_all_sources",
+                #     empirical_coverage=all_sources_empirical_coverage,
+                #     cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
+                # )
 
-                # --- Evaluate metrics: ACTIVE SOURCES (estimated active set) ---
-                empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
+                # # --- Evaluate metrics: ACTIVE SOURCES (estimated active set) ---
+                # empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
                             
-                self.metric_evaluator.evaluate_and_store_metrics(
-                    this_result,
-                    metric_suffix="_active_indices",
-                    empirical_coverage=empirical_coverage_active,  
-                    cov=posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric
-                ) 
+                # self.metric_evaluator.evaluate_and_store_metrics(
+                #     this_result,
+                #     metric_suffix="_active_indices",
+                #     empirical_coverage=empirical_coverage_active,  
+                #     cov=posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric
+                # ) 
 
 
                 # --------------------------------------------------------------
                 # 10. Vizualization
                 # --------------------------------------------------------------
                 self.visualize(
+                    source_simulator=self.source_simulator,
+                    sensor_simulator=self.sensor_simulator,
                     experiment_dir=experiment_dir,
                     x_trials=x_trials,
                     active_indices_trials=x_active_indices_trials,
@@ -357,28 +362,19 @@ class Benchmark:
         self.logger.info("Benchmarking completed.")
         return pd.DataFrame(results_list)
 
-    def visualize(self, experiment_dir: str, x_trials: np.ndarray, active_indices_trials: np.ndarray, y_clean: np.ndarray, y_noisy: np.ndarray, trial_idx: int = 0):
+    def visualize(self, source_simulator: SourceSimulator, sensor_simulator: SensorSimulator, experiment_dir: str, x_trials: np.ndarray, active_indices_trials: np.ndarray, y_clean: np.ndarray, y_noisy: np.ndarray, trial_idx: int = 0):
 
         viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
-        
-        # 1. Plot simulated data
-        # Plot sources (single trial)
-        viz.plot_source_signals(
-            ERP_config=self.ERP_config,
-            x=x_trials,
-            active_indices=active_indices_trials,
-            trial_idx=trial_idx,
-            title=f"Source Trial {trial_idx+1}",
-            save_dir="data_simulation",
-            file_name=f"source_trial_{trial_idx+1}",
-            show=False,
-        )
+        source_units = source_simulator.source_units
+        sensor_units = sensor_simulator.sensor_units
 
+        # 1. Plot simulated data
         # Plot sources (all trials)
         viz.plot_source_signals(
             ERP_config=self.ERP_config,
             x=x_trials,
             active_indices=active_indices_trials,
+            units=source_units,
             trial_idx=None,
             title="Source Trials (All)",
             save_dir="data_simulation",
@@ -386,66 +382,16 @@ class Benchmark:
             show=False,
         )
 
-        # Plot sensors (single trial) with selected channels: y_clean
-        viz.plot_sensor_signals(
-            ERP_config=self.ERP_config,
-            y_trials=y_clean,
-            trial_idx=trial_idx,
-            channels="all", 
-            mode="single",
-            title=f"Sensor Trial {trial_idx+1}",
-            save_dir="data_simulation",
-            file_name=f"sensor_trial_{trial_idx+1}_clean",
-            show=False
-        )
-
-        # Plot sensors (all trials) with selected channels: y_clean
-        viz.plot_sensor_signals(
-            ERP_config=self.ERP_config,
-            y_trials=y_clean,
-            mode="stack",
-            # channels=[2, 3], # or "all"
-            title="Sensor Signals (All Trials)",
-            
-            save_dir="data_simulation",
-            file_name="sensor_all_trials_clean",
-            show=False
-        )
-
-        # Concatenated trials: y_clean
-        viz.plot_sensor_signals(
-            ERP_config=self.ERP_config,
-            y_trials=y_clean,
-            mode="concatenate",
-            channels=[0, 10],  # or "all"
-            title="Sensor Signals (Concatenated)",
-            save_dir="data_simulation",
-            file_name="sensor_concatenated_clean",
-            show=False
-        )
-
-        # Plot sensors (single trial) with selected channels: y_noisy
-        viz.plot_sensor_signals(
-            ERP_config=self.ERP_config,
-            y_trials=y_noisy,
-            trial_idx=trial_idx,
-            channels=[0, 10],  # or "all"
-            mode="single",
-            title=f"Sensor Trial {trial_idx+1}",
-            save_dir="data_simulation",
-            file_name=f"sensor_trial_{trial_idx+1}_noisy",
-            show=False
-        )
-
         # Plot sensors (all trials) with selected channels: y_noisy
         viz.plot_sensor_signals(
             ERP_config=self.ERP_config,
             y_trials=y_noisy,
-            mode="stack",
             channels="all",  # or "all"
-            title="Sensor Signals (All Trials)",
+            units=sensor_units,
+            mode="stack",
+            title="Sensor Signals (All Trials stacked)",
             save_dir="data_simulation",
-            file_name="sensor_all_trials_noisy",
+            file_name="sensor_stack_trials_noisy",
             show=False
         )
 
@@ -453,12 +399,24 @@ class Benchmark:
         viz.plot_sensor_signals(
             ERP_config=self.ERP_config,
             y_trials=y_noisy,
+            # channels=[0, 10],  # or "all"
+            units=sensor_units,
             mode="concatenate",
-            channels=[0, 10],  # or "all"
-            title="Sensor Signals (Concatenated)",
+            title="Sensor Signals (All trials concatenated)",
             save_dir="data_simulation",
-            file_name="sensor_concatenated_noisy",
+            file_name="sensor_concatenate_trials_noisy",
             show=False
         )
 
-
+        # Concatenated trials: y_clean
+        viz.plot_sensor_signals(
+            ERP_config=self.ERP_config,
+            y_trials=y_clean,
+            # channels=[0, 10],  # or "all"
+            units=sensor_units,
+            mode="concatenate",
+            title="Sensor Signals (All trials concatenated)",
+            save_dir="data_simulation",
+            file_name="sensor_concatenate_trials_clean",
+            show=False
+        )

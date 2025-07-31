@@ -18,6 +18,7 @@ from numpy.random import Generator
 from scipy.stats import wishart
 from scipy.signal import butter, filtfilt
 import mne
+from mne.io.constants import FIFF
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm # Import colormap functionality
@@ -26,7 +27,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable # For better colorbar placement
 
-from calibrain import LeadfieldBuilder
 from calibrain.utils import load_config
 
 
@@ -52,10 +52,9 @@ class SourceSimulator:
                 - sfreq: 250 (sampling frequency in Hz)
                 - fmin: 1 (minimum frequency for the bandpass filter in Hz)
                 - fmax: 5 (maximum frequency for the bandpass filter in Hz)
-                - amplitude: 5.0 (amplitude of the ERP waveform)
+                - amplitude: 1.0 (amplitude of the ERP waveform)
                 - random_erp_timing: True (if True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized)
                 - erp_min_length : Optional[int] (minimum length of the ERP waveform in samples; if None, a default value is used)
-                - units : str (units of the source activity, e.g., "nAm")
         logger : Optional[logging.Logger], optional
             Logger instance, by default None.
         """
@@ -66,13 +65,15 @@ class SourceSimulator:
             "sfreq": 250,
             "fmin": 1,
             "fmax": 5,
-            "amplitude": 5.0,
+            "amplitude": 1.0,
             "random_erp_timing": True,
             "erp_min_length": None,
-            "units": "nAm",
         }
         
         self.logger = logger if logger else logging.getLogger(__name__)
+        
+        # Default units for ERP simulation
+        self.source_units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
 
     def _simulate_erp_waveform(
         self,
@@ -113,7 +114,6 @@ class SourceSimulator:
         amplitude = self.ERP_config['amplitude']
         random_erp_timing = self.ERP_config['random_erp_timing']
         erp_min_length = self.ERP_config['erp_min_length']
-        units = self.ERP_config['units']
 
         # Ensure stim_onset is within [tmin, tmax]
         if stim_onset < tmin or stim_onset > tmax:
@@ -196,19 +196,28 @@ class SourceSimulator:
         # Apply Hanning window over the ERP segment
         erp_segment *= np.hanning(erp_duration_samples) 
         
-        std_erp_segment = np.std(erp_segment)
-        if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
+        # Normalize the ERP segment by standard deviation (OLD APPROACH)
+        # std_erp_segment = np.std(erp_segment)
+        # if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
+        #     return waveform # Avoid division by zero; segment is flat
+        # erp_segment /= std_erp_segment # Normalize by its standard deviation
+        
+        # Normalize the ERP segment by its peak amplitude
+        erp_peak = np.max(np.abs(erp_segment)) # Normalize by peak amplitude
+        if erp_peak < 1e-9: # Check if peak amplitude is effectively zero
             return waveform # Avoid division by zero; segment is flat
-            
-        erp_segment /= std_erp_segment # Normalize
-        erp_segment *= amplitude      # Scale
+        erp_segment /= erp_peak
+        erp_segment *= amplitude # Scale to desired amplitude
+
+        # convert unit from nAm to Am
+        erp_segment *= 1e-9
         
         # Place the generated ERP segment into the output signal at the determined start
         end_sample_for_erp_segment = actual_placement_start_sample + len(erp_segment)
         
         # Ensure placement is within bounds (should be guaranteed by earlier logic)
         if actual_placement_start_sample < n_times and end_sample_for_erp_segment <= n_times:
-            waveform[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment    
+            waveform[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment
 
         self.logger.debug(f"ERP waveform generated with shape: {waveform.shape}")
         
@@ -380,7 +389,7 @@ class SourceSimulator:
 
 
 def main():
-
+    from calibrain import Visualizer
     logging.basicConfig(
         level=logging.INFO,  # or DEBUG
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -398,10 +407,9 @@ def main():
         "sfreq": 250,
         "fmin": 1,
         "fmax": 5,
-        "amplitude": 5.0,
+        "amplitude": 10.0,
         "random_erp_timing": True,
         "erp_min_length": None,
-        "units": "nAm",
     }
 
     n_trials=4
@@ -409,30 +417,13 @@ def main():
     n_sources=10
     nnz=5
     global_seed=42
+    trial_idx=0
     
     source_simulator = SourceSimulator(
         ERP_config=ERP_config,
         logger=logger
     )
-
-    # waveform = source_sim._simulate_erp_waveform(**ERP_config, source_seed=512)
-    
-    # x, active_indices = source_sim._simulate_source_time_courses(
-    #     orientation_type=orientation_type,
-    #     n_sources=n_sources,
-    #     nnz=nnz,
-    #     trial_seed=256,
-    #     ERP_config=ERP_config,
-    # )
-
-    # x_trials, active_indices_trials = source_sim.simulate(
-    #     orientation_type=orientation_type,
-    #     n_sources=n_sources,
-    #     nnz=nnz,
-    #     global_seed=global_seed,
-    #     ERP_config=ERP_config,
-    # )
-
+    print(f"Default units for source activity: {source_simulator.source_units}")
 
     x_trials, active_indices_trials = source_simulator.simulate(
         orientation_type=orientation_type,
@@ -441,9 +432,39 @@ def main():
         n_trials=n_trials,
         global_seed=global_seed,
     )
-
-
+    # source_simulator.source_units = "Am"
     logger.info("Simulation complete.")
+    
+    
+    viz = Visualizer(base_save_path="testViz", logger=logger)
 
+    # Plot sources (single trial)
+    viz.plot_source_signals(
+        ERP_config=ERP_config,
+        x=x_trials,
+        active_indices=active_indices_trials,
+        units=source_simulator.source_units,
+        trial_idx=trial_idx,
+        title=f"Source Trial {trial_idx+1}",
+        save_dir="data_simulation",
+        file_name=f"src_trial_{trial_idx+1}",
+        show=False,
+    )
+
+    # Plot sources (all trials)
+    viz.plot_source_signals(
+        ERP_config=ERP_config,
+        x=x_trials,
+        active_indices=active_indices_trials,
+        units=source_simulator.source_units,
+        trial_idx=None,
+        title="Source Trials (All)",
+        save_dir="data_simulation",
+        file_name="src_trials_all",
+        show=False,
+    )
+
+
+    
 if __name__ == "__main__":
     main()

@@ -38,7 +38,7 @@ class LeadfieldBuilder:
     save_path : Path
         Base path where generated files (source space, BEM, etc.) will be saved.
     """
-    def __init__(self, config: Dict = None, logger: Optional[logging.Logger] = None, channel_type: str = None, leadfield_dir: str = None):
+    def __init__(self, config: Dict = None, leadfield_dir: str = None, logger: Optional[logging.Logger] = None):
         """
         Initialize the LeadfieldBuilder.
 
@@ -48,6 +48,11 @@ class LeadfieldBuilder:
             Configuration dictionary containing paths and parameters for
             each simulation step (data, source_space, bem_model, montage,
             info, forward_solution, leadfield).
+        channel_type : str, optional
+            Type of channels to simulate ('eeg', 'meg', or 'grad'). If None,
+            all channel types will be simulated. Default is None.
+        leadfield_dir : str, optional
+            Directory where leadfield matrices are stored or will be saved.
         self.logger : logging.Logger, optional
             Custom self.logger instance. If None, a default self.logger is created,
             by default None.
@@ -57,12 +62,11 @@ class LeadfieldBuilder:
         FileNotFoundError
             If `data_path` or `subjects_dir` specified in the config do not exist.
         """
-        self.logger = logger if logger else logging.getLogger(__name__)
         self.config = config
         if self.config:
             data_cfg = config["data"]
-            self.data_path = Path(data_cfg["data_path"])
             self.subject = data_cfg["subject"]
+            self.data_path = Path(data_cfg["data_path"])
             self.subjects_dir = Path(data_cfg["subjects_dir"])
             self.save_path = Path(data_cfg["save_path"])
 
@@ -74,8 +78,11 @@ class LeadfieldBuilder:
                 self.logger.info(f"Save path does not exist. Creating: {self.save_path}")
                 self.save_path.mkdir(parents=True, exist_ok=True)
                 
+        self.logger = logger if logger else logging.getLogger(__name__)
         self.leadfield_dir = Path(leadfield_dir)
-        self.channel_type = channel_type
+        
+        # Parameter set during building the leadfield
+        self.sensor_units = None
         
         self.logger.info("LeadfieldBuilder initialized successfully.")
 
@@ -534,6 +541,25 @@ class LeadfieldBuilder:
                     if "leadfield" not in data and "lead_field" not in data:
                         raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
                     leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
+                    
+                    try:
+                        data_unit = data.get("units", None)
+                        if data_unit is not None:
+                            if data_unit == FIFF.FIFF_UNIT_V:
+                                self.sensor_units = FIFF.FIFF_UNIT_V
+                            elif data_unit == FIFF.FIFF_UNIT_T:
+                                self.sensor_units = FIFF.FIFF_UNIT_T
+                            elif data_unit == FIFF.FIFF_UNIT_T_M:
+                                self.sensor_units = FIFF.FIFF_UNIT_T_M
+                            else:
+                                self.sensor_units = "unknown"
+                                self.logger.warning(f"Unknown data unit '{data_unit}' in leadfield file. Defaulting to provided unit.")
+                        else:
+                            self.sensor_units = ["unknown"]
+                            self.logger.warning(f"Unknown data unit '{data_unit}' in leadfield file. Defaulting to 'unknown'.")
+                    except KeyError:
+                        self.logger.warning("No data unit specified in leadfield file. Defaulting to 'unknown'.")
+                        self.sensor_units = ["unknown"]
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
@@ -542,15 +568,7 @@ class LeadfieldBuilder:
                     )
                 self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
 
-                if self.channel_type == "eeg":
-                    channel_units = "µV"
-                elif self.channel_type == "meg":
-                    channel_units = "fT"
-                elif not self.channel_type:
-                    channel_units = "unknown"
-                    self.logger.warning("Channel type not specified. Defaulting to 'unknown'.")
-                else:
-                    raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")
+
 
             except (FileNotFoundError, ValueError) as e:
                 self.logger.error(f"Failed to load leadfield matrix: {e}")
@@ -572,16 +590,20 @@ class LeadfieldBuilder:
                         f"Simulated leadfield matrix dimension mismatch for orientation '{orientation_type}': "
                         f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
                     )
-                if L_simulator.channel_type == "eeg":
-                    channel_units = "µV"
-                elif L_simulator.channel_type == "meg":
-                    channel_units = "fT"
-                elif not L_simulator.channel_type:
-                    channel_units = "unknown"
-                    self.logger.warning("Channel type not specified. Defaulting to 'unknown'.")
-                else:
-                    raise ValueError(f"Invalid channel_type '{L_simulator.channel_type}'. Choose 'eeg' or 'meg'.")
-                
+                    
+                # TODO: Handle channel units based on L_simulator.channel_type
+                # if L_simulator.channel_type == "eeg":
+                #     self.sensor_units = [FIFF.FIFF_UNIT_V] * leadfield.shape[0]
+                # elif L_simulator.channel_type == "meg":
+                #     self.sensor_units = [FIFF.FIFF_UNIT_T] * leadfield.shape[0]
+                # elif L_simulator.channel_type == "grad":
+                #     self.sensor_units = [FIFF.FIFF_UNIT_T_M] * leadfield.shape[0]
+                # elif not L_simulator.channel_type:
+                #     self.sensor_units = [FIFF.FIFF_UNIT_UNKNOWN] * leadfield.shape[0]
+                #     self.logger.warning("Channel type not specified. Defaulting to 'unknown'.")
+                # else:
+                #     raise ValueError(f"Invalid channel_type '{L_simulator.channel_type}'. Choose 'eeg', 'meg', or 'grad'.")
+
             except Exception as e:
                     self.logger.error(f"Failed to simulate leadfield matrix: {e}")
                     raise
@@ -595,13 +617,16 @@ class LeadfieldBuilder:
                 leadfield = rng.standard_normal((n_sensors, n_sources, 3))
             self.logger.info(f"Random leadfield generated with shape {leadfield.shape}")
 
-            if self.channel_type == "eeg":
-                channel_units = "µV"
-            elif self.channel_type == "meg":
-                channel_units = "fT"
-            else:
-                raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg' or 'meg'.")
-                
+            # TODO: Handle channel units based on self.channel_type
+            # if self.channel_type == "eeg":
+            #     self.sensor_units = [FIFF.FIFF_UNIT_V] * leadfield.shape[0]
+            # elif self.channel_type == "meg":
+            #     self.sensor_units = [FIFF.FIFF_UNIT_T] * leadfield.shape[0]
+            # elif self.channel_type == "grad":
+            #     self.sensor_units = [FIFF.FIFF_UNIT_T_M] * leadfield.shape[0]
+            # else:
+            #     raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg', 'meg', or 'grad'.")
+
         else:
             raise ValueError(f"Invalid leadfield mode '{self.retrieve_mode}'. Options are 'load', 'simulate', or 'random'.")
 
@@ -611,7 +636,7 @@ class LeadfieldBuilder:
         elif leadfield.ndim == 3 == expected_dimensions: # Free
             n_sensors, n_sources, _ = leadfield.shape
 
-        # self.leadfield_units = f"{channel_units} / {source_units}"
+        # self.leadfield_units = f"{sensor_units} / {source_units}"
         
         self.logger.info(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
 
