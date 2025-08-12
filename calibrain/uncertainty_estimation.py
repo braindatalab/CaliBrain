@@ -1,5 +1,6 @@
 
 import os
+from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
@@ -311,127 +312,7 @@ class UncertaintyEstimator:
         plt.close()
         
 
-    def plot_active_sources_single_time_step(self, x, x_hat, time_step=0):
-        """
-        Plot active sources for a single time step, comparing ground truth and estimates.
 
-        The input x are the ground truth values for components specified by
-        self.x_active_indices.
-        The input x_hat are the estimated values for components specified by
-        self.active_indices.
-
-        Parameters:
-        - x (np.ndarray): Ground truth source activity values for active components.
-                                         Shape: (len(self.x_active_indices), n_times).
-        - x_hat (np.ndarray): Estimated source activity values for active components.
-                                          Shape: (len(self.active_indices), n_times).
-        - time_step (int): The specific time step to plot. Defaults to 0.
-        """
-        self.logger.info(f"Plotting active sources at time step {time_step} using provided active values.")
-
-        if x.ndim != 2 or x_hat.ndim != 2:
-            raise ValueError(
-                f"x and x_hat must be 2D arrays. "
-                f"Got shapes: x={x.shape}, x_hat={x_hat.shape}"
-            )
-
-        if self.x_active_indices is not None and x.shape[0] != len(self.x_active_indices):
-            raise ValueError(
-                f"Number of rows in x ({x.shape[0]}) "
-                f"must match length of self.x_active_indices ({len(self.x_active_indices)})."
-            )
-        if x_hat.shape[0] != len(self.active_indices):
-            raise ValueError(
-                f"Number of rows in x_hat ({x_hat.shape[0]}) "
-                f"must match length of self.active_indices ({len(self.active_indices)})."
-            )
-        
-        if x.shape[1] <= time_step or x_hat.shape[1] <= time_step:
-            self.logger.error(f"time_step {time_step} is out of bounds for data with "
-                              f"{x.shape[1]} (GT) or {x_hat.shape[1]} (Est) time points.")
-            return
-
-        if self.orientation_type == 'free':
-            fig, axes = plt.subplots(3, 1, figsize=(12, 18), sharex=True)
-            orientations = ['X', 'Y', 'Z']
-
-
-            x_active_indices_flat = self.x_active_indices // 3
-            x_active_indices_orientations_flat = self.x_active_indices % 3
-            # Create a map from original source index to its value for each orientation
-            x_active_indices_map = [{} for _ in range(3)]
-            for idx, val in enumerate(x):
-                if val != 0: # Only consider non-zero ground truth
-                    orient = x_active_indices_orientations_flat[idx]
-                    src_idx = x_active_indices_flat[idx]
-                    x_active_indices_map[orient][src_idx] = val
-            
-            # For Estimated (x_hat)
-            active_indices_flat = self.active_indices // 3
-            active_indices_orientations_flat = self.active_indices % 3
-            active_indices_map = [{} for _ in range(3)]
-            for idx, val in enumerate(x_hat):
-                orient = active_indices_orientations_flat[idx]
-                src_idx = active_indices_flat[idx]
-                active_indices_map[orient][src_idx] = val
-
-
-            for i, ax in enumerate(axes): # i is the target orientation index (0, 1, 2)
-                if not self.x_active_indices and not self.active_indices:
-                    ax.set_title(f'Orientation {orientations[i]} (No active components to plot)')
-                    ax.grid(True, alpha=0.5)
-                    ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
-                    continue
-                
-                ax.scatter(self.x_active_indices, x, color='blue', alpha=0.6, 
-                           label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
-                ax.scatter(self.active_indices, x_hat, color='red', marker='x', alpha=0.6, 
-                           label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)')
-                
-                ax.set_xlabel('Index of Active (Non-zero) Sources')
-                ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
-                ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
-                
-                # all_unique_src_indices_on_axis = sorted(list(set(self.x_active_indices + self.active_indices)))
-                all_unique_src_indices_on_axis = np.arange(self.n_total_sources)
-                # n_sources_this_axis = len(all_unique_src_indices_on_axis)
-                ax.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
-                
-                ax.grid(True, alpha=0.5)
-                # ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
-                if all_unique_src_indices_on_axis:
-                    ax.set_xticks(all_unique_src_indices_on_axis)
-                    ax.set_xticklabels([str(s_idx) for s_idx in all_unique_src_indices_on_axis])
-
-            fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
-            plt.tight_layout(rect=[0, 0.05, 1, 0.96]) 
-            fig.suptitle(f"Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps", fontsize=16)
-
-            save_path = os.path.join(self.experiment_dir, f'active_sources_ts{time_step}.png')
-            plt.savefig(save_path)
-            self.logger.debug(f"Saved active sources plot to {save_path}")
-            plt.close(fig)
-
-        else: # Fixed orientation
-            plt.figure(figsize=(12, 6))
-            
-            plt.scatter(self.x_active_indices, x, color='blue', alpha=0.6, label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')            
-            plt.scatter(self.active_indices, x_hat, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)')
-            
-            plt.xlabel('Index of Active (Non-zero) Sources')
-            
-            plt.ylabel('Amplitude of averaged sources (across time) and their estimates')
-            plt.title(f'Active Sources Comparison for fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
-            plt.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
-            
-            plt.grid(True, alpha=0.5)
-            plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-
-            # save_path = os.path.join(self.experiment_dir, f'active_sources_ts{time_step}.png')
-            save_path = os.path.join(self.experiment_dir, f'active_sources_AvgTime.png')
-            plt.savefig(save_path)
-            self.logger.debug(f"Saved active sources plot to {save_path}")
-            plt.close()
 
     def plot_posterior_covariance_matrix(self):
         """
