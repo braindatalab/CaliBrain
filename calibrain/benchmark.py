@@ -1,6 +1,7 @@
 import datetime
 import os
 import logging
+from typing import Optional
 from zipfile import Path
 import numpy as np
 import pandas as pd
@@ -224,92 +225,80 @@ class Benchmark:
 
                 n_orient = 3 if data_params.get("orientation_type") == "free" else 1
 
-                # self.logger.info("Fitting source estimator...")
-                # source_estimator = SourceEstimator(
-                #     solver=self.solver,
-                #     solver_params=solver_params,
-                #     n_orient=n_orient,
-                #     logger=self.logger
-                # )            
-                # source_estimator.fit(L, y_noisy)            
-                # x_hat, x_hat_active_indices, posterior_cov = source_estimator.predict(
-                #     y=y_noisy, noise_var=noise_var
-                # )
-                # this_result['active_indices_size'] = len(x_hat_active_indices)
+                self.logger.info("Fitting source estimator...")
+                source_estimator = SourceEstimator(
+                    solver=self.solver,
+                    solver_params=solver_params,
+                    n_orient=n_orient,
+                    logger=self.logger
+                )            
+                source_estimator.fit(L, y_noisy)            
+                x_hat, x_hat_active_indices, posterior_cov = source_estimator.predict(
+                    y=y_noisy, noise_var=noise_var
+                )
+                this_result['active_indices_size'] = len(x_hat_active_indices)
                 
-                # # -------------------------------------------------------------
-                # # 8. Estimate uncertainty (confidence intervals)
-                # # -------------------------------------------------------------
-                # # TODO: check whether we still need to set keepdims=True.
-                # x_avg_time = np.mean(x, axis=1, keepdims=True)
-                # x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
+                # -------------------------------------------------------------
+                # 8. Estimate uncertainty (credible intervals)
+                # -------------------------------------------------------------
+                # TODO: check whether we still need to set keepdims=True.
+                x_avg_time = np.mean(x, axis=1, keepdims=True)
+                x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
                 
-                # self.logger.info("Estimating uncertainty...")
-                # self.logger.debug("Constructing full posterior covariance matrix...")
-                # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
-                #     x=x_avg_time,
-                #     x_hat_active_indices=x_hat_active_indices,
-                #     posterior_cov=posterior_cov,
-                #     orientation_type=data_params.get("orientation_type"),
-                # )
-                # # uncert_est.plot_sorted_posterior_variances(top_k=10)
-                # # uncert_est.visualize_sorted_covariances(top_k=10)
-                # # uncert_est.plot_posterior_covariance_matrix()
+                self.logger.info("Estimating uncertainty...")
+                self.logger.debug("Constructing full posterior covariance matrix...")
+                full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
+                    x=x_avg_time,
+                    x_hat_active_indices=x_hat_active_indices,
+                    posterior_cov=posterior_cov,
+                    orientation_type=data_params.get("orientation_type"),
+                )
+                
+                # Evaluate metrics: ALL SOURCES
+                self.logger.debug("Computing CI and empirical coverage for all sources")
+                # counts_within_ci: (n_condifence_levels, n_ori, n_times)
+                ci_lower, ci_upper, counts_within_ci =\
+                self.uncertainty_estimator.get_confidence_intervals_data(
+                    x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
+                    x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
+                    posterior_cov=full_posterior_cov, #posterior_cov
+                    orientation_type=data_params.get("orientation_type")
+                )                            
 
-                
-                # # NOTE: since uncert_est.x = x_avg_time[trial_idx], the following plots will have a single time step (and ofcourse one trial). So we can ignore the time_step parameter for now.
-                # # uncert_est.plot_active_sources_single_time_step(
-                # #     uncert_est.x[x_active_indices[trial_idx]],
-                # #     uncert_est.x_hat[x_hat_active_indices],
-                # # )
-                
-                
-                # # Evaluate metrics: ALL SOURCES
-                # self.logger.debug("Computing CI and empirical coverage for all sources")
-                # # counts_within_ci: (n_condifence_levels, n_ori, n_times)
-                # ci_lower, ci_upper, counts_within_ci =\
-                # self.uncertainty_estimator.get_confidence_intervals_data(
-                #     x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
-                #     x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
-                #     posterior_cov=full_posterior_cov, #posterior_cov
-                #     orientation_type=data_params.get("orientation_type")
-                # )                            
+                # Evaluate metrics: ACTIVE SOURCES
+                self.logger.debug("Computing CI and empirical coverage for active sources")
+                _, _, counts_within_ci_active = \
+                self.uncertainty_estimator.get_confidence_intervals_data(
+                    x=x_avg_time[x_hat_active_indices], # x_active_indices
+                    x_hat=x_hat_avg_time[x_hat_active_indices],
+                    posterior_cov=posterior_cov,
+                    orientation_type=data_params.get("orientation_type")
+                )                      
 
-                # # Evaluate metrics: ACTIVE SOURCES
-                # self.logger.debug("Computing CI and empirical coverage for active sources")
-                # _, _, counts_within_ci_active = \
-                # self.uncertainty_estimator.get_confidence_intervals_data(
-                #     x=x_avg_time[x_hat_active_indices], # x_active_indices
-                #     x_hat=x_hat_avg_time[x_hat_active_indices],
-                #     posterior_cov=posterior_cov,
-                #     orientation_type=data_params.get("orientation_type")
-                # )                      
-
-                # # -------------------------------------------------------------
-                # # 9. Evaluate metrics and store results
-                # # -------------------------------------------------------------
-                # # Normalize by the number of sources and take the first orientation and time step
-                # time_idx = 0 # As we average x across time, the time index is always 0.
-                # all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
+                # -------------------------------------------------------------
+                # 9. Evaluate metrics and store results
+                # -------------------------------------------------------------
+                # Normalize by the number of sources and take the first orientation and time step
+                time_idx = 0 # As we average x across time, the time index is always 0.
+                all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
                 
-                # # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
-                # self.metric_evaluator.evaluate_and_store_metrics(
-                #     this_result,
-                #     metric_suffix="_all_sources",
-                #     empirical_coverage=all_sources_empirical_coverage,
-                #     cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
-                # )
+                # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
+                self.metric_evaluator.evaluate_and_store_metrics(
+                    this_result,
+                    metric_suffix="_all_sources",
+                    empirical_coverage=all_sources_empirical_coverage,
+                    cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
+                )
 
-                # # --- Evaluate metrics: ACTIVE SOURCES (estimated active set) ---
-                # empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
+                # --- Evaluate metrics: ACTIVE SOURCES (estimated active set) ---
+                empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
                             
-                # self.metric_evaluator.evaluate_and_store_metrics(
-                #     this_result,
-                #     metric_suffix="_active_indices",
-                #     empirical_coverage=empirical_coverage_active,  
-                #     cov=posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric
-                # ) 
-
+                self.metric_evaluator.evaluate_and_store_metrics(
+                    this_result,
+                    metric_suffix="_active_indices",
+                    empirical_coverage=empirical_coverage_active,  
+                    cov=posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric
+                ) 
 
                 # --------------------------------------------------------------
                 # 10. Vizualization
@@ -320,21 +309,31 @@ class Benchmark:
                     experiment_dir=experiment_dir,
                     x_trials=x_trials,
                     active_indices_trials=x_active_indices_trials,
+                    x_avg_time=x_avg_time,
+                    x_hat_avg_time=x_hat_avg_time,
+                    x_active_indices=x_active_indices,
+                    x_hat_active_indices=x_hat_active_indices,
+                    n_sources=n_sources,
                     y_clean=y_clean_trials,
                     y_noisy=y_noisy_trials,
-                    trial_idx=trial_idx
+                    trial_idx=trial_idx,
+                    orientation_type=data_params.get("orientation_type"),
                 )
-            
-                
+
+                # self.uncertainty_estimator.plot_sorted_posterior_variances(top_k=10)
+                # self.uncertainty_estimator.visualize_sorted_covariances(top_k=10)
+                # self.uncertainty_estimator.plot_posterior_covariance_matrix()
+
+
                 '''
                 # --- Plotting ---
-                uncert_est.visualize_confidence_intervals(
-                    ci_lower, ci_upper,                            
-                    uncert_est.x[x_active_indices[trial_idx]],
-                    uncert_est.x_hat[x_hat_active_indices],
+                self.uncertainty_estimator.visualize_confidence_intervals(
+                    ci_lower, ci_upper,
+                    self.uncertainty_estimator.x[x_active_indices[trial_idx]],
+                    self.uncertainty_estimator.x_hat[x_hat_active_indices],
                 )
-                # all sources  
-                uncert_est.vizualise_calibration_curve(
+                # all sources
+                self.uncertainty_estimator.visualize_calibration_curve(
                     empirical_coverage,
                     this_result,
                     which_legend="all_sources",
@@ -342,14 +341,14 @@ class Benchmark:
                     
                 )
                 # active sources
-                uncert_est.vizualise_calibration_curve(
+                self.uncertainty_estimator.visualize_calibration_curve(
                     empirical_coverage_active,
                     this_result,
                     which_legend="active_indices",
                     filename="Calibration_curve_active_indices"
                 )
                 # if self.data_param_grid.get("orientation_type") == "free":
-                #     uncert_est.plot_top_relevant_CE_pairs(top_k=5, confidence_level=0.95)
+                #     self.uncertainty_estimator.plot_top_relevant_CE_pairs(top_k=5, confidence_level=0.95)
                 '''
             
             except Exception as e:
@@ -362,13 +361,32 @@ class Benchmark:
         self.logger.info("Benchmarking completed.")
         return pd.DataFrame(results_list)
 
-    def visualize(self, source_simulator: SourceSimulator, sensor_simulator: SensorSimulator, experiment_dir: str, x_trials: np.ndarray, active_indices_trials: np.ndarray, y_clean: np.ndarray, y_noisy: np.ndarray, trial_idx: int = 0):
+    def visualize(
+        self,
+        source_simulator: SourceSimulator,
+        sensor_simulator: SensorSimulator,
+        experiment_dir: str,
+        x_trials: np.ndarray,
+        active_indices_trials: np.ndarray,
+        x_avg_time: np.ndarray,
+        x_hat_avg_time: np.ndarray,
+        x_active_indices: np.ndarray,
+        x_hat_active_indices: np.ndarray,
+        n_sources: int,
+        y_clean: np.ndarray,
+        y_noisy: np.ndarray,
+        trial_idx: int = 0,
+        orientation_type: str = "fixed",
+    ):
 
         viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
         source_units = source_simulator.source_units
         sensor_units = sensor_simulator.sensor_units
 
+        # =========================
         # 1. Plot simulated data
+        # =========================
+        
         # Plot sources (all trials)
         viz.plot_source_signals(
             ERP_config=self.ERP_config,
@@ -418,5 +436,22 @@ class Benchmark:
             title="Sensor Signals (All trials concatenated)",
             save_dir="data_simulation",
             file_name="sensor_concatenate_trials_clean",
+            show=False
+        )
+        
+        # =========================
+        # 2. Plot active sources
+        # =========================
+        
+        viz.plot_active_sources(
+            x=x_avg_time,
+            x_hat=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
+            n_sources=n_sources,
+            source_units=source_units,
+            orientation_type= orientation_type,
+            save_path="uncertainty_analysis",
+            file_name="active_sources",
             show=False
         )

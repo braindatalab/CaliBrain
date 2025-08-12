@@ -315,6 +315,116 @@ class Visualizer:
         if len(channels) <= 10:
             ax.legend(loc="upper right", fontsize="small")
 
+    # -------------------------------------------
+    # --- Visualization of Uncertainty Estimation
+    # -------------------------------------------
+    
+    def plot_active_sources(
+        self,
+        x: np.ndarray,
+        x_hat: np.ndarray,
+        x_active_indices: np.ndarray,
+        x_hat_active_indices: np.ndarray,
+        n_sources: int,
+        source_units: str = FIFF.FIFF_UNIT_AM,
+        orientation_type: str = "fixed",
+        save_path: Optional[str] = None,
+        file_name: Optional[str] = None,
+        title: Optional[str] = None,
+        show: bool = True
+    ):
+        """
+        Plot the active sources at a specific time step, or averaged across time, comparing ground truth and estimated values.
+
+        The input x are the ground truth values for components specified by
+        active_indices.
+        The input x_hat are the estimated values for components specified by
+        active_indices.
+
+        Parameters:
+        ----------
+
+        """
+        x_active = x[x_active_indices]
+        x_hat_active = x_hat[x_hat_active_indices]
+        
+        # convert the data from A to nAm for better readability
+        if source_units == FIFF.FIFF_UNIT_AM:
+            x_active = x_active * 1e9  # Convert Amperes to nanoAmperes (nA)
+            x_hat_active = x_hat_active * 1e9  # Convert Amperes to nanoAmperes (nA)
+            source_units = "nAm"
+        else:
+            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+
+        if orientation_type == 'fixed':
+            plt.figure(figsize=(12, 6))
+
+            plt.scatter(x_active_indices, x_active, color='blue', alpha=0.6, label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+            plt.scatter(x_hat_active_indices, x_hat_active, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
+
+            plt.xlabel('Index of Active Sources (Non-zero)')
+            plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
+            plt.title(title or f'Active Sources fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
+            plt.legend(title=f'Total Sources: {n_sources}', loc='best')
+            plt.grid(True, alpha=0.5)
+            plt.tight_layout(rect=[0, 0.05, 1, 0.96])
+            fig = plt.gcf()
+
+        else:
+            fig, axes = plt.subplots(3, 1, figsize=(12, 18), sharex=True)
+            orientations = ['X', 'Y', 'Z']
+
+            x_active_indices_flat = x_active_indices // 3
+            x_active_indices_orientations_flat = x_active_indices % 3
+            # Create a map from original source index to its value for each orientation
+            x_active_indices_map = [{} for _ in range(3)]
+            for idx, val in enumerate(x):
+                if val != 0: # Only consider non-zero ground truth
+                    orient = x_active_indices_orientations_flat[idx]
+                    src_idx = x_active_indices_flat[idx]
+                    x_active_indices_map[orient][src_idx] = val
+            
+            # For Estimated (x_hat)
+            x_hat_active_indices_flat = x_hat_active_indices // 3
+            x_hat_active_indices_orientations_flat = x_hat_active_indices % 3
+            x_hat_active_indices_map = [{} for _ in range(3)]
+            for idx, val in enumerate(x_hat):
+                orient = x_hat_active_indices_orientations_flat[idx]
+                src_idx = x_hat_active_indices_flat[idx]
+                x_hat_active_indices_map[orient][src_idx] = val
+
+
+            for i, ax in enumerate(axes): # i is the target orientation index (0, 1, 2)
+                if not x_active_indices and not x_hat_active_indices:
+                    ax.set_title(f'Orientation {orientations[i]} (No active components to plot)')
+                    ax.grid(True, alpha=0.5)
+                    ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+                    continue
+
+                ax.scatter(x_active_indices, x_active, color='blue', alpha=0.6, 
+                           label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+                ax.scatter(x_hat_active_indices, x_hat_active, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
+
+                ax.set_xlabel('Index of Active (Non-zero) Sources')
+                ax.set_ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
+                ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
+
+                # all_unique_src_indices_on_axis = sorted(list(set(x_active_indices + active_indices)))
+                all_unique_src_indices_on_axis = np.arange(n_sources)
+                # n_sources_this_axis = len(all_unique_src_indices_on_axis)
+                ax.legend(title=f'Total Sources: {n_sources}', loc='best')
+
+                ax.grid(True, alpha=0.5)
+                # ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+                if all_unique_src_indices_on_axis:
+                    ax.set_xticks(all_unique_src_indices_on_axis)
+                    ax.set_xticklabels([str(s_idx) for s_idx in all_unique_src_indices_on_axis])
+
+            fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
+            plt.tight_layout(rect=[0, 0.05, 1, 0.96]) 
+            fig.suptitle(f"Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps", fontsize=16)
+            
+        self._handle_figure_output(fig, file_name or f"active_sources", save_path, show)
 
 def main():
     from calibrain import SourceSimulator
