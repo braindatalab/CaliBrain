@@ -19,7 +19,7 @@ from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta
 # from calibrain.leadfield_simulation import LeadfieldBuilder
 from calibrain.utils import inspect_object
-
+from mne.io.constants import FIFF
 
 class Benchmark:
     def __init__(self, solver : callable, solver_param_grid : dict, data_param_grid : dict, ERP_config : dict, source_simulator : SourceSimulator, leadfield_builder : LeadfieldBuilder, sensor_simulator : SensorSimulator, uncertainty_estimator : UncertaintyEstimator, metric_evaluator : MetricEvaluator, random_state=42, logger=None):
@@ -133,7 +133,7 @@ class Benchmark:
             ParameterGrid(self.data_param_grid),
             seeds
         ))
-        
+         
         # -------------------------------------------------------------
         # 2. Iterate over solver and data parameter combinations
         # -------------------------------------------------------------
@@ -197,7 +197,8 @@ class Benchmark:
                     n_trials=n_trials,
                     global_seed=global_source_seeds,
                 )
-            
+                source_units = self.source_simulator.source_units
+                
                 # -------------------------------------------------------------
                 # 6. Simulate sensor and sensor data
                 # -------------------------------------------------------------
@@ -241,12 +242,12 @@ class Benchmark:
                 # -------------------------------------------------------------
                 # 8. Estimate uncertainty (credible intervals)
                 # -------------------------------------------------------------
+                self.logger.info("Estimating uncertainty...")
+                
                 # TODO: check whether we still need to set keepdims=True.
                 x_avg_time = np.mean(x, axis=1, keepdims=True)
                 x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
                 
-                self.logger.info("Estimating uncertainty...")
-                self.logger.debug("Constructing full posterior covariance matrix...")
                 full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
                     x=x_avg_time,
                     x_hat_active_indices=x_hat_active_indices,
@@ -304,9 +305,6 @@ class Benchmark:
                 # 10. Vizualization
                 # --------------------------------------------------------------
                 self.visualize(
-                    source_simulator=self.source_simulator,
-                    sensor_simulator=self.sensor_simulator,
-                    experiment_dir=experiment_dir,
                     x_trials=x_trials,
                     active_indices_trials=x_active_indices_trials,
                     x_avg_time=x_avg_time,
@@ -316,30 +314,26 @@ class Benchmark:
                     n_sources=n_sources,
                     y_clean=y_clean_trials,
                     y_noisy=y_noisy_trials,
+                    experiment_dir=experiment_dir,
                     trial_idx=trial_idx,
+                    source_units=source_units,
+                    sensor_units=sensor_units,
+                    confidence_levels=self.uncertainty_estimator.confidence_levels,
+                    empirical_coverages={'all_sources': all_sources_empirical_coverage,
+                                        'active_sources': empirical_coverage_active},
+                    ci_lower=ci_lower,
+                    ci_upper=ci_upper,
                     orientation_type=data_params.get("orientation_type"),
+                    result=this_result
                 )
-
+        
                 # self.uncertainty_estimator.plot_sorted_posterior_variances(top_k=10)
                 # self.uncertainty_estimator.visualize_sorted_covariances(top_k=10)
                 # self.uncertainty_estimator.plot_posterior_covariance_matrix()
 
-
                 '''
                 # --- Plotting ---
-                self.uncertainty_estimator.visualize_confidence_intervals(
-                    ci_lower, ci_upper,
-                    self.uncertainty_estimator.x[x_active_indices[trial_idx]],
-                    self.uncertainty_estimator.x_hat[x_hat_active_indices],
-                )
-                # all sources
-                self.uncertainty_estimator.visualize_calibration_curve(
-                    empirical_coverage,
-                    this_result,
-                    which_legend="all_sources",
-                    filename="Calibration_curve_all_sources"
-                    
-                )
+
                 # active sources
                 self.uncertainty_estimator.visualize_calibration_curve(
                     empirical_coverage_active,
@@ -363,9 +357,6 @@ class Benchmark:
 
     def visualize(
         self,
-        source_simulator: SourceSimulator,
-        sensor_simulator: SensorSimulator,
-        experiment_dir: str,
         x_trials: np.ndarray,
         active_indices_trials: np.ndarray,
         x_avg_time: np.ndarray,
@@ -375,13 +366,19 @@ class Benchmark:
         n_sources: int,
         y_clean: np.ndarray,
         y_noisy: np.ndarray,
+        experiment_dir: str,
         trial_idx: int = 0,
+        source_units: str = FIFF.FIFF_UNIT_AM,
+        sensor_units: str = FIFF.FIFF_UNIT_V,
+        confidence_levels: np.ndarray = None,
+        empirical_coverages: dict = None,
+        ci_lower: np.ndarray = None,
+        ci_upper: np.ndarray = None,
         orientation_type: str = "fixed",
+        result: dict = None
     ):
 
         viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
-        source_units = source_simulator.source_units
-        sensor_units = sensor_simulator.sensor_units
 
         # =========================
         # 1. Plot simulated data
@@ -440,9 +437,9 @@ class Benchmark:
         )
         
         # =========================
-        # 2. Plot active sources
+        # 2. Plot uncertainty analysis figures
         # =========================
-        
+        # Plot active sources
         viz.plot_active_sources(
             x=x_avg_time,
             x_hat=x_hat_avg_time,
@@ -454,4 +451,63 @@ class Benchmark:
             save_path="uncertainty_analysis",
             file_name="active_sources",
             show=False
+        )
+        # Plot confidence intervals - unshared y-axis
+        viz.plot_ci(
+            x=x_avg_time,
+            x_hat=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
+            n_sources=n_sources,
+            source_units=source_units,
+            ci_lower=ci_lower,
+            ci_upper=ci_upper,
+            confidence_levels=confidence_levels,
+            orientation_type=orientation_type,
+            sharey=False,
+            save_path="uncertainty_analysis",
+            file_name="confidence_intervals",
+            show=False,
+            figsize=(12, 12)
+        )
+
+        # Plot confidence intervals - shared y-axis
+        viz.plot_ci(
+            x=x_avg_time,
+            x_hat=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
+            n_sources=n_sources,
+            source_units=source_units,
+            ci_lower=ci_lower,
+            ci_upper=ci_upper,
+            confidence_levels=confidence_levels,
+            orientation_type=orientation_type,
+            sharey=True,
+            save_path="uncertainty_analysis",
+            file_name="confidence_intervals_yshare",
+            show=False,
+            figsize=(13, 13)
+        )        
+        
+        # plot calibration curve - all sources
+        viz.plot_calibration_curve(
+            confidence_levels=confidence_levels,
+            empirical_coverage=empirical_coverages['all_sources'],
+            result=result, 
+            which_legend="all_sources", # or "active_indices"
+            filename='calibration_curve_all_sources',
+            save_path='uncertainty_analysis',
+            show=True,
+        )
+
+        # plot calibration curve - active sources
+        viz.plot_calibration_curve(
+            confidence_levels=confidence_levels,
+            empirical_coverage=empirical_coverages['active_sources'],
+            result=result, 
+            which_legend="active_sources", # or "all_sources"
+            filename='calibration_curve_active_sources',
+            save_path='uncertainty_analysis',
+            show=True,
         )

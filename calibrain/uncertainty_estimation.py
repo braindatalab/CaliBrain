@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2
 from itertools import combinations, zip_longest
 from matplotlib.patches import Ellipse
-import matplotlib.lines as mlines # For creating custom legend handles
+
 import mne
 import logging
 
@@ -74,7 +74,9 @@ class UncertaintyEstimator:
             Full covariance matrix of shape (n_total_components, n_total_components),
             where n_total_components is the total number of source components.
         """
-    
+        # For dense inverse methods like eLORETA, the posterior covariance matrix is already in the full form (number of reconstructed sources matches the simulated sources).
+        if posterior_cov.shape[0] == x.shape[0]:
+            return posterior_cov
         # Determine the total number of source components based on orientation type and x shape
         n_total_components = 0
         if orientation_type == 'fixed':
@@ -505,223 +507,9 @@ class UncertaintyEstimator:
         return count_within_ci
 
 
-    def _plot_ci_times(self, x, x_hat, ci_lower, ci_upper, confidence_level, figsize=(12, 6)):
-        """
-        Plot the estimated source activity with confidence intervals for active components and save them.
-        Assumes input arrays correspond only to the active components.
 
-        Parameters:
-        - x (np.ndarray): Ground truth source activity for active components, shape (n_active_components, n_times).
-        - x_hat (np.ndarray): Estimated source activity for active components, shape (n_active_components, n_times).
-        - active_indices (np.ndarray): Original indices (flattened for free orientation) of active components, shape (n_active_components,).
-        - ci_lower (np.ndarray): Lower bounds of confidence intervals for active components, shape (n_active_components, n_times).
-        - ci_upper (np.ndarray): Upper bounds of confidence intervals for active components, shape (n_active_components, n_times).
-        - confidence_level (float): Confidence level for the intervals.
-        - figsize (tuple): Size of the plot.
-        """
-        # Create the base directory for confidence intervals
-        confidence_intervals_dir = os.path.join(self.experiment_dir, 'CI')
-        os.makedirs(confidence_intervals_dir, exist_ok=True)
-        self.logger.debug(f"Saving CI plots to: {confidence_intervals_dir}")
 
-        n_active_components, n_times = x.shape
 
-        if n_active_components == 0:
-            self.logger.warning("No active components to plot for CI times.")
-            return
-
-        if self.orientation_type == "free":
-            # TODO: Code has been adapted. It handles fixed orientation correctly, but free orientation needs to be checked.
-            
-            orientations = ['X', 'Y', 'Z']
-            # Map active component index (0 to n_active_components-1) to original source index and orientation
-            original_source_indices = self.active_indices // 3
-            original_orient_indices = self.active_indices % 3
-
-            for t in range(n_times):
-                time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
-                os.makedirs(time_point_dir, exist_ok=True)
-
-                fig, axes = plt.subplots(3, 1, figsize=figsize, sharex=True, sharey=True) # Share axes
-                # Track if legend labels have been added for each subplot
-                legend_labels_added = [False, False, False]
-
-                for i in range(n_active_components): # Loop through active components
-                    source_idx = original_source_indices[i]
-                    orient_idx = original_orient_indices[i]
-                    ax = axes[orient_idx]
-
-                    # Determine if labels should be added (only for the first point on each subplot)
-                    add_label = not legend_labels_added[orient_idx]
-
-                    # Use source_idx for x-coordinate
-                    ax.scatter(source_idx, x_hat[i, t], marker='x', s=50, color='red',
-                                label=f'Non-Zero Posterior Mean - Estimated active ({len(self.active_indices)} sources)' if add_label else "")
-                    # Use fill_between for the CI bar
-                    ax.fill_between(
-                        [source_idx - 2, source_idx + 2], # x-range for the bar
-                        ci_lower[i, t],
-                        ci_upper[i, t],
-                        color='green', # Match scatter color
-                        alpha=0.8,
-                        label='Confidence Interval' if add_label else ""
-                    )
-                    ax.scatter(source_idx, x[i, t], s=30, color='blue', alpha=0.7,
-                                label=f'Non-Zero Posterior Mean (({len(self.active_indices)} estimated sources)' if add_label else "")
-
-                    # Mark that labels have been added for this subplot
-                    if add_label:
-                        legend_labels_added[orient_idx] = True
-
-                # Configure axes after plotting all points for this time step
-                all_plotted_source_indices = sorted(list(set(original_source_indices)))
-                for j, (ax, orient) in enumerate(zip(axes, orientations)):
-                    ax.set_title(f'Orientation {orient}')
-                    ax.axhline(0, color='grey', lw=0.8, ls='--')
-
-                    # Calculate total unique sources plotted on this specific axis
-                    sources_on_this_axis = {original_source_indices[k] for k in range(n_active_components) if original_orient_indices[k] == j}
-                    n_sources_this_axis = len(sources_on_this_axis)
-                    # Add legend with total sources in the title
-                    ax.legend(title=f"Total Sources: {self.n_total_sources}", loc='best')
-
-                    ax.grid(False)
-                    # Set ticks only for sources actually plotted
-                    # ax.set_xticks(all_plotted_source_indices)
-                    # ax.set_xticklabels([str(idx) for idx in all_plotted_source_indices], rotation=45, ha='right')
-                    # Limit x-axis slightly beyond plotted sources
-                    if all_plotted_source_indices:
-                            ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
-
-                fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
-                fig.text(0.04, 0.5, 'Activity', va='center', rotation='vertical')
-                fig.suptitle(f'Confidence Intervals (Level={confidence_level:.2f}, Time={t})', fontsize=16)
-                plt.tight_layout(rect=[0.05, 0.05, 1, 0.95]) # Adjust rect for titles
-
-                save_path = os.path.join(time_point_dir, f'ci_t{t}_clvl{round(confidence_level, 2)}.png')
-                plt.savefig(save_path)
-                self.logger.debug(f"Saved CI plot: {save_path}")
-                plt.close(fig)
-
-        else: # Fixed orientation
-            fig, ax = plt.subplots(figsize=figsize)
-
-            ax.scatter(self.active_indices, x_hat, marker='x', s=50, color='red', label=f'Non-Zero Posterior Mean ({len(self.active_indices)} estimated sources)')
-            
-            ax.scatter(self.x_active_indices, x, s=30, color='blue', alpha=0.7,
-                        label=f'Non-Zero Ground Truth ({len(self.x_active_indices)} simulated Sources)')
-            
-            for i, src_ix in enumerate(self.active_indices):
-                ax.fill_between(
-                    [src_ix - 10, src_ix + 10], # Adjust width
-                    ci_lower[i, 0],
-                    ci_upper[i, 0],
-                    color='red',
-                    alpha=0.3,
-                    label='Confidence Interval' if i == 0 else ""
-                )
-
-            all_plotted_source_indices = sorted(list(set(self.active_indices)))
-            ax.set_title(f'Confidence Intervals (Level={confidence_level:.2f}')
-            ax.axhline(0, color='grey', lw=0.8, ls='--')
-
-            ax.legend(title=f'Total Sources: {self.n_total_sources}', loc='best')
-            ax.grid(True, alpha=0.5) 
-            ax.set_xlabel('Index of Active (Non-zero) Sources')
-            ax.set_ylabel('Amplitude of averaged sources (across time) and their estimates')
-            ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
-            plt.tight_layout(rect=[0.05, 0.05, 1, 0.96]) # Adjust rect
-
-            save_path = os.path.join(confidence_intervals_dir, f'clvl{round(confidence_level, 2)}.png')
-            plt.savefig(save_path)
-            self.logger.debug(f"Saved CI plot: {save_path}")
-            plt.close(fig)
-
-    def vizualise_calibration_curve(
-        self,
-        empirical_coverage,
-        results=None, # This dictionary is expected to contain the metrics
-        which_legend="active_indices", # or "all_sources"
-        filename='calibration_curve' 
-    ):
-        """
-        Visualizes the calibration curve.
-
-        Parameters:
-        - empirical_coverage (np.ndarray): 1D array of empirical coverage values,
-                                            corresponding to each confidence level in self.confidence_levels.
-        - results (dict): Dictionary possibly containing calibration metrics.
-        - which_legend (str): Specifies which set of metrics to display in the legend.
-        - filename (str): Base name for the saved plot file.
-        """            
-        fig, ax = plt.subplots(figsize=(8, 6))
-
-        # Plot the empirical coverage line and scatter points
-        ax.plot(self.confidence_levels, empirical_coverage, label="Empirical Coverage", marker='o', linestyle='-')
-        ax.scatter(self.confidence_levels, empirical_coverage, color='blue', s=50, zorder=5)
-
-        # Plot the ideal calibration line (diagonal)
-        ax.plot(self.confidence_levels, self.confidence_levels, '--', label="Ideal Calibration", color='gray')
-        
-        # Fill the area between empirical and ideal calibration
-        ax.fill_between(
-            self.confidence_levels, 
-            empirical_coverage, 
-            self.confidence_levels, 
-            color='orange', 
-            alpha=0.3, 
-            label="AUC Deviation Area" # Changed label for clarity
-        )
-        
-        ax.set_xlabel("Nominal Confidence Level")
-        ax.set_ylabel("Empirical Coverage")
-        ax.set_title(filename.replace('_', ' ').title())
-        ax.grid(True, linestyle=':', alpha=0.7)
-        ax.set_aspect('equal', adjustable='box')
-
-        # Prepare legend: start with existing plot elements
-        handles, labels = ax.get_legend_handles_labels()
-        
-
-        # Determine which set of metrics to display
-        if which_legend == "active_indices":
-            metrics_to_display = {
-                'AUC_deviation_active_indices': 'AUC area',
-                'max_positive_deviation_active_indices': 'Max Positive Dev.',
-                'max_negative_deviation_active_indices': 'Max Negative Dev.',
-                'max_absolute_deviation_active_indices': 'Max Abs Dev.',
-            }
-        elif which_legend == "all_sources":
-            metrics_to_display = {
-                'AUC_deviation_all_sources': 'AUC area',
-                'max_positive_deviation_all_sources': 'Max Positive Dev.',
-                'max_negative_deviation_all_sources': 'Max Negative Dev.',
-                'max_absolute_deviation_all_sources': 'Max Abs Dev.',
-            }
-        else:
-            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_indices' or 'all_sources'.")
-            return
-
-        if results:
-            separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
-            handles.append(separator_handle)
-            labels.append(separator_handle.get_label())
-
-            for key, display_name in metrics_to_display.items():
-                if key in results and results[key] is not None:
-                    value = results[key]
-                    dummy_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label=f"{display_name}: {value:.3f}")
-                    handles.append(dummy_handle)
-                    labels.append(f"{display_name}: {value:.3f}")
-
-        # Create the legend with potentially added metric values
-        ax.legend(handles, labels, loc='best', fontsize='small')
-    
-        fig.tight_layout(rect=[0.05, 0.05, 1, 0.96]) 
-
-        save_path = os.path.join(self.experiment_dir, f"{filename}.png")
-        plt.savefig(save_path)
-        plt.close(fig)
 
     def get_confidence_intervals_data(
         self,
@@ -763,21 +551,15 @@ class UncertaintyEstimator:
 
         self.logger.info("Computing confidence intervals and hit counts for each confidence level.")
         for cl_idx, confidence_level_val in enumerate(self.confidence_levels):
-            self.logger.debug(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
-            
-            # x_hat here is the active_x_hat
-            # self.posterior_cov is the covariance for the active set
+            self.logger.info(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
+
             ci_lower, ci_upper = self._compute_confidence_intervals(
                 mean=x_hat, 
                 cov=posterior_cov, 
                 confidence_level=confidence_level_val
             )
 
-            # x here is the active_x
             count_within_ci = self._count_values_within_ci(
-                # x[self.x_active_indices],
-                # ci_lower[self.x_active_indices],
-                # ci_upper[self.x_active_indices]
                 x=x,
                 ci_lower=ci_lower,
                 ci_upper=ci_upper,
@@ -803,32 +585,7 @@ class UncertaintyEstimator:
         # return ci_lower_stacked[:, self.active_indices], ci_upper_stacked[:, self.active_indices], counts_array
         return ci_lower_stacked, ci_upper_stacked, counts_array
 
-    def visualize_confidence_intervals(self, ci_lower, ci_upper, x, x_hat):
-        """
-        Visualizes confidence intervals over time for active components, using pre-computed data.
 
-        Parameters:
-        - x (np.ndarray): Ground truth source activity for active components.
-            Shape (n_active_components, n_times).
-        - x_hat (np.ndarray): Estimated source activity for active components.
-            Shape (n_active_components, n_times).
-        - confidence_intervals_tuple (tuple): 
-            Tuple returned by get_confidence_intervals_data, containing (ci_lower_stacked, ci_upper_stacked).
-        """
-        self.logger.info("Plotting CI values for each confidence level. This may take a while...")
-        for idx, confidence_level_val in enumerate(self.confidence_levels):
-            self.logger.debug(f"Plotting CI times for confidence level: {confidence_level_val:.2f}")
-            ci_lower_current = ci_lower[idx] 
-            ci_upper_current = ci_upper[idx] 
-            
-            self._plot_ci_times(
-                x,
-                x_hat,
-                ci_lower_current,
-                ci_upper_current,
-                confidence_level_val,
-            )
-        self.logger.info("CI times visualization process finished.")
 
 
 # ------------------------------
