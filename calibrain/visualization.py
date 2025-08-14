@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,7 +7,7 @@ from typing import Optional, List, Tuple, Union, Sequence, Literal
 from matplotlib import cm, gridspec
 import mne
 from mne.io.constants import FIFF
-
+import matplotlib.lines as mlines # For creating custom legend handles
 
 class Visualizer:
     def __init__(self, base_save_path: str = "results/figures", logger: Optional[logging.Logger] = None):
@@ -25,7 +26,7 @@ class Visualizer:
             save_dir = self.base_save_path / save_dir
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        if not Path(file_name).suffix:
+        if Path(file_name).suffix.lower() not in ['.png', '.jpg', '.jpeg']:
             file_name += ".png"
 
         full_path = save_dir / file_name
@@ -36,51 +37,6 @@ class Visualizer:
         plt.close(fig)
 
     # --- plot sources
-    def plot_source_signals(
-        self,
-        ERP_config: dict,
-        x: np.ndarray,
-        active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
-        units: Optional[str] = None,
-        trial_idx: Optional[int] = None,
-        title: Optional[str] = "Source Signals",
-        save_dir: Optional[str] = None,
-        file_name: Optional[str] = None,
-        show: bool = True,
-    ):
-        # convert the data from A to nAm for better readability
-        if units == FIFF.FIFF_UNIT_AM:
-            x = x * 1e9  # Convert Amperes to nanoAmperes (nA)
-            units = "nAm"
-        else:
-            raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
-
-        if trial_idx is not None:
-            indices = None
-            if active_indices is not None:
-                indices = active_indices[trial_idx] if isinstance(active_indices, (list, np.ndarray)) else active_indices
-
-            fig = self._plot_sources_single_trial(
-                ERP_config=ERP_config,
-                x_trial=x if x.ndim < 3 else x[trial_idx],
-                active_indices=indices,
-                units=units,
-                trial_idx=trial_idx,
-                title=title,
-            )
-            file_name = file_name or f"source_signals_trial_{trial_idx + 1}"
-        else:
-            fig = self._plot_sources_all_trials(
-                ERP_config=ERP_config,
-                x_trials=x,
-                active_indices=active_indices,
-                units=units,
-                title=title,
-            )
-            file_name = file_name or "source_signals_all_trials"
-
-        self._handle_figure_output(fig, file_name, save_dir, show)
-
     def _plot_sources_single_trial(
         self,
         ERP_config: dict,
@@ -155,52 +111,52 @@ class Visualizer:
 
         return fig
     
-    # --- plot sensors
-    def plot_sensor_signals(
+    def plot_source_signals(
         self,
         ERP_config: dict,
-        y_trials: np.ndarray,
-        trial_idx: Optional[int] = None,
-        channels: Optional[Union[Sequence[int], str]] = None,
+        x: np.ndarray,
+        active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
         units: Optional[str] = None,
-        mode: str = "stack",  # "stack" | "concatenate"
-        title: str = "Sensor Signals",
+        trial_idx: Optional[int] = None,
+        title: Optional[str] = "Source Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
     ):
-
-        # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
-        if units == FIFF.FIFF_UNIT_T:
-            y_trials = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
-            units = "fT"
-        elif units == FIFF.FIFF_UNIT_T_M:
-            y_trials = y_trials * 1e15  # Convert T/m to fT/m
-            units = "fT/m"
-        elif units == FIFF.FIFF_UNIT_V:
-            y_trials = y_trials * 1e6  # Convert V to μV
-            units = "μV"
+        # convert the data from A to nAm for better readability
+        if units == FIFF.FIFF_UNIT_AM:
+            x = x * 1e9  
+            units = "nAm"
         else:
-            raise ValueError(f"Unsupported units for sensor signals: {units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
+            raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
 
-        if mode == "stack":
-            self._plot_sensors_all_trials(
-                ERP_config, y_trials, channels, units, title, save_dir, file_name, show
+        if trial_idx is not None:
+            indices = None
+            if active_indices is not None:
+                indices = active_indices[trial_idx] if isinstance(active_indices, (list, np.ndarray)) else active_indices
+
+            fig = self._plot_sources_single_trial(
+                ERP_config=ERP_config,
+                x_trial=x if x.ndim < 3 else x[trial_idx],
+                active_indices=indices,
+                units=units,
+                trial_idx=trial_idx,
+                title=title,
             )
-        elif mode == "concatenate":
-            self._plot_concatenated_sensor_trials(
-                y_trials, ERP_config, channels, units, title, save_dir, file_name, show
-            )
-        elif mode == "single":
-            if trial_idx is None:
-                trial_idx = 0
-                self.logger.warning("No trial index provided, defaulting to 0.")
-            self._plot_sensors_single_trial(
-                ERP_config, y_trials[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
-            )
+            file_name = file_name or f"source_signals_trial_{trial_idx + 1}"
         else:
-            raise ValueError(f"Unknown mode: {mode}")
-        
+            fig = self._plot_sources_all_trials(
+                ERP_config=ERP_config,
+                x_trials=x,
+                active_indices=active_indices,
+                units=units,
+                title=title,
+            )
+            file_name = file_name or "source_signals_all_trials"
+
+        self._handle_figure_output(fig, file_name, save_dir, show)
+    
+    # --- plot sensors        
     def _plot_sensors_single_trial(
         self,
         ERP_config: dict,
@@ -315,6 +271,51 @@ class Visualizer:
         if len(channels) <= 10:
             ax.legend(loc="upper right", fontsize="small")
 
+    def plot_sensor_signals(
+        self,
+        ERP_config: dict,
+        y_trials: np.ndarray,
+        trial_idx: Optional[int] = None,
+        channels: Optional[Union[Sequence[int], str]] = None,
+        units: Optional[str] = None,
+        mode: str = "stack",  # "stack" | "concatenate"
+        title: str = "Sensor Signals",
+        save_dir: Optional[str] = None,
+        file_name: Optional[str] = None,
+        show: bool = True,
+    ):
+
+        # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
+        if units == FIFF.FIFF_UNIT_T:
+            y_trials = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
+            units = "fT"
+        elif units == FIFF.FIFF_UNIT_T_M:
+            y_trials = y_trials * 1e15  # Convert T/m to fT/m
+            units = "fT/m"
+        elif units == FIFF.FIFF_UNIT_V:
+            y_trials = y_trials * 1e6  # Convert V to μV
+            units = "μV"
+        else:
+            raise ValueError(f"Unsupported units for sensor signals: {units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
+
+        if mode == "stack":
+            self._plot_sensors_all_trials(
+                ERP_config, y_trials, channels, units, title, save_dir, file_name, show
+            )
+        elif mode == "concatenate":
+            self._plot_concatenated_sensor_trials(
+                y_trials, ERP_config, channels, units, title, save_dir, file_name, show
+            )
+        elif mode == "single":
+            if trial_idx is None:
+                trial_idx = 0
+                self.logger.warning("No trial index provided, defaulting to 0.")
+            self._plot_sensors_single_trial(
+                ERP_config, y_trials[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
+            )
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
+
     # -------------------------------------------
     # --- Visualization of Uncertainty Estimation
     # -------------------------------------------
@@ -333,25 +334,40 @@ class Visualizer:
         title: Optional[str] = None,
         show: bool = True
     ):
-        """
-        Plot the active sources at a specific time step, or averaged across time, comparing ground truth and estimated values.
+        """Plot the active sources at a specific time step, or averaged across time, comparing ground truth and estimated values.
 
-        The input x are the ground truth values for components specified by
-        active_indices.
-        The input x_hat are the estimated values for components specified by
-        active_indices.
-
-        Parameters:
+        Parameters
         ----------
-
+        x : np.ndarray
+            Ground truth values for components specified by active_indices.
+        x_hat : np.ndarray
+            Estimated values for components specified by active_indices.
+        x_active_indices : np.ndarray
+            Indices of active sources in the ground truth.
+        x_hat_active_indices : np.ndarray
+            Indices of active sources in the estimated values.
+        n_sources : int
+            Total number of sources.
+        source_units : str, optional
+            Units for the source signals, by default FIFF.FIFF_UNIT_AM
+        orientation_type : str, optional
+            Orientation type for the plot, by default "fixed"
+        save_path : Optional[str], optional
+            Path to save the plot, by default None
+        file_name : Optional[str], optional
+            Name of the file to save the plot, by default None
+        title : Optional[str], optional
+            Title of the plot, by default None
+        show : bool, optional
+            Whether to show the plot, by default True
         """
         x_active = x[x_active_indices]
         x_hat_active = x_hat[x_hat_active_indices]
         
         # convert the data from A to nAm for better readability
         if source_units == FIFF.FIFF_UNIT_AM:
-            x_active = x_active * 1e9  # Convert Amperes to nanoAmperes (nA)
-            x_hat_active = x_hat_active * 1e9  # Convert Amperes to nanoAmperes (nA)
+            x_active = x_active * 1e9
+            x_hat_active = x_hat_active * 1e9
             source_units = "nAm"
         else:
             raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
@@ -359,10 +375,11 @@ class Visualizer:
         if orientation_type == 'fixed':
             plt.figure(figsize=(12, 6))
 
-            plt.scatter(x_active_indices, x_active, color='blue', alpha=0.6, label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
-            plt.scatter(x_hat_active_indices, x_hat_active, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
+            plt.scatter(x_hat_active_indices, x_hat_active, color='blue', marker='o', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
 
-            plt.xlabel('Index of Active Sources (Non-zero)')
+            plt.scatter(x_active_indices, x_active, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+            
+            plt.xlabel('Active voxels')
             plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
             plt.title(title or f'Active Sources fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
             plt.legend(title=f'Total Sources: {n_sources}', loc='best')
@@ -400,11 +417,11 @@ class Visualizer:
                     ax.grid(True, alpha=0.5)
                     ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
                     continue
+                
+                ax.scatter(x_hat_active_indices, x_hat_active, color='blue', marker='o', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
 
-                ax.scatter(x_active_indices, x_active, color='blue', alpha=0.6, 
-                           label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
-                ax.scatter(x_hat_active_indices, x_hat_active, color='red', marker='x', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
-
+                ax.scatter(x_active_indices, x_active, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+                
                 ax.set_xlabel('Index of Active (Non-zero) Sources')
                 ax.set_ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
                 ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
@@ -426,6 +443,422 @@ class Visualizer:
             
         self._handle_figure_output(fig, file_name or f"active_sources", save_path, show)
 
+    # def _plot_ci_times(
+    #     self,
+    #     x: np.array,
+    #     x_hat: np.array,
+    #     x_active_indices: np.array,
+    #     x_hat_active_indices: np.array,
+    #     n_sources: int,
+    #     source_units: str = FIFF.FIFF_UNIT_AM,
+    #     ci_lower: np.array = None,
+    #     ci_upper: np.array = None,
+    #     confidence_level: float = None,
+    #     orientation_type: str = "fixed",
+    #     save_path: str = None,
+    #     show: bool = True,
+    #     figsize: tuple = (12, 6)
+    # ):
+    #     """Plot the estimated source activity with confidence intervals for active components.
+
+    #     Parameters
+    #     ----------
+    #     x : np.array
+    #         Ground truth source activity.
+    #     x_hat : np.array
+    #         Estimated source activity.
+    #     x_active_indices : np.array
+    #         Indices of active (non-zero) sources in the ground truth.
+    #     x_hat_active_indices : np.array
+    #         Indices of active (non-zero) sources in the estimated activity.
+    #     n_sources : int
+    #         Total number of sources.
+    #     source_units : str, optional
+    #         Units of the source activity, by default FIFF.FIFF_UNIT_AM
+    #     ci_lower : np.array, optional
+    #         Lower bounds of the confidence intervals, by default None
+    #     ci_upper : np.array, optional
+    #         Upper bounds of the confidence intervals, by default None
+    #     confidence_level : float, optional
+    #         Confidence level for the intervals, by default None
+    #     orientation_type : str, optional
+    #         Orientation type for the plot, by default "fixed"
+    #     save_path : str, optional
+    #         Path to save the plot, by default None
+    #     show : bool, optional
+    #         Whether to show the plot, by default True
+    #     figsize : tuple, optional
+    #         Figure size, by default (12, 6)
+    #     """
+    #     # Create the base directory for confidence intervals
+    #     confidence_intervals_dir = os.path.join(save_path, 'confidence_intervals')
+    #     os.makedirs(confidence_intervals_dir, exist_ok=True)
+    #     self.logger.debug(f"Saving CI plots to: {confidence_intervals_dir}")
+            
+    #     if orientation_type == "fixed":
+    #         plt.figure(figsize=figsize)
+
+    #         # plt.scatter(x_hat_active_indices, x_hat[x_hat_active_indices], marker='x', s=50, color='red', label=f'Non-Zero Posterior Mean ({len(x_hat_active_indices)} estimated sources)')
+
+    #         plt.scatter(x_active_indices, x[x_active_indices], marker='x', s=30, color='blue', alpha=0.7, label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+
+    #         # Calculate error bars as positive distances from mean
+    #         y_mean = x_hat[x_hat_active_indices, 0]
+    #         yerr_lower = np.abs(y_mean - ci_lower[x_hat_active_indices, 0])
+    #         yerr_upper = np.abs(ci_upper[x_hat_active_indices, 0] - y_mean)
+    #         yerr = np.vstack([yerr_lower, yerr_upper])
+
+    #         plt.errorbar(
+    #             x_hat_active_indices,
+    #             y_mean,
+    #             yerr=yerr,
+    #             fmt='o',
+    #             color='red',
+    #             alpha=0.7,
+    #             capsize=5,
+    #             label=f'Non-Zero Posterior Mean ({len(x_hat_active_indices)} estimated sources) with CI'
+    #         )
+
+    #         all_plotted_source_indices = sorted(list(set(x_hat_active_indices)))
+    #         plt.title(f'Confidence Intervals (Level={confidence_level:.2f}')
+    #         plt.axhline(0, color='grey', lw=0.8, ls='--')
+
+    #         plt.legend(title=f'Total Sources: {n_sources}', loc='best')
+    #         plt.grid(True, alpha=0.5) 
+    #         plt.xlabel('Index of Active (Non-zero) Sources')
+    #         plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
+    #         # plt.xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
+    #         plt.tight_layout(rect=[0.05, 0.05, 1, 0.96]) # Adjust rect
+    #         fig = plt.gcf()
+            
+    #         file_name = f"active_sources_ci_lvl{round(confidence_level, 2)}"
+    #         self._handle_figure_output(fig, file_name, confidence_intervals_dir, show)
+
+    #     else: # free orientation
+    #         # TODO: Code has been adapted. It handles fixed orientation correctly, but free orientation needs to be checked.
+    #         n_times = x.shape[1]
+    #         n_active_components = x_active_indices.shape
+    #         orientations = ['X', 'Y', 'Z']
+    #         # Map active component index (0 to n_active_components-1) to original source index and orientation
+    #         original_source_indices = x_hat_active_indices // 3
+    #         original_orient_indices = x_hat_active_indices % 3
+
+    #         for t in range(n_times):
+    #             time_point_dir = os.path.join(confidence_intervals_dir, f't{t}')
+    #             os.makedirs(time_point_dir, exist_ok=True)
+
+    #             fig, axes = plt.subplots(3, 1, figsize=figsize, sharex=True, sharey=True) # Share axes
+    #             # Track if legend labels have been added for each subplot
+    #             legend_labels_added = [False, False, False]
+
+    #             for i in range(n_active_components): # Loop through active components
+    #                 source_idx = original_source_indices[i]
+    #                 orient_idx = original_orient_indices[i]
+    #                 ax = axes[orient_idx]
+
+    #                 # Determine if labels should be added (only for the first point on each subplot)
+    #                 add_label = not legend_labels_added[orient_idx]
+
+    #                 # Use source_idx for x-coordinate
+    #                 ax.scatter(source_idx, x_hat[i, t], marker='x', s=50, color='red',
+    #                             label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)' if add_label else "")
+    #                 # Use fill_between for the CI bar
+    #                 ax.fill_between(
+    #                     [source_idx - 2, source_idx + 2], # x-range for the bar
+    #                     ci_lower[i, t],
+    #                     ci_upper[i, t],
+    #                     color='green', # Match scatter color
+    #                     alpha=0.8,
+    #                     label='Confidence Interval' if add_label else ""
+    #                 )
+    #                 ax.scatter(source_idx, x[i, t], s=30, color='blue', alpha=0.7,
+    #                             label=f'Non-Zero Posterior Mean (({len(x_hat_active_indices)} estimated sources)' if add_label else "")
+
+    #                 # Mark that labels have been added for this subplot
+    #                 if add_label:
+    #                     legend_labels_added[orient_idx] = True
+
+    #             # Configure axes after plotting all points for this time step
+    #             all_plotted_source_indices = sorted(list(set(original_source_indices)))
+    #             for j, (ax, orient) in enumerate(zip(axes, orientations)):
+    #                 ax.set_title(f'Orientation {orient}')
+    #                 ax.axhline(0, color='grey', lw=0.8, ls='--')
+
+    #                 # Calculate total unique sources plotted on this specific axis
+    #                 sources_on_this_axis = {original_source_indices[k] for k in range(n_active_components) if original_orient_indices[k] == j}
+    #                 n_sources_this_axis = len(sources_on_this_axis)
+    #                 # Add legend with total sources in the title
+    #                 ax.legend(title=f"Total Sources: {n_sources}", loc='best')
+
+    #                 ax.grid(False)
+    #                 # Set ticks only for sources actually plotted
+    #                 # ax.set_xticks(all_plotted_source_indices)
+    #                 # ax.set_xticklabels([str(idx) for idx in all_plotted_source_indices], rotation=45, ha='right')
+    #                 # Limit x-axis slightly beyond plotted sources
+    #                 if all_plotted_source_indices:
+    #                         ax.set_xlim(min(all_plotted_source_indices) - 1, max(all_plotted_source_indices) + 1)
+
+    #             fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
+    #             fig.text(0.04, 0.5, 'Activity', va='center', rotation='vertical')
+    #             fig.suptitle(f'Confidence Intervals (Level={confidence_level:.2f}, Time={t})', fontsize=16)
+    #             plt.tight_layout(rect=[0.05, 0.05, 1, 0.95]) # Adjust rect for titles
+
+    #             save_path = os.path.join(time_point_dir, f'ci_t{t}_clvl{round(confidence_level, 2)}.png')
+    #             self._handle_figure_output(fig, f"active_sources", save_path, show)
+
+    # def visualize_confidence_intervals(
+    #     self,
+    #     x: np.array,
+    #     x_hat: np.array,
+    #     x_active_indices: np.array,
+    #     x_hat_active_indices: np.array,
+    #     n_sources: int,
+    #     source_units: str = FIFF.FIFF_UNIT_AM,
+    #     ci_lower: np.array = None,
+    #     ci_upper: np.array = None,
+    #     confidence_levels: list = None,
+    #     orientation_type: str = "fixed",
+    #     save_path: str = None,
+    #     show: bool = True,
+    #     figsize: tuple = (12, 6)
+    # ):
+    #     """Visualizes confidence intervals for active components.
+
+    #     Parameters
+    #     ----------
+    #     x : np.ndarray
+    #         Ground truth source activity.
+    #     x_hat : np.ndarray
+    #         Estimated source activity.
+    #     x_active_indices : np.ndarray
+    #         Indices of active components in the original source space.
+    #     x_hat_active_indices : np.ndarray
+    #         Indices of active components in the estimated source space.
+    #     n_sources : int
+    #         Total number of sources.
+    #     source_units : str, optional
+    #         Units for source signals, by default FIFF.FIFF_UNIT_AM
+    #     ci_lower : np.ndarray, optional
+    #         Lower bounds of the confidence intervals, by default None
+    #     ci_upper : np.ndarray, optional
+    #         Upper bounds of the confidence intervals, by default None
+    #     confidence_levels : list, optional
+    #         List of confidence levels to plot, by default None
+    #     orientation_type : str, optional
+    #         Orientation type for the plot, by default "fixed"
+    #     save_path : str, optional
+    #         Path to save the plot, by default None
+    #     show : bool, optional
+    #         Whether to display the plot, by default True
+    #     figsize : tuple, optional
+    #         Figure size, by default (12, 6)
+    #     """
+    #     self.logger.info("Plotting confidence intervals for each confidence level. This may take a while...")
+        
+    #     # convert the data from A to nAm
+    #     if source_units == FIFF.FIFF_UNIT_AM:
+            # #x *= 1e9
+            # #x_hat *= 1e9
+    #         source_units = "nAm"
+    #     else:
+    #         raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+        
+    #     for idx, confidence_level_val in enumerate(confidence_levels):
+    #         self.logger.debug(f"Plotting confidence intervals for confidence level: {confidence_level_val:.2f}")
+    #         ci_lower_current = ci_lower[idx] 
+    #         ci_upper_current = ci_upper[idx] 
+            
+    #         self._plot_ci_times(
+    #             x=x,
+    #             x_hat=x_hat,
+    #             x_active_indices=x_active_indices,
+    #             x_hat_active_indices=x_hat_active_indices,
+    #             n_sources=n_sources,
+    #             source_units=source_units,
+    #             ci_lower=ci_lower_current,
+    #             ci_upper=ci_upper_current,
+    #             confidence_level=confidence_level_val,
+    #             orientation_type=orientation_type,
+    #             save_path=save_path,
+    #             show=show,
+    #             figsize=figsize
+    #         )
+    #     self.logger.info("Confidence intervals visualization process finished.")
+    
+     
+    def plot_ci(
+        self,
+        x: np.array,
+        x_hat: np.array,
+        x_active_indices: np.array,
+        x_hat_active_indices: np.array,
+        n_sources: int,
+        source_units: str,
+        ci_lower: np.array,
+        ci_upper: np.array,
+        confidence_levels: list,
+        orientation_type: str = "fixed",
+        sharey: bool = True,
+        file_name: str = "active_sources_ci",
+        save_path: str = None,
+        show: bool = True,
+        figsize: tuple = (12, 6),
+    ):
+        x_active = x[x_active_indices].flatten()
+        x_hat_active = x_hat[x_hat_active_indices].flatten()
+        
+        if source_units == FIFF.FIFF_UNIT_AM:
+            x_active *= 1e9
+            x_hat_active *= 1e9
+            source_units = "nAm"
+        else:
+            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+
+        # Create grid of subplots for all confidence levels
+        n_levels = len(confidence_levels)
+        n_cols = min(4, n_levels)
+        n_rows = int(np.ceil(n_levels / n_cols))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0], figsize[1]), squeeze=False, sharex=True, sharey=sharey)
+        axes = axes.flatten()
+
+        for idx, confidence_level_val in enumerate(confidence_levels):
+            ax = axes[idx]
+            ci_lower_current = ci_lower[idx].flatten()
+            ci_upper_current = ci_upper[idx].flatten()
+            yerr_lower = np.abs(x_hat_active - ci_lower_current[x_hat_active_indices]).flatten()
+            yerr_upper = np.abs(ci_upper_current[x_hat_active_indices] - x_hat_active).flatten()
+            yerr = np.stack([yerr_lower, yerr_upper])
+            
+            ax.errorbar(
+                x_hat_active_indices,
+                x_hat_active,
+                yerr=yerr,
+                fmt='o',
+                color='blue',
+                alpha=0.7,
+                capsize=5,
+                label=f'Active posterior mean ({len(x_hat_active_indices)}/{n_sources})'
+            )
+            ax.scatter(x_active_indices, x_active, marker='x', s=30, color='red', label=f'Active simulated sources ({len(x_active_indices)}/{n_sources})')
+                        
+            ax.set_title(f'CI Level={confidence_level_val:.2f}')
+            ax.axhline(0, color='grey', lw=0.8, ls='--')
+            ax.grid(True, alpha=0.5)
+
+        # Shared legend: collect all handles/labels
+        handles, labels = [], []
+        for ax in axes[:n_levels]:
+            h, l = ax.get_legend_handles_labels()
+            handles.extend(h)
+            labels.extend(l)
+        by_label = dict(zip(labels, handles))
+
+        # Hide unused subplots
+        for ax in axes[n_levels:]:
+            ax.axis('off')
+                    
+        # Place the legend below the supertitle, centered
+        fig.legend(by_label.values(), by_label.keys(), loc='upper right', fontsize='large', frameon=True, bbox_to_anchor=(0.5, 0.98))
+
+        # Place the legend in the empty subplot
+        # axes[11].legend(by_label.values(), by_label.keys(), loc='center', fontsize='large', frameon=True)
+        # axes[11].set_title("Legend", fontsize=16)
+
+        # Shared x/y labels for the whole figure
+        fig.supxlabel('Active voxels', fontsize=14)
+        fig.supylabel(f'Amplitude ({source_units})', fontsize=14)
+        fig.suptitle('Confidence Intervals for Active Reconstructed Sources', fontsize=18)
+        plt.tight_layout(rect=[0, 0.05, 1, 0.96])        
+        
+        self._handle_figure_output(fig, file_name, save_path, show)
+                
+          
+    def plot_calibration_curve(
+        self,
+        confidence_levels,
+        empirical_coverage,
+        result=None, # This dictionary is expected to contain the metrics
+        which_legend="active_indices", # or "all_sources"
+        filename='calibration_curve',
+        save_path=None,
+        show=True,
+    ):
+        """
+        Visualizes the calibration curve.
+
+        Parameters:
+        - empirical_coverage (np.ndarray): 1D array of empirical coverage values,
+                                            corresponding to each confidence level in self.confidence_levels.
+        - results (dict): Dictionary possibly containing calibration metrics.
+        - which_legend (str): Specifies which set of metrics to display in the legend.
+        - filename (str): Base name for the saved plot file.
+        """            
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        # Plot the empirical coverage line and scatter points
+        ax.plot(confidence_levels, empirical_coverage, label="Empirical Coverage", marker='o', linestyle='-')
+        ax.scatter(confidence_levels, empirical_coverage, color='blue', s=50, zorder=5)
+
+        # Plot the ideal calibration line (diagonal)
+        ax.plot(confidence_levels, confidence_levels, '--', label="Ideal Calibration", color='gray')
+
+        # Fill the area between empirical and ideal calibration
+        ax.fill_between(
+            confidence_levels, 
+            empirical_coverage, 
+            confidence_levels, 
+            color='orange', 
+            alpha=0.3, 
+            label="AUC Deviation Area"
+        )
+        
+        ax.set_xlabel("Nominal Confidence Level")
+        ax.set_ylabel("Empirical Coverage")
+        ax.set_title(filename.replace('_', ' ').title())
+        ax.grid(True, linestyle=':', alpha=0.7)
+        ax.set_aspect('equal', adjustable='box')
+
+        # Prepare legend: start with existing plot elements
+        handles, labels = ax.get_legend_handles_labels()
+        
+        # Determine which set of metrics to display
+        if which_legend == "active_indices":
+            metrics_to_display = {
+                'auc_deviation_active_indices': 'AUC area',
+                'max_positive_deviation_active_indices': 'Max Positive Dev.',
+                'max_negative_deviation_active_indices': 'Max Negative Dev.',
+                'max_absolute_deviation_active_indices': 'Max Abs Dev.',
+            }
+        elif which_legend == "all_sources":
+            metrics_to_display = {
+                'auc_deviation_all_sources': 'AUC area',
+                'max_positive_deviation_all_sources': 'Max Positive Dev.',
+                'max_negative_deviation_all_sources': 'Max Negative Dev.',
+                'max_absolute_deviation_all_sources': 'Max Abs Dev.',
+            }
+        else:
+            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_indices' or 'all_sources'.")
+            return
+
+        if result:
+            separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
+            handles.append(separator_handle)
+            labels.append(separator_handle.get_label())
+
+            for key, display_name in metrics_to_display.items():
+                if key in result and result[key] is not None:
+                    value = result[key]
+                    dummy_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label=f"{display_name}: {value:.3f}")
+                    handles.append(dummy_handle)
+                    labels.append(f"{display_name}: {value:.3f}")
+
+        # Create the legend with potentially added metric values
+        ax.legend(handles, labels, loc='best', fontsize='small')
+        fig.tight_layout(rect=[0.05, 0.05, 1, 0.96]) 
+
+        self._handle_figure_output(fig, filename, save_path, show)
+
+      
 def main():
     from calibrain import SourceSimulator
     from calibrain import SensorSimulator
