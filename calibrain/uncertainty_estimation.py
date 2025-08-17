@@ -605,8 +605,11 @@ class UncertaintyEstimator:
 
         self.logger.debug(f"Shapes returned: counts_array={counts_array.shape}, ci_lower_stacked={ci_lower_stacked.shape}, ci_upper_stacked={ci_upper_stacked.shape}")
         
-        # return ci_lower_stacked[:, self.active_indices], ci_upper_stacked[:, self.active_indices], counts_array
-        return ci_lower_stacked, ci_upper_stacked, counts_array
+        time_idx = 0
+        total_matched_sources = x.shape[0]
+        empirical_coverage = (counts_array / total_matched_sources)[:, 0, time_idx]
+
+        return ci_lower_stacked, ci_upper_stacked, counts_array, empirical_coverage
 
 
 
