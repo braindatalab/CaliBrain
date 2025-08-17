@@ -20,8 +20,8 @@ class MetricEvaluator:
         self.logger = logger
 
     # Calibration curve metrics
-    def auc_deviation(self, **kwargs):
-        """Calculate the area under the curve (AUC) deviation.
+    def mean_calibration_error(self, **kwargs):
+        """Calculate the area under the curve (AUC) deviation, which measures the average calibration error.
         Parameters
         ----------
         kwargs : dict
@@ -38,8 +38,8 @@ class MetricEvaluator:
         abs_dev = np.abs(empirical_coverage - self.confidence_levels)
         return np.sum(abs_dev * delta_c)
 
-    def max_positive_deviation(self, **kwargs):
-        """Calculate the maximum positive deviation from the confidence levels.
+    def max_underconfidence_deviation(self, **kwargs):
+        """Calculate the maximum positive deviation from the confidence levels ().
         Parameters
         ----------
         kwargs : dict
@@ -54,7 +54,7 @@ class MetricEvaluator:
         deviation = empirical_coverage - self.confidence_levels
         return np.max(deviation)
 
-    def max_negative_deviation(self, **kwargs):
+    def max_overconfidence_deviation(self, **kwargs):
         """Calculate the maximum negative deviation from the confidence levels.
         Parameters
         ----------
@@ -68,11 +68,10 @@ class MetricEvaluator:
         """
         empirical_coverage = kwargs.get('empirical_coverage', None)
         deviation = empirical_coverage - self.confidence_levels
-        return np.min(deviation)
+        return -np.min(deviation) #TODO: check whether we need the minus here!
 
-    def max_absolute_deviation(self, **kwargs):
-        """Calculate the maximum absolute deviation from the confidence levels.
-        Parameters
+    def mean_absolute_deviation(self, **kwargs):
+        """Calculate the mean absolute deviation from the confidence levels.
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
@@ -84,7 +83,22 @@ class MetricEvaluator:
         """
         empirical_coverage = kwargs.get('empirical_coverage', None)
         deviation = empirical_coverage - self.confidence_levels
-        return np.max(np.abs(deviation))
+        return np.mean(np.abs(deviation))
+
+    def mean_signed_deviation(self, **kwargs):
+        """Calculate the mean signed deviation from the confidence levels.
+        ----------
+        kwargs : dict
+            Additional keyword arguments that may be needed for metric calculations:
+            - 'empirical_coverage': np.ndarray, empirical coverage values.
+        Returns
+        -------
+        float
+            The mean signed deviation value.
+        """
+        empirical_coverage = kwargs.get('empirical_coverage', None)
+        deviation = empirical_coverage - self.confidence_levels
+        return np.mean(deviation)
 
     def mean_posterior_std(self, **kwargs):
         """Calculate the mean posterior standard deviation.
