@@ -26,22 +26,6 @@ class UncertaintyEstimator:
         self.confidence_levels = confidence_levels
         self.logger = logger
 
-    def reshape_source_data(self, n_times):
-        """
-        Reshape data based on the orientation type.
-
-        Parameters:
-        - n_times (int): Number of time points.
-
-        Returns:
-        - x (np.ndarray): Reshaped ground truth source activity.
-        - x_hat (np.ndarray): Reshaped estimated source activity.
-        """
-        if self.orientation_type == "free":
-            self.x = self.x.reshape(-1, n_times)
-            self.x_hat = self.x_hat.reshape(-1, n_times)
-        return self.x, self.x_hat
-
 
     def construct_full_covariance(
         self,
@@ -118,9 +102,7 @@ class UncertaintyEstimator:
     
         self.logger.debug(f"Constructed full covariance matrix of shape {full_posterior_cov.shape}")
         return full_posterior_cov
-# ------------------------------
 
-# ------------------------------
     def plot_sorted_posterior_variances(self, top_k=None):
         """
         Plot the sorted variances from the covariance matrix, highlighting the top-k variances.
@@ -143,7 +125,7 @@ class UncertaintyEstimator:
         plt.tight_layout(rect=[0, 0.05, 1, 0.96])
         plt.savefig(os.path.join(self.experiment_dir, 'sorted_variances.png'))
         plt.close()
-# ------------------------------
+
     def _compute_top_covariance_pairs(self, cov, top_k=None):
         """
         Compute and optionally sort the magnitudes of covariances for all pairs of dimensions.
@@ -192,7 +174,7 @@ class UncertaintyEstimator:
         plt.tight_layout(rect=[0, 0.05, 1, 0.96])
         plt.savefig(os.path.join(self.experiment_dir, 'sorted_covariances.png'))
         plt.close()
-# ------------------------------
+
     def _make_psd(self, cov: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:
         """
         Ensure that the covariance matrix is positive semi-definite by adding epsilon to the diagonal.
@@ -314,9 +296,6 @@ class UncertaintyEstimator:
         plt.savefig(os.path.join(self.experiment_dir, 'top_relevant_CE_pairs.png'))
         plt.close()
         
-
-
-
     def plot_posterior_covariance_matrix(self):
         """
         Plot the posterior covariance matrix.
@@ -383,8 +362,6 @@ class UncertaintyEstimator:
         finally:
             plt.close(fig) 
 
-
-# ------------------------------
     def _compute_confidence_intervals(self, mean : np.ndarray, std_dev : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
         """Compute confidence intervals based on the diagonal of the covariance matrix.
         Assumes inputs correspond only to the active components.
@@ -486,11 +463,6 @@ class UncertaintyEstimator:
 
     
         return count_within_ci
-
-
-
-
-
 
     def get_confidence_intervals_data(
         self,
@@ -611,10 +583,6 @@ class UncertaintyEstimator:
 
         return ci_lower_stacked, ci_upper_stacked, counts_array, empirical_coverage
 
-
-
-
-# ------------------------------
     def plot_source_estimates(self, posterior_cov, orientations):
         """
         Plot source estimates and save the visualizations.

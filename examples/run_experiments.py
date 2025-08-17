@@ -53,24 +53,26 @@ def main():
         logger=logger,
     )
 
+    confidence_levels = np.arange(0.0, 1.1, 0.1) # 11 levels: [0.0, 0.1, ..., 1.0]
+    
     uncertainty_estimator = UncertaintyEstimator(
-        confidence_levels= np.arange(0.0, 1.1, 0.1),
+        confidence_levels=confidence_levels,
         logger=logger,
     )  
       
     # Define parameter grids for different data types
     data_param_grid_meg = {
         "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-        "nnz": [1, 5],
+        "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.5, 1.0],
+        "alpha_SNR": [0.5],
     }
     
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 5],
+        "nnz": [1, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.5, 1.0],
+        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
     }
         
     gamma_map_params = {
@@ -78,33 +80,35 @@ def main():
         "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
     }
     
-    eloreta_params = {}
+    eloreta_params = {
+        "noise_type": ["oracle"],
+    }
     
     estimators = [
         (gamma_map, gamma_map_params, data_param_grid_meg),
-        (gamma_map, gamma_map_params, data_param_grid_eeg),
-        # (gamma_map, gamma_map_params, data_param_grid_meg),
-        # (eloreta, {}, {}), 
+        # (eloreta, eloreta_params, data_param_grid_meg),
+        # (gamma_map, gamma_map_params, data_param_grid_eeg),
+        # (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [
-        "auc_deviation",            # Calibration curve metrics
-        "max_positive_deviation",   # Calibration curve metrics
-        "max_negative_deviation",   # Calibration curve metrics
-        "max_absolute_deviation",   # Calibration curve metrics
-        "mean_posterior_std",       # Uncertainty metrics
+        "mean_calibration_error",           # Calibration metric
+        "max_underconfidence_deviation",    # Calibration metric
+        "max_overconfidence_deviation",     # Calibration metric
+        "mean_absolute_deviation",          # Calibration metric
+        "mean_signed_deviation",            # Calibration metric
+        "mean_posterior_std",               # Uncertainty metric
         # "f1",
         # "emd",
         # "accuracy",  
     ]
 
-    confidence_levels = np.arange(0.0, 1.1, 0.1) # 11 levels: [0.0, 0.1, ..., 1.0]
     metric_evaluator = MetricEvaluator(
         confidence_levels=confidence_levels,
         metrics=metrics,
         logger=logger
     )
-                    
+
     nruns = 1
     df = []
     for solver, solver_param_grid, data_param_grid in estimators:
