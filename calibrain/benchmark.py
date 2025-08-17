@@ -298,6 +298,9 @@ class Benchmark:
                         (len(self.uncertainty_estimator.confidence_levels))
                     )
 
+                    empirical_coverage_active = np.zeros(
+                        (len(self.uncertainty_estimator.confidence_levels))
+                    )
                 else:
                     # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
                     matched_relative_indices = np.where(matched_mask)[0]
@@ -321,7 +324,7 @@ class Benchmark:
                     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
                     
                     # Compute confidence intervals
-                    ci_lower_active, ci_upper_active, counts_within_ci_active = \
+                    ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverage_active = \
                         self.uncertainty_estimator.get_confidence_intervals_data(
                             x=x_matched,
                             x_hat=x_hat_matched,
@@ -330,10 +333,10 @@ class Benchmark:
                         )
                         
                     # Normalize by the number of sources and take the first orientation and time step
-                    time_idx = 0 # As we average x across time, the time index is always 0.
+                    # time_idx = 0 # As we average x across time, the time index is always 0.
                     # all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
                     
-                    empirical_coverage_active = (counts_within_ci_active / len(matched_absolute_indices))[:, 0, time_idx]
+                    # empirical_coverage_active = (counts_within_ci_active / len(matched_absolute_indices))[:, 0, time_idx]
                 
                     # empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
 
