@@ -85,7 +85,7 @@ class Benchmark:
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["subject", "solver", "init_gamma", "orientation_type", "nnz", "noise_type", "alpha_SNR", "seed"]
+            desired_order = ["subject", "solver", "init_gamma", "orientation_type", "alpha_SNR", "noise_type", "nnz", "seed"]
         
         path_components = []
         
@@ -169,7 +169,7 @@ class Benchmark:
                     base_dir=fig_path,
                     params=this_result,
                     desired_order = [
-                        "subject", "solver", "init_gamma", "orientation_type", "nnz", "noise_type", "alpha_SNR", "seed"
+                        "subject", "solver", "init_gamma", "orientation_type", "alpha_SNR", "noise_type", "nnz", "seed"
                     ]
                 )
                 
@@ -238,7 +238,7 @@ class Benchmark:
                     y=y_noisy, noise_var=noise_var
                 )
                 this_result['active_indices_size'] = len(x_hat_active_indices)
-                
+
                 # -------------------------------------------------------------
                 # 8. Estimate uncertainty (credible intervals)
                 # -------------------------------------------------------------
@@ -248,58 +248,117 @@ class Benchmark:
                 x_avg_time = np.mean(x, axis=1, keepdims=True)
                 x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
                 
-                full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
-                    x=x_avg_time,
-                    x_hat_active_indices=x_hat_active_indices,
-                    posterior_cov=posterior_cov,
-                    orientation_type=data_params.get("orientation_type"),
-                )
-                
-                # Evaluate metrics: ALL SOURCES
-                self.logger.debug("Computing CI and empirical coverage for all sources")
-                # counts_within_ci: (n_condifence_levels, n_ori, n_times)
-                ci_lower, ci_upper, counts_within_ci =\
-                self.uncertainty_estimator.get_confidence_intervals_data(
-                    x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
-                    x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
-                    posterior_cov=full_posterior_cov, #posterior_cov
-                    orientation_type=data_params.get("orientation_type")
-                )                            
+                # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
+                #     x=x_avg_time,
+                #     x_hat_active_indices=x_hat_active_indices,
+                #     posterior_cov=posterior_cov,
+                #     orientation_type=data_params.get("orientation_type"),
+                # )
+                # self.uncertainty_estimator.debug_covariance(posterior_cov, full_posterior_cov, "Posterior Covariance")
 
-                # Evaluate metrics: ACTIVE SOURCES
-                self.logger.debug("Computing CI and empirical coverage for active sources")
-                _, _, counts_within_ci_active = \
-                self.uncertainty_estimator.get_confidence_intervals_data(
-                    x=x_avg_time[x_hat_active_indices], # x_active_indices
-                    x_hat=x_hat_avg_time[x_hat_active_indices],
-                    posterior_cov=posterior_cov,
-                    orientation_type=data_params.get("orientation_type")
-                )                      
+                # Evaluate metrics: ALL SOURCES
+                # self.logger.debug("Computing CI and empirical coverage for all sources")
+
+                # # counts_within_ci: (n_condifence_levels, n_orient, n_times)
+                # ci_lower, ci_upper, counts_within_ci =\
+                # self.uncertainty_estimator.get_confidence_intervals_data(
+                #     x=x_avg_time, #uncert_est.x, #[x_hat_active_indices],
+                #     x_hat=x_hat_avg_time, #uncert_est.x_hat, #[x_hat_active_indices]
+                #     posterior_cov=full_posterior_cov, #posterior_cov
+                #     orientation_type=data_params.get("orientation_type")
+                # )                            
+
+                # # Evaluate metrics: ACTIVE SOURCES
+                # self.logger.debug("Computing CI and empirical coverage for active sources")
+                # ci_lower_active, ci_upper_active, counts_within_ci_active = \
+                # self.uncertainty_estimator.get_confidence_intervals_data(
+                #     x=x_avg_time[x_hat_active_indices], 
+                #     x_hat=x_hat_avg_time[x_hat_active_indices],
+                #     posterior_cov=posterior_cov,
+                #     orientation_type=data_params.get("orientation_type")
+                # )
+
+                # Get boolean mask for sources present in both sets
+                matched_mask = np.isin(x_hat_active_indices, x_active_indices)
+                
+                if not np.any(matched_mask):
+                    self.logger.warning(f"No intersection between true active sources and estimated active sources")
+
+                    ci_lower_active = np.zeros(
+                        (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
+                    )
+                    ci_upper_active = np.zeros(
+                        (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
+                    )
+                    counts_within_ci_active = np.zeros(
+                        (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
+                    )
+
+                    empirical_coverage_active = np.zeros(
+                        (len(self.uncertainty_estimator.confidence_levels))
+                    )
+
+                else:
+                    # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
+                    matched_relative_indices = np.where(matched_mask)[0]
+
+                    # Get the actual source indices for data slicing
+                    matched_absolute_indices = x_hat_active_indices[matched_mask]
+
+                    # Slice data using absolute indices (both arrays are full-size)
+                    x_matched = x_avg_time[matched_absolute_indices]  # Use absolute for x (full array)
+                    x_hat_matched = x_hat_avg_time[matched_absolute_indices]  # Use absolute for x_hat (also full array)
+
+                    # Slice posterior covariance using relative indices (only contains active components)
+                    posterior_cov_matched = posterior_cov[np.ix_(matched_relative_indices, matched_relative_indices)]
+
+                    # Verify dimensions
+                    print(f"x_matched shape: {x_matched.shape}")
+                    print(f"x_hat_matched shape: {x_hat_matched.shape}")  
+                    print(f"posterior_cov_matched shape: {posterior_cov_matched.shape}")
+
+                    # Now all should have consistent dimensions
+                    assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
+                    
+                    # Compute confidence intervals
+                    ci_lower_active, ci_upper_active, counts_within_ci_active = \
+                        self.uncertainty_estimator.get_confidence_intervals_data(
+                            x=x_matched,
+                            x_hat=x_hat_matched,
+                            posterior_cov=posterior_cov_matched,
+                            orientation_type=data_params.get("orientation_type")
+                        )
+                        
+                    # Normalize by the number of sources and take the first orientation and time step
+                    time_idx = 0 # As we average x across time, the time index is always 0.
+                    # all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
+                    
+                    empirical_coverage_active = (counts_within_ci_active / len(matched_absolute_indices))[:, 0, time_idx]
+                
+                    # empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
 
                 # -------------------------------------------------------------
                 # 9. Evaluate metrics and store results
                 # -------------------------------------------------------------
-                # Normalize by the number of sources and take the first orientation and time step
-                time_idx = 0 # As we average x across time, the time index is always 0.
-                all_sources_empirical_coverage = (counts_within_ci / len(x_avg_time))[:, 0, time_idx]
                 
-                # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
-                self.metric_evaluator.evaluate_and_store_metrics(
-                    this_result,
-                    metric_suffix="_all_sources",
-                    empirical_coverage=all_sources_empirical_coverage,
-                    cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
-                )
+                # # --- Evaluate metrics: ALL SOURCES (full posterior covariance) ---
+                # self.metric_evaluator.evaluate_and_store_metrics(
+                #     this_result,
+                #     metric_suffix="_all_sources",
+                #     empirical_coverage=all_sources_empirical_coverage,
+                #     cov=full_posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric????
+                # )
 
                 # --- Evaluate metrics: ACTIVE SOURCES (estimated active set) ---
-                empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]    
+                # empirical_coverage_active = (counts_within_ci_active / len(x_hat_active_indices))[:, 0, time_idx]
+                
                             
                 self.metric_evaluator.evaluate_and_store_metrics(
                     this_result,
                     metric_suffix="_active_indices",
                     empirical_coverage=empirical_coverage_active,  
-                    cov=posterior_cov # not full posterior_cov since we use the diagonal elements for mean_posterior_std metric
-                ) 
+                    cov=posterior_cov, #_matched
+                )
 
                 # --------------------------------------------------------------
                 # 10. Vizualization
@@ -319,14 +378,16 @@ class Benchmark:
                     source_units=source_units,
                     sensor_units=sensor_units,
                     confidence_levels=self.uncertainty_estimator.confidence_levels,
-                    empirical_coverages={'all_sources': all_sources_empirical_coverage,
-                                        'active_sources': empirical_coverage_active},
-                    ci_lower=ci_lower,
-                    ci_upper=ci_upper,
+                    empirical_coverages={
+                        # 'all_sources': all_sources_empirical_coverage,
+                        'active_indices': empirical_coverage_active
+                    },
+                    ci_lower=ci_lower_active,
+                    ci_upper=ci_upper_active,
                     orientation_type=data_params.get("orientation_type"),
                     result=this_result
                 )
-        
+
                 # self.uncertainty_estimator.plot_sorted_posterior_variances(top_k=10)
                 # self.uncertainty_estimator.visualize_sorted_covariances(top_k=10)
                 # self.uncertainty_estimator.plot_posterior_covariance_matrix()
@@ -468,7 +529,7 @@ class Benchmark:
             save_path="uncertainty_analysis",
             file_name="confidence_intervals",
             show=False,
-            figsize=(12, 12)
+            figsize=(18, 13)
         )
 
         # Plot confidence intervals - shared y-axis
@@ -487,26 +548,26 @@ class Benchmark:
             save_path="uncertainty_analysis",
             file_name="confidence_intervals_yshare",
             show=False,
-            figsize=(13, 13)
-        )        
+            figsize=(18, 13)
+        )
         
         # plot calibration curve - all sources
-        viz.plot_calibration_curve(
-            confidence_levels=confidence_levels,
-            empirical_coverage=empirical_coverages['all_sources'],
-            result=result, 
-            which_legend="all_sources", # or "active_indices"
-            filename='calibration_curve_all_sources',
-            save_path='uncertainty_analysis',
-            show=True,
-        )
+        # viz.plot_calibration_curve(
+        #     confidence_levels=confidence_levels,
+        #     empirical_coverage=empirical_coverages['all_sources'],
+        #     result=result, 
+        #     which_legend="all_sources", # or "active_indices"
+        #     filename='calibration_curve_all_sources',
+        #     save_path='uncertainty_analysis',
+        #     show=True,
+        # )
 
         # plot calibration curve - active sources
         viz.plot_calibration_curve(
             confidence_levels=confidence_levels,
-            empirical_coverage=empirical_coverages['active_sources'],
+            empirical_coverage=empirical_coverages['active_indices'],
             result=result, 
-            which_legend="active_sources", # or "all_sources"
+            which_legend="active_indices", # or "all_sources"
             filename='calibration_curve_active_sources',
             save_path='uncertainty_analysis',
             show=True,
