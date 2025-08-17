@@ -125,7 +125,7 @@ class Visualizer:
     ):
         # convert the data from A to nAm for better readability
         if units == FIFF.FIFF_UNIT_AM:
-            x = x * 1e9  
+            x_scaled = x * 1e9  
             units = "nAm"
         else:
             raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
@@ -137,7 +137,7 @@ class Visualizer:
 
             fig = self._plot_sources_single_trial(
                 ERP_config=ERP_config,
-                x_trial=x if x.ndim < 3 else x[trial_idx],
+                x_trial=x_scaled if x_scaled.ndim < 3 else x_scaled[trial_idx],
                 active_indices=indices,
                 units=units,
                 trial_idx=trial_idx,
@@ -147,7 +147,7 @@ class Visualizer:
         else:
             fig = self._plot_sources_all_trials(
                 ERP_config=ERP_config,
-                x_trials=x,
+                x_trials=x_scaled,
                 active_indices=active_indices,
                 units=units,
                 title=title,
@@ -287,31 +287,31 @@ class Visualizer:
 
         # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
         if units == FIFF.FIFF_UNIT_T:
-            y_trials = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
+            y_trials_scaled = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
             units = "fT"
         elif units == FIFF.FIFF_UNIT_T_M:
-            y_trials = y_trials * 1e15  # Convert T/m to fT/m
+            y_trials_scaled = y_trials * 1e15  # Convert T/m to fT/m
             units = "fT/m"
         elif units == FIFF.FIFF_UNIT_V:
-            y_trials = y_trials * 1e6  # Convert V to μV
+            y_trials_scaled = y_trials * 1e6  # Convert V to μV
             units = "μV"
         else:
             raise ValueError(f"Unsupported units for sensor signals: {units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
 
         if mode == "stack":
             self._plot_sensors_all_trials(
-                ERP_config, y_trials, channels, units, title, save_dir, file_name, show
+                ERP_config, y_trials_scaled, channels, units, title, save_dir, file_name, show
             )
         elif mode == "concatenate":
             self._plot_concatenated_sensor_trials(
-                y_trials, ERP_config, channels, units, title, save_dir, file_name, show
+                y_trials_scaled, ERP_config, channels, units, title, save_dir, file_name, show
             )
         elif mode == "single":
             if trial_idx is None:
                 trial_idx = 0
                 self.logger.warning("No trial index provided, defaulting to 0.")
             self._plot_sensors_single_trial(
-                ERP_config, y_trials[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
+                ERP_config, y_trials_scaled[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
             )
         else:
             raise ValueError(f"Unknown mode: {mode}")
@@ -360,14 +360,11 @@ class Visualizer:
             Title of the plot, by default None
         show : bool, optional
             Whether to show the plot, by default True
-        """
-        x_active = x[x_active_indices]
-        x_hat_active = x_hat[x_hat_active_indices]
-        
+        """        
         # convert the data from A to nAm for better readability
         if source_units == FIFF.FIFF_UNIT_AM:
-            x_active = x_active * 1e9
-            x_hat_active = x_hat_active * 1e9
+            x_active_scaled = x[x_active_indices] * 1e9
+            x_hat_active_scaled = x_hat[x_hat_active_indices] * 1e9
             source_units = "nAm"
         else:
             raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
@@ -375,10 +372,11 @@ class Visualizer:
         if orientation_type == 'fixed':
             plt.figure(figsize=(12, 6))
 
-            plt.scatter(x_hat_active_indices, x_hat_active, color='blue', marker='o', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
+            plt.scatter(x_hat_active_indices, x_hat_active_scaled, color='blue', marker='o', alpha=0.6, label=f'Non-Zero Posterior Mean - Estimated active ({len(x_hat_active_indices)} sources)')
 
-            plt.scatter(x_active_indices, x_active, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
-            
+
+            plt.scatter(x_active_indices, x_active_scaled, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
+
             plt.xlabel('Active voxels')
             plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
             plt.title(title or f'Active Sources fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
@@ -704,43 +702,65 @@ class Visualizer:
         show: bool = True,
         figsize: tuple = (12, 6),
     ):
-        x_active = x[x_active_indices].flatten()
-        x_hat_active = x_hat[x_hat_active_indices].flatten()
-        
         if source_units == FIFF.FIFF_UNIT_AM:
-            x_active *= 1e9
-            x_hat_active *= 1e9
-            source_units = "nAm"
+            x_scaled = x.copy().flatten() * 1e9
+            x_hat_scaled = x_hat.copy().flatten() * 1e9
+            ci_lower_scaled = ci_lower.copy() * 1e9
+            ci_upper_scaled = ci_upper.copy() * 1e9
+            source_units = "nAm"        
         else:
-            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
-
+            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")            
+    
         # Create grid of subplots for all confidence levels
         n_levels = len(confidence_levels)
         n_cols = min(4, n_levels)
         n_rows = int(np.ceil(n_levels / n_cols))
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0], figsize[1]), squeeze=False, sharex=True, sharey=sharey)
         axes = axes.flatten()
-
+        
+        matched_indices = x_hat_active_indices[np.isin(x_hat_active_indices, x_active_indices)]
+        
         for idx, confidence_level_val in enumerate(confidence_levels):
             ax = axes[idx]
-            ci_lower_current = ci_lower[idx].flatten()
-            ci_upper_current = ci_upper[idx].flatten()
-            yerr_lower = np.abs(x_hat_active - ci_lower_current[x_hat_active_indices]).flatten()
-            yerr_upper = np.abs(ci_upper_current[x_hat_active_indices] - x_hat_active).flatten()
-            yerr = np.stack([yerr_lower, yerr_upper])
             
-            ax.errorbar(
-                x_hat_active_indices,
-                x_hat_active,
-                yerr=yerr,
-                fmt='o',
-                color='blue',
-                alpha=0.7,
-                capsize=5,
-                label=f'Active posterior mean ({len(x_hat_active_indices)}/{n_sources})'
-            )
-            ax.scatter(x_active_indices, x_active, marker='x', s=30, color='red', label=f'Active simulated sources ({len(x_active_indices)}/{n_sources})')
-                        
+            if len(matched_indices) != 0:
+                ci_lower_current = ci_lower_scaled[idx].flatten()
+                ci_upper_current = ci_upper_scaled[idx].flatten()
+
+                yerr_lower = np.abs(
+                    x_hat_scaled[matched_indices] - ci_lower_current
+                )
+                yerr_upper = np.abs(
+                    ci_upper_current - x_hat_scaled[matched_indices]
+                )
+                yerr = np.stack([yerr_lower, yerr_upper])
+                     
+                ax.errorbar(
+                    matched_indices,
+                    x_hat_scaled[matched_indices],
+                    yerr,
+                    fmt='o',
+                    color='blue',
+                    # alpha=0.7,
+                    capsize=5,
+                    label=(
+                        f'Active posterior mean ({len(x_hat_active_indices)}/{n_sources})'
+                        f'\nMatched voxel locations: {len(matched_indices)}'
+                    ),
+                    zorder=1
+                )
+            else:
+                # Add a dummy handle for the error bar to the legend
+                errorbar_handle = mlines.Line2D(
+                    [], [], color='blue', marker='o', linestyle='None', markersize=8,
+                    label=(
+                        f'Active posterior mean ({len(x_hat_active_indices)}/{n_sources})'
+                        f'\nMatched indices: {len(matched_indices)}'
+                    )
+                )
+
+            ax.scatter(x_active_indices, x_scaled[x_active_indices], marker='x', s=70, color='red', label=f'Active simulated sources ({len(x_active_indices)}/{n_sources})', zorder=2)
+
             ax.set_title(f'CI Level={confidence_level_val:.2f}')
             ax.axhline(0, color='grey', lw=0.8, ls='--')
             ax.grid(True, alpha=0.5)
@@ -758,7 +778,7 @@ class Visualizer:
             ax.axis('off')
                     
         # Place the legend below the supertitle, centered
-        fig.legend(by_label.values(), by_label.keys(), loc='upper right', fontsize='large', frameon=True, bbox_to_anchor=(0.5, 0.98))
+        fig.legend(by_label.values(), by_label.keys(), loc='upper right', fontsize='large', frameon=True, bbox_to_anchor=(0.6, 1.015))
 
         # Place the legend in the empty subplot
         # axes[11].legend(by_label.values(), by_label.keys(), loc='center', fontsize='large', frameon=True)
@@ -767,7 +787,7 @@ class Visualizer:
         # Shared x/y labels for the whole figure
         fig.supxlabel('Active voxels', fontsize=14)
         fig.supylabel(f'Amplitude ({source_units})', fontsize=14)
-        fig.suptitle('Confidence Intervals for Active Reconstructed Sources', fontsize=18)
+        fig.suptitle('Confidence Intervals for Active Reconstructed Sources', fontsize=18, y=1.05)
         plt.tight_layout(rect=[0, 0.05, 1, 0.96])        
         
         self._handle_figure_output(fig, file_name, save_path, show)

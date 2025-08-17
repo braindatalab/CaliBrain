@@ -3,7 +3,7 @@ import os
 from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import chi2
+from scipy.stats import chi2, norm
 from itertools import combinations, zip_longest
 from matplotlib.patches import Ellipse
 
@@ -92,13 +92,11 @@ class UncertaintyEstimator:
 
     
         # Initialize the full covariance matrix
-        full_posterior_cov = np.zeros((n_total_components, n_total_components), dtype=posterior_cov.dtype)
+        # full_posterior_cov = np.zeros((n_total_components, n_total_components), dtype=posterior_cov.dtype)
+        full_posterior_cov = np.eye(n_total_components, dtype=posterior_cov.dtype) * 1e-12 # small positive diagonal
+
         self.logger.debug(f"Initialized full_posterior_cov with shape {full_posterior_cov.shape}")
     
-        # Embed the active set covariance using nested loops (safe for unsorted active_indices)
-        #    Alternative: If performance critical and active_indices is sorted:
-        #    idx = np.ix_(self.active_indices, self.active_indices)
-        #    full_posterior_cov[idx] = self.posterior_cov
         try:
             for i, idx_i in enumerate(x_hat_active_indices):
                 for j, idx_j in enumerate(x_hat_active_indices):
@@ -199,15 +197,18 @@ class UncertaintyEstimator:
         """
         Ensure that the covariance matrix is positive semi-definite by adding epsilon to the diagonal.
         """
-        # print("Regularizing covariance matrix...")
+        self.logger.info("Computing eigenvalues...")
+        
         max_iterations = 100
         iterations = 0
-        while not np.all(np.linalg.eigvals(cov) >= 0):
+        # compute eigenvalues
+        eigenvalues = np.linalg.eigvals(cov)
+        while not np.all(eigenvalues >= 0):
+            self.logger.info(f"Iteration {iterations + 1}: Covariance matrix is not PSD.")
             cov += np.eye(cov.shape[0]) * epsilon
             epsilon *= 10
             iterations += 1
             if iterations > max_iterations:
-                self.logger.warning("Regularizing covariance matrix...")
                 self.logger.warning("Covariance matrix could not be made positive semi-definite.")
                 break
         return cov
@@ -223,11 +224,11 @@ class UncertaintyEstimator:
         
         # Regularize covariance matrix if not positive definite by adding gradually increasing epsilon to the diagonal.
         if not np.all(np.linalg.eigvals(cov) > 0):
-            cov = self._make_psd(cov, epsilon=1e-6)
+            cov_psd = self._make_psd(cov.copy(), epsilon=1e-6)
         
         chi2_val = chi2.ppf(confidence_level, df=2)
 
-        eigenvals, eigenvecs = np.linalg.eigh(cov)
+        eigenvals, eigenvecs = np.linalg.eigh(cov_psd)
         
         if np.all(eigenvals > 0):
             print("Covariance matrix is now positive definite.")
@@ -384,7 +385,7 @@ class UncertaintyEstimator:
 
 
 # ------------------------------
-    def _compute_confidence_intervals(self, mean : np.ndarray, cov : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
+    def _compute_confidence_intervals(self, mean : np.ndarray, std_dev : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
         """Compute confidence intervals based on the diagonal of the covariance matrix.
         Assumes inputs correspond only to the active components.
 
@@ -392,8 +393,8 @@ class UncertaintyEstimator:
         ----------
         mean : np.ndarray
             Mean array for active components, shape (n_sources, n_times).
-        cov : np.ndarray
-            Covariance matrix for active components, shape (n_sources, n_sources).
+        std_dev : np.ndarray
+            Standard deviation array for active components, shape (n_sources, n_times).
         confidence_level : float, optional
             Confidence level for the intervals (e.g., 0.95 for 95%), by default 0.95
 
@@ -408,26 +409,9 @@ class UncertaintyEstimator:
         # Calculate the Z-score corresponding to the confidence level for a normal distribution
         # Example: 0.95 -> z = 1.96
         alpha = 1.0 - confidence_level
-        z = np.abs(np.percentile(np.random.normal(0, 1, 1000000), [alpha / 2 * 100, (1 - alpha / 2) * 100]))[1]
+        # z = np.abs(np.percentile(np.random.normal(0, 1, 1000000), [alpha / 2 * 100, (1 - alpha / 2) * 100]))[1]
+        z = norm.ppf(1 - alpha / 2)  # Two-tailed critical value
         self.logger.debug(f"Z-score for confidence level {confidence_level}: {z:.4f}")
-
-        # Ensure covariance matrix is positive semi-definite for variance calculation
-        # Note: _make_psd might modify cov in place if not careful, consider passing a copy if needed elsewhere.
-        # However, we only need the diagonal here, so modifying cov might be acceptable if not used later.
-        cov_psd = self._make_psd(cov.copy()) # Work on a copy to avoid modifying original cov
-
-        # Extract diagonal variances
-        variances = np.diag(cov_psd)
-
-        # Handle potential negative variances after PSD adjustment (should ideally not happen with _make_psd)
-        # variances[variances < 0] = 0
-        # self.logger.debug(f"Number of non-positive variances after PSD adjustment: {np.sum(variances <= 0)}")
-
-        # Calculate standard deviation for each active component
-        std_dev = np.sqrt(variances)
-
-        # Expand dimensions for broadcasting: (n_active_components,) -> (n_active_components, 1)
-        std_dev = std_dev[:, np.newaxis]
 
         # Calculate confidence intervals: mean +/- z * std_dev
         ci_lower = mean - z * std_dev
@@ -468,9 +452,6 @@ class UncertaintyEstimator:
         -----
         - active_indices is used only for "free" orientation to determine the orientation of each active component.            
         """
-        # if x.shape[0] != len(self.active_indices) or ci_lower.shape[0] != len(self.active_indices) or ci_upper.shape[0] != len(self.active_indices):
-        #      raise ValueError("Input array dimensions do not match the length of the active_indices.")
-
         n_times = x.shape[1]
 
         if orientation_type == "fixed":
@@ -544,7 +525,49 @@ class UncertaintyEstimator:
             - counts_array (np.ndarray): Counts of true values within confidence intervals for each confidence level.
                 Shape (n_confidence_levels, 3, n_times) for free orientation,
                 or (n_confidence_levels, 1, n_times) for fixed orientation.
-        """
+        """    
+        # Ensure covariance matrix is positive semi-definite for variance calculation
+        # Note: _make_psd might modify cov in place if not careful, consider passing a copy if needed elsewhere. However, we only need the diagonal here, so modifying cov might be acceptable if not used later.
+
+        # Extract diagonal variances
+        var = np.diag(posterior_cov).copy()
+        
+        # Check for negative variances
+        negative_mask = var <= 0
+        n_negative = np.sum(negative_mask)
+
+        need_full_cov = True
+        
+        if n_negative > 0:
+            self.logger.warning(f"Found {n_negative} non-positive variances. Regularizing...")
+            
+            # Option 1: Simple diagonal regularization (faster)
+            min_var = 1e-12  # Small positive value based on your data scale
+            var[negative_mask] = min_var
+            self.logger.info(f"Clipped {n_negative} variances to {min_var}")
+            
+            # Option 2: Full PSD regularization (more principled but slower)
+            # Only do this if we need the full covariance matrix elsewhere
+            if need_full_cov:
+                cov_psd = self._make_psd(posterior_cov.copy())
+                var = np.diag(cov_psd)
+                
+                # Recheck after PSD adjustment
+                remaining_negative = np.sum(var <= 0)
+                if remaining_negative > 0:
+                    self.logger.warning(f"Still {remaining_negative} non-positive variances after PSD adjustment")
+                    var[var <= 0] = min_var
+        
+        # Validate final variances
+        assert np.all(var > 0), "All variances must be positive for std deviation calculation"
+        
+        # Calculate standard deviation
+        std_dev = np.sqrt(var).reshape(-1, 1)
+        
+        # Add debugging info
+        self.logger.info(f"Variance range: [{np.min(var):.2e}, {np.max(var):.2e}]")
+        self.logger.info(f"Std dev range: [{np.min(std_dev):.2e}, {np.max(std_dev):.2e}]")
+
         all_ci_lower_list = []
         all_ci_upper_list = []
         collected_counts_within_ci_list = []
@@ -555,7 +578,7 @@ class UncertaintyEstimator:
 
             ci_lower, ci_upper = self._compute_confidence_intervals(
                 mean=x_hat, 
-                cov=posterior_cov, 
+                std_dev=std_dev, 
                 confidence_level=confidence_level_val
             )
 
@@ -620,5 +643,27 @@ class UncertaintyEstimator:
                 os.makedirs(orientation_dir, exist_ok=True)
                 brain.show_view(orientation)
                 brain.save_image(os.path.join(orientation_dir, f'{title.replace(" ", "_").lower()}_{orientation}.png'))
-            brain.close()   
-   
+            brain.close()
+
+    def debug_covariance(self, posterior_cov, full_posterior_cov, step_name):
+        """Debug covariance matrix properties"""
+        print(f"\n--- {step_name} ---")
+        
+        # Original covariance
+        orig_eigenvals = np.linalg.eigvals(posterior_cov)
+        print(f"Original posterior_cov:")
+        print(f"  Shape: {posterior_cov.shape}")
+        print(f"  Eigenvalues range: [{np.min(orig_eigenvals):.2e}, {np.max(orig_eigenvals):.2e}]")
+        print(f"  Rank: {np.linalg.matrix_rank(posterior_cov)}")
+        print(f"  Condition number: {np.linalg.cond(posterior_cov):.2e}")
+        
+        # Full covariance
+        full_eigenvals = np.linalg.eigvals(full_posterior_cov)
+        full_diag = np.diag(full_posterior_cov)
+        print(f"Full posterior_cov:")
+        print(f"  Shape: {full_posterior_cov.shape}")
+        print(f"  Eigenvalues range: [{np.min(full_eigenvals):.2e}, {np.max(full_eigenvals):.2e}]")
+        print(f"  Diagonal range: [{np.min(full_diag):.2e}, {np.max(full_diag):.2e}]")
+        print(f"  Negative diagonal elements: {np.sum(full_diag < 0)}")
+        print(f"  Zero diagonal elements: {np.sum(full_diag == 0)}")
+        # print(f"  Rank: {np.linalg.matrix_rank(full_posterior_cov)}")
