@@ -62,3 +62,34 @@ def save_subjects_mne_info(subjects=["CC120166", "CC120264", "CC120309", "CC1203
         # Save the info object to a file
         info_file = f'{fwd_dir}/{subject}-info.fif'
         mne.io.write_info(info_file, info)        
+        
+
+def inspect_object(obj, show_private=False):
+    """
+    Print attributes and methods of a Python object separately.
+
+    Parameters:
+    - obj: The object to inspect.
+    - show_private (bool): If True, include private attributes/methods (starting with '_').
+
+    Returns:
+    - dict with 'attributes' and 'methods' keys
+    """
+    def is_valid(name):
+        return show_private or not name.startswith("_")
+
+    attributes = [a for a in dir(obj)
+                  if not callable(getattr(obj, a)) and is_valid(a)]
+    
+    methods = [m for m in dir(obj)
+               if callable(getattr(obj, m)) and is_valid(m)]
+    
+    print("Attributes:")
+    for attr in attributes:
+        print(f"  - {attr}")
+    
+    print("\nMethods:")
+    for method in methods:
+        print(f"  - {method}")
+    
+    return {"attributes": attributes, "methods": methods}
