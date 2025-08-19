@@ -53,7 +53,7 @@ html_theme_options = {
     "switcher": {
         # "json_url": "https://braindatalab.github.io/CaliBrain/_static/switcher.json",
         "json_url": "_static/switcher.json",  # Use local path for testing
-        "version_match": f"v{release}",  # Current version (0.1.1)
+        "version_match": f"v{release}",  # Current version
     },
     
     # SIDEBAR CONFIGURATION - These are key for PyData theme
