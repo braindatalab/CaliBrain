@@ -3,18 +3,20 @@ import os
 import sys
 from pathlib import Path
 import calibrain
+from sphinx_gallery.sorting import ExplicitOrder
 
 # sys.path.insert(0, os.path.abspath('../..')) # Point to project root relative to conf.py
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# ADD tutorial path for Sphinx Gallery
+# sys.path.insert(0, os.path.abspath('../../tutorials'))
+
 # ... Project information ...
 project = 'CaliBrain'
 copyright = '2025, Mohammad Orabe, Ismail Huseynov'
 author = 'Mohammad Orabe, Ismail Huseynov'
-
 print(f"DEBUG: calibrain.__version__ = {calibrain.__version__}")
-
 release = calibrain.__version__
 
 # -- General configuration ---------------------------------------------------
@@ -26,21 +28,24 @@ extensions = [
     'sphinx_autodoc_typehints',# Automatically document typehints
     'myst_parser',             # If you want to write docs in Markdown
     'sphinx.ext.intersphinx',  # Link to other projects' documentation
-    'sphinx.ext.autosummary',
-    'sphinx.ext.mathjax',
+    'sphinx.ext.autosummary',  # Generate summary tables for modules
+    'sphinx.ext.mathjax',      # For rendering math equations
+    'sphinx_gallery.gen_gallery',          # For auto-generating tutorial gallery
+    'matplotlib.sphinxext.plot_directive', # For matplotlib plots
 ]
+
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
 html_theme = 'pydata_sphinx_theme'
 html_theme_options = {
     "navigation_with_keys": True,
     "navbar_align": "content",
-    "navbar_start": ["navbar-logo", "version-switcher"],
-    "navbar_end": ["navbar-icon-links","theme-switcher"],
+    "navbar_start": ["navbar-logo"],
+    "navbar_end": ["version-switcher", "navbar-icon-links","theme-switcher"],
 
     # Custom version display
     "announcement": f"📚 You are viewing CaliBrain v{release} documentation",
-    # "show_version_warning_banner": True,
+    
     # VERSION CONFIGURATION
     "switcher": {
         # "json_url": "https://braindatalab.github.io/CaliBrain/_static/switcher.json",
@@ -93,6 +98,30 @@ html_theme_options = {
     "header_links_before_dropdown": 5,
 }
 
+# ADD Sphinx Gallery configuration
+sphinx_gallery_conf = {
+    # Handle multiple source directories
+    'examples_dirs': ['../../tutorials', '../../examples'],   # Multiple source dirs
+    'gallery_dirs': ['auto_tutorials', 'auto_examples'],      # Corresponding output dirs
+    
+    # Process all Python files (not just overview.py)
+    'filename_pattern': '/.*.py$',                            # All .py files
+    'ignore_pattern': '__init__.py|README.rst',       # Ignore these patterns
+    
+    # Gallery settings
+    'plot_gallery': True,                 # Generate plots
+    'download_all_examples': False,       # Don't create download zip
+    'within_subsection_order': 'FileNameSortKey',             # Sort by filename
+    'first_notebook_cell': '# This tutorial is available for download as a Jupyter notebook',
+    'remove_config_comments': True,
+    'show_memory': False,                 # Don't show memory usage
+    'matplotlib_animations': True,        # Support animated plots
+    
+    # Subsection configuration
+    # 'subsection_order': ExplicitOrder(['../../tutorials', '../../examples']),
+    'expected_failing_examples': [],      # List any expected failures
+}
+
 # Autodoc settings
 autodoc_default_options = {
     'members': True,
@@ -116,7 +145,7 @@ napoleon_include_special_with_doc = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 
-master_doc = 'index'
+master_doc = 'README'
 
 # Tell Sphinx where static files are located
 html_static_path = ['_static']

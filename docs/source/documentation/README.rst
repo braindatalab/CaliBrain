@@ -7,9 +7,9 @@ Documentation
 
    usage
    results
-   tutorials/index
-   examples/index
-   
+   .. include:: ../../tutorials/README.rst
+   .. include:: ../../examples/README.rst
+
 Overview
 --------
 
@@ -67,7 +67,7 @@ For installation, see the :doc:`Installation Guide <installation>`.
 Usage
 -----
 
-For usage details, refer to the :doc:`Usage Guide <usage/index>`.
+For usage details, refer to the :doc:`Usage Guide <usage/README>`.
 
 Contributing
 ------------
