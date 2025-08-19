@@ -17,7 +17,7 @@ from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta
-# from calibrain.leadfield_simulation import LeadfieldBuilder
+# from calibrain.leadfield_builder import LeadfieldBuilder
 from calibrain.utils import inspect_object
 from mne.io.constants import FIFF
 

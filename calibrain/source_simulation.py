@@ -38,23 +38,23 @@ class SourceSimulator:
         ERP_config: Optional[Dict[str, Any]] = None,
         logger: Optional[logging.Logger] = None,
     ):
-        """
-        Initialize the SourceSimulator with parameters for simulating dipole sources.
+        """Initialize the SourceSimulator with parameters for simulating dipole sources.
         
         Parameters
         ----------
         ERP_config : Optional[Dict[str, Any]]
             Configuration dictionary for the ERP simulation parameters. If None, default values are used.
             Default values include:
-                - tmin: -0.5 (start time of the ERP segment in seconds)
-                - tmax: 0.5 (end time of the ERP segment in seconds)
-                - stim_onset: 0.0 (time of stimulus onset in seconds, relative to the start of the ERP segment)
-                - sfreq: 250 (sampling frequency in Hz)
-                - fmin: 1 (minimum frequency for the bandpass filter in Hz)
-                - fmax: 5 (maximum frequency for the bandpass filter in Hz)
-                - amplitude: 1.0 (amplitude of the ERP waveform)
-                - random_erp_timing: True (if True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized)
-                - erp_min_length : Optional[int] (minimum length of the ERP waveform in samples; if None, a default value is used)
+            
+            - tmin: -0.5 (start time of the ERP segment in seconds)
+            - tmax: 0.5 (end time of the ERP segment in seconds)
+            - stim_onset: 0.0 (time of stimulus onset in seconds, relative to the start of the ERP segment)
+            - sfreq: 250 (sampling frequency in Hz)
+            - fmin: 1 (minimum frequency for the bandpass filter in Hz)
+            - fmax: 5 (maximum frequency for the bandpass filter in Hz)
+            - amplitude: 1.0 (amplitude of the ERP waveform)
+            - random_erp_timing: True (if True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized)
+            - erp_min_length : Optional[int] (minimum length of the ERP waveform in samples; if None, a default value is used)
         logger : Optional[logging.Logger], optional
             Logger instance, by default None.
         """
@@ -348,8 +348,8 @@ class SourceSimulator:
             - x_all_trials : np.ndarray
                 Array of shape (n_trials, ...) containing simulated source time courses.
                 Shape depends on source orientation: 
-                    - fixed: (n_trials, n_sources, n_times)
-                    - free:  (n_trials, n_sources, 3, n_times)
+                - fixed: (n_trials, n_sources, n_times)
+                - free:  (n_trials, n_sources, 3, n_times)
             - active_indices_all_trials : np.ndarray
                 Array of shape (n_trials, nnz) containing indices of active sources per trial.
         """

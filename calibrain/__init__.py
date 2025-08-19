@@ -1,9 +1,9 @@
-from calibrain.leadfield_simulation import LeadfieldBuilder
+from calibrain.leadfield_builder import LeadfieldBuilder
 from calibrain.source_simulation import SourceSimulator
-from calibrain.data_simulation import SensorSimulator
+from calibrain.sensor_simulation import SensorSimulator
 from calibrain.source_estimation import SourceEstimator, gamma_map, eloreta
 from calibrain.uncertainty_estimation import UncertaintyEstimator
-from calibrain.evaluation import MetricEvaluator
+from calibrain.metric_evaluation import MetricEvaluator
 from calibrain.visualization import Visualizer
 from calibrain.benchmark import Benchmark
 
