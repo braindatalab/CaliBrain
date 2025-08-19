@@ -1,0 +1,20 @@
+[
+  {
+    "name": "v0.1.1 (stable)",
+    "version": "v0.1.1",
+    "url": "https://braindatalab.github.io/CaliBrain/",
+    "preferred": true
+  },
+  {
+    "name": "v0.1.0",
+    "version": "v0.1.0", 
+    "url": "https://braindatalab.github.io/CaliBrain/v0.1.0/",
+    "preferred": false
+  },
+  {
+    "name": "latest (dev)",
+    "version": "latest",
+    "url": "https://braindatalab.github.io/CaliBrain/latest/",
+    "preferred": false
+  }
+]
