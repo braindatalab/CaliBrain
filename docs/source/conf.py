@@ -111,7 +111,7 @@ sphinx_gallery_conf = {
 
     # Process all Python files (not just overview.py)
     'filename_pattern': '/.*.py$',                            # All .py files
-    'ignore_pattern': '__init__.py|README.rst',       # Ignore these patterns
+    'ignore_pattern': '__init__.py',       # Ignore these patterns
     
     # Gallery settings
     'plot_gallery': True,  # Generate plots
@@ -162,7 +162,7 @@ napoleon_include_special_with_doc = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 
-master_doc = 'README'
+master_doc = 'index'
 
 # Tell Sphinx where static files are located
 html_static_path = ['_static']
