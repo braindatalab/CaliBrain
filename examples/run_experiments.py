@@ -1,3 +1,21 @@
+"""
+.. _example-run_experiment:
+
+=============================================
+Run benchmark experiments for source localization and uncertainty estimation.
+=============================================
+
+This example demonstrates how to run comprehensive benchmarking experiments
+for evaluating source localization algorithms using CaliBrain.
+
+The script shows how to:
+- Set up ERP simulation parameters and logging
+- Configure parameter grids for MEG and EEG experiments  
+- Compare multiple algorithms (Gamma-MAP, eLORETA)
+- Evaluate uncertainty estimation and calibration performance
+- Generate comprehensive metrics and save results
+"""
+
 import os
 import datetime
 import logging
@@ -5,16 +23,16 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import DataSimulator, gamma_map, eloreta
-from calibrain import Benchmark
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
 
 # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
 
 def main():
-    os.makedirs("results/benchmark_results", exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"results/benchmark_results/benchmark_log_{timestamp}.log"
+    os.makedirs("results/benchmark_results", exist_ok=True)
+    os.makedirs("results/logs", exist_ok=True)
+    log_file = f"results/logs/benchmark_log_{timestamp}.log"
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
@@ -25,90 +43,106 @@ def main():
         ]
     )
     logger = logging.getLogger(__name__)
-     
-    # run this only once, to save the subjects' info if not already saved
-    # save_subjects_mne_info(
-    #     subjects=["CC120166", "CC120264", "CC120309", "CC120313"],
-    #     fwd_dir='BSI-ZOO_forward_data'
-    # )
+
+    # n_trials = 4
+    ERP_config = {
+        "tmin": -0.5,
+        "tmax": 0.5,
+        "stim_onset": 0,
+        "sfreq": 250,
+        "fmin": 1,
+        "fmax": 5,
+        "amplitude": 50.0,
+        "random_erp_timing": True,
+        "erp_min_length": None,
+    }
     
-    data_simulator_eeg = DataSimulator(
-        tmin=-0.5,
-        tmax=0.5,
-        stim_onset=0.0,
-        sfreq=250,
-        fmin=1,
-        fmax=5,
-        amplitude=1,
-        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
-        leadfield_mode='load', # (simulate, random, load). NOTE: if `simulate` then align the config file of the leadfield simulation!
-        channel_type='eeg',
-        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
-        leadfield_config_path='configs/leadfield_sim_cfg.yml',
-        mne_info_path='configs/mne_info.yml',
+    source_simulator = SourceSimulator(
+        ERP_config=ERP_config,
         logger=logger
     )
-    
-    data_simulator_meg = DataSimulator(
-        tmin=-0.5,
-        tmax=0.5,
-        stim_onset=0.0,
-        sfreq=250,
-        fmin=1,
-        fmax=5,
-        amplitude=5,
-        n_trials=4, # we will slice this to use only the first trial. TODO: Keep it like this for now
-        leadfield_mode='load', # (simulate, random, load). NOTE: if `simulate` then align the config file of the leadfield simulation!
-        channel_type='meg',
-        leadfield_dir=Path(f'BSI-ZOO_forward_data'),
-        leadfield_config_path='configs/leadfield_sim_cfg.yml',
-        mne_info_path='configs/mne_info.yml',
-        logger=logger
+
+    leadfield_builder = LeadfieldBuilder(
+        leadfield_dir=Path("BSI-ZOO_forward_data"),
+        logger=logger,
     )
-        
+    
+    sensor_simulator = SensorSimulator(
+        logger=logger,
+    )
+
+    confidence_levels = np.arange(0.0, 1.1, 0.1) # 11 levels: [0.0, 0.1, ..., 1.0]
+    
+    uncertainty_estimator = UncertaintyEstimator(
+        confidence_levels=confidence_levels,
+        logger=logger,
+    )  
+      
+    # Define parameter grids for different data types
     data_param_grid_meg = {
-        "subject": ["CC120166", "fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
-        "nnz": [1, 5],
+        "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
+        "nnz": [1, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.5, 1.0],
+        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
     }
     
     data_param_grid_eeg = {
-        "subject": ["caliBrain_fsaverage"], # "CC120166", "CC120264", "CC120309", "CC120313", "caliBrain_fsaverage", # "fsaverage", 
-        "nnz": [1, 5],
+        "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
+        "nnz": [1, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.5, 1.0],
+        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
     }
         
     gamma_map_params = {
-        "gammas": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
+        "init_gamma": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
         "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
     }
     
+    eloreta_params = {
+        "noise_type": ["oracle"],
+    }
+    
     estimators = [
-        (gamma_map, gamma_map_params, data_param_grid_meg, data_simulator_meg),
-        (gamma_map, gamma_map_params, data_param_grid_eeg, data_simulator_eeg),
-        # (gamma_map, gamma_map_params, data_param_grid_2, data_simulator2),
-        # (eloreta, {}, {}, data_simulator), 
+        (gamma_map, gamma_map_params, data_param_grid_meg),
+        (eloreta, eloreta_params, data_param_grid_meg),
+        # (gamma_map, gamma_map_params, data_param_grid_eeg),
+        # (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [
-    "calibration_curve_metrics",
-    "mean_posterior_std",
-    # "f1",
-    # "emd",
-    # "accuracy",  
+        "mean_posterior_std",               # Uncertainty
+        "mean_calibration_error",           # Calibration (auc)
+        "max_underconfidence_deviation",    # Calibration
+        "max_overconfidence_deviation",     # Calibration
+        "mean_absolute_deviation",          # Calibration
+        "mean_signed_deviation",            # Calibration
+        "emd",                              # spatial accuracy
+        "jaccard_error",                    # spatial accuracy
+        "mse",                              # spatial accuracy
+        "euclidean_distance",               # detection performance
+        "f1",                               # detection performance
+        "accuracy",                         # detection performance
     ]
-    
+
+    metric_evaluator = MetricEvaluator(
+        confidence_levels=confidence_levels,
+        metrics=metrics,
+        logger=logger
+    )
+
     nruns = 1
     df = []
-    for solver, solver_param_grid, data_param_grid, data_simulator in estimators:
+    for solver, solver_param_grid, data_param_grid in estimators:
         benchmark = Benchmark(
             solver=solver,
             solver_param_grid=solver_param_grid,
             data_param_grid=data_param_grid,
-            data_simulator=data_simulator,
-            metrics=metrics,
+            ERP_config=ERP_config,
+            source_simulator=source_simulator,
+            leadfield_builder=leadfield_builder,
+            sensor_simulator=sensor_simulator,
+            uncertainty_estimator=uncertainty_estimator,
+            metric_evaluator=metric_evaluator,
             random_state=42,
             logger=logger
         )
