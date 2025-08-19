@@ -1,6 +1,15 @@
-Read Me
-=======
+Documentation
+=============
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   usage
+   results
+   tutorials/index
+   examples/index
+   
 Overview
 --------
 
@@ -58,7 +67,7 @@ For installation, see the :doc:`Installation Guide <installation>`.
 Usage
 -----
 
-For usage details, refer to the :doc:`Usage Guide <usage>`.
+For usage details, refer to the :doc:`Usage Guide <usage/index>`.
 
 Contributing
 ------------
@@ -74,3 +83,4 @@ Citation
 --------
 
 If you use **CaliBrain**, please cite relevant works in EEG/MEG source imaging and uncertainty quantification.
+

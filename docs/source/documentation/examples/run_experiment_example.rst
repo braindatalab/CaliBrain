@@ -10,10 +10,12 @@ To start the experiment:
 
 .. code-block:: bash
 
-   python examples/run_experiments.py --config configs/experiment_cfg.yml --log-level INFO
+   python examples/run_experiments.py
 
 Key Actions:
-- Generate synthetic brain activity data.
+- Generate synthetic dipoles activity.
+- Simulate EEG/MEG measurements.
 - Solve the inverse problem using Gamma-MAP (or other solvers).
 - Evaluate calibration using regression and classification curves.
+- Generate figures for uncertainty analysis.
 - Save benchmark results automatically to the ``results/`` directory.
