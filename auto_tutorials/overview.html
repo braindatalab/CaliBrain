@@ -1,0 +1,1042 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Overview of brain source localization with CaliBrain &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_tutorials/overview';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"></div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Overview of brain source localization with CaliBrain</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-overview-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="overview-of-brain-source-localization-with-calibrain">
+<span id="tut-overview"></span><span id="sphx-glr-auto-tutorials-overview-py"></span><h1>Overview of brain source localization with CaliBrain<a class="headerlink" href="#overview-of-brain-source-localization-with-calibrain" title="Link to this heading">#</a></h1>
+<p>This tutorial covers the basic CaliBrain pipeline for brain source localization
+and uncertainty quantification: building forward models, simulating brain activity,
+estimating sources, and quantifying uncertainty. It introduces the core CaliBrain
+data structures and components, covering the essential workflow at a high level.
+Subsequent tutorials address each topic in greater detail.</p>
+<p>CaliBrain is designed around a modular architecture where each component handles
+a specific aspect of the source localization and uncertainty quantification pipeline.</p>
+<p>We begin by importing the necessary Python modules:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Authors: Mohammad Orabe  &lt;m.orabe@icloud.com&gt;</span>
+<span class="c1"># License: AGPL-3.0 license</span>
+<span class="c1"># Copyright the CaliBrain contributors.</span>
+</pre></div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</pre></div>
+</div>
+<section id="the-calibrain-architecture">
+<h2>The CaliBrain architecture<a class="headerlink" href="#the-calibrain-architecture" title="Link to this heading">#</a></h2>
+<p>CaliBrain follows a modular design with 8 main components that work together
+to provide a complete pipeline for brain source localization with uncertainty
+quantification:</p>
+<ol class="arabic simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">LeadfieldBuilder</span></code> - Creates the forward model</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code> - Generates brain source activity</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code> - Simulates sensor measurements</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceEstimator</span></code> - Solves the inverse problem</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">UncertaintyEstimator</span></code> - Quantifies estimate uncertainty</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricEvaluator</span></code> - Evaluates performance and calibration</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Visualizer</span></code> - Creates plots and visualizations</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Benchmark</span></code> - Orchestrates complete experiments</p></li>
+</ol>
+<p>These components can be used individually for specific tasks or together
+through the <code class="xref py py-class docutils literal notranslate"><span class="pre">Benchmark</span></code> class for automated workflows.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LeadfieldBuilder</span><span class="p">,</span>
+    <span class="n">SourceSimulator</span><span class="p">,</span>
+    <span class="n">SensorSimulator</span><span class="p">,</span>
+    <span class="n">SourceEstimator</span><span class="p">,</span>
+    <span class="n">UncertaintyEstimator</span><span class="p">,</span>
+    <span class="n">MetricEvaluator</span><span class="p">,</span>
+    <span class="n">Visualizer</span><span class="p">,</span>
+    <span class="n">Benchmark</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="building-the-forward-model">
+<h2>Building the forward model<a class="headerlink" href="#building-the-forward-model" title="Link to this heading">#</a></h2>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">LeadfieldBuilder</span></code> creates the forward model that maps
+brain sources to sensor measurements. This is the foundation of all source
+localization analyses, as it defines the relationship between neural activity
+and what we observe at the sensors.</p>
+<p>The forward model is represented by the leadfield matrix <strong>L</strong>, where:
+<strong>sensor_data = L × source_activity + noise</strong></p>
+<p>CaliBrain integrates with MNE-Python to provide realistic head models and
+supports both EEG and MEG modalities with various source orientations.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Configure the forward model</span>
+<span class="n">leadfield_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="s2">&quot;fsaverage&quot;</span><span class="p">,</span>           <span class="c1"># Use MNE&#39;s template brain</span>
+    <span class="s2">&quot;spacing&quot;</span><span class="p">:</span> <span class="s2">&quot;ico4&quot;</span><span class="p">,</span>                <span class="c1"># Source space resolution</span>
+    <span class="s2">&quot;modality&quot;</span><span class="p">:</span> <span class="s2">&quot;eeg&quot;</span><span class="p">,</span>                <span class="c1"># EEG sensors</span>
+    <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>           <span class="c1"># Fixed source orientations</span>
+    <span class="s2">&quot;montage&quot;</span><span class="p">:</span> <span class="s2">&quot;standard_1020&quot;</span><span class="p">,</span>       <span class="c1"># Standard EEG layout</span>
+<span class="p">}</span>
+
+<span class="c1"># # Build the leadfield matrix</span>
+<span class="c1"># leadfield_builder = LeadfieldBuilder(config=leadfield_config)</span>
+<span class="c1"># leadfield = leadfield_builder.simulate()</span>
+
+<span class="c1"># print(f&quot;Leadfield matrix shape: {leadfield.shape}&quot;)</span>
+<span class="c1"># print(f&quot;  Sensors: {leadfield.shape[0]}&quot;)</span>
+<span class="c1"># print(f&quot;  Sources: {leadfield.shape[1]}&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # The leadfield matrix dimensions tell us about our measurement setup:</span>
+<span class="c1"># # the number of sensors (EEG electrodes or MEG sensors) and the number</span>
+<span class="c1"># # of potential source locations in the brain. The condition number of</span>
+<span class="c1"># # this matrix affects the difficulty of the inverse problem.</span>
+
+<span class="c1"># condition_number = np.linalg.cond(leadfield)</span>
+<span class="c1"># print(f&quot;Condition number: {condition_number:.2e}&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Simulating brain source activity</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.SourceSimulator` generates realistic brain source</span>
+<span class="c1"># # activity patterns with event-related potential (ERP) waveforms. This allows</span>
+<span class="c1"># # us to test source localization algorithms with known ground truth.</span>
+
+<span class="c1"># # Define the ERP characteristics</span>
+<span class="c1"># ERP_config = {</span>
+<span class="c1">#     &quot;tmin&quot;: -0.2,          # Pre-stimulus period (seconds)</span>
+<span class="c1">#     &quot;tmax&quot;: 0.5,           # Post-stimulus period (seconds)</span>
+<span class="c1">#     &quot;sfreq&quot;: 250,          # Sampling frequency (Hz)</span>
+<span class="c1">#     &quot;amplitude&quot;: 50.0,     # Peak amplitude (nAm)</span>
+<span class="c1"># }</span>
+
+<span class="c1"># # Initialize the source simulator</span>
+<span class="c1"># source_sim = SourceSimulator(ERP_config=ERP_config)</span>
+
+<span class="c1"># # Simulation parameters</span>
+<span class="c1"># n_sources = leadfield.shape[1]  # Use all available source locations</span>
+<span class="c1"># n_active = 3                    # Number of simultaneously active sources</span>
+<span class="c1"># n_trials = 20                   # Number of trials to simulate</span>
+
+<span class="c1"># # Generate source activity</span>
+<span class="c1"># source_data, active_indices = source_sim.simulate(</span>
+<span class="c1">#     n_sources=n_sources,</span>
+<span class="c1">#     n_active=n_active,</span>
+<span class="c1">#     n_trials=n_trials</span>
+<span class="c1"># )</span>
+
+<span class="c1"># print(f&quot;Source simulation completed:&quot;)</span>
+<span class="c1"># print(f&quot;  Active sources: {len(active_indices)} out of {n_sources}&quot;)</span>
+<span class="c1"># print(f&quot;  Data shape: {source_data.shape} (sources × time × trials)&quot;)</span>
+<span class="c1"># print(f&quot;  Active indices: {active_indices}&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Let&#39;s visualize the simulated ERP waveforms to understand what we&#39;ve created.</span>
+<span class="c1"># # We&#39;ll plot the time courses of the active sources and show the distribution</span>
+<span class="c1"># # of source amplitudes across the brain.</span>
+
+<span class="c1"># time = np.linspace(ERP_config[&#39;tmin&#39;], ERP_config[&#39;tmax&#39;], source_data.shape[1])</span>
+
+<span class="c1"># fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))</span>
+
+<span class="c1"># # Plot ERP time courses</span>
+<span class="c1"># for i, idx in enumerate(active_indices):</span>
+<span class="c1">#     ax1.plot(time, source_data[idx, :, 0], label=f&#39;Source {idx}&#39;)</span>
+<span class="c1"># ax1.axvline(0, color=&#39;r&#39;, linestyle=&#39;--&#39;, alpha=0.7, label=&#39;Stimulus onset&#39;)</span>
+<span class="c1"># ax1.set_xlabel(&#39;Time (s)&#39;)</span>
+<span class="c1"># ax1.set_ylabel(&#39;Amplitude (nAm)&#39;)</span>
+<span class="c1"># ax1.set_title(&#39;Simulated ERP Waveforms&#39;)</span>
+<span class="c1"># ax1.legend()</span>
+<span class="c1"># ax1.grid(True, alpha=0.3)</span>
+
+<span class="c1"># # Show source amplitude distribution</span>
+<span class="c1"># all_amplitudes = np.max(np.abs(source_data), axis=(1, 2))</span>
+<span class="c1"># ax2.stem(range(len(all_amplitudes)), all_amplitudes, basefmt=&#39; &#39;)</span>
+<span class="c1"># ax2.set_xlabel(&#39;Source Index&#39;)</span>
+<span class="c1"># ax2.set_ylabel(&#39;Peak Amplitude (nAm)&#39;)</span>
+<span class="c1"># ax2.set_title(&#39;Source Amplitude Distribution&#39;)</span>
+<span class="c1"># ax2.set_yscale(&#39;log&#39;)</span>
+<span class="c1"># ax2.grid(True, alpha=0.3)</span>
+
+<span class="c1"># plt.tight_layout()</span>
+<span class="c1"># plt.show()</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Forward modeling: simulating sensor measurements</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.SensorSimulator` applies the forward model to convert</span>
+<span class="c1"># # our simulated brain activity into realistic sensor measurements. It also adds</span>
+<span class="c1"># # configurable levels of measurement noise to simulate realistic recording</span>
+<span class="c1"># # conditions.</span>
+
+<span class="c1"># # Initialize sensor simulator</span>
+<span class="c1"># sensor_sim = SensorSimulator()</span>
+
+<span class="c1"># # Apply forward model with noise</span>
+<span class="c1"># alpha_SNR = 0.5  # Noise level (0 = no noise, 1 = pure noise)</span>
+<span class="c1"># sensor_clean, sensor_noisy = sensor_sim.simulate(</span>
+<span class="c1">#     source_data=source_data,</span>
+<span class="c1">#     leadfield=leadfield,</span>
+<span class="c1">#     alpha_SNR=alpha_SNR</span>
+<span class="c1"># )</span>
+
+<span class="c1"># # Calculate the actual signal-to-noise ratio</span>
+<span class="c1"># signal_power = np.var(sensor_clean)</span>
+<span class="c1"># noise_power = np.var(sensor_noisy - sensor_clean)</span>
+<span class="c1"># snr_db = 10 * np.log10(signal_power / noise_power) if noise_power &gt; 0 else np.inf</span>
+
+<span class="c1"># print(f&quot;Sensor data generated:&quot;)</span>
+<span class="c1"># print(f&quot;  Shape: {sensor_clean.shape} (channels × time × trials)&quot;)</span>
+<span class="c1"># print(f&quot;  Signal-to-noise ratio: {snr_db:.1f} dB&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Solving the inverse problem</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.SourceEstimator` solves the inverse problem to estimate</span>
+<span class="c1"># # brain source activity from the sensor measurements. CaliBrain implements</span>
+<span class="c1"># # several source estimation methods with different characteristics.</span>
+
+<span class="c1"># # Initialize source estimator</span>
+<span class="c1"># source_est = SourceEstimator()</span>
+
+<span class="c1"># # Test different estimation methods</span>
+<span class="c1"># methods_to_test = [&#39;eloreta&#39;, &#39;gamma_map&#39;]</span>
+<span class="c1"># source_estimates = {}</span>
+
+<span class="c1"># for method in methods_to_test:</span>
+<span class="c1">#     print(f&quot;\nTesting {method.upper()} method...&quot;)</span>
+
+<span class="c1">#     try:</span>
+<span class="c1">#         # Estimate sources using the first trial</span>
+<span class="c1">#         estimated = source_est.estimate(</span>
+<span class="c1">#             sensor_data=sensor_noisy[:, :, 0],</span>
+<span class="c1">#             leadfield=leadfield,</span>
+<span class="c1">#             method=method,</span>
+<span class="c1">#             alpha=0.01  # Regularization parameter</span>
+<span class="c1">#         )</span>
+
+<span class="c1">#         source_estimates[method] = estimated</span>
+
+<span class="c1">#         # Calculate some basic metrics</span>
+<span class="c1">#         peak_amplitude = np.max(np.abs(estimated))</span>
+<span class="c1">#         active_threshold = peak_amplitude * 0.1</span>
+<span class="c1">#         n_detected = np.sum(np.max(np.abs(estimated), axis=1) &gt; active_threshold)</span>
+
+<span class="c1">#         print(f&quot;  Peak amplitude: {peak_amplitude:.2e}&quot;)</span>
+<span class="c1">#         print(f&quot;  Sources detected: {n_detected}&quot;)</span>
+
+<span class="c1">#     except Exception as e:</span>
+<span class="c1">#         print(f&quot;  Error: {e}&quot;)</span>
+<span class="c1">#         source_estimates[method] = None</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Let&#39;s visualize the source estimation results to compare the different methods</span>
+<span class="c1"># # and see how well they recover the true source locations.</span>
+
+<span class="c1"># if any(est is not None for est in source_estimates.values()):</span>
+<span class="c1">#     fig, axes = plt.subplots(2, len(methods_to_test), figsize=(12, 8))</span>
+<span class="c1">#     if len(methods_to_test) == 1:</span>
+<span class="c1">#         axes = axes.reshape(-1, 1)</span>
+
+<span class="c1">#     for i, method in enumerate(methods_to_test):</span>
+<span class="c1">#         if source_estimates[method] is not None:</span>
+<span class="c1">#             estimated = source_estimates[method]</span>
+
+<span class="c1">#             # Time course comparison</span>
+<span class="c1">#             ax = axes[0, i]</span>
+<span class="c1">#             for idx in active_indices[:2]:  # Show first 2 active sources</span>
+<span class="c1">#                 ax.plot(time, estimated[idx, :], &#39;-&#39;, label=f&#39;Est. {idx}&#39;)</span>
+<span class="c1">#                 ax.plot(time, source_data[idx, :, 0], &#39;--&#39;, alpha=0.7, label=f&#39;True {idx}&#39;)</span>
+<span class="c1">#             ax.axvline(0, color=&#39;gray&#39;, linestyle=&#39;--&#39;, alpha=0.5)</span>
+<span class="c1">#             ax.set_xlabel(&#39;Time (s)&#39;)</span>
+<span class="c1">#             ax.set_ylabel(&#39;Amplitude&#39;)</span>
+<span class="c1">#             ax.set_title(f&#39;{method.upper()} - Time Courses&#39;)</span>
+<span class="c1">#             ax.legend()</span>
+<span class="c1">#             ax.grid(True, alpha=0.3)</span>
+
+<span class="c1">#             # Source detection visualization</span>
+<span class="c1">#             ax = axes[1, i]</span>
+<span class="c1">#             est_amplitudes = np.max(np.abs(estimated), axis=1)</span>
+<span class="c1">#             colors = [&#39;red&#39; if idx in active_indices else &#39;blue&#39;</span>
+<span class="c1">#                      for idx in range(len(est_amplitudes))]</span>
+
+<span class="c1">#             ax.scatter(range(len(est_amplitudes)), est_amplitudes,</span>
+<span class="c1">#                       c=colors, alpha=0.6, s=20)</span>
+<span class="c1">#             ax.set_xlabel(&#39;Source Index&#39;)</span>
+<span class="c1">#             ax.set_ylabel(&#39;Peak Amplitude&#39;)</span>
+<span class="c1">#             ax.set_title(f&#39;{method.upper()} - Detection (Red=True Active)&#39;)</span>
+<span class="c1">#             ax.set_yscale(&#39;log&#39;)</span>
+<span class="c1">#             ax.grid(True, alpha=0.3)</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             for j in range(2):</span>
+<span class="c1">#                 axes[j, i].text(0.5, 0.5, f&#39;{method.upper()}\nNot Available&#39;,</span>
+<span class="c1">#                                ha=&#39;center&#39;, va=&#39;center&#39;, transform=axes[j, i].transAxes)</span>
+
+<span class="c1">#     plt.tight_layout()</span>
+<span class="c1">#     plt.show()</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Quantifying uncertainty</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.UncertaintyEstimator` computes confidence intervals</span>
+<span class="c1"># # for the source estimates, allowing us to assess the reliability of our</span>
+<span class="c1"># # localization results. This is crucial for understanding which parts of</span>
+<span class="c1"># # our source estimates we can trust.</span>
+
+<span class="c1"># # Select the best available method for uncertainty quantification</span>
+<span class="c1"># best_method = &#39;eloreta&#39; if source_estimates.get(&#39;eloreta&#39;) is not None else &#39;gamma_map&#39;</span>
+
+<span class="c1"># if source_estimates[best_method] is not None:</span>
+<span class="c1">#     print(f&quot;Computing uncertainty for {best_method.upper()} estimates...&quot;)</span>
+
+<span class="c1">#     # Initialize uncertainty estimator</span>
+<span class="c1">#     uncertainty_est = UncertaintyEstimator()</span>
+
+<span class="c1">#     # Compute 95% confidence intervals</span>
+<span class="c1">#     confidence_level = 0.95</span>
+
+<span class="c1">#     try:</span>
+<span class="c1">#         lower_bounds, upper_bounds, point_estimates = uncertainty_est.estimate(</span>
+<span class="c1">#             sensor_data=sensor_noisy[:, :, :5],  # Use first 5 trials</span>
+<span class="c1">#             leadfield=leadfield,</span>
+<span class="c1">#             method=best_method,</span>
+<span class="c1">#             confidence_level=confidence_level,</span>
+<span class="c1">#             n_bootstrap=50  # Number of bootstrap samples</span>
+<span class="c1">#         )</span>
+
+<span class="c1">#         print(f&quot;✓ Computed {confidence_level:.0%} confidence intervals&quot;)</span>
+
+<span class="c1">#         # Calculate coverage for the active sources</span>
+<span class="c1">#         true_signal = source_data[:, :, :5]  # First 5 trials to match</span>
+<span class="c1">#         within_bounds = ((true_signal &gt;= lower_bounds[:, :, np.newaxis]) &amp;</span>
+<span class="c1">#                         (true_signal &lt;= upper_bounds[:, :, np.newaxis]))</span>
+<span class="c1">#         empirical_coverage = np.mean(within_bounds)</span>
+
+<span class="c1">#         print(f&quot;Empirical coverage: {empirical_coverage:.1%} (target: {confidence_level:.0%})&quot;)</span>
+
+<span class="c1">#     except Exception as e:</span>
+<span class="c1">#         print(f&quot;Error in uncertainty estimation: {e}&quot;)</span>
+<span class="c1">#         lower_bounds = upper_bounds = point_estimates = None</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Let&#39;s visualize the uncertainty estimates for a few of the active sources</span>
+<span class="c1"># # to see how well our confidence intervals capture the true variability.</span>
+
+<span class="c1"># if &#39;lower_bounds&#39; in locals() and lower_bounds is not None:</span>
+<span class="c1">#     fig, axes = plt.subplots(1, min(2, len(active_indices)), figsize=(12, 4))</span>
+<span class="c1">#     if len(active_indices) == 1:</span>
+<span class="c1">#         axes = [axes]</span>
+
+<span class="c1">#     for i, source_idx in enumerate(active_indices[:2]):</span>
+<span class="c1">#         ax = axes[i]</span>
+
+<span class="c1">#         # Plot confidence intervals</span>
+<span class="c1">#         ax.fill_between(time,</span>
+<span class="c1">#                        lower_bounds[source_idx, :],</span>
+<span class="c1">#                        upper_bounds[source_idx, :],</span>
+<span class="c1">#                        alpha=0.3, color=&#39;blue&#39;,</span>
+<span class="c1">#                        label=f&#39;{confidence_level:.0%} CI&#39;)</span>
+
+<span class="c1">#         # Plot point estimate</span>
+<span class="c1">#         ax.plot(time, point_estimates[source_idx, :],</span>
+<span class="c1">#                 &#39;b-&#39;, linewidth=2, label=&#39;Point estimate&#39;)</span>
+
+<span class="c1">#         # Plot true signal from first trial</span>
+<span class="c1">#         ax.plot(time, source_data[source_idx, :, 0],</span>
+<span class="c1">#                 &#39;r--&#39;, linewidth=2, label=&#39;True signal&#39;)</span>
+
+<span class="c1">#         ax.axvline(0, color=&#39;gray&#39;, linestyle=&#39;--&#39;, alpha=0.7)</span>
+<span class="c1">#         ax.set_xlabel(&#39;Time (s)&#39;)</span>
+<span class="c1">#         ax.set_ylabel(&#39;Amplitude (nAm)&#39;)</span>
+<span class="c1">#         ax.set_title(f&#39;Source {source_idx} Uncertainty&#39;)</span>
+<span class="c1">#         ax.legend()</span>
+<span class="c1">#         ax.grid(True, alpha=0.3)</span>
+
+<span class="c1">#     plt.tight_layout()</span>
+<span class="c1">#     plt.show()</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Performance evaluation</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.MetricEvaluator` assesses the quality of our source</span>
+<span class="c1"># # estimates and uncertainty quantification. This is essential for validating</span>
+<span class="c1"># # our methods and comparing different approaches.</span>
+
+<span class="c1"># if source_estimates[best_method] is not None:</span>
+<span class="c1">#     print(f&quot;Evaluating {best_method.upper()} performance...&quot;)</span>
+
+<span class="c1">#     # Initialize metric evaluator</span>
+<span class="c1">#     metric_eval = MetricEvaluator()</span>
+
+<span class="c1">#     try:</span>
+<span class="c1">#         # Compute localization metrics</span>
+<span class="c1">#         localization_metrics = metric_eval.compute_localization_metrics(</span>
+<span class="c1">#             true_sources=source_data[:, :, 0],  # Use first trial as reference</span>
+<span class="c1">#             estimated_sources=source_estimates[best_method],</span>
+<span class="c1">#             true_active_indices=active_indices</span>
+<span class="c1">#         )</span>
+
+<span class="c1">#         print(&quot;\n📊 Localization Performance:&quot;)</span>
+<span class="c1">#         for metric, value in localization_metrics.items():</span>
+<span class="c1">#             print(f&quot;  {metric}: {value:.4f}&quot;)</span>
+
+<span class="c1">#         # Compute calibration metrics if uncertainty is available</span>
+<span class="c1">#         if &#39;lower_bounds&#39; in locals() and lower_bounds is not None:</span>
+<span class="c1">#             calibration_metrics = metric_eval.compute_calibration_metrics(</span>
+<span class="c1">#                 true_sources=source_data[:, :, :5],  # Match uncertainty data</span>
+<span class="c1">#                 lower_bounds=lower_bounds,</span>
+<span class="c1">#                 upper_bounds=upper_bounds,</span>
+<span class="c1">#                 confidence_level=confidence_level</span>
+<span class="c1">#             )</span>
+
+<span class="c1">#             print(f&quot;\n📈 Calibration Quality ({confidence_level:.0%} CI):&quot;)</span>
+<span class="c1">#             for metric, value in calibration_metrics.items():</span>
+<span class="c1">#                 print(f&quot;  {metric}: {value:.4f}&quot;)</span>
+
+<span class="c1">#     except Exception as e:</span>
+<span class="c1">#         print(f&quot;Error in performance evaluation: {e}&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Automated benchmarking workflows</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.Benchmark` class orchestrates complete experimental</span>
+<span class="c1"># # workflows for systematic method comparison and parameter optimization. This</span>
+<span class="c1"># # is particularly useful for large-scale studies or when you need to test</span>
+<span class="c1"># # multiple conditions automatically.</span>
+
+<span class="c1"># print(&quot;\n🔬 Benchmark Workflow Overview&quot;)</span>
+<span class="c1"># print(&quot;=&quot; * 40)</span>
+
+<span class="c1"># # Define a parameter grid for systematic evaluation</span>
+<span class="c1"># param_grid = {</span>
+<span class="c1">#     &quot;subject&quot;: [&quot;fsaverage&quot;],</span>
+<span class="c1">#     &quot;nnz&quot;: [1, 3, 5],                    # Number of active sources</span>
+<span class="c1">#     &quot;orientation_type&quot;: [&quot;fixed&quot;],        # Source orientations</span>
+<span class="c1">#     &quot;alpha_SNR&quot;: [0.3, 0.5, 0.7],       # Noise levels</span>
+<span class="c1"># }</span>
+
+<span class="c1"># print(&quot;Example parameter combinations:&quot;)</span>
+<span class="c1"># total_combinations = len(param_grid[&quot;nnz&quot;]) * len(param_grid[&quot;alpha_SNR&quot;])</span>
+<span class="c1"># for nnz in param_grid[&quot;nnz&quot;]:</span>
+<span class="c1">#     for alpha in param_grid[&quot;alpha_SNR&quot;]:</span>
+<span class="c1">#         print(f&quot;  • {nnz} active sources, α_SNR = {alpha}&quot;)</span>
+
+<span class="c1"># print(f&quot;\nTotal combinations: {total_combinations}&quot;)</span>
+
+<span class="c1"># # Initialize benchmark (demonstration only)</span>
+<span class="c1"># benchmark = Benchmark(</span>
+<span class="c1">#     ERP_config=ERP_config,</span>
+<span class="c1">#     data_param_grid=param_grid,</span>
+<span class="c1">#     experiment_dir=&quot;./benchmark_results&quot;</span>
+<span class="c1"># )</span>
+
+<span class="c1"># print(&quot;To run the complete benchmark:&quot;)</span>
+<span class="c1"># print(&quot;results = benchmark.run(nruns=10)&quot;)</span>
+<span class="c1"># print(&quot;This would generate a comprehensive performance database.&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # Creating comprehensive visualizations</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # The :class:`~calibrain.Visualizer` creates publication-ready figures for</span>
+<span class="c1"># # all aspects of the analysis. It can automatically generate comprehensive</span>
+<span class="c1"># # reports including time series, topographies, brain maps, and calibration plots.</span>
+
+<span class="c1"># # Initialize visualizer</span>
+<span class="c1"># viz = Visualizer(base_save_path=&quot;./tutorial_figures&quot;)</span>
+
+<span class="c1"># print(&quot;📊 Visualization capabilities:&quot;)</span>
+<span class="c1"># print(&quot;  • ERP time series and source activity plots&quot;)</span>
+<span class="c1"># print(&quot;  • Sensor topographies and brain source maps&quot;)</span>
+<span class="c1"># print(&quot;  • Uncertainty quantification visualizations&quot;)</span>
+<span class="c1"># print(&quot;  • Calibration analysis and performance curves&quot;)</span>
+<span class="c1"># print(&quot;  • Automated report generation&quot;)</span>
+
+<span class="c1"># # Example of creating a summary figure (conceptual)</span>
+<span class="c1"># print(&quot;\nTo create comprehensive visualizations:&quot;)</span>
+<span class="c1"># print(&quot;viz.create_analysis_summary(source_data, sensor_data, estimates, uncertainty)&quot;)</span>
+
+<span class="c1"># # %%</span>
+<span class="c1"># # .. _calibrain-workflow-summary:</span>
+<span class="c1"># #</span>
+<span class="c1"># # Summary and next steps</span>
+<span class="c1"># # ^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1"># #</span>
+<span class="c1"># # This tutorial covered the essential CaliBrain workflow for brain source</span>
+<span class="c1"># # localization with uncertainty quantification:</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Forward modeling**: Built leadfield matrix with :class:`~calibrain.LeadfieldBuilder`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Source simulation**: Generated realistic ERPs with :class:`~calibrain.SourceSimulator`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Sensor simulation**: Applied forward model and noise with :class:`~calibrain.SensorSimulator`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Source estimation**: Solved inverse problem with :class:`~calibrain.SourceEstimator`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Uncertainty quantification**: Computed confidence intervals with :class:`~calibrain.UncertaintyEstimator`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Performance evaluation**: Assessed quality with :class:`~calibrain.MetricEvaluator`</span>
+<span class="c1"># #</span>
+<span class="c1"># # ✅ **Automated workflows**: Demonstrated systematic evaluation with :class:`~calibrain.Benchmark`</span>
+<span class="c1"># #</span>
+<span class="c1"># # The modular design allows you to use individual components for specific tasks</span>
+<span class="c1"># # or combine them for complete analyses. The uncertainty quantification capabilities</span>
+<span class="c1"># # make CaliBrain particularly suitable for rigorous assessment of source localization</span>
+<span class="c1"># # reliability.</span>
+
+<span class="c1"># print(&quot;\n🎯 Next steps:&quot;)</span>
+<span class="c1"># print(&quot;  • Explore the detailed component tutorials&quot;)</span>
+<span class="c1"># print(&quot;  • Try the examples with your own data&quot;)</span>
+<span class="c1"># print(&quot;  • Read the API documentation for parameter details&quot;)</span>
+<span class="c1"># print(&quot;  • Join the community discussions on GitHub&quot;)</span>
+<span class="c1"># print(&quot;\n🧠 Happy source localizing!&quot;)</span>
+
+<span class="c1"># ##############################################################################</span>
+<span class="c1"># # The subsequent tutorials dive deeper into each component, covering advanced</span>
+<span class="c1"># # features like custom source estimation methods, sophisticated uncertainty</span>
+<span class="c1"># # analysis, large-scale benchmarking workflows, and integration with real</span>
+<span class="c1"># # EEG/MEG data. CaliBrain&#39;s focus on uncertainty quantification makes it</span>
+<span class="c1"># # particularly valuable for robust neuroscience research.</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.003 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-overview-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/5588dada9f75f97b27a4b0f6de1e2d69/overview.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">overview.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/59b7588d10149d5434b8d9a59d50b83e/overview.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">overview.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/a563be11225613144186b4282a3bda8c/overview.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">overview.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-calibrain-architecture">The CaliBrain architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-the-forward-model">Building the forward model</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/auto_tutorials/overview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
