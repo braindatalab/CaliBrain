@@ -4,10 +4,11 @@ sphinx>=5.0.0,<8.0.0
 docutils>=0.18,<0.22
 
 # Themes and extensions
-sphinx-rtd-theme>=1.0.0
+pydata-sphinx-theme>=0.13
 sphinx-autodoc-typehints>=1.19.0
 sphinx-copybutton>=0.5.0
 myst-parser>=0.18.0
+sphinx-gallery>=0.11.0
 
 # For API documentation
 sphinx-autosummary-accessors>=2023.4.0
