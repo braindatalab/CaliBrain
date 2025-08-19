@@ -13,5 +13,9 @@ sphinx-gallery>=0.11.0
 # For API documentation
 sphinx-autosummary-accessors>=2023.4.0
 
+# Graphics and plotting
+matplotlib>=3.5.0
+pillow>=8.0.0
+
 # Include main project dependencies for autodoc
 -r ../requirements.txt
