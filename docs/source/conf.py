@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 import calibrain
-from sphinx_gallery.sorting import ExplicitOrder
+# from sphinx_gallery.sorting import ExplicitOrder
 
 # sys.path.insert(0, os.path.abspath('../..')) # Point to project root relative to conf.py
 project_root = Path(__file__).parent.parent.parent
@@ -103,13 +103,13 @@ sphinx_gallery_conf = {
     # Handle multiple source directories
     'examples_dirs': ['../../tutorials', '../../examples'],   # Multiple source dirs
     'gallery_dirs': ['auto_tutorials', 'auto_examples'],      # Corresponding output dirs
-    
+
     # Process all Python files (not just overview.py)
     'filename_pattern': '/.*.py$',                            # All .py files
     'ignore_pattern': '__init__.py|README.rst',       # Ignore these patterns
     
     # Gallery settings
-    'plot_gallery': True,                 # Generate plots
+    'plot_gallery': 'True',       # Keep as string?? # Generate plots
     'download_all_examples': False,       # Don't create download zip
     'within_subsection_order': 'FileNameSortKey',             # Sort by filename
     'first_notebook_cell': '# This tutorial is available for download as a Jupyter notebook',
@@ -120,6 +120,13 @@ sphinx_gallery_conf = {
     # Subsection configuration
     # 'subsection_order': ExplicitOrder(['../../tutorials', '../../examples']),
     'expected_failing_examples': [],      # List any expected failures
+
+    # Add these to handle thumbnail issues
+    'image_scrapers': ('matplotlib',),
+    'reset_modules': ('matplotlib', 'seaborn'),
+    'thumbnail_size': (200, 200),
+    'abort_on_example_error': False,  # Don't stop on errors
+    'default_thumb_file': None,  # Use default thumbnail
 }
 
 # Autodoc settings
