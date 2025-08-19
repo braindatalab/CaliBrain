@@ -109,7 +109,7 @@ sphinx_gallery_conf = {
     'ignore_pattern': '__init__.py|README.rst',       # Ignore these patterns
     
     # Gallery settings
-    'plot_gallery': 'True',       # Keep as string?? # Generate plots
+    'plot_gallery': True,  # Generate plots
     'download_all_examples': False,       # Don't create download zip
     'within_subsection_order': 'FileNameSortKey',             # Sort by filename
     'first_notebook_cell': '# This tutorial is available for download as a Jupyter notebook',
@@ -127,6 +127,8 @@ sphinx_gallery_conf = {
     'thumbnail_size': (200, 200),
     'abort_on_example_error': False,  # Don't stop on errors
     'default_thumb_file': None,  # Use default thumbnail
+    'promote_jupyter_magic': True,  # Handle notebook compatibility
+
 }
 
 # Autodoc settings
