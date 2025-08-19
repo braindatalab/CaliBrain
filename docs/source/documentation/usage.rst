@@ -3,8 +3,6 @@ Usage
 
 This section explains how to use **CaliBrain** for simulating data, running experiments, and analyzing uncertainty calibration.
 
----
-
 What can I do with **CaliBrain**?
 ---------------------------------
 
@@ -13,8 +11,6 @@ What can I do with **CaliBrain**?
 3. Simulate sensor-level measurements.
 4. Solve the inverse problem to reconstruct sources.
 5. Quantify uncertainty and visualize calibration results.
-
----
 
 Running Experiments
 --------------------
@@ -60,8 +56,6 @@ To run the entire benchmark with default settings:
         (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
----
-
 API Overview
 -------------
 
@@ -74,7 +68,6 @@ Core components of **CaliBrain**:
 - **MetricEvaluator**: Compute evaluation metrics for model performance.
 - **Visualizer**: Plot calibration results, source estimates, and uncertainty.
 - **Benchmark**: Automate experiment running and results collection.
----
 
 Examples
 --------
@@ -115,6 +108,7 @@ To simulate or load a leadfield matrix:
 - ``{subject}-leadfield-fixed.npz`` or ``{subject}-leadfield-free.npz`` (Leadfield Matrix)
 
 Example: Leadfield Simulation
+-----------------------------
 
 .. code-block:: python
 

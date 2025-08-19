@@ -7,5 +7,5 @@ This section provides hands-on examples for running CaliBrain simulations and ex
    :maxdepth: 1
    :caption: Example Tutorials
 
-   leadfield_builder_example
+   leadfield_simulation_example
    run_experiment_example

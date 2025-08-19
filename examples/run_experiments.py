@@ -1,3 +1,21 @@
+"""
+.. _example-run_experiment:
+
+=============================================
+Run benchmark experiments for source localization and uncertainty estimation.
+=============================================
+
+This example demonstrates how to run comprehensive benchmarking experiments
+for evaluating source localization algorithms using CaliBrain.
+
+The script shows how to:
+- Set up ERP simulation parameters and logging
+- Configure parameter grids for MEG and EEG experiments  
+- Compare multiple algorithms (Gamma-MAP, eLORETA)
+- Evaluate uncertainty estimation and calibration performance
+- Generate comprehensive metrics and save results
+"""
+
 import os
 import datetime
 import logging
