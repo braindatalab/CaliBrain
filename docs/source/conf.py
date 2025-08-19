@@ -3,6 +3,9 @@ import os
 import sys
 from pathlib import Path
 import calibrain
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+
 # from sphinx_gallery.sorting import ExplicitOrder
 
 # sys.path.insert(0, os.path.abspath('../..')) # Point to project root relative to conf.py
@@ -96,6 +99,8 @@ html_theme_options = {
     "navbar_persistent": ["search-button"],
     
     "header_links_before_dropdown": 5,
+    
+    
 }
 
 # ADD Sphinx Gallery configuration
@@ -129,6 +134,9 @@ sphinx_gallery_conf = {
     'default_thumb_file': None,  # Use default thumbnail
     'promote_jupyter_magic': True,  # Handle notebook compatibility
 
+    # Add this to create dummy thumbnails if plots fail
+    'min_reported_time': 0,                                 # Report all execution times
+    'show_signature': False,        
 }
 
 # Autodoc settings
