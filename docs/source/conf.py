@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.intersphinx',  # Link to other projects' documentation
     'sphinx.ext.autosummary',  # Generate summary tables for modules
     'sphinx.ext.mathjax',      # For rendering math equations
-    'sphinx_gallery.gen_gallery',          # For auto-generating tutorial gallery
+    # 'sphinx_gallery.gen_gallery',          # For auto-generating tutorial gallery
     'matplotlib.sphinxext.plot_directive', # For matplotlib plots
 ]
 
