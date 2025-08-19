@@ -1,5 +1,5 @@
 """
-data_simulation.py
+sensor_simulation.py
 Module for simulating synthetic brain activity data for sensor-level measurements.
 """
 

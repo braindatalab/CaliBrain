@@ -34,7 +34,7 @@ def main():
         "sfreq": 250,
         "fmin": 1,
         "fmax": 5,
-        "amplitude": 20.0,
+        "amplitude": 50.0,
         "random_erp_timing": True,
         "erp_min_length": None,
     }
@@ -63,9 +63,9 @@ def main():
     # Define parameter grids for different data types
     data_param_grid_meg = {
         "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-        "nnz": [10],
+        "nnz": [1, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5],
+        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
     }
     
     data_param_grid_eeg = {
@@ -86,21 +86,24 @@ def main():
     
     estimators = [
         (gamma_map, gamma_map_params, data_param_grid_meg),
-        # (eloreta, eloreta_params, data_param_grid_meg),
+        (eloreta, eloreta_params, data_param_grid_meg),
         # (gamma_map, gamma_map_params, data_param_grid_eeg),
         # (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [
-        "mean_calibration_error",           # Calibration metric
-        "max_underconfidence_deviation",    # Calibration metric
-        "max_overconfidence_deviation",     # Calibration metric
-        "mean_absolute_deviation",          # Calibration metric
-        "mean_signed_deviation",            # Calibration metric
-        "mean_posterior_std",               # Uncertainty metric
-        # "f1",
-        # "emd",
-        # "accuracy",  
+        "mean_posterior_std",               # Uncertainty
+        "mean_calibration_error",           # Calibration (auc)
+        "max_underconfidence_deviation",    # Calibration
+        "max_overconfidence_deviation",     # Calibration
+        "mean_absolute_deviation",          # Calibration
+        "mean_signed_deviation",            # Calibration
+        "emd",                              # spatial accuracy
+        "jaccard_error",                    # spatial accuracy
+        "mse",                              # spatial accuracy
+        "euclidean_distance",               # detection performance
+        "f1",                               # detection performance
+        "accuracy",                         # detection performance
     ]
 
     metric_evaluator = MetricEvaluator(
