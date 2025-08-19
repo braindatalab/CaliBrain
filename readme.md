@@ -21,8 +21,8 @@
 **CaliBrain** is a Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
 
 It supports both:
-- **Regression tasks** (continuous source estimates)
-- **Classification tasks** (binary activation detection)
+- **Regression** (continuous source estimates)
+- **Classification** (binary activation detection)
 
 **Key Features**:
 - Setup of source space, BEM model, forward solution, and leadfield matrices.

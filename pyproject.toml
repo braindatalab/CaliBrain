@@ -7,10 +7,10 @@ name = "calibrain"
 version = "0.1.1"
 description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
-    {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"}
+    {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
 ]
-license = "MIT"  #TODO
+license = {text = "MIT"} # TODO
 readme = "README.md"
 requires-python = ">=3.6"
 
@@ -19,14 +19,28 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "mne",
-    #"POT",
+    "POT",
     "nibabel",
     "pyyaml",
+    "pyvistaqt", # for plotting 3D brain surfaces
+    "ipywidgets", # for interactive widgets in 3D brain surface plotting
+    "PyQt5", # for creating the GUI
+    "scipy",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest==6.2.4"
+]
+
+docs = [
+    "sphinx>=5.0.0,<8.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "pydata-sphinx-theme>=0.13.0",  # Add this
+    "sphinx-autodoc-typehints>=1.19.0",
+    "myst-parser>=0.18.0",
+    "sphinx-copybutton>=0.5.0",
+    "sphinx-gallery>=0.19.0",
 ]
 
 [project.scripts]
@@ -39,5 +53,6 @@ Repository = "https://github.com/braindatalab/CaliBrain"
 Documentation = "https://calibrain.readthedocs.io/"
 
 [tool.setuptools.packages.find]
-include = ["calibrain"]
-exclude = ["configs", "results"]
+where = ["."]
+include = ["calibrain*"]
+exclude = ["results*"]
