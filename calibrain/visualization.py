@@ -33,8 +33,10 @@ class Visualizer:
         fig.savefig(full_path, bbox_inches="tight")
         self.logger.debug(f"Figure saved to {full_path}")
         if show:
-            fig.show()
-        plt.close(fig)
+            plt.show()
+        # Don't close the figure immediately if show=True to allow Sphinx Gallery to capture it
+        if not show:
+            plt.close(fig)
 
     # --------------------------------------------
     # --- Vizualisation for source and sensor data
@@ -117,7 +119,7 @@ class Visualizer:
     def plot_source_signals(
         self,
         ERP_config: dict,
-        x_trial: np.ndarray,
+        x_trials: np.ndarray,
         x_active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
         units: Optional[str] = None,
         trial_idx: Optional[int] = None,
@@ -128,7 +130,7 @@ class Visualizer:
     ):
         # convert the data from A to nAm for better readability
         if units == FIFF.FIFF_UNIT_AM:
-            x_scaled = x_trial * 1e9  
+            x_scaled = x_trials * 1e9  
             units = "nAm"
         else:
             raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
@@ -136,7 +138,7 @@ class Visualizer:
         if trial_idx is not None:
             indices = None
             if x_active_indices is not None:
-                indices = x_active_indices[trial_idx] if isinstance(active_indices, (list, np.ndarray)) else x_active_indices
+                indices = x_active_indices[trial_idx] if isinstance(x_active_indices, (list, np.ndarray)) else x_active_indices
 
             fig = self._plot_sources_single_trial(
                 ERP_config=ERP_config,
@@ -287,16 +289,17 @@ class Visualizer:
         file_name: Optional[str] = None,
         show: bool = True,
     ):
-        ERP_config = {
-            "tmin": -0.5,
-            "tmax": 0.5,
-            "stim_onset": 0,
-            "sfreq": 250,
-            "fmin": 1,
-            "fmax": 5,
-            "amplitude": 20.0,
-            "random_erp_timing": True,
-            "erp_min_length": None,
+        if ERP_config is None:
+            ERP_config = {
+                "tmin": -0.5,
+                "tmax": 0.5,
+                "stim_onset": 0,
+                "sfreq": 250,
+                "fmin": 1,
+                "fmax": 5,
+                "amplitude": 20.0,
+                "random_erp_timing": True,
+                "erp_min_length": None,
         }
         # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
         if units == FIFF.FIFF_UNIT_T:
@@ -1212,7 +1215,7 @@ def main():
         active_indices=active_indices_trials,
         units=source_simulator.source_units,
         trial_idx=trial_idx,
-        title=f"Source Trial {trial_idx+1}",
+        title=f"Source Activity - Trial {trial_idx+1}",
         save_dir="data_simulation",
         file_name=f"source_trial_{trial_idx+1}",
         show=False,
@@ -1225,7 +1228,7 @@ def main():
         active_indices=active_indices_trials,
         units=source_simulator.source_units,
         trial_idx=None,
-        title="Source Trials (All)",
+        title="Source Activity - All Trials",
         save_dir="data_simulation",
         file_name="source_trials_all",
         show=False,
