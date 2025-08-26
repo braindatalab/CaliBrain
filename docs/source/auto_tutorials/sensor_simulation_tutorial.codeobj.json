@@ -1,0 +1,1324 @@
+{
+ "FIFF.FIFF_UNIT_V": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.io.constants.FIFF",
+   "module_short": "mne.io.constants.FIFF",
+   "name": "FIFF_UNIT_V"
+  }
+ ],
+ "L": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "L.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "L_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "L_demo.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "LeadfieldBuilder": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.leadfield_builder",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  }
+ ],
+ "Path": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "Path"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PurePath"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePath"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PurePathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePathBase"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  }
+ ],
+ "SensorSimulator": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  }
+ ],
+ "SourceSimulator": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "Visualizer": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "calibrain.leadfield_builder.LeadfieldBuilder": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.leadfield_builder",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  }
+ ],
+ "calibrain.sensor_simulation.SensorSimulator": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  }
+ ],
+ "calibrain.sensor_simulation.SensorSimulator._add_noise": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation.SensorSimulator",
+   "module_short": "calibrain.sensor_simulation.SensorSimulator",
+   "name": "_add_noise"
+  }
+ ],
+ "calibrain.sensor_simulation.SensorSimulator._project_sources_to_sensors": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation.SensorSimulator",
+   "module_short": "calibrain.sensor_simulation.SensorSimulator",
+   "name": "_project_sources_to_sensors"
+  }
+ ],
+ "calibrain.sensor_simulation.SensorSimulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation.SensorSimulator",
+   "module_short": "calibrain.sensor_simulation.SensorSimulator",
+   "name": "simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.sensor_simulation.SensorSimulator",
+   "module_short": "calibrain.sensor_simulation.SensorSimulator",
+   "name": "simulate"
+  }
+ ],
+ "calibrain.source_simulation.SourceSimulator": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "calibrain.visualization.Visualizer": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "class_info": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "data_path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  }
+ ],
+ "demo_sensor_simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  }
+ ],
+ "demo_sensor_simulator.sensor_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "demo_sensor_simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator.simulate"
+  }
+ ],
+ "erp_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "get_data_path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.utils",
+   "module_short": "calibrain.utils",
+   "name": "get_data_path"
+  }
+ ],
+ "high_snr_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "inspect_object": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.utils",
+   "module_short": "calibrain.utils",
+   "name": "inspect_object"
+  }
+ ],
+ "leadfield_builder": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.leadfield_builder",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder"
+  }
+ ],
+ "leadfield_builder.get_leadfield": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.leadfield_builder",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder.get_leadfield"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "LeadfieldBuilder.get_leadfield"
+  }
+ ],
+ "leadfield_builder.sensor_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "logger": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Logger"
+  }
+ ],
+ "logging.INFO": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "INFO"
+  }
+ ],
+ "logging.StreamHandler": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "StreamHandler"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Handler"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Filterer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "StreamHandler"
+  }
+ ],
+ "logging.basicConfig": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "basicConfig"
+  }
+ ],
+ "logging.getLogger": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "getLogger"
+  }
+ ],
+ "low_snr_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "n_sensors": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "n_sensors_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "n_sources": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "n_sources_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "n_times_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "n_trials_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "noise_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_high": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_high.max": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "noise_high.min": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "noise_low": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_low.max": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "noise_low.min": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "noise_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "noise_var_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_var_high": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_var_low": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_var_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_var_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "np.array": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "array"
+  }
+ ],
+ "np.random.randn": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "module.randn"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "randn"
+  }
+ ],
+ "np.random.seed": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "_cython_3_0_12",
+   "module_short": "_cython_3_0_12",
+   "name": "cython_function_or_method"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "seed"
+  }
+ ],
+ "pipeline_example": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "save_path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  }
+ ],
+ "save_path.mkdir": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "Path.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib._local",
+   "name": "PurePosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib._local",
+   "name": "PurePath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PurePathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePathBase.mkdir"
+  }
+ ],
+ "sensor_simulation_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "sensor_simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator"
+  }
+ ],
+ "sensor_simulator.sensor_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "sensor_simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.sensor_simulation",
+   "module_short": "calibrain",
+   "name": "SensorSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SensorSimulator.simulate"
+  }
+ ],
+ "source_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "source_simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "source_simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  }
+ ],
+ "source_simulator.source_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "viz": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "viz.plot_sensor_signals": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer.plot_sensor_signals"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer.plot_sensor_signals"
+  }
+ ],
+ "x_active_indices_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_demo_trial1": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_demo_trial2": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "x_trials_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_trials_demo.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "y_clean_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_clean_demo.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "y_clean_high": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_clean_high.max": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "y_clean_high.min": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "y_clean_low": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_clean_low.max": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "y_clean_low.min": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "y_clean_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_clean_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "y_noisy_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_noisy_demo.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "y_noisy_high": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_noisy_low": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_noisy_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "y_noisy_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ]
+}
