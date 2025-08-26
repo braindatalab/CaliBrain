@@ -8,18 +8,9 @@ localization and uncertainty quantification.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
+   :hidden:
 
-   overview
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Advanced Topics
-
-   leadfield_builder
-   source_estimation
-   uncertainty_quantification
-   benchmarking
+   .. include:: ../../../../tutorials/overview.py
 
 Getting Started
 ---------------

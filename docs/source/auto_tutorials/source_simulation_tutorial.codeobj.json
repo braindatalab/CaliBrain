@@ -1,0 +1,959 @@
+{
+ "Path": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "Path"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PurePath"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePath"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PurePathBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePathBase"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  }
+ ],
+ "SourceSimulator": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "Visualizer": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "active_indices_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "active_sources_0": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "calibrain.SourceSimulator": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "calibrain.source_simulation.SourceSimulator": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "calibrain.source_simulation.SourceSimulator._simulate_erp_waveform": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation.SourceSimulator",
+   "module_short": "calibrain.source_simulation.SourceSimulator",
+   "name": "_simulate_erp_waveform"
+  }
+ ],
+ "calibrain.source_simulation.SourceSimulator._simulate_source_time_courses": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation.SourceSimulator",
+   "module_short": "calibrain.source_simulation.SourceSimulator",
+   "name": "_simulate_source_time_courses"
+  }
+ ],
+ "calibrain.source_simulation.SourceSimulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation.SourceSimulator",
+   "module_short": "calibrain.source_simulation.SourceSimulator",
+   "name": "simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.source_simulation.SourceSimulator",
+   "module_short": "calibrain.source_simulation.SourceSimulator",
+   "name": "simulate"
+  }
+ ],
+ "calibrain.visualization.Visualizer": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "class_info": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "comparison_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "demo_simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "demo_simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  }
+ ],
+ "erp_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "fast_erp_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "i": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "indices": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "inspect_object": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.utils",
+   "module_short": "calibrain.utils",
+   "name": "inspect_object"
+  }
+ ],
+ "logger": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Logger"
+  }
+ ],
+ "logging.INFO": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "INFO"
+  }
+ ],
+ "logging.StreamHandler": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "StreamHandler"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Handler"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "Filterer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "StreamHandler"
+  }
+ ],
+ "logging.basicConfig": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "basicConfig"
+  }
+ ],
+ "logging.getLogger": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "logging",
+   "module_short": "logging",
+   "name": "getLogger"
+  }
+ ],
+ "n_nonzero": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "np.any": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "any"
+  }
+ ],
+ "np.count_nonzero": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "count_nonzero"
+  }
+ ],
+ "pipeline_example": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "save_path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  }
+ ],
+ "save_path.mkdir": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "PosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib",
+   "name": "Path.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib._local",
+   "name": "PurePosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePosixPath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._local",
+   "module_short": "pathlib._local",
+   "name": "PurePath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePath.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib._abc",
+   "module_short": "pathlib._abc",
+   "name": "PurePathBase.mkdir"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePathBase.mkdir"
+  }
+ ],
+ "simulation_params": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "simulator_fast": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "simulator_fast.ERP_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "simulator_fast.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  }
+ ],
+ "simulator_fast.source_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "simulator_slow": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "simulator_slow.ERP_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "simulator_slow.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  }
+ ],
+ "simulator_slow.source_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "slow_erp_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "source_simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator"
+  }
+ ],
+ "source_simulator.ERP_config": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "source_simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.source_simulation",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "SourceSimulator.simulate"
+  }
+ ],
+ "source_simulator.source_units": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils._bunch",
+   "module_short": "mne.utils._bunch",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne.utils",
+   "module_short": "mne.utils",
+   "name": "NamedInt"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "mne",
+   "module_short": "mne",
+   "name": "NamedInt"
+  }
+ ],
+ "trial_0": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "trial_idx": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "viz": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer"
+  }
+ ],
+ "viz.plot_source_signals": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.visualization",
+   "module_short": "calibrain",
+   "name": "Visualizer.plot_source_signals"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain",
+   "module_short": "calibrain",
+   "name": "Visualizer.plot_source_signals"
+  }
+ ],
+ "x_active_indices_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_active_indices_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "x_demo": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_fast": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_fast.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "x_fast_indices": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_slow": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_slow.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "x_slow_indices": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_trials": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x_trials.max": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "x_trials.min": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "x_trials.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ]
+}

@@ -1,9 +1,9 @@
 """
 .. _example-run_experiment:
 
-=============================================
-Run benchmark experiments for source localization and uncertainty estimation.
-=============================================
+=========================
+Run benchmark experiments
+=========================
 
 This example demonstrates how to run comprehensive benchmarking experiments
 for evaluating source localization algorithms using CaliBrain.
@@ -80,17 +80,17 @@ def main():
       
     # Define parameter grids for different data types
     data_param_grid_meg = {
-        "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-        "nnz": [1, 10, 100],
+        "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+        "nnz": [1, 10, 50, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
     }
     
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 10, 100],
+        "nnz": [1, 10, 50, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
     }
         
     gamma_map_params = {
@@ -105,8 +105,8 @@ def main():
     estimators = [
         (gamma_map, gamma_map_params, data_param_grid_meg),
         (eloreta, eloreta_params, data_param_grid_meg),
-        # (gamma_map, gamma_map_params, data_param_grid_eeg),
-        # (eloreta, eloreta_params, data_param_grid_eeg),
+        (gamma_map, gamma_map_params, data_param_grid_eeg),
+        (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [
@@ -130,7 +130,7 @@ def main():
         logger=logger
     )
 
-    nruns = 1
+    nruns = 3
     df = []
     for solver, solver_param_grid, data_param_grid in estimators:
         benchmark = Benchmark(

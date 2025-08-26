@@ -1,3 +1,5 @@
+.. _documentation:
+
 Documentation
 =============
 
@@ -7,8 +9,9 @@ Documentation
 
    usage
    results
-   .. include:: ../../tutorials/README.rst
-   .. include:: ../../examples/README.rst
+   ../auto_examples/index
+   ../auto_tutorials/index
+
 
 Overview
 --------
@@ -31,6 +34,15 @@ Supported Inverse Methods
 - Gamma-MAP
 - eLORETA
 - Bayesian Minimum Norm
+
+Learning Resources
+~~~~~~~~~~~~~~~~~~
+
+📚 **New to CaliBrain?** Start with our comprehensive :doc:`tutorials <tutorials/README>` that cover the complete workflow from forward modeling to uncertainty quantification.
+
+🔬 **Ready to explore?** Check out practical :doc:`examples <examples/README>` showing real-world applications and complete analysis pipelines.
+
+The tutorials provide step-by-step guidance, while examples demonstrate how to adapt CaliBrain for your specific research needs.
 
 Calibration Tasks
 -----------------
@@ -58,29 +70,3 @@ Outcomes
 - **Regression Calibration Curves** (confidence intervals)
 - **Classification Calibration Curves** (activation probabilities)
 - **Quantitative Calibration Metrics**
-
-Installation
-------------
-
-For installation, see the :doc:`Installation Guide <installation>`.
-
-Usage
------
-
-For usage details, refer to the :doc:`Usage Guide <usage/README>`.
-
-Contributing
-------------
-
-We welcome contributions! For guidelines, refer to :doc:`Contributing Guide <contributing>`.
-
-License
--------
-
-This project is licensed under the MIT License. See `LICENSE <https://github.com/braindatalab/CaliBrain/blob/main/LICENSE>`_.
-
-Citation
---------
-
-If you use **CaliBrain**, please cite relevant works in EEG/MEG source imaging and uncertainty quantification.
-
