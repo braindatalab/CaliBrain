@@ -1,9 +1,9 @@
 """
 .. _example-run_experiment:
 
-=============================================
-Run benchmark experiments for source localization and uncertainty estimation.
-=============================================
+=========================
+Run benchmark experiments
+=========================
 
 This example demonstrates how to run comprehensive benchmarking experiments
 for evaluating source localization algorithms using CaliBrain.
