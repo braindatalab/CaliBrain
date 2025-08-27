@@ -23,7 +23,7 @@
 Visualization Tutorial
 ======================
 
-This tutorial demonstrates how to use the visualization features of CaliBrain.
+TBC.
 
 
 .. rst-class:: sphx-glr-timing

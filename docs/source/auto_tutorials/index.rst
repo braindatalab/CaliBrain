@@ -90,7 +90,7 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the visualization features of CaliBrain.">
+    <div class="sphx-glr-thumbcontainer" tooltip="TBC.">
 
 .. only:: html
 

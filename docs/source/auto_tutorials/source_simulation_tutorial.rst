@@ -857,7 +857,7 @@ other CaliBrain components:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.537 seconds)
+   **Total running time of the script:** (0 minutes 0.607 seconds)
 
 
 .. _sphx_glr_download_auto_tutorials_source_simulation_tutorial.py:
