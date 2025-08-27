@@ -24,6 +24,7 @@ import pandas as pd
 from pathlib import Path
 
 from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
+from calibrain.utils import get_data_path
 
 # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
@@ -62,8 +63,9 @@ def main():
         logger=logger
     )
 
+    leadfield_dir = get_data_path()
     leadfield_builder = LeadfieldBuilder(
-        leadfield_dir=Path("BSI-ZOO_forward_data"),
+        leadfield_dir=leadfield_dir,
         logger=logger,
     )
     
@@ -130,29 +132,29 @@ def main():
         logger=logger
     )
 
-    nruns = 3
-    df = []
-    for solver, solver_param_grid, data_param_grid in estimators:
-        benchmark = Benchmark(
-            solver=solver,
-            solver_param_grid=solver_param_grid,
-            data_param_grid=data_param_grid,
-            ERP_config=ERP_config,
-            source_simulator=source_simulator,
-            leadfield_builder=leadfield_builder,
-            sensor_simulator=sensor_simulator,
-            uncertainty_estimator=uncertainty_estimator,
-            metric_evaluator=metric_evaluator,
-            random_state=42,
-            logger=logger
-        )
-        results_df = benchmark.run(nruns=nruns)
-        df.append(results_df)
+    nruns = 1
+    # df = []
+    # for solver, solver_param_grid, data_param_grid in estimators:
+    #     benchmark = Benchmark(
+    #         solver=solver,
+    #         solver_param_grid=solver_param_grid,
+    #         data_param_grid=data_param_grid,
+    #         ERP_config=ERP_config,
+    #         source_simulator=source_simulator,
+    #         leadfield_builder=leadfield_builder,
+    #         sensor_simulator=sensor_simulator,
+    #         uncertainty_estimator=uncertainty_estimator,
+    #         metric_evaluator=metric_evaluator,
+    #         random_state=42,
+    #         logger=logger
+    #     )
+    #     results_df = benchmark.run(nruns=nruns)
+    #     df.append(results_df)
 
-    results_df = pd.concat(df)
-    results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
+    # results_df = pd.concat(df)
+    # results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
-    print(results_df.head())
+    # print(results_df.head())
 
 if __name__ == "__main__":
     main()

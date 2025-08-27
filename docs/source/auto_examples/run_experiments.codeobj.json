@@ -1,27 +1,4 @@
 {
- "Benchmark": [
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "calibrain.benchmark",
-   "module_short": "calibrain",
-   "name": "Benchmark"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "calibrain",
-   "module_short": "calibrain",
-   "name": "Benchmark"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "calibrain",
-   "module_short": "calibrain",
-   "name": "Benchmark"
-  }
- ],
  "LeadfieldBuilder": [
   {
    "is_class": true,
@@ -66,71 +43,6 @@
    "module": "calibrain",
    "module_short": "calibrain",
    "name": "MetricEvaluator"
-  }
- ],
- "Path": [
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib._local",
-   "module_short": "pathlib",
-   "name": "Path"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib",
-   "module_short": "pathlib",
-   "name": "Path"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib._abc",
-   "module_short": "pathlib._abc",
-   "name": "PathBase"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib",
-   "module_short": "pathlib",
-   "name": "PathBase"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib._local",
-   "module_short": "pathlib",
-   "name": "PurePath"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib",
-   "module_short": "pathlib",
-   "name": "PurePath"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib._abc",
-   "module_short": "pathlib._abc",
-   "name": "PurePathBase"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "pathlib",
-   "module_short": "pathlib",
-   "name": "PurePathBase"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "pathlib",
-   "module_short": "pathlib",
-   "name": "Path"
   }
  ],
  "SensorSimulator": [
@@ -257,6 +169,22 @@
    "module": "calibrain",
    "module_short": "calibrain",
    "name": "gamma_map"
+  }
+ ],
+ "get_data_path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "calibrain.utils",
+   "module_short": "calibrain.utils",
+   "name": "get_data_path"
   }
  ],
  "logging.FileHandler": [
@@ -413,22 +341,6 @@
    "module": "os",
    "module_short": "os",
    "name": "makedirs"
-  }
- ],
- "pd.concat": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "pandas",
-   "module_short": "pandas",
-   "name": "concat"
   }
  ]
 }
