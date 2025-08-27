@@ -1010,7 +1010,7 @@ class Visualizer:
         # Plot sources (all trials)
         self.plot_source_signals(
             ERP_config=ERP_config,
-            x_trial=x_trials,
+            x_trials=x_trials,
             x_active_indices=x_active_indices_trials,
             units=source_units,
             trial_idx=None,
@@ -1153,190 +1153,190 @@ class Visualizer:
             which_legend="active_indices", # or "all_sources"
             file_name='calibration_curve_active_sources',
             save_path='uncertainty_analysis',
-            show=True,
+            show=False,
         )
 
 
 
-def main():
-    from calibrain import SourceSimulator
-    from calibrain import SensorSimulator
+# def main():
+#     from calibrain import SourceSimulator
+#     from calibrain import SensorSimulator
 
-    logging.basicConfig(
-        level=logging.INFO,  # or DEBUG
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        handlers=[
-            logging.StreamHandler(),  # Console
-            logging.FileHandler("Vizualisation.log", mode="w")  # Log to file
-        ]
-    )
-    logger = logging.getLogger("SourceSimulator")
+#     logging.basicConfig(
+#         level=logging.INFO,  # or DEBUG
+#         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+#         handlers=[
+#             logging.StreamHandler(),  # Console
+#             logging.FileHandler("Vizualisation.log", mode="w")  # Log to file
+#         ]
+#     )
+#     logger = logging.getLogger("SourceSimulator")
 
-    ERP_config = {
-        "tmin": -0.5,
-        "tmax": 0.5,
-        "stim_onset": 0.0,
-        "sfreq": 250,
-        "fmin": 1,
-        "fmax": 5,
-        "amplitude": 10.0, # 30.0
-        "random_erp_timing": True,
-        "erp_min_length": None,
-    }
+#     ERP_config = {
+#         "tmin": -0.5,
+#         "tmax": 0.5,
+#         "stim_onset": 0.0,
+#         "sfreq": 250,
+#         "fmin": 1,
+#         "fmax": 5,
+#         "amplitude": 10.0, # 30.0
+#         "random_erp_timing": True,
+#         "erp_min_length": None,
+#     }
 
-    n_trials=4
-    orientation_type="fixed"
-    n_sources=10
-    nnz=5
-    global_seed=42
+#     n_trials=4
+#     orientation_type="fixed"
+#     n_sources=10
+#     nnz=5
+#     global_seed=42
 
-    source_simulator = SourceSimulator(
-        ERP_config=ERP_config,
-        logger=logger
-    )
-    print(f"Default units for source signals: {source_simulator.source_units}")
+#     source_simulator = SourceSimulator(
+#         ERP_config=ERP_config,
+#         logger=logger
+#     )
+#     print(f"Default units for source signals: {source_simulator.source_units}")
 
-    x_trials, active_indices_trials = source_simulator.simulate(
-        orientation_type=orientation_type,
-        n_sources=n_sources,
-        nnz=nnz,
-        n_trials=n_trials,
-        global_seed=global_seed,
-    )
-    # source_simulator.source_units = "Am"  # Set units for source signals
-    trial_idx = 0
+#     x_trials, active_indices_trials = source_simulator.simulate(
+#         orientation_type=orientation_type,
+#         n_sources=n_sources,
+#         nnz=nnz,
+#         n_trials=n_trials,
+#         global_seed=global_seed,
+#     )
+#     # source_simulator.source_units = "Am"  # Set units for source signals
+#     trial_idx = 0
 
-    viz = Visualizer(base_save_path="testViz", logger=logger)
+#     viz = Visualizer(base_save_path="testViz", logger=logger)
 
-    # Plot sources (single trial)
-    viz.plot_source_signals(
-        ERP_config=ERP_config,
-        x=x_trials,
-        active_indices=active_indices_trials,
-        units=source_simulator.source_units,
-        trial_idx=trial_idx,
-        title=f"Source Activity - Trial {trial_idx+1}",
-        save_dir="data_simulation",
-        file_name=f"source_trial_{trial_idx+1}",
-        show=False,
-    )
+#     # Plot sources (single trial)
+#     viz.plot_source_signals(
+#         ERP_config=ERP_config,
+#         x=x_trials,
+#         active_indices=active_indices_trials,
+#         units=source_simulator.source_units,
+#         trial_idx=trial_idx,
+#         title=f"Source Activity - Trial {trial_idx+1}",
+#         save_dir="data_simulation",
+#         file_name=f"source_trial_{trial_idx+1}",
+#         show=False,
+#     )
 
-    # Plot sources (all trials)
-    viz.plot_source_signals(
-        ERP_config=ERP_config,
-        x=x_trials,
-        active_indices=active_indices_trials,
-        units=source_simulator.source_units,
-        trial_idx=None,
-        title="Source Activity - All Trials",
-        save_dir="data_simulation",
-        file_name="source_trials_all",
-        show=False,
-    )
-
-
-    sensor_simulator = SensorSimulator(
-        logger=logger,
-    )
-    print(f"Default units for sensor signals: {sensor_simulator.sensor_units}")
-
-    n_sensors = 10
-    L = np.random.randn(n_sensors, n_sources)
-
-    # Simulate sensor data
-    y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
-        x_trials,
-        L,
-        orientation_type="fixed",
-        alpha_SNR=0.5,
-        n_trials=n_trials,
-    )
-    # sensor_simulator.sensor_units = "T"
+#     # Plot sources (all trials)
+#     viz.plot_source_signals(
+#         ERP_config=ERP_config,
+#         x=x_trials,
+#         active_indices=active_indices_trials,
+#         units=source_simulator.source_units,
+#         trial_idx=None,
+#         title="Source Activity - All Trials",
+#         save_dir="data_simulation",
+#         file_name="source_trials_all",
+#         show=False,
+#     )
 
 
-    # Plot sensors (single trial) with selected channels: y_clean
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials=y_clean,
-        trial_idx=trial_idx,
-        # channels=[0, 1],  # or "all"
-        units=sensor_simulator.sensor_units,
-        mode="single",
-        title=f"Sensor Trial {trial_idx+1}",
-        save_dir="data_simulation",
-        file_name=f"sensor_trial_{trial_idx+1}_clean",
-        show=True
-    )
+#     sensor_simulator = SensorSimulator(
+#         logger=logger,
+#     )
+#     print(f"Default units for sensor signals: {sensor_simulator.sensor_units}")
 
-    # Plot sensors (all trials) with selected channels: y_clean
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials=y_clean,
-        mode="stack",
-        channels=[2, 3],
-        units=sensor_simulator.sensor_units,
-        save_dir="data_simulation",
-        title="Sensor Signals (All Trials)",
-        file_name="sensor_all_trials_clean",
-        show=False
-    )
+#     n_sensors = 10
+#     L = np.random.randn(n_sensors, n_sources)
 
-    # Concatenated trials: y_clean
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials=y_clean,
-        mode="concatenate",
-        channels=[0, 2, 3],  # or "all"
-        units=sensor_simulator.sensor_units,
-        title="Sensor Signals (Concatenated)",
-        save_dir="data_simulation",
-        file_name="sensor_concatenated_clean",
-        show=False
-    )
-
-    # Plot sensors (single trial) with selected channels: y_noisy
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials= y_noisy,
-        trial_idx=trial_idx,
-        channels=[0, 1],  # or "all"
-        units=sensor_simulator.sensor_units,
-        mode="single",
-        title=f"Sensor Trial {trial_idx+1}",
-        save_dir="data_simulation",
-        file_name=f"sensor_trial_{trial_idx+1}_noisy",
-        show=False
-    )
-
-    # Plot sensors (all trials) with selected channels: y_noisy
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials=y_noisy,
-        mode="stack",
-        channels="all",  # or "all"
-        units=sensor_simulator.sensor_units,
-        title="Sensor Signals (All Trials)",
-        save_dir="data_simulation",
-        file_name="sensor_all_trials_noisy",
-        show=False
-    )
-
-    # Concatenated trials: y_noisy
-    viz.plot_sensor_signals(
-        ERP_config=ERP_config,
-        y_trials=y_noisy,
-        mode="concatenate",
-        channels=[0, 2],  # or "all"
-        units=sensor_simulator.sensor_units,
-        title="Sensor Signals (Concatenated)",
-        save_dir="data_simulation",
-        file_name="sensor_concatenated_noisy",
-        show=False
-    )
+#     # Simulate sensor data
+#     y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
+#         x_trials,
+#         L,
+#         orientation_type="fixed",
+#         alpha_SNR=0.5,
+#         n_trials=n_trials,
+#     )
+#     # sensor_simulator.sensor_units = "T"
 
 
-if __name__ == "__main__":
-    main()
+#     # Plot sensors (single trial) with selected channels: y_clean
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials=y_clean,
+#         trial_idx=trial_idx,
+#         # channels=[0, 1],  # or "all"
+#         units=sensor_simulator.sensor_units,
+#         mode="single",
+#         title=f"Sensor Trial {trial_idx+1}",
+#         save_dir="data_simulation",
+#         file_name=f"sensor_trial_{trial_idx+1}_clean",
+#         show=True
+#     )
+
+#     # Plot sensors (all trials) with selected channels: y_clean
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials=y_clean,
+#         mode="stack",
+#         channels=[2, 3],
+#         units=sensor_simulator.sensor_units,
+#         save_dir="data_simulation",
+#         title="Sensor Signals (All Trials)",
+#         file_name="sensor_all_trials_clean",
+#         show=False
+#     )
+
+#     # Concatenated trials: y_clean
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials=y_clean,
+#         mode="concatenate",
+#         channels=[0, 2, 3],  # or "all"
+#         units=sensor_simulator.sensor_units,
+#         title="Sensor Signals (Concatenated)",
+#         save_dir="data_simulation",
+#         file_name="sensor_concatenated_clean",
+#         show=False
+#     )
+
+#     # Plot sensors (single trial) with selected channels: y_noisy
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials= y_noisy,
+#         trial_idx=trial_idx,
+#         channels=[0, 1],  # or "all"
+#         units=sensor_simulator.sensor_units,
+#         mode="single",
+#         title=f"Sensor Trial {trial_idx+1}",
+#         save_dir="data_simulation",
+#         file_name=f"sensor_trial_{trial_idx+1}_noisy",
+#         show=False
+#     )
+
+#     # Plot sensors (all trials) with selected channels: y_noisy
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials=y_noisy,
+#         mode="stack",
+#         channels="all",  # or "all"
+#         units=sensor_simulator.sensor_units,
+#         title="Sensor Signals (All Trials)",
+#         save_dir="data_simulation",
+#         file_name="sensor_all_trials_noisy",
+#         show=False
+#     )
+
+#     # Concatenated trials: y_noisy
+#     viz.plot_sensor_signals(
+#         ERP_config=ERP_config,
+#         y_trials=y_noisy,
+#         mode="concatenate",
+#         channels=[0, 2],  # or "all"
+#         units=sensor_simulator.sensor_units,
+#         title="Sensor Signals (Concatenated)",
+#         save_dir="data_simulation",
+#         file_name="sensor_concatenated_noisy",
+#         show=False
+#     )
+
+
+# if __name__ == "__main__":
+#     main()
 
 
 
