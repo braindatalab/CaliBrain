@@ -6,6 +6,13 @@
 *.hdf
 *.csv
 *.png
+*.jpg
+
+# Ignore all PNGs except those in auto_tutorials and auto_examples
+!docs/source/auto_tutorials/images/thumb/*.png
+!docs/source/auto_examples/images/thumb/*.png
+!docs/source/auto_tutorials/images/*.png
+!docs/source/auto_examples/images/*.png
 
 .DS_Store
 
@@ -180,4 +187,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
--e "*.png\n*.csv\n*.py"   # Adjust patterns as needed
+-e "*.png\n*.csv\n*.py"ed

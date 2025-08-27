@@ -20,9 +20,9 @@
 
 .. _example-run_experiment:
 
-=============================================
-Run benchmark experiments for source localization and uncertainty estimation.
-=============================================
+=========================
+Run benchmark experiments
+=========================
 
 This example demonstrates how to run comprehensive benchmarking experiments
 for evaluating source localization algorithms using CaliBrain.
@@ -34,755 +34,13 @@ The script shows how to:
 - Evaluate uncertainty estimation and calibration performance
 - Generate comprehensive metrics and save results
 
-.. GENERATED FROM PYTHON SOURCE LINES 18-158
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    2025-08-19 17:13:45 - INFO - LeadfieldBuilder initialized successfully.
-    2025-08-19 17:13:45 - INFO - Starting benchmark with 15 runs...
-    2025-08-19 17:13:45 - INFO - [Run 1/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 1: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 1
-    2025-08-19 17:13:45 - INFO - [Run 2/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 2: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 2
-    2025-08-19 17:13:45 - INFO - [Run 3/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 3: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 3
-    2025-08-19 17:13:45 - INFO - [Run 4/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 4: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 4
-    2025-08-19 17:13:45 - INFO - [Run 5/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 5: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 5
-    2025-08-19 17:13:45 - INFO - [Run 6/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 6: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 6
-    2025-08-19 17:13:45 - INFO - [Run 7/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 7: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 7
-    2025-08-19 17:13:45 - INFO - [Run 8/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 8: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 8
-    2025-08-19 17:13:45 - INFO - [Run 9/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 9: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 9
-    2025-08-19 17:13:45 - INFO - [Run 10/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 10: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 10
-    2025-08-19 17:13:45 - INFO - [Run 11/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 11: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 11
-    2025-08-19 17:13:45 - INFO - [Run 12/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 12: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 12
-    2025-08-19 17:13:45 - INFO - [Run 13/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 13: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 13
-    2025-08-19 17:13:45 - INFO - [Run 14/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 14: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 14
-    2025-08-19 17:13:45 - INFO - [Run 15/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: gamma_map | Params: {'init_gamma': 0.001, 'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=gamma_map/init_gamma=0.001/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 15: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 15
-    2025-08-19 17:13:45 - INFO - Benchmarking completed.
-    2025-08-19 17:13:45 - INFO - Starting benchmark with 15 runs...
-    2025-08-19 17:13:45 - INFO - [Run 1/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 1: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 1
-    2025-08-19 17:13:45 - INFO - [Run 2/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 2: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 2
-    2025-08-19 17:13:45 - INFO - [Run 3/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.0, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.0/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 3: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 3
-    2025-08-19 17:13:45 - INFO - [Run 4/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 4: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 4
-    2025-08-19 17:13:45 - INFO - [Run 5/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 5: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 5
-    2025-08-19 17:13:45 - INFO - [Run 6/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.3, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.3/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 6: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 6
-    2025-08-19 17:13:45 - INFO - [Run 7/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 7: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 7
-    2025-08-19 17:13:45 - INFO - [Run 8/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 8: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 8
-    2025-08-19 17:13:45 - INFO - [Run 9/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.5, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.5/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 9: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 9
-    2025-08-19 17:13:45 - INFO - [Run 10/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 10: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 10
-    2025-08-19 17:13:45 - INFO - [Run 11/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 11: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 11
-    2025-08-19 17:13:45 - INFO - [Run 12/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.7, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.7/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 12: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 12
-    2025-08-19 17:13:45 - INFO - [Run 13/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 1, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=1/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 13: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 13
-    2025-08-19 17:13:45 - INFO - [Run 14/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 10, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=10/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 14: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 14
-    2025-08-19 17:13:45 - INFO - [Run 15/15] Seed: 1608637542
-    2025-08-19 17:13:45 - INFO - Solver: eloreta | Params: {'noise_type': 'oracle'}
-    2025-08-19 17:13:45 - INFO - Data Params: {'alpha_SNR': 0.99, 'nnz': 100, 'orientation_type': 'fixed', 'subject': 'CC120166'}
-    2025-08-19 17:13:45 - INFO - Experiment directory created: results/figures/uncertainty_analysis_figures/subject=CC120166/solver=eloreta/orientation_type=fixed/alpha_SNR=0.99/noise_type=oracle/nnz=100/seed=1608637542
-    2025-08-19 17:13:45 - INFO - Building leadfield matrix...
-    2025-08-19 17:13:45 - WARNING - Leadfield file not found for subject 'CC120166' with orientation 'fixed' in directory 'BSI-ZOO_forward_data'.
-    Checked specific patterns:
-      - BSI-ZOO_forward_data/lead_field_fixed_CC120166.npz
-      - BSI-ZOO_forward_data/lead_field_CC120166.npz
-    2025-08-19 17:13:45 - ERROR - Failed to load leadfield matrix: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - ERROR - Error during benchmarking run_id 15: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    Traceback (most recent call last):
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/benchmark.py", line 183, in run
-        L = self.leadfield_builder.get_leadfield(
-            subject=data_params['subject'],
-            orientation_type=orientation_type,
-            retrieve_mode="load"
-        )
-      File "/Users/orabe/0.braindata/CaliBrain/calibrain/leadfield_builder.py", line 535, in get_leadfield
-        raise FileNotFoundError(
-            f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
-        )
-    FileNotFoundError: Leadfield file not found for subject 'CC120166' in directory 'BSI-ZOO_forward_data'. 
-    2025-08-19 17:13:45 - INFO - Completed run_id 15
-    2025-08-19 17:13:45 - INFO - Benchmarking completed.
-       run_id  ...                                      error_message
-    0       1  ...  Leadfield file not found for subject 'CC120166...
-    1       2  ...  Leadfield file not found for subject 'CC120166...
-    2       3  ...  Leadfield file not found for subject 'CC120166...
-    3       4  ...  Leadfield file not found for subject 'CC120166...
-    4       5  ...  Leadfield file not found for subject 'CC120166...
-
-    [5 rows x 10 columns]
+.. GENERATED FROM PYTHON SOURCE LINES 18-160
 
 
 
 
 
 
-|
 
 .. code-block:: Python
 
@@ -795,6 +53,7 @@ The script shows how to:
     from pathlib import Path
 
     from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
+    from calibrain.utils import get_data_path
 
     # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
     # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
@@ -833,8 +92,9 @@ The script shows how to:
             logger=logger
         )
 
+        leadfield_dir = get_data_path()
         leadfield_builder = LeadfieldBuilder(
-            leadfield_dir=Path("BSI-ZOO_forward_data"),
+            leadfield_dir=leadfield_dir,
             logger=logger,
         )
     
@@ -851,17 +111,17 @@ The script shows how to:
       
         # Define parameter grids for different data types
         data_param_grid_meg = {
-            "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-            "nnz": [1, 10, 100],
+            "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+            "nnz": [1, 10, 50, 100],
             "orientation_type": ["fixed"], # "fixed", "free"
-            "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+            "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
         }
     
         data_param_grid_eeg = {
             "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-            "nnz": [1, 10, 100],
+            "nnz": [1, 10, 50, 100],
             "orientation_type": ["fixed"], # "fixed", "free"
-            "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+            "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
         }
         
         gamma_map_params = {
@@ -876,8 +136,8 @@ The script shows how to:
         estimators = [
             (gamma_map, gamma_map_params, data_param_grid_meg),
             (eloreta, eloreta_params, data_param_grid_meg),
-            # (gamma_map, gamma_map_params, data_param_grid_eeg),
-            # (eloreta, eloreta_params, data_param_grid_eeg),
+            (gamma_map, gamma_map_params, data_param_grid_eeg),
+            (eloreta, eloreta_params, data_param_grid_eeg),
         ]
 
         metrics = [
@@ -902,35 +162,35 @@ The script shows how to:
         )
 
         nruns = 1
-        df = []
-        for solver, solver_param_grid, data_param_grid in estimators:
-            benchmark = Benchmark(
-                solver=solver,
-                solver_param_grid=solver_param_grid,
-                data_param_grid=data_param_grid,
-                ERP_config=ERP_config,
-                source_simulator=source_simulator,
-                leadfield_builder=leadfield_builder,
-                sensor_simulator=sensor_simulator,
-                uncertainty_estimator=uncertainty_estimator,
-                metric_evaluator=metric_evaluator,
-                random_state=42,
-                logger=logger
-            )
-            results_df = benchmark.run(nruns=nruns)
-            df.append(results_df)
+        # df = []
+        # for solver, solver_param_grid, data_param_grid in estimators:
+        #     benchmark = Benchmark(
+        #         solver=solver,
+        #         solver_param_grid=solver_param_grid,
+        #         data_param_grid=data_param_grid,
+        #         ERP_config=ERP_config,
+        #         source_simulator=source_simulator,
+        #         leadfield_builder=leadfield_builder,
+        #         sensor_simulator=sensor_simulator,
+        #         uncertainty_estimator=uncertainty_estimator,
+        #         metric_evaluator=metric_evaluator,
+        #         random_state=42,
+        #         logger=logger
+        #     )
+        #     results_df = benchmark.run(nruns=nruns)
+        #     df.append(results_df)
 
-        results_df = pd.concat(df)
-        results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
+        # results_df = pd.concat(df)
+        # results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
-        print(results_df.head())
+        # print(results_df.head())
 
     if __name__ == "__main__":
         main()
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.034 seconds)
+   **Total running time of the script:** (0 minutes 0.001 seconds)
 
 
 .. _sphx_glr_download_auto_examples_run_experiments.py:
@@ -950,10 +210,3 @@ The script shows how to:
     .. container:: sphx-glr-download sphx-glr-download-zip
 
       :download:`Download zipped: run_experiments.zip <run_experiments.zip>`
-
-
-.. only:: html
-
- .. rst-class:: sphx-glr-signature
-
-    `Gallery generated by Sphinx-Gallery <https://sphinx-gallery.github.io>`_

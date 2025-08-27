@@ -1,7 +1,10 @@
+from typing import Union, Optional
 import yaml
 import logging
 from pathlib import Path
 import mne
+import os
+
 
 def load_config(config_file: str, logger=None) -> dict:
     """
@@ -93,3 +96,34 @@ def inspect_object(obj, show_private=False):
         print(f"  - {method}")
     
     return {"attributes": attributes, "methods": methods}
+
+
+def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
+    """Get the path to CaliBrain data directory.
+    
+    Parameters
+    ----------
+    path : str | Path | None
+        Custom path to data directory. If None, uses default location.
+        
+    Returns
+    -------
+    data_path : Path
+        Path to CaliBrain data directory.
+    """
+    if path is None:
+        # Use environment variable or default location in calibrain package
+        if 'CALIBRAIN_DATA' in os.environ:
+            data_path = Path(os.environ['CALIBRAIN_DATA'])
+        else:
+            # Default to calibrain/data directory relative to this module
+            calibrain_root = Path(__file__).parent  # calibrain module directory
+            data_path = calibrain_root / 'data'
+        data_path = Path(data_path)
+    else:
+        data_path = Path(path)
+    
+    # Create directory if it doesn't exist
+    data_path.mkdir(parents=True, exist_ok=True)
+    
+    return data_path

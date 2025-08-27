@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.006** total execution time for 2 files **from auto_examples**:
+**00:00.011** total execution time for 2 files **from auto_examples**:
 
 .. container::
 
@@ -33,8 +33,8 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py` (``leadfield_simulation_example.py``)
-     - 00:00.006
+     - 00:00.010
      - 0.0
    * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``run_experiments.py``)
-     - 00:00.000
+     - 00:00.001
      - 0.0

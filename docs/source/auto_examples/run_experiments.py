@@ -1,9 +1,9 @@
 """
 .. _example-run_experiment:
 
-=============================================
-Run benchmark experiments for source localization and uncertainty estimation.
-=============================================
+=========================
+Run benchmark experiments
+=========================
 
 This example demonstrates how to run comprehensive benchmarking experiments
 for evaluating source localization algorithms using CaliBrain.
@@ -24,6 +24,7 @@ import pandas as pd
 from pathlib import Path
 
 from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
+from calibrain.utils import get_data_path
 
 # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
 # print(fwd['info']['chs'][0]['unit'])  # Will show 107 (FIFF_UNIT_V)
@@ -62,8 +63,9 @@ def main():
         logger=logger
     )
 
+    leadfield_dir = get_data_path()
     leadfield_builder = LeadfieldBuilder(
-        leadfield_dir=Path("BSI-ZOO_forward_data"),
+        leadfield_dir=leadfield_dir,
         logger=logger,
     )
     
@@ -80,17 +82,17 @@ def main():
       
     # Define parameter grids for different data types
     data_param_grid_meg = {
-        "subject": ["CC120166"], # "CC120166", "CC120264", "CC120309", "CC120313",
-        "nnz": [1, 10, 100],
+        "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+        "nnz": [1, 10, 50, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
     }
     
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 10, 100],
+        "nnz": [1, 10, 50, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.0, 0.2, 0.4, 0.6, 0.8, 0.99],
     }
         
     gamma_map_params = {
@@ -105,8 +107,8 @@ def main():
     estimators = [
         (gamma_map, gamma_map_params, data_param_grid_meg),
         (eloreta, eloreta_params, data_param_grid_meg),
-        # (gamma_map, gamma_map_params, data_param_grid_eeg),
-        # (eloreta, eloreta_params, data_param_grid_eeg),
+        (gamma_map, gamma_map_params, data_param_grid_eeg),
+        (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [
@@ -131,28 +133,28 @@ def main():
     )
 
     nruns = 1
-    df = []
-    for solver, solver_param_grid, data_param_grid in estimators:
-        benchmark = Benchmark(
-            solver=solver,
-            solver_param_grid=solver_param_grid,
-            data_param_grid=data_param_grid,
-            ERP_config=ERP_config,
-            source_simulator=source_simulator,
-            leadfield_builder=leadfield_builder,
-            sensor_simulator=sensor_simulator,
-            uncertainty_estimator=uncertainty_estimator,
-            metric_evaluator=metric_evaluator,
-            random_state=42,
-            logger=logger
-        )
-        results_df = benchmark.run(nruns=nruns)
-        df.append(results_df)
+    # df = []
+    # for solver, solver_param_grid, data_param_grid in estimators:
+    #     benchmark = Benchmark(
+    #         solver=solver,
+    #         solver_param_grid=solver_param_grid,
+    #         data_param_grid=data_param_grid,
+    #         ERP_config=ERP_config,
+    #         source_simulator=source_simulator,
+    #         leadfield_builder=leadfield_builder,
+    #         sensor_simulator=sensor_simulator,
+    #         uncertainty_estimator=uncertainty_estimator,
+    #         metric_evaluator=metric_evaluator,
+    #         random_state=42,
+    #         logger=logger
+    #     )
+    #     results_df = benchmark.run(nruns=nruns)
+    #     df.append(results_df)
 
-    results_df = pd.concat(df)
-    results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
+    # results_df = pd.concat(df)
+    # results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
-    print(results_df.head())
+    # print(results_df.head())
 
 if __name__ == "__main__":
     main()
