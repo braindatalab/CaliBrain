@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.710** total execution time for 3 files **from auto_tutorials**:
+**00:02.402** total execution time for 3 files **from auto_tutorials**:
 
 .. container::
 
@@ -33,10 +33,10 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``sensor_simulation_tutorial.py``)
-     - 00:02.103
+     - 00:01.818
      - 0.0
    * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``source_simulation_tutorial.py``)
-     - 00:00.607
+     - 00:00.584
      - 0.0
    * - :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py` (``visualization_tutorial.py``)
      - 00:00.000
