@@ -1,6 +1,6 @@
 :orphan:
 
-.. _calibrain-tutorials:
+.. _tutorials:
 
 ==========================
 Tutorials
@@ -10,19 +10,41 @@ Here you will find step-by-step guides and practical examples to help you get st
 
 Explore the tutorials below to enhance your understanding and make the most of CaliBrain.
 
-.. toctree::
-    :maxdepth: 2
-    :caption: Tutorials
+📚 **Interactive Gallery**: Check out the auto-generated tutorial gallery with all scripts converted to HTML with embedded plots and downloadable notebooks.
 
-    overview
-    source_simulation
-    leadfield_simulation
-    sensor_simulation
-    source_estimation
-    uncertainty_estimation
-    metric_evaluation
-    visualization
-    benchmarking
+Available Tutorials
+===================
+
+All tutorials in this directory are automatically processed by Sphinx Gallery and available in multiple formats:
+
+**Overview Tutorial** (``overview.py``)
+   Complete introduction to CaliBrain's modular architecture and workflow:
+   
+   - Building forward models with LeadfieldBuilder
+   - Simulating brain source activity and sensor measurements  
+   - Solving inverse problems with multiple methods
+   - Quantifying uncertainty and evaluating performance
+   - Automated benchmarking workflows
+
+Tutorial Features
+=================
+
+Each tutorial includes:
+
+- **Python script** (`.py`) - Can be run directly from this directory
+- **HTML documentation** - Generated automatically with embedded plots
+- **Jupyter notebook** (`.ipynb`) - Available for download and interactive exploration
+- **Download options** - Get the source code and data
+
+Running Tutorials
+=================
+
+To run a tutorial script directly::
+
+    cd tutorials/
+    python overview.py
+
+All scripts in this directory are automatically converted to beautiful HTML documentation with embedded plots and made available as downloadable Jupyter notebooks through Sphinx Gallery.
 
 
 
@@ -34,18 +56,52 @@ Explore the tutorials below to enhance your understanding and make the most of C
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial covers the basic CaliBrain pipeline for brain source localization and uncertainty quantification: building forward models, simulating brain activity, estimating sources, and quantifying uncertainty. It introduces the core CaliBrain data structures and components, covering the essential workflow at a high level. Subsequent tutorials address each topic in greater detail.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the SensorSimulator class to generate synthetic MEG/EEG sensor measurements from brain source activity. The SensorSimulator  projects source-level neural signals to sensor space using forward models and adds realistic noise, creating controlled datasets for testing source localization algorithms, validating analysis  pipelines, and benchmarking uncertainty quantification methods.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_overview_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_sensor_simulation_tutorial_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_tutorials_overview.py`
+  :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Overview of brain source localization with CaliBrain</div>
+      <div class="sphx-glr-thumbnail-title">Sensor Data Simulation with SensorSimulator</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the SourceSimulator class to generate synthetic brain activity data for neuroimaging research (e.g., MEG/EEG  source simulation). The SourceSimulator creates event-related potential (ERP)-like  signals that can be used to test source localization algorithms, validate analysis  pipelines, and benchmark uncertainty quantification methods.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_source_simulation_tutorial_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Source Data Simulation with SourceSimulator</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="TBC.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_visualization_tutorial_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Visualization Tutorial</div>
     </div>
 
 
@@ -59,12 +115,19 @@ Explore the tutorials below to enhance your understanding and make the most of C
 .. toctree::
    :hidden:
 
-   /auto_tutorials/overview
-
+   /auto_tutorials/sensor_simulation_tutorial
+   /auto_tutorials/source_simulation_tutorial
+   /auto_tutorials/visualization_tutorial
 
 
 .. only:: html
 
- .. rst-class:: sphx-glr-signature
+  .. container:: sphx-glr-footer sphx-glr-footer-gallery
 
-    `Gallery generated by Sphinx-Gallery <https://sphinx-gallery.github.io>`_
+    .. container:: sphx-glr-download sphx-glr-download-python
+
+      :download:`Download all examples in Python source code: auto_tutorials_python.zip </auto_tutorials/auto_tutorials_python.zip>`
+
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
+
+      :download:`Download all examples in Jupyter notebooks: auto_tutorials_jupyter.zip </auto_tutorials/auto_tutorials_jupyter.zip>`

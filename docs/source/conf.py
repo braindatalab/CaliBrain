@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.intersphinx',  # Link to other projects' documentation
     'sphinx.ext.autosummary',  # Generate summary tables for modules
     'sphinx.ext.mathjax',      # For rendering math equations
-    # 'sphinx_gallery.gen_gallery',          # For auto-generating tutorial gallery
+    'sphinx_gallery.gen_gallery',          # For auto-generating tutorial gallery
     'matplotlib.sphinxext.plot_directive', # For matplotlib plots
 ]
 
@@ -115,11 +115,11 @@ sphinx_gallery_conf = {
     
     # Gallery settings
     'plot_gallery': True,  # Generate plots
-    'download_all_examples': False,       # Don't create download zip
+    'download_all_examples': True,       # Don't create download zip
     'within_subsection_order': 'FileNameSortKey',             # Sort by filename
     'first_notebook_cell': '# This tutorial is available for download as a Jupyter notebook',
     'remove_config_comments': True,
-    'show_memory': False,                 # Don't show memory usage
+    'show_memory': True,             
     'matplotlib_animations': True,        # Support animated plots
     
     # Subsection configuration
