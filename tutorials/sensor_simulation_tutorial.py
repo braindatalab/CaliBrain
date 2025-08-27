@@ -419,7 +419,7 @@ viz = Visualizer(base_save_path=str(save_path), logger=logger)
 
 # %%
 # .. note::
-#    For an in-depth guide to the :class:`~calibrain.visualization.Visualizer` class and advanced visualization techniques, refer to the :ref:`_tut-visualization` tutorial.
+#    For an in-depth guide to the :class:`~calibrain.visualization.Visualizer` class and advanced visualization techniques, refer to the :ref:`tut-visualization` tutorial.
 
 # %%
 # Configure sensor simulation parameters
