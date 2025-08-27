@@ -507,10 +507,10 @@ Next, we need a leadfield matrix to project sources to sensors:
 
  .. code-block:: none
 
-    2025-08-26 19:00:39,591 | INFO | SensorSimulator | LeadfieldBuilder initialized successfully.
-    2025-08-26 19:00:39,592 | INFO | SensorSimulator | Loading leadfield matrix from file: /Users/orabe/0.braindata/CaliBrain/calibrain/data/lead_field_fixed_fsaverage.npz
-    2025-08-26 19:00:39,595 | INFO | SensorSimulator | Leadfield loaded with shape (64, 5124)
-    2025-08-26 19:00:39,595 | INFO | SensorSimulator | Leadfield obtained. Updated n_sensors=64, n_sources=5124
+    2025-08-27 14:26:15,004 | INFO | SensorSimulator | LeadfieldBuilder initialized successfully.
+    2025-08-27 14:26:15,005 | INFO | SensorSimulator | Loading leadfield matrix from file: /Users/orabe/0.braindata/CaliBrain/calibrain/data/lead_field_fixed_fsaverage.npz
+    2025-08-27 14:26:15,008 | INFO | SensorSimulator | Leadfield loaded with shape (64, 5124)
+    2025-08-27 14:26:15,008 | INFO | SensorSimulator | Leadfield obtained. Updated n_sensors=64, n_sources=5124
 
     Leadfield matrix:
       - Contains 64 sensors and 5124 sources
@@ -575,13 +575,13 @@ SourceSimulator to create realistic ERP-like source activity:
 
  .. code-block:: none
 
-    2025-08-26 19:00:39,624 | INFO | SensorSimulator | Completed simulating source time courses for 3 trials.
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator | Shape of source time courses of all trials 3 trials: (3, 5124, 250)
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator | Shape of active indices for all 3 trials: (3, 5)
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator | Active indices for all trials:
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator |   Trial 1: [2937 1873   76 3317 3571]
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator |   Trial 2: [4774 1976 4372 2272  813]
-    2025-08-26 19:00:39,625 | INFO | SensorSimulator |   Trial 3: [ 156 3770 4010  284 4452]
+    2025-08-27 14:26:15,019 | INFO | SensorSimulator | Completed simulating source time courses for 3 trials.
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator | Shape of source time courses of all trials 3 trials: (3, 5124, 250)
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator | Shape of active indices for all 3 trials: (3, 5)
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator | Active indices for all trials:
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator |   Trial 1: [2937 1873   76 3317 3571]
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator |   Trial 2: [4774 1976 4372 2272  813]
+    2025-08-27 14:26:15,020 | INFO | SensorSimulator |   Trial 3: [ 156 3770 4010  284 4452]
     Generated source activity:
       - Shape: (3, 5124, 250) (trials x sources x time)
       - Active sources per trial: [5, 5, 5]
@@ -709,11 +709,11 @@ Configure sensor simulation parameters
 
  .. code-block:: none
 
-    2025-08-26 19:00:39,638 | INFO | SensorSimulator | Noise addition complete.
-    2025-08-26 19:00:39,639 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:39,639 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:39,639 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
-    2025-08-26 19:00:39,639 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+    2025-08-27 14:26:15,032 | INFO | SensorSimulator | Noise addition complete.
+    2025-08-27 14:26:15,032 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:15,032 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:15,032 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+    2025-08-27 14:26:15,032 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
 
 
 
@@ -905,11 +905,11 @@ Configuration for high signal-to-noise ratio,
 
  .. code-block:: none
 
-    2025-08-26 19:00:40,566 | INFO | SensorSimulator | Noise addition complete.
-    2025-08-26 19:00:40,566 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,566 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,566 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,566 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+    2025-08-27 14:26:16,075 | INFO | SensorSimulator | Noise addition complete.
+    2025-08-27 14:26:16,075 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,075 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,075 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,075 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
 
     High SNR Results (α_SNR = 0.9):
       - Signal range: [-1.32e-05, 1.07e-05]
@@ -954,11 +954,11 @@ or challenging recording conditions:
 
  .. code-block:: none
 
-    2025-08-26 19:00:40,574 | INFO | SensorSimulator | Noise addition complete.
-    2025-08-26 19:00:40,574 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,574 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,574 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
-    2025-08-26 19:00:40,574 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+    2025-08-27 14:26:16,084 | INFO | SensorSimulator | Noise addition complete.
+    2025-08-27 14:26:16,084 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,084 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,084 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+    2025-08-27 14:26:16,084 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
 
     Low SNR Results (α_SNR = 0.1):
       - Signal range: [-1.32e-05, 1.07e-05]
@@ -1147,7 +1147,7 @@ other CaliBrain components:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.729 seconds)
+   **Total running time of the script:** (0 minutes 1.898 seconds)
 
 
 .. _sphx_glr_download_auto_tutorials_sensor_simulation_tutorial.py:

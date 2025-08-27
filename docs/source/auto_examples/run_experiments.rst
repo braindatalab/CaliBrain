@@ -39,18 +39,8 @@ The script shows how to:
 
 
 
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    2025-08-27 13:49:08 - INFO - LeadfieldBuilder initialized successfully.
 
 
-
-
-
-
-|
 
 .. code-block:: Python
 
@@ -200,7 +190,7 @@ The script shows how to:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.003 seconds)
+   **Total running time of the script:** (0 minutes 0.001 seconds)
 
 
 .. _sphx_glr_download_auto_examples_run_experiments.py:
