@@ -88,6 +88,23 @@ All scripts in this directory are automatically converted to beautiful HTML docu
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the visualization features of CaliBrain.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_visualization_tutorial_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Visualization Tutorial</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -100,6 +117,7 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 
    /auto_tutorials/sensor_simulation_tutorial
    /auto_tutorials/source_simulation_tutorial
+   /auto_tutorials/visualization_tutorial
 
 
 .. only:: html

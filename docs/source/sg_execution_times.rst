@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.372** total execution time for 4 files **from all galleries**:
+**00:02.338** total execution time for 5 files **from all galleries**:
 
 .. container::
 
@@ -33,7 +33,7 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``../../tutorials/sensor_simulation_tutorial.py``)
-     - 00:01.828
+     - 00:01.795
      - 0.0
    * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``../../tutorials/source_simulation_tutorial.py``)
      - 00:00.537
@@ -43,4 +43,7 @@ Computation times
      - 0.0
    * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``../../examples/run_experiments.py``)
      - 00:00.001
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py` (``../../tutorials/visualization_tutorial.py``)
+     - 00:00.000
      - 0.0
