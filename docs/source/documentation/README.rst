@@ -38,9 +38,9 @@ Supported Inverse Methods
 Learning Resources
 ~~~~~~~~~~~~~~~~~~
 
-📚 **New to CaliBrain?** Start with our comprehensive :doc:`tutorials <tutorials/README>` that cover the complete workflow from forward modeling to uncertainty quantification.
+📚 **New to CaliBrain?** Start with our comprehensive :doc:`tutorials <../auto_tutorials/index>` that cover the complete workflow from forward modeling to uncertainty quantification.
 
-🔬 **Ready to explore?** Check out practical :doc:`examples <examples/README>` showing real-world applications and complete analysis pipelines.
+🔬 **Ready to explore?** Check out practical :doc:`examples <../auto_examples/index>` showing real-world applications and complete analysis pipelines.
 
 The tutorials provide step-by-step guidance, while examples demonstrate how to adapt CaliBrain for your specific research needs.
 
