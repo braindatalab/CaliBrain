@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:01.729** total execution time for 5 files **from all galleries**:
+**00:02.372** total execution time for 4 files **from all galleries**:
 
 .. container::
 
@@ -33,17 +33,14 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``../../tutorials/sensor_simulation_tutorial.py``)
-     - 00:01.729
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py` (``../../examples/leadfield_simulation_example.py``)
-     - 00:00.000
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``../../examples/run_experiments.py``)
-     - 00:00.000
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_overview.py` (``../../tutorials/overview.py``)
-     - 00:00.000
+     - 00:01.828
      - 0.0
    * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``../../tutorials/source_simulation_tutorial.py``)
-     - 00:00.000
+     - 00:00.537
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py` (``../../examples/leadfield_simulation_example.py``)
+     - 00:00.005
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``../../examples/run_experiments.py``)
+     - 00:00.001
      - 0.0

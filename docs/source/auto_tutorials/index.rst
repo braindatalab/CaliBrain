@@ -56,23 +56,6 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial covers the basic CaliBrain pipeline for brain source localization and uncertainty quantification: building forward models, simulating brain activity, estimating sources, and quantifying uncertainty. It introduces the core CaliBrain data structures and components, covering the essential workflow at a high level. Subsequent tutorials address each topic in greater detail.">
-
-.. only:: html
-
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_overview_thumb.png
-    :alt:
-
-  :ref:`sphx_glr_auto_tutorials_overview.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Overview of brain source localization with CaliBrain</div>
-    </div>
-
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the SensorSimulator class to generate synthetic MEG/EEG sensor measurements from brain source activity. The SensorSimulator  projects source-level neural signals to sensor space using forward models and adds realistic noise, creating controlled datasets for testing source localization algorithms, validating analysis  pipelines, and benchmarking uncertainty quantification methods.">
 
 .. only:: html
@@ -115,7 +98,6 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 .. toctree::
    :hidden:
 
-   /auto_tutorials/overview
    /auto_tutorials/sensor_simulation_tutorial
    /auto_tutorials/source_simulation_tutorial
 
