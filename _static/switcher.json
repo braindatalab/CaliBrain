@@ -1,0 +1,26 @@
+[
+  {
+    "name": "latest (dev)",
+    "version": "latest",
+    "url": "https://calibrain.readthedocs.io/en/latest/",
+    "preferred": false
+  },      
+  {
+    "name": "0.1.2 (stable)",
+    "version": "stable",
+    "url": "https://calibrain.readthedocs.io/en/stable/",
+    "preferred": true
+  },
+  {
+    "name": "0.1.1",
+    "version": "0.1.1",
+    "url": "https://calibrain.readthedocs.io/en/0.1.1/",
+    "preferred": false
+  },
+  {
+    "name": "0.1.0",
+    "version": "0.1.0", 
+    "url": "https://calibrain.readthedocs.io/en/0.1.0/",
+    "preferred": false
+  }
+]
