@@ -172,7 +172,7 @@ class Benchmark:
                     base_dir=fig_path,
                     params=this_result,
                     desired_order = [
-                        "subject", "solver", "init_gamma", "orientation_type", "alpha_SNR", "noise_type", "nnz", "seed"
+                        "subject", "solver", "init_gamma", "orientation_type", "alpha_SNR", "noise_type", "gauss_noise_var", "nnz", "seed"
                     ]
                 )
                 
@@ -204,13 +204,14 @@ class Benchmark:
                 # -------------------------------------------------------------
                 # 6. Simulate sensor and sensor data
                 # -------------------------------------------------------------
-                self.logger.info("Simulating sensor trials...")                
-                y_clean_trials, y_noisy_trials, noise_trials, noise_var_trials =\
+                self.logger.info("Simulating sensor trials...")
+                y_clean_trials, y_noisy_trials, noise_trials, noise_eta_trials =\
                     self.sensor_simulator.simulate(
                         x_trials=x_trials,
                         L=L,
                         orientation_type=orientation_type,
                         alpha_SNR=data_params['alpha_SNR'],
+                        gauss_noise_var=data_params['gauss_noise_var'],
                         n_trials=n_trials,
                         global_seed=global_noise_seeds,
                 )
@@ -224,7 +225,20 @@ class Benchmark:
                 x_one_trial = x_trials[trial_idx]
                 x_active_indices_one_trial = x_active_indices_trials[trial_idx]
                 y_noisy_one_trial = y_noisy_trials[trial_idx]
-                noise_var_one_trial = noise_var_trials[trial_idx]
+                noise_eta_one_trial = noise_eta_trials[trial_idx] # noise scaling factor (eta)
+
+
+                # # select noise type
+                if data_params['noise_type'] == 'oracle':
+                    noise_var_one_trial = (data_params['gauss_noise_var'] * noise_eta_one_trial) ** 2
+
+                # take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
+                elif data_params['noise_type'] == 'baseline':
+                    pre_stimulus_onset = int((self.source_simulator.ERP_config['stim_onset'] - self.source_simulator.ERP_config['tmin']) * self.source_simulator.ERP_config['sfreq'])
+                    y_noisy_one_trial = y_noisy_one_trial[:, :pre_stimulus_onset]
+                    
+                    # compute sensor noise variance
+                    noise_var_one_trial = np.mean(np.std(y_noisy_one_trial, axis=1) ** 2)
 
                 self.logger.info("Fitting source estimator...")
                 source_estimator = SourceEstimator(

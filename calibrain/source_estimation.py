@@ -17,8 +17,8 @@ from matplotlib import cm
 def gamma_map(
     L,
     y,
-    noise_var=None,
-    noise_type="oracle",
+    noise_var,
+    # noise_type="oracle",
     n_orient=1,
     max_iter=1000,
     tol=1e-15,
@@ -28,9 +28,9 @@ def gamma_map(
     verbose=True,
     logger=None,
 ):
-    # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
-    if noise_type == "oracle":
-        noise_cov = noise_var * np.eye(L.shape[0])
+    # # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
+    # if noise_type == "oracle":
+    #     noise_cov = noise_var * np.eye(L.shape[0])
     
     # TODO: check whether we still need this
     if init_gamma is None:
@@ -605,7 +605,7 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
     
     return K, Sigma
 
-def eloreta(L, y, noise_var=None, noise_type="oracle",  n_orient=1, verbose=True, logger=None):
+def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None):
     """
     Compute the eLORETA solution for EEG/MEG inverse modeling.
     
@@ -633,8 +633,8 @@ def eloreta(L, y, noise_var=None, noise_type="oracle",  n_orient=1, verbose=True
     Sigma : ndarray
         The posterior source covariance, characterizing the uncertainty in estimates.
     """        
-    if noise_type == "oracle":
-        noise_cov = noise_var * np.eye(L.shape[0])
+    # TODO: check if this work for all noise types
+    noise_cov = noise_var * np.eye(L.shape[0]) 
     
     # Create the whitening matrix from the noise covariance:
     # Typically computed as the inverse of the square root of the covariance.
