@@ -47,13 +47,13 @@ html_theme_options = {
     "navbar_end": ["version-switcher", "navbar-icon-links","theme-switcher"],
 
     # Custom version display
-    "announcement": f"📚 You are viewing CaliBrain v{release} documentation",
-    
+    "announcement": f"📚 You are viewing CaliBrain version {release} documentation",
+
     # VERSION CONFIGURATION
     "switcher": {
         # "json_url": "https://braindatalab.github.io/CaliBrain/_static/switcher.json",
         "json_url": "_static/switcher.json",  # Use local path for testing
-        "version_match": f"v{release}",  # Current version
+        "version_match": release  # Current version
     },
     
     # SIDEBAR CONFIGURATION - These are key for PyData theme

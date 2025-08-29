@@ -1,30 +1,26 @@
-{
-  "version_match": "dev",
-  "json_url": "_static/switcher.json",
-  "versions": [
-    {
-      "name": "v0.1.2 (stable)",
-      "version": "v0.1.2",
-      "url": "https://braindatalab.github.io/CaliBrain/",
-      "preferred": true
-    },
-    {
-      "name": "v0.1.1",
-      "version": "v0.1.1",
-      "url": "https://braindatalab.github.io/CaliBrain/",
-      "preferred": false
-    },
-    {
-      "name": "v0.1.0",
-      "version": "v0.1.0", 
-      "url": "https://braindatalab.github.io/CaliBrain/v0.1.0/",
-      "preferred": false
-    },
-    {
-      "name": "latest (dev)",
-      "version": "latest",
-      "url": "https://braindatalab.github.io/CaliBrain/latest/",
-      "preferred": false
-    }
-  ]
-}
+[
+  {
+    "name": "latest (dev)",
+    "version": "latest",
+    "url": "https://calibrain.readthedocs.io/en/latest/",
+    "preferred": false
+  },      
+  {
+    "name": "0.1.2 (stable)",
+    "version": "stable",
+    "url": "https://calibrain.readthedocs.io/en/stable/",
+    "preferred": true
+  },
+  {
+    "name": "0.1.1",
+    "version": "0.1.1",
+    "url": "https://calibrain.readthedocs.io/en/0.1.1/",
+    "preferred": false
+  },
+  {
+    "name": "0.1.0",
+    "version": "0.1.0", 
+    "url": "https://calibrain.readthedocs.io/en/0.1.0/",
+    "preferred": false
+  }
+]
