@@ -1,0 +1,753 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Visualization &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/visualization/Visualizer';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Utilities" href="../utils/utils.html" />
+    <link rel="prev" title="Metric Evaluation" href="../metric_evaluation/MetricEvaluator.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../benchmark/Benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_simulation/SourceSimulator.html">Source Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../leadfield_builder/LeadfieldBuilder.html">Leadfield Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sensor_simulation/SensorSimulator.html">Sensor Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_estimation/SourceEstimator.html">Source Estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uncertainty_estimation/UncertaintyEstimator.html">Uncertainty Estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metric_evaluation/MetricEvaluator.html">Metric Evaluation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils/utils.html">Utilities</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../README.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Visualization</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="visualization">
+<h1>Visualization<a class="headerlink" href="#visualization" title="Link to this heading">#</a></h1>
+<section id="module-calibrain.visualization">
+<span id="visualizer"></span><h2>Visualizer<a class="headerlink" href="#module-calibrain.visualization" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibrain.visualization.</span></span><span class="sig-name descname"><span class="pre">Visualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'results/figures'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'results/figures'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_source_signals">
+<span class="sig-name descname"><span class="pre">plot_source_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ERP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_active_indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trial_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Source</span> <span class="pre">Signals'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_source_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_source_signals" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_sensor_signals">
+<span class="sig-name descname"><span class="pre">plot_sensor_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ERP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trial_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stack'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Sensor</span> <span class="pre">Signals'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_sensor_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_sensor_signals" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_stc_3d_brain">
+<span class="sig-name descname"><span class="pre">plot_stc_3d_brain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ERP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_units</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fwd_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_stc_3d_brain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_stc_3d_brain" title="Link to this definition">#</a></dt>
+<dd><p>Plot source estimates with complete headless support.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_source_and_sensors">
+<span class="sig-name descname"><span class="pre">plot_source_and_sensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_active_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_clean_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_noisy_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nnz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ERP_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">202(FIFF_UNIT_AM)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensor_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">107(FIFF_UNIT_V)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_sensors_together</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(14,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data_simulation.png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'results/figures/data_sim.png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_source_and_sensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_source_and_sensors" title="Link to this definition">#</a></dt>
+<dd><p>Visualize source activity and sensor measurements.</p>
+<p>Plots active source time courses and compares clean vs. noisy sensor signals.
+Includes a line indicating stimulus onset.
+Uses self.tmin and self.tmax for the time axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.ndarray</em>) – Source activity. Shape depends on orientation type.</p></li>
+<li><p><strong>y_clean</strong> (<em>np.ndarray</em>) – Clean sensor measurements (n_sensors, n_times).</p></li>
+<li><p><strong>y_noisy</strong> (<em>np.ndarray</em>) – Noisy sensor measurements (n_sensors, n_times).</p></li>
+<li><p><strong>active_sources</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>]</em><em>, </em><em>optional</em>) – Indices of non-zero (active) sources. If None, they are determined from x, by default None.</p></li>
+<li><p><strong>nnz_to_plot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Number of non-zero sources to plot. If -1, plot all non-zero sources found, by default -1.</p></li>
+<li><p><strong>sfreq</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>optional</em>) – Sampling frequency in Hz, by default self.sfreq.</p></li>
+<li><p><strong>max_sensors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Maximum number of sensors to plot, by default 3.</p></li>
+<li><p><strong>plot_sensors_together</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, plot all sensors on the same subplot. If False, stack plots vertically, by default False.</p></li>
+<li><p><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>optional</em>) – Vertical shift between sensors when plotting together, by default 20.0.</p></li>
+<li><p><strong>figsize</strong> (<em>Tuple</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>]</em><em>, </em><em>optional</em>) – Figure size for the plot, by default (14, 10).</p></li>
+<li><p><strong>save_path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Path to save the figure. If None, the figure is not saved, by default ‘results/figures/data_sim.png’.</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, display the plot, by default False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_active_sources">
+<span class="sig-name descname"><span class="pre">plot_active_sources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_one_trial_one_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_one_trial_one_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_active_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_active_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sources</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">202(FIFF_UNIT_AM)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_active_sources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_active_sources" title="Link to this definition">#</a></dt>
+<dd><p>Plot the active sources at a specific time step, or averaged across time, comparing ground truth and estimated values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.ndarray</em>) – Ground truth values for components specified by active_indices.</p></li>
+<li><p><strong>x_hat</strong> (<em>np.ndarray</em>) – Estimated values for components specified by active_indices.</p></li>
+<li><p><strong>x_active_indices</strong> (<em>np.ndarray</em>) – Indices of active sources in the ground truth.</p></li>
+<li><p><strong>x_hat_active_indices</strong> (<em>np.ndarray</em>) – Indices of active sources in the estimated values.</p></li>
+<li><p><strong>n_sources</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Total number of sources.</p></li>
+<li><p><strong>source_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Units for the source signals, by default FIFF.FIFF_UNIT_AM</p></li>
+<li><p><strong>orientation_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Orientation type for the plot, by default “fixed”</p></li>
+<li><p><strong>save_path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Path to save the plot, by default None</p></li>
+<li><p><strong>file_name</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Name of the file to save the plot, by default None</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Title of the plot, by default None</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to show the plot, by default True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_ci">
+<span class="sig-name descname"><span class="pre">plot_ci</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_one_trial_one_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_one_trial_one_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_active_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_active_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sources</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_units</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_levels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'active_sources_ci'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(12,</span> <span class="pre">6)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_ci"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_ci" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_calibration_curve">
+<span class="sig-name descname"><span class="pre">plot_calibration_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">confidence_levels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">empirical_coverage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'active_indices'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'calibration_curve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_calibration_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_calibration_curve" title="Link to this definition">#</a></dt>
+<dd><p>Visualizes the calibration curve.</p>
+<p>Parameters:
+- empirical_coverage (np.ndarray): 1D array of empirical coverage values,</p>
+<blockquote>
+<div><p>corresponding to each confidence level in self.confidence_levels.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>results (dict): Dictionary possibly containing calibration metrics.</p></li>
+<li><p>which_legend (str): Specifies which set of metrics to display in the legend.</p></li>
+<li><p>file_name (str): Base name for the saved plot file.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.visualization.Visualizer.plot_all">
+<span class="sig-name descname"><span class="pre">plot_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_active_indices_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_active_indices_one_trial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_clean_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_noisy_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trial_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sources</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fwd_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nnz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ERP_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">202(FIFF_UNIT_AM)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensor_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">107(FIFF_UNIT_V)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_levels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">empirical_coverages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/visualization.html#Visualizer.plot_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.visualization.Visualizer.plot_all" title="Link to this definition">#</a></dt>
+<dd><p>Comprehensive visualization wrapper that generates all plots for experiment analysis.</p>
+<p>This is a high-level wrapper function that orchestrates multiple visualization
+methods to create a complete set of plots for ERP source localization analysis.</p>
+<p><strong>Generated Visualizations:</strong>
+- Source signal plots (individual and all trials)
+- Sensor signal plots (stacked and concatenated)
+- 3D brain surface plots (if available)
+- Source-sensor comparison plots
+- Active source analysis plots
+- Confidence interval plots
+- Calibration curve plots</p>
+<p><strong>Called Methods:</strong>
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_source_signals" title="calibrain.visualization.Visualizer.plot_source_signals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_source_signals()</span></code></a> - Source time series visualization
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_sensor_signals" title="calibrain.visualization.Visualizer.plot_sensor_signals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_sensor_signals()</span></code></a> - Sensor measurements visualization
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_stc_3d_brain" title="calibrain.visualization.Visualizer.plot_stc_3d_brain"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_stc_3d_brain()</span></code></a> - 3D brain surface visualization
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_source_and_sensors" title="calibrain.visualization.Visualizer.plot_source_and_sensors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_source_and_sensors()</span></code></a> - Combined source-sensor plots
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_active_sources" title="calibrain.visualization.Visualizer.plot_active_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_active_sources()</span></code></a> - Active source comparison
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_ci" title="calibrain.visualization.Visualizer.plot_ci"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_ci()</span></code></a> - Confidence interval visualization
+- <a class="reference internal" href="#calibrain.visualization.Visualizer.plot_calibration_curve" title="calibrain.visualization.Visualizer.plot_calibration_curve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_calibration_curve()</span></code></a> - Uncertainty calibration analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_trials</strong> (<em>np.ndarray</em>) – Source activity trials, shape (n_trials, n_sources, n_times)</p></li>
+<li><p><strong>x_active_indices_trials</strong> (<em>np.ndarray</em>) – Active source indices per trial</p></li>
+<li><p><strong>x_hat_one_trial</strong> (<em>np.ndarray</em>) – Estimated source activity for one trial</p></li>
+<li><p><strong>x_hat_active_indices_one_trial</strong> (<em>np.ndarray</em>) – Estimated active source indices for one trial</p></li>
+<li><p><strong>y_clean_trials</strong> (<em>np.ndarray</em>) – Clean sensor measurements, shape (n_trials, n_sensors, n_times)</p></li>
+<li><p><strong>y_noisy_trials</strong> (<em>np.ndarray</em>) – Noisy sensor measurements, shape (n_trials, n_sensors, n_times)</p></li>
+<li><p><strong>trial_idx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Trial index for single-trial visualizations, by default 0</p></li>
+<li><p><strong>n_sources</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Total number of sources, by default 1</p></li>
+<li><p><strong>subject</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Subject name for brain plots</p></li>
+<li><p><strong>subjects_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – FreeSurfer subjects directory</p></li>
+<li><p><strong>fwd_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Forward model path</p></li>
+<li><p><strong>nnz</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Number of non-zero sources, by default 1</p></li>
+<li><p><strong>ERP_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a><em>, </em><em>optional</em>) – ERP configuration parameters</p></li>
+<li><p><strong>sample_idx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – Time sample index for brain plots, by default 0</p></li>
+<li><p><strong>source_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Source signal units, by default FIFF.FIFF_UNIT_AM</p></li>
+<li><p><strong>sensor_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Sensor signal units, by default FIFF.FIFF_UNIT_V</p></li>
+<li><p><strong>confidence_levels</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – Confidence levels for uncertainty analysis</p></li>
+<li><p><strong>empirical_coverages</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a><em>, </em><em>optional</em>) – Empirical coverage data for calibration</p></li>
+<li><p><strong>ci_lower</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – Lower confidence bounds</p></li>
+<li><p><strong>ci_upper</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – Upper confidence bounds</p></li>
+<li><p><strong>orientation_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Source orientation type, by default “fixed”</p></li>
+<li><p><strong>result</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a><em>, </em><em>optional</em>) – Analysis results containing metrics</p></li>
+<li><p><strong>experiment_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Experiment directory for saving plots</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This wrapper function automatically saves all plots to organized subdirectories:
+- <cite>data_simulation/</cite> - Data visualization plots
+- <cite>uncertainty_analysis/</cite> - Uncertainty quantification plots</p>
+<p>All plots are saved with <cite>show=False</cite> for batch processing compatibility.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">viz</span> <span class="o">=</span> <span class="n">Visualizer</span><span class="p">(</span><span class="n">base_save_path</span><span class="o">=</span><span class="s2">&quot;results/figures&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">viz</span><span class="o">.</span><span class="n">plot_all</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">x_trials</span><span class="o">=</span><span class="n">x_trials</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">x_active_indices_trials</span><span class="o">=</span><span class="n">active_indices</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">x_hat_one_trial</span><span class="o">=</span><span class="n">x_hat</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="c1"># ... other parameters</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../metric_evaluation/MetricEvaluator.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Metric Evaluation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../utils/utils.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Utilities</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-calibrain.visualization">Visualizer</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer"><code class="docutils literal notranslate"><span class="pre">Visualizer</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.__init__"><code class="docutils literal notranslate"><span class="pre">Visualizer.__init__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_source_signals"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_source_signals()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_sensor_signals"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_sensor_signals()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_stc_3d_brain"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_stc_3d_brain()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_source_and_sensors"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_source_and_sensors()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_active_sources"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_active_sources()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_ci"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_ci()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_calibration_curve"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_calibration_curve()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.visualization.Visualizer.plot_all"><code class="docutils literal notranslate"><span class="pre">Visualizer.plot_all()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/api/visualization/Visualizer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,1330 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Sensor Data Simulation with SensorSimulator &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_tutorials/sensor_simulation_tutorial';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Source Data Simulation with SourceSimulator" href="source_simulation_tutorial.html" />
+    <link rel="prev" title="Tutorials" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../documentation/usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentation/results.html">Results</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/leadfield_simulation_example.html">Leadfield Matrix Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/run_experiments.html">Run benchmark experiments</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Tutorials</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Sensor Data Simulation with SensorSimulator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source_simulation_tutorial.html">Source Data Simulation with SourceSimulator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization_tutorial.html">Visualization Tutorial</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../documentation/README.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Tutorials</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Sensor Data Simulation with SensorSimulator</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-sensor-simulation-tutorial-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="sensor-data-simulation-with-sensorsimulator">
+<span id="tut-sensor-simulation"></span><span id="sphx-glr-auto-tutorials-sensor-simulation-tutorial-py"></span><h1>Sensor Data Simulation with SensorSimulator<a class="headerlink" href="#sensor-data-simulation-with-sensorsimulator" title="Link to this heading">#</a></h1>
+<p>This tutorial demonstrates how to use the <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> class
+to generate synthetic MEG/EEG sensor measurements from brain source activity. The SensorSimulator
+projects source-level neural signals to sensor space using forward models and adds realistic noise,
+creating controlled datasets for testing source localization algorithms, validating analysis
+pipelines, and benchmarking uncertainty quantification methods.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Authors: Mohammad Orabe  &lt;m.orabe@icloud.com&gt;</span>
+<span class="c1"># License: AGPL-3.0 license</span>
+<span class="c1"># Copyright the CaliBrain contributors.</span>
+</pre></div>
+</div>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading">#</a></h2>
+<p>This tutorial focuses on simulating sensor-level MEG/EEG measurements from
+known source activity, which forms the bridge between source simulation and
+inverse problem validation.</p>
+<p>The SensorSimulator takes source time courses and projects them to sensor space
+using leadfield matrices (forward models). It then adds controlled noise to create
+realistic sensor measurements that can be used for algorithm testing and validation.
+The class supports both fixed and free source orientations and provides precise
+control over signal-to-noise ratios.</p>
+<p><strong>Scope:</strong> The CaliBrain framework implements a comprehensive 7-stage pipeline for
+neuroimaging simulation and validation. This tutorial covers <strong>sensor-level
+simulation</strong> - the projection of neural activity from sources to sensors with
+controlled noise addition. For generating source activity patterns, see the
+source simulation tutorial. For recovering sources from sensor data, see the
+source estimation tutorial.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌───────────────┐    ┌───────────────┐    ┏━━━━━━━━━━━━━━━┓    ┌───────────────┐
+│   Leadfield   │ →  │    Source     │ →  ┃   ★ Sensor    ┃ →  │    Source     │
+│ Construction  │    │  Simulation   │    ┃   Simulation  ┃    │  Estimation   │
+└───────────────┘    └───────────────┘    ┗━━━━━━━━━━━━━━━┛    └───────────────┘
+                                                                      ↓
+                     ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+                     │  Evaluation   │ ←  │ Visualization │ ←  │  Uncertainty  │
+                     │               │    │               │    │   Estimation  │
+                     └───────────────┘    └───────────────┘    └───────────────┘
+</pre></div>
+</div>
+</section>
+<section id="mathematical-formulation">
+<h2>Mathematical Formulation<a class="headerlink" href="#mathematical-formulation" title="Link to this heading">#</a></h2>
+<p>Sensor-level simulation projects sources to sensors via the forward model
+and adds realistic noise to create synthetic EEG/MEG data suitable for
+testing inverse methods and uncertainty estimation.</p>
+<section id="forward-projection">
+<h3>Forward Projection<a class="headerlink" href="#forward-projection" title="Link to this heading">#</a></h3>
+<p>The sensor data <span class="math notranslate nohighlight">\(\mathbf{Y} \in \mathbb{R}^{M \times T}\)</span> is generated by
+projecting source activity through a leadfield matrix and adding noise:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{Y} = \mathbf{L} \mathbf{X} + \boldsymbol{\epsilon}\]</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\mathbf{L} \in \mathbb{R}^{M \times N}\)</span> is the leadfield matrix</p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathbf{X} \in \mathbb{R}^{N \times T}\)</span> is the source activity matrix</p></li>
+<li><p><span class="math notranslate nohighlight">\(M\)</span> is the number of sensors</p></li>
+<li><p><span class="math notranslate nohighlight">\(N\)</span> is the number of source locations (dipoles)</p></li>
+<li><p><span class="math notranslate nohighlight">\(T\)</span> is the number of time points</p></li>
+</ul>
+<p>The leadfield provides the mapping from source current to sensor measurements,
+with units typically in volts per ampere-meter (V/Am) for EEG and tesla per
+ampere-meter (T/Am) for MEG.</p>
+</section>
+<section id="dipole-orientations">
+<h3>Dipole Orientations<a class="headerlink" href="#dipole-orientations" title="Link to this heading">#</a></h3>
+<p>Source activity can be modeled with different orientation constraints:</p>
+<p><strong>Fixed orientations</strong>: Sources are constrained to be normal to the cortical
+surface, reducing the source space dimensionality:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{L}_{\text{fixed}} \in \mathbb{R}^{M \times N_{\text{vertices}}}\]</div>
+<p><strong>Free orientations</strong>: Sources can point in any direction, typically represented
+as three orthogonal components per vertex:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{L}_{\text{free}} \in \mathbb{R}^{M \times 3N_{\text{vertices}}}\]</div>
+<p>The CaliBrain framework supports both orientation models through the
+<a class="reference internal" href="../api/leadfield_builder/LeadfieldBuilder.html#calibrain.leadfield_builder.LeadfieldBuilder" title="calibrain.leadfield_builder.LeadfieldBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">LeadfieldBuilder</span></code></a> class.</p>
+</section>
+<section id="noise-model-and-alpha-snr-framework">
+<h3>Noise Model and Alpha-SNR Framework<a class="headerlink" href="#noise-model-and-alpha-snr-framework" title="Link to this heading">#</a></h3>
+<p>Sensor noise is modeled as additive white Gaussian noise with precise control
+through the Alpha-SNR parameter <span class="math notranslate nohighlight">\(\alpha_{\text{SNR}}\)</span>.</p>
+<p><strong>Classical Signal-to-Noise Ratio</strong></p>
+<p>The traditional signal-to-noise ratio is defined as the ratio of signal power
+to noise power:</p>
+<div class="math notranslate nohighlight">
+\[\text{SNR}_{\text{linear}} = \frac{P_{\text{signal}}}{P_{\text{noise}}} = \frac{\|\mathbf{Y}_{\text{clean}}\|_F^2}{\|\boldsymbol{\epsilon}\|_F^2}\]</div>
+<p>where the signal and noise powers are defined as:</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{signal}} = \|\mathbf{Y}_{\text{clean}}\|_F^2 = \|\mathbf{L}\mathbf{X}\|_F^2 = \sum_{m=1}^{M} \sum_{t=1}^{T} (\mathbf{Y}_{\text{clean}})_{m,t}^2\]</div>
+<div class="math notranslate nohighlight">
+\[P_{\text{noise}} = \|\boldsymbol{\epsilon}\|_F^2 = \sum_{m=1}^{M} \sum_{t=1}^{T} \epsilon_{m,t}^2\]</div>
+<p>The Frobenius norm <span class="math notranslate nohighlight">\(\|\cdot\|_F\)</span> computes the total squared magnitude across
+all sensor measurements and time points, providing a scalar measure of overall
+signal or noise energy.</p>
+<p>In decibel (dB) scale:</p>
+<div class="math notranslate nohighlight">
+\[\text{SNR}_{\text{dB}} = 10 \log_{10}(\text{SNR}_{\text{linear}})\]</div>
+<p><strong>Alpha-SNR Framework</strong></p>
+<p>The Alpha-SNR parameter <span class="math notranslate nohighlight">\(\alpha_{\text{SNR}} \in [0, 1]\)</span> provides an intuitive
+representation where:</p>
+<div class="math notranslate nohighlight">
+\[\alpha_{\text{SNR}} = \frac{P_{\text{signal}}}{P_{\text{signal}} + P_{\text{noise}}}\]</div>
+<p>This formulation offers several advantages:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\alpha_{\text{SNR}} = 1.0\)</span>: Pure signal, no noise added</p></li>
+<li><p><span class="math notranslate nohighlight">\(\alpha_{\text{SNR}} = 0.5\)</span>: Equal signal and noise power</p></li>
+<li><p><span class="math notranslate nohighlight">\(\alpha_{\text{SNR}} = 0.0\)</span>: Pure noise, no signal</p></li>
+<li><p>Linear interpolation between extreme cases</p></li>
+</ul>
+<p><strong>Noise Scaling Factor</strong></p>
+<p>The noise scaling factor <span class="math notranslate nohighlight">\(\eta\)</span> is derived to achieve the target Alpha-SNR:</p>
+<div class="math notranslate nohighlight">
+\[\eta = \sqrt{\frac{1 - \alpha_{\text{SNR}}}{\alpha_{\text{SNR}}}} \cdot \frac{\|\mathbf{Y}_{\text{clean}}\|_F}{\|\boldsymbol{\epsilon}_{\text{base}}\|_F}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{\epsilon}_{\text{base}} \sim \mathcal{N}(0, \mathbf{I})\)</span> is the base
+white noise matrix with unit variance.</p>
+<p><strong>SNR Conversions</strong></p>
+<p>The relationships between different SNR representations are:</p>
+<div class="math notranslate nohighlight">
+\[\text{SNR}_{\text{linear}} = \frac{\alpha_{\text{SNR}}}{1 - \alpha_{\text{SNR}}}\]</div>
+<div class="math notranslate nohighlight">
+\[\alpha_{\text{SNR}} = \frac{\text{SNR}_{\text{linear}}}{1 + \text{SNR}_{\text{linear}}}\]</div>
+<div class="math notranslate nohighlight">
+\[\text{SNR}_{\text{dB}} = 10 \log_{10}\left(\frac{\alpha_{\text{SNR}}}{1 - \alpha_{\text{SNR}}}\right)\]</div>
+<p><strong>Conversion Reference Table</strong></p>
+<p>Common Alpha-SNR values and their classical SNR equivalents:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Alpha-SNR</p></th>
+<th class="head"><p>Linear SNR</p></th>
+<th class="head"><p>dB SNR</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0.95</p></td>
+<td><p>19.00</p></td>
+<td><p>12.79</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.80</p></td>
+<td><p>4.00</p></td>
+<td><p>6.02</p></td>
+</tr>
+<tr class="row-even"><td><p>0.50</p></td>
+<td><p>1.00</p></td>
+<td><p>0.00</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.20</p></td>
+<td><p>0.25</p></td>
+<td><p>-6.02</p></td>
+</tr>
+<tr class="row-even"><td><p>0.05</p></td>
+<td><p>0.05</p></td>
+<td><p>-12.79</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The noise model assumes homoscedastic (uniform variance) and uncorrelated
+(white) Gaussian noise across all sensors and time points.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class"><span class="n">Path</span></a>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="the-sensorsimulator-class">
+<h2>The SensorSimulator Class<a class="headerlink" href="#the-sensorsimulator-class" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> class is located in the
+<code class="docutils literal notranslate"><span class="pre">calibrain/sensor_simulation.py</span></code> module and serves as the core component
+for projecting source activity to sensor measurements with controlled noise.</p>
+<section id="class-methods">
+<h3>Class Methods<a class="headerlink" href="#class-methods" title="Link to this heading">#</a></h3>
+<dl class="simple">
+<dt>The <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> class consists of three core methods:</dt><dd><ul class="simple">
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_project_sources_to_sensors()</span></code>: Internal method for forward projection using leadfield matrices</p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_add_noise()</span></code>: Internal method for adding controlled Gaussian noise to clean signals</p></li>
+<li><p><a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator.simulate" title="calibrain.sensor_simulation.SensorSimulator.simulate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">simulate()</span></code></a>: Main public method for multi-trial sensor simulation. This is the main method that should be used as it wraps the core functionality.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> class is part of the CaliBrain package and can be imported directly as follows:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">SensorSimulator</span>
+</pre></div>
+</div>
+</section>
+<section id="basic-usage-example">
+<h3>Basic Usage Example<a class="headerlink" href="#basic-usage-example" title="Link to this heading">#</a></h3>
+<p>The <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> class expects a logger for tracking operations. However if we do not provide one, a default logger will be used.
+The <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator.simulate" title="calibrain.sensor_simulation.SensorSimulator.simulate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">simulate()</span></code></a> function requires source data, leadfield matrices, and simulation parameters.</p>
+<p>Quick demonstration with minimal setup:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">demo_sensor_simulator</span> <span class="o">=</span> <span class="n">SensorSimulator</span><span class="p">()</span>   <span class="c1"># use default logger</span>
+
+<span class="c1"># We can always use the CaliBrain&#39;s utility function :func:`~calibrain.utils.inspect_object` to explore any</span>
+<span class="c1"># class structure and understand its available attributes and methods:</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">inspect_object</span>
+
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">class_info</span></a> <span class="o">=</span> <span class="n">inspect_object</span><span class="p">(</span><span class="n">demo_sensor_simulator</span><span class="p">,</span> <span class="n">show_private</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Attributes:
+  - logger
+  - sensor_units
+
+Methods:
+  - simulate
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quick-demo-with-random-data">
+<h2>Quick Demo with Random Data<a class="headerlink" href="#quick-demo-with-random-data" title="Link to this heading">#</a></h2>
+<p>Let’s start with a simple demonstration using random source activity and a
+synthetic leadfield matrix to understand the core concepts:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create random source time courses (3 sources, 100 time points, 2 trials)</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources_demo</span></a> <span class="o">=</span> <span class="mi">3</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sensors_demo</span></a> <span class="o">=</span> <span class="mi">5</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_times_demo</span></a> <span class="o">=</span> <span class="mi">100</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_trials_demo</span></a> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="c1"># Random source activity for two trials: sources × time</span>
+<a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.seed.html#numpy.random.seed" title="numpy.random.seed" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span></a><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_demo_trial1</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources_demo</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_times_demo</span></a><span class="p">)</span> <span class="c1"># assuming (Am)</span>
+
+<a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.seed.html#numpy.random.seed" title="numpy.random.seed" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span></a><span class="p">(</span><span class="mi">84</span><span class="p">)</span>  <span class="c1"># Different seed for trial 2</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_demo_trial2</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources_demo</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_times_demo</span></a><span class="p">)</span> <span class="c1"># assuming (Am)</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials_demo</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_demo_trial1</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_demo_trial2</span></a><span class="p">])</span>
+
+<span class="c1"># Random leadfield matrix: sensors × sources</span>
+<span class="c1"># Scale to get realistic sensor voltages (V) from source currents (Am)</span>
+<span class="c1"># For EEG-like measurements: ~1e-6 V/Am (microVolts per Ampere·meter)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L_demo</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sensors_demo</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources_demo</span></a><span class="p">)</span> <span class="o">*</span> <span class="mf">1e-6</span>  <span class="c1"># V/Am</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Source activity shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials_demo</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># (trials × sources × time)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Leadfield matrix shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L_demo</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># (sensors × sources)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>- Source activity shape: (2, 3, 100)
+- Leadfield matrix shape: (5, 3)
+</pre></div>
+</div>
+<p>Run the simple sensor simulation:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_demo</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_demo</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_demo</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_var_demo</span></a> <span class="o">=</span> <span class="n">demo_sensor_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials_demo</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L_demo</span></a><span class="p">,</span>
+    <span class="n">orientation_type</span><span class="o">=</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+    <span class="n">alpha_SNR</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>  <span class="c1"># 70% signal, 30% noise</span>
+    <span class="n">n_trials</span><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_trials_demo</span></a><span class="p">,</span>
+    <span class="n">global_seed</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Demo Results:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Clean sensor data shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_demo</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials × sensors × time)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noisy sensor data shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_demo</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Demo Results:
+  - Clean sensor data shape: (2, 5, 100) (trials × sensors × time)
+  - Noisy sensor data shape: (2, 5, 100)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Sensor values are in automatically in Tesla (T) for MEG.
+We need to set the units manually to volts (V) for EEG. This will be useful for
+visualization. Usually we can derive the correct units from the forward operator.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">mne.io.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIFF</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">demo_sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">)</span> <span class="c1"># -&gt; Tesla (T)</span>
+
+<span class="n">demo_sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span> <span class="o">=</span> <span class="n">FIFF</span><span class="o">.</span><span class="n">FIFF_UNIT_V</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">demo_sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">)</span> <span class="c1"># -&gt; Volts (V)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>112 (FIFF_UNIT_T)
+107 (FIFF_UNIT_V)
+</pre></div>
+</div>
+</section>
+<section id="realistic-simulation-pipeline">
+<h2>Realistic Simulation Pipeline<a class="headerlink" href="#realistic-simulation-pipeline" title="Link to this heading">#</a></h2>
+<p>Now let’s move to a more realistic example using the full CaliBrain pipeline
+with anatomically-based leadfield matrices and physiologically-plausible
+source activity patterns.</p>
+<p>Configure logging to see simulation progress</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/logging.html#logging.basicConfig" title="logging.basicConfig" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-function"><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span></a><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span></a><span class="p">,</span> <span class="c1"># Set to logging.DEBUG for more detailed output</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> | </span><span class="si">%(levelname)s</span><span class="s2"> | </span><span class="si">%(name)s</span><span class="s2"> | </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">handlers</span><span class="o">=</span><span class="p">[</span><a href="https://docs.python.org/3/library/logging.handlers.html#logging.StreamHandler" title="logging.StreamHandler" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class"><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span></a><span class="p">()]</span>
+<span class="p">)</span>
+<a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/logging.html#logging.getLogger" title="logging.getLogger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-function"><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span></a><span class="p">(</span><span class="s2">&quot;SensorSimulator&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="step-1-load-leadfield-matrix">
+<h3>Step 1: Load Leadfield Matrix<a class="headerlink" href="#step-1-load-leadfield-matrix" title="Link to this heading">#</a></h3>
+<p>Next, we need a leadfield matrix to project sources to sensors:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeadfieldBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_data_path</span>
+
+<a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a> <span class="o">=</span> <span class="n">get_data_path</span><span class="p">()</span> <span class="c1"># Get the default calibrain/data path</span>
+
+<span class="c1"># Initialize leadfield builder</span>
+<span class="n">leadfield_builder</span> <span class="o">=</span> <span class="n">LeadfieldBuilder</span><span class="p">(</span>
+    <span class="n">leadfield_dir</span><span class="o">=</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a>
+<span class="p">)</span>
+
+<span class="c1"># Load leadfield matrix for a standard subject</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span></a> <span class="o">=</span> <span class="n">leadfield_builder</span><span class="o">.</span><span class="n">get_leadfield</span><span class="p">(</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;fsaverage&quot;</span><span class="p">,</span>
+    <span class="n">orientation_type</span><span class="o">=</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+    <span class="n">retrieve_mode</span><span class="o">=</span><span class="s2">&quot;load&quot;</span>
+<span class="p">)</span>
+
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sensors</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span><span class="o">.</span><span class="n">shape</span></a>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Leadfield matrix:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Contains </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> sensors and </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> sources&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Sensor units: </span><span class="si">{</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">sensor_units</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>2025-08-27 21:42:09,518 | INFO | SensorSimulator | LeadfieldBuilder initialized successfully.
+2025-08-27 21:42:09,518 | INFO | SensorSimulator | Loading leadfield matrix from file: /Users/orabe/0.braindata/CaliBrain/calibrain/data/lead_field_fixed_fsaverage.npz
+2025-08-27 21:42:09,522 | INFO | SensorSimulator | Leadfield loaded with shape (64, 5124)
+2025-08-27 21:42:09,522 | INFO | SensorSimulator | Leadfield obtained. Updated n_sensors=64, n_sources=5124
+
+Leadfield matrix:
+  - Contains 64 sensors and 5124 sources
+  - Sensor units: 107 (FIFF_UNIT_V)
+</pre></div>
+</div>
+</section>
+<section id="step-2-generate-source-activity">
+<h3>Step 2: Generate Source Activity<a class="headerlink" href="#step-2-generate-source-activity" title="Link to this heading">#</a></h3>
+<p>First, we need source time courses to project to sensors. We’ll use the
+SourceSimulator to create realistic ERP-like source activity:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceSimulator</span>
+
+<span class="c1"># Configure ERP parameters for source simulation</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;tmin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span>                <span class="c1"># Start time of epoch (seconds before stimulus)</span>
+    <span class="s2">&quot;tmax&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>                 <span class="c1"># End time of epoch (seconds after stimulus)</span>
+    <span class="s2">&quot;stim_onset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1"># Stimulus onset time (relative to epoch start)</span>
+    <span class="s2">&quot;sfreq&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span>                <span class="c1"># Sampling frequency in Hz</span>
+    <span class="s2">&quot;fmin&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>                   <span class="c1"># Minimum frequency for bandpass filter (Hz)</span>
+    <span class="s2">&quot;fmax&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>                   <span class="c1"># Maximum frequency for bandpass filter (Hz)</span>
+    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>           <span class="c1"># Amplitude scaling factor (nAm)</span>
+    <span class="s2">&quot;random_erp_timing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>   <span class="c1"># Whether to randomize ERP onset and duration</span>
+    <span class="s2">&quot;erp_min_length&quot;</span><span class="p">:</span> <span class="mi">80</span>         <span class="c1"># Minimum ERP duration in samples</span>
+<span class="p">}</span>
+
+<span class="c1"># Create source simulator and generate activity</span>
+<span class="n">source_simulator</span> <span class="o">=</span> <span class="n">SourceSimulator</span><span class="p">(</span><span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+
+<span class="c1"># Simulation parameters for source activity</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">source_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>  <span class="c1"># Source orientation type</span>
+    <span class="s2">&quot;n_sources&quot;</span><span class="p">:</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_sources</span></a><span class="p">,</span>       <span class="c1"># Total number of source locations (fsaverage)</span>
+    <span class="s2">&quot;nnz&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>                     <span class="c1"># Number of active sources per trial</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>                <span class="c1"># Number of trials to simulate</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">42</span>             <span class="c1"># Seed for reproducibility</span>
+<span class="p">}</span>
+
+<span class="c1"># Generate source time courses</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a> <span class="o">=</span> <span class="n">source_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">source_params</span></a><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated source activity:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials x sources x time)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Active sources per trial: </span><span class="si">{</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">indices</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Source units: </span><span class="si">{</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">source_units</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>2025-08-27 21:42:09,536 | INFO | SensorSimulator | Completed simulating source time courses for 3 trials.
+2025-08-27 21:42:09,536 | INFO | SensorSimulator | Shape of source time courses of all trials 3 trials: (3, 5124, 250)
+2025-08-27 21:42:09,536 | INFO | SensorSimulator | Shape of active indices for all 3 trials: (3, 5)
+2025-08-27 21:42:09,536 | INFO | SensorSimulator | Active indices for all trials:
+2025-08-27 21:42:09,536 | INFO | SensorSimulator |   Trial 1: [2937 1873   76 3317 3571]
+2025-08-27 21:42:09,536 | INFO | SensorSimulator |   Trial 2: [4774 1976 4372 2272  813]
+2025-08-27 21:42:09,536 | INFO | SensorSimulator |   Trial 3: [ 156 3770 4010  284 4452]
+Generated source activity:
+  - Shape: (3, 5124, 250) (trials x sources x time)
+  - Active sources per trial: [5, 5, 5]
+  - Source units: 202 (FIFF_UNIT_AM)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For an in-depth guide to the <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class and advanced visualization techniques, refer to the <a class="reference internal" href="source_simulation_tutorial.html#tut-source-simulation"><span class="std std-ref">Source Data Simulation with SourceSimulator</span></a> tutorial.</p>
+</div>
+</section>
+<section id="step-3-configure-sensor-simulation">
+<h3>Step 3: Configure Sensor Simulation<a class="headerlink" href="#step-3-configure-sensor-simulation" title="Link to this heading">#</a></h3>
+<p>Now we can create the SensorSimulator and project sources to sensors:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create sensor simulator</span>
+<span class="n">sensor_simulator</span> <span class="o">=</span> <span class="n">SensorSimulator</span><span class="p">(</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Default sensor units: </span><span class="si">{</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>- Default sensor units: 112 (FIFF_UNIT_T)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Default sensor units are set to Tesla (T) which corresponds to FIFF.FIFF_UNIT_T
+in MNE notation for MEG magnetometer sensors. Usually, the units will be
+automatically updated based on the leadfield matrix sensor type during simulation.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span> <span class="o">=</span> <span class="n">leadfield_builder</span><span class="o">.</span><span class="n">sensor_units</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualization-with-calibrain">
+<h2>Visualization with CaliBrain<a class="headerlink" href="#visualization-with-calibrain" title="Link to this heading">#</a></h2>
+<p>The CaliBrain <a class="reference internal" href="../api/visualization/Visualizer.html#calibrain.visualization.Visualizer" title="calibrain.visualization.Visualizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Visualizer</span></code></a> provides sophisticated plotting capabilities for
+sensor data analysis</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">Visualizer</span>
+
+<span class="c1"># Create visualizer instance with output directory</span>
+<a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">save_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class"><span class="n">Path</span></a><span class="p">(</span><span class="s2">&quot;tutorial_results&quot;</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir" title="pathlib.Path.mkdir" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-method"><span class="n">save_path</span><span class="o">.</span><span class="n">mkdir</span></a><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">viz</span> <span class="o">=</span> <span class="n">Visualizer</span><span class="p">(</span><span class="n">base_save_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">save_path</span></a><span class="p">),</span> <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For an in-depth guide to the <a class="reference internal" href="../api/visualization/Visualizer.html#calibrain.visualization.Visualizer" title="calibrain.visualization.Visualizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Visualizer</span></code></a> class and advanced visualization techniques, refer to the <a class="reference internal" href="visualization_tutorial.html#tut-visualization"><span class="std std-ref">Visualization Tutorial</span></a> tutorial.</p>
+</div>
+<p>Configure sensor simulation parameters</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">sensor_simulation_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;x_trials&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span>                    <span class="c1"># Source time courses from Step 1</span>
+    <span class="s2">&quot;L&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span></a><span class="p">,</span>                                  <span class="c1"># Leadfield matrix from Step 2</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>             <span class="c1"># Must match source simulation</span>
+    <span class="s2">&quot;alpha_SNR&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>                       <span class="c1"># Signal-to-noise ratio (30% signal, 70% noise)</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>                          <span class="c1"># Number of trials (must match source trials)</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">42</span>                       <span class="c1"># Seed for reproducible noise</span>
+<span class="p">}</span>
+
+<span class="c1"># Execute sensor simulation</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_var_trials</span></a> <span class="o">=</span> <span class="n">sensor_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+    <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">sensor_simulation_params</span></a>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>2025-08-27 21:42:09,552 | INFO | SensorSimulator | Noise addition complete.
+2025-08-27 21:42:09,552 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:09,552 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:09,552 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+2025-08-27 21:42:09,552 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+</pre></div>
+</div>
+<p>Let’s inspect the sensor simulation results:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Clean sensor data shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials x sensors x time)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noisy sensor data shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials x sensors x time)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noise data shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials x sensors x time)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noise variance per trial: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_var_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> (trials x sensors)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>- Clean sensor data shape: (3, 64, 250) (trials x sensors x time)
+- Noisy sensor data shape: (3, 64, 250) (trials x sensors x time)
+- Noise data shape: (3, 64, 250) (trials x sensors x time)
+- Noise variance per trial: (3,) (trials x sensors)
+</pre></div>
+</div>
+<section id="plot-sensor-signals-for-all-trials">
+<h3>Plot Sensor Signals for All Trials<a class="headerlink" href="#plot-sensor-signals-for-all-trials" title="Link to this heading">#</a></h3>
+<p>First, let’s visualize the clean and noisy sensor signals:</p>
+<p>Plot clean sensor signals (concatenated)</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_sensor_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <span class="n">y_trials</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_trials</span></a><span class="p">,</span>                     <span class="c1"># Only plot clean signals</span>
+    <span class="c1"># trial_idx = 0,</span>
+    <span class="c1"># channels=[0, 10],                          # or &quot;all&quot;</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;concatenate&quot;</span><span class="p">,</span>                          <span class="c1"># or &quot;stack&quot;</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Sensor Signals (All trials concatenated)&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;data_simulation&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;sensor_concatenate_trials_clean&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_sensor_simulation_tutorial_001.png" srcset="../_images/sphx_glr_sensor_simulation_tutorial_001.png" alt="Sensor Signals (All trials concatenated)" class = "sphx-glr-single-img"/><p>Plot sensors (all trials) with selected channels: y_noisy</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_sensor_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <span class="n">y_trials</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_trials</span></a><span class="p">,</span>                    <span class="c1"># Only noisy signals</span>
+    <span class="c1"># trial_idx = 0,</span>
+    <span class="n">channels</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>                              <span class="c1"># or &quot;all&quot;</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;stack&quot;</span><span class="p">,</span>                                <span class="c1"># or &quot;stack&quot;</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Sensor Signals (All Trials stacked)&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;data_simulation&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;sensor_stack_trials_noisy&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_sensor_simulation_tutorial_002.png" srcset="../_images/sphx_glr_sensor_simulation_tutorial_002.png" alt="Sensor Signals (All Trials stacked), Trial 1, Trial 2, Trial 3" class = "sphx-glr-single-img"/><p>Plot noisy sensor signals (concatenated)</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_sensor_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <span class="n">y_trials</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_trials</span></a><span class="p">,</span>
+    <span class="c1"># trial_idx = 0,</span>
+    <span class="c1"># channels=[0, 10],                           # or &quot;all&quot;</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;concatenate&quot;</span><span class="p">,</span>                           <span class="c1"># or &quot;stack&quot;</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Sensor Signals (All trials concatenated)&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;data_simulation&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;sensor_concatenate_trials_noisy&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_sensor_simulation_tutorial_003.png" srcset="../_images/sphx_glr_sensor_simulation_tutorial_003.png" alt="Sensor Signals (All trials concatenated)" class = "sphx-glr-single-img"/><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The visualization automatically handles unit conversion and scaling for optimal
+display. MEG sensor measurements are typically displayed in femtoTesla (fT) and
+EEG measurements in microVolts (µV).</p>
+</div>
+</section>
+</section>
+<section id="advanced-snr-configuration">
+<h2>Advanced SNR Configuration<a class="headerlink" href="#advanced-snr-configuration" title="Link to this heading">#</a></h2>
+<p>The SensorSimulator supports various SNR configurations to simulate different
+experimental conditions. Let’s explore different noise levels:</p>
+<section id="high-snr-clean-signals">
+<h3>High SNR (Clean Signals)<a class="headerlink" href="#high-snr-clean-signals" title="Link to this heading">#</a></h3>
+<p>Configuration for high signal-to-noise ratio,</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_snr_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;x_trials&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span>
+    <span class="s2">&quot;L&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span></a><span class="p">,</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;alpha_SNR&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span>                       <span class="c1"># 90% signal, 10% noise</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">100</span>                      <span class="c1"># Different seed for variety</span>
+<span class="p">}</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_high</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_high</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_high</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_var_high</span></a> <span class="o">=</span> <span class="n">sensor_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_snr_params</span></a><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">High SNR Results (α_SNR = 0.9):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Signal range: [</span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_high</span></a><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_high</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noise range: [</span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_high</span></a><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_high</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>2025-08-27 21:42:10,554 | INFO | SensorSimulator | Noise addition complete.
+2025-08-27 21:42:10,554 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,554 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,554 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,554 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+
+High SNR Results (α_SNR = 0.9):
+  - Signal range: [-1.32e-05, 1.07e-05]
+  - Noise range: [-6.39e-07, 7.57e-07]
+</pre></div>
+</div>
+</section>
+<section id="low-snr-noisy-signals">
+<h3>Low SNR (Noisy Signals)<a class="headerlink" href="#low-snr-noisy-signals" title="Link to this heading">#</a></h3>
+<p>Configuration for low signal-to-noise ratio, typical of single-trial data
+or challenging recording conditions:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">low_snr_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;x_trials&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span>
+    <span class="s2">&quot;L&quot;</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">L</span></a><span class="p">,</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;alpha_SNR&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>                       <span class="c1"># 10% signal, 90% noise</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">200</span>                      <span class="c1"># Different seed for variety</span>
+<span class="p">}</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_low</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_low</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_low</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_var_low</span></a> <span class="o">=</span> <span class="n">sensor_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">low_snr_params</span></a><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Low SNR Results (α_SNR = 0.1):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Signal range: [</span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_low</span></a><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_clean_low</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Noise range: [</span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_low</span></a><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_low</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>2025-08-27 21:42:10,563 | INFO | SensorSimulator | Noise addition complete.
+2025-08-27 21:42:10,563 | INFO | SensorSimulator | Shape of clean sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,563 | INFO | SensorSimulator | Shape of noisy sensor data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,563 | INFO | SensorSimulator | Shape of noise data for all trials: (3, 64, 250)
+2025-08-27 21:42:10,563 | INFO | SensorSimulator | Shape of noise variance data for all trials: (3,)
+
+Low SNR Results (α_SNR = 0.1):
+  - Signal range: [-1.32e-05, 1.07e-05]
+  - Noise range: [-6.50e-05, 6.20e-05]
+</pre></div>
+</div>
+</section>
+<section id="visualize-snr-comparisons">
+<h3>Visualize SNR Comparisons<a class="headerlink" href="#visualize-snr-comparisons" title="Link to this heading">#</a></h3>
+<p>Create comparative visualizations to highlight the effect of different SNR levels:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># High SNR visualization</span>
+<span class="n">viz</span><span class="o">.</span><span class="n">plot_sensor_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <span class="n">y_trials</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_high</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">,</span>
+    <span class="n">trial_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;High SNR (α_SNR = 0.9) - Clean vs Noisy&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;snr_comparison&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;high_snr_comparison&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_sensor_simulation_tutorial_004.png" srcset="../_images/sphx_glr_sensor_simulation_tutorial_004.png" alt="High SNR (α_SNR = 0.9) - Clean vs Noisy, Trial 1, Trial 2, Trial 3" class = "sphx-glr-single-img"/><p>Low SNR visualization</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_sensor_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <span class="n">y_trials</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_low</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">sensor_units</span><span class="p">,</span>
+    <span class="n">trial_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Low SNR (α_SNR = 0.1) - Clean vs Noisy&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;snr_comparison&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;low_snr_comparison&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_sensor_simulation_tutorial_005.png" srcset="../_images/sphx_glr_sensor_simulation_tutorial_005.png" alt="Low SNR (α_SNR = 0.1) - Clean vs Noisy, Trial 1, Trial 2, Trial 3" class = "sphx-glr-single-img"/></section>
+</section>
+<section id="integration-with-calibrain-pipeline">
+<h2>Integration with CaliBrain Pipeline<a class="headerlink" href="#integration-with-calibrain-pipeline" title="Link to this heading">#</a></h2>
+<p>The SensorSimulator is designed to work seamlessly with other CaliBrain
+components in a complete neuroimaging simulation pipeline.</p>
+<p><strong>Example Pipeline Code</strong></p>
+<p>Here’s a conceptual example of how <a class="reference internal" href="../api/sensor_simulation/SensorSimulator.html#calibrain.sensor_simulation.SensorSimulator" title="calibrain.sensor_simulation.SensorSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorSimulator</span></code></a> integrates with
+other CaliBrain components:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pipeline_example</span></a> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Complete CaliBrain simulation pipeline example</span>
+
+<span class="s1">from calibrain import (</span>
+<span class="s1">    LeadfieldBuilder, SourceSimulator, SensorSimulator,</span>
+<span class="s1">    SourceEstimator, UncertaintyEstimator, MetricEvaluator, Visualizer</span>
+<span class="s1">)</span>
+
+<span class="s1"># 1. Build leadfield matrix</span>
+<span class="s1">leadfield_builder = LeadfieldBuilder(...)</span>
+<span class="s1">L = leadfield_builder.get_leadfield(</span>
+<span class="s1">    subject=&quot;fsaverage&quot;,</span>
+<span class="s1">    orientation_type=&quot;fixed&quot;</span>
+<span class="s1">)</span>
+
+<span class="s1"># 2. Simulate source activity</span>
+<span class="s1">source_simulator = SourceSimulator(ERP_config=erp_config)</span>
+<span class="s1">x_trials, x_active_indices = source_simulator.simulate(</span>
+<span class="s1">    orientation_type=&quot;fixed&quot;,</span>
+<span class="s1">    n_sources=L.shape[1],  # Match leadfield dimensions</span>
+<span class="s1">    nnz=5,</span>
+<span class="s1">    n_trials=10</span>
+<span class="s1">)</span>
+
+<span class="s1"># 3. Simulate sensor measurements</span>
+<span class="s1">sensor_simulator = SensorSimulator()</span>
+<span class="s1">y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(</span>
+<span class="s1">    x_trials=x_trials,</span>
+<span class="s1">    L=L,</span>
+<span class="s1">    alpha_SNR=0.3,</span>
+<span class="s1">    n_trials=10</span>
+<span class="s1">)</span>
+
+<span class="s1"># 4. Estimate sources</span>
+<span class="s1">source_estimator = SourceEstimator(solver=&quot;gamma_map&quot;)</span>
+<span class="s1">source_estimator.fit(L, y_noisy[0])</span>
+<span class="s1">x_hat, x_hat_indices, posterior_cov = source_estimator.predict(y_noisy[0])</span>
+
+<span class="s1"># 5. Estimate uncertainty (-&gt; credible intervals)</span>
+<span class="s1">uncertainty_estimator = UncertaintyEstimator()</span>
+<span class="s1">ci_lower, ci_upper, _, empirical_coverage = </span><span class="se">\\</span>
+<span class="s1">    uncertainty_estimator.get_confidence_intervals_data(</span>
+<span class="s1">        x=x_trials[0],</span>
+<span class="s1">        x_hat=x_hat,</span>
+<span class="s1">        posterior_cov=posterior_cov,</span>
+<span class="s1">        orientation_type=&quot;fixed&quot;</span>
+<span class="s1">    )</span>
+
+<span class="s1"># 6. Evaluate performance</span>
+<span class="s1">metric_evaluator = MetricEvaluator()</span>
+<span class="s1">metrics = metric_evaluator.evaluate(</span>
+<span class="s1">    x_true=x_trials[0],</span>
+<span class="s1">    x_hat=x_hat,</span>
+<span class="s1">    active_indices_true=x_active_indices[0],</span>
+<span class="s1">    active_indices_hat=x_hat_indices</span>
+<span class="s1">)</span>
+
+<span class="s1"># 7. Visualize results</span>
+<span class="s1">visualizer = Visualizer()</span>
+<span class="s1">visualizer.plot_source_comparison(x_trials, x_hat, x_active_indices)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Pipeline Integration Example:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;See &#39;examples/run_experiments.py&#39; and &#39;calibrain/benchmark.py&#39;&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;for complete working examples of integrated simulations.&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Sensor Simulation Tutorial Complete!&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated sensor data with shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y_noisy_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tutorial results saved to: </span><span class="si">{</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">save_path</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Pipeline Integration Example:
+See &#39;examples/run_experiments.py&#39; and &#39;calibrain/benchmark.py&#39;
+for complete working examples of integrated simulations.
+
+Sensor Simulation Tutorial Complete!
+Generated sensor data with shape: (3, 64, 250)
+Tutorial results saved to: tutorial_results
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.818 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-sensor-simulation-tutorial-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/0af4688e6486836bf47d82d8100938d4/sensor_simulation_tutorial.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">sensor_simulation_tutorial.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/d444bb6d1a69ed1f64f15b764a0e925a/sensor_simulation_tutorial.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">sensor_simulation_tutorial.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/ad797acf6de7db4b2c798b0e6444f91d/sensor_simulation_tutorial.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">sensor_simulation_tutorial.zip</span></code></a></p>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tutorials</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="source_simulation_tutorial.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Source Data Simulation with SourceSimulator</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background">Background</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-formulation">Mathematical Formulation</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#forward-projection">Forward Projection</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dipole-orientations">Dipole Orientations</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#noise-model-and-alpha-snr-framework">Noise Model and Alpha-SNR Framework</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-sensorsimulator-class">The SensorSimulator Class</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#class-methods">Class Methods</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-usage-example">Basic Usage Example</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-demo-with-random-data">Quick Demo with Random Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#realistic-simulation-pipeline">Realistic Simulation Pipeline</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-load-leadfield-matrix">Step 1: Load Leadfield Matrix</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-generate-source-activity">Step 2: Generate Source Activity</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-configure-sensor-simulation">Step 3: Configure Sensor Simulation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visualization-with-calibrain">Visualization with CaliBrain</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#plot-sensor-signals-for-all-trials">Plot Sensor Signals for All Trials</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-snr-configuration">Advanced SNR Configuration</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#high-snr-clean-signals">High SNR (Clean Signals)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#low-snr-noisy-signals">Low SNR (Noisy Signals)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#visualize-snr-comparisons">Visualize SNR Comparisons</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-with-calibrain-pipeline">Integration with CaliBrain Pipeline</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/auto_tutorials/sensor_simulation_tutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
