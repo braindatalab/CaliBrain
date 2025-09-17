@@ -1096,7 +1096,7 @@ other CaliBrain components:
     # 5. Estimate uncertainty (-> credible intervals)
     uncertainty_estimator = UncertaintyEstimator()
     ci_lower, ci_upper, _, empirical_coverage = \\
-        uncertainty_estimator.get_confidence_intervals_data(
+        uncertainty_estimator.get_credible_intervals_data(
             x=x_trials[0],
             x_hat=x_hat,
             posterior_cov=posterior_cov,
