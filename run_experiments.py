@@ -106,7 +106,7 @@ def main():
     }
     
     estimators = [
-        (gamma_map, gamma_map_params, data_param_grid_meg),
+        # (gamma_map, gamma_map_params, data_param_grid_meg),
         (eloreta, eloreta_params, data_param_grid_meg),
         # (gamma_map, gamma_map_params, data_param_grid_eeg),
         # (eloreta, eloreta_params, data_param_grid_eeg),
