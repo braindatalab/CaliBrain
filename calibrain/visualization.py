@@ -725,10 +725,10 @@ class Visualizer:
                 ci_upper_current = ci_upper_scaled[idx].flatten()
 
                 yerr_lower = np.abs(
-                    x_hat_scaled[matched_indices] - ci_lower_current
+                    x_hat_scaled[matched_indices] - ci_lower_current[matched_indices]
                 )
                 yerr_upper = np.abs(
-                    ci_upper_current - x_hat_scaled[matched_indices]
+                    ci_upper_current[matched_indices] - x_hat_scaled[matched_indices]
                 )
                 yerr = np.stack([yerr_lower, yerr_upper])
                      
