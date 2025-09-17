@@ -1,0 +1,107 @@
+import numpy as np
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
+
+def construct_source_wise_credible_intervals(x_hat, posterior_cov, confidence_level=0.95):
+    """
+    Construct credible intervals for each source individually (i.e., marginal distributions).
+    
+    Parameters:
+    - x_hat: (n_sources, n_times) predicted source time courses
+    - posterior_cov: (n_sources, n_sources) full posterior covariance matrix
+    - confidence_level: float, nominal confidence level (e.g., 0.95)
+    
+    Returns:
+    - ci_lower: (n_sources,) lower bounds of credible intervals for each source
+    - ci_upper: (n_sources,) upper bounds of credible intervals for each source
+    - x_hat_avg: (n_sources,) time-averaged source estimates for each source
+    - std_avg: (n_sources,) time-averaged posterior standard deviations for each source
+    """
+    # Time-average the source estimates for each source
+    x_hat_avg = np.mean(x_hat, axis=1)
+    
+    # Compute time-averaged posterior standard deviation for each source
+    n_times = x_hat.shape[1]
+    posterior_variance = np.diag(posterior_cov)  # Extract variance for each source
+    std_avg = np.sqrt(posterior_variance / n_times)  # Time-averaged standard deviation for each source
+    
+    # Calculate critical value (i.e., z-score)
+    z = norm.ppf(0.5 + confidence_level / 2)
+    
+    # Construct credible intervals for each source independently
+    ci_lower = x_hat_avg - z * std_avg  # Lower bound for each source
+    ci_upper = x_hat_avg + z * std_avg  # Upper bound for each source
+    
+    return ci_lower, ci_upper, x_hat_avg, std_avg
+
+def compute_calibration_curve(x_hat, posterior_cov, x_true, confidence_levels=None):
+    """
+    Compute the calibration curve for source estimators using source-wise credible intervals.
+    
+    Parameters:
+    - x_hat: (n_sources, n_times) predicted source time courses
+    - posterior_cov: (n_sources, n_sources) full covariance matrix
+    - x_true: (n_sources, n_times) ground truth source time courses
+    - confidence_levels: array-like, nominal confidence levels to evaluate
+    
+    Returns:
+    - nominal_confidences: np.ndarray of confidence levels
+    - empirical_coverages: np.ndarray of empirical coverages
+    - std_avg: (n_sources,) time-averaged posterior standard deviations
+    """
+    if confidence_levels is None:
+        confidence_levels = np.linspace(0.5, 0.95, 10)
+    
+    # Get time-averaged estimates and std
+    _, _, x_hat_avg, std_avg = construct_source_wise_credible_intervals(
+        x_hat, posterior_cov, 0.5  # Confidence level doesn't matter for getting mean and std
+    )
+    
+    # Time-average the true sources (i.e., ground truth sources)
+    x_true_avg = np.mean(x_true, axis=1)
+    
+    nominal_confidences = np.array(confidence_levels)
+    empirical_coverages = np.zeros_like(nominal_confidences)
+    
+    for i, c in enumerate(nominal_confidences):
+        # Calculate critical value for this confidence level
+        z = norm.ppf(0.5 + c / 2)
+        
+        # Construct credible intervals using precomputed values
+        ci_lower = x_hat_avg - z * std_avg
+        ci_upper = x_hat_avg + z * std_avg
+        
+        # Check coverage
+        within_ci = (x_true_avg >= ci_lower) & (x_true_avg <= ci_upper)
+        empirical_coverages[i] = np.mean(within_ci)
+    
+    return nominal_confidences, empirical_coverages
+
+def plot_calibration_curve(nominal_confidences, empirical_coverages, title="Calibration Curve"):
+    """
+    Plot the calibration curve comparing nominal vs. empirical confidence.
+
+    Parameters
+    ----------
+    nominal_confidences : ndarray
+        X-axis values (nominal confidence levels).
+    empirical_coverages : ndarray
+        Y-axis values (empirical coverages).
+    title : str
+        Title of the plot.
+    """
+    smooth_x = np.linspace(0.01, 0.99, 300)
+    spline = make_interp_spline(nominal_confidences, empirical_coverages, k=2)
+    smooth_y = spline(smooth_x)
+
+    plt.figure(figsize=(7, 6))
+    plt.plot(smooth_x, smooth_y, label='Calibration Curve', color='blue')
+    plt.plot([0, 1], [0, 1], 'r--', label='Perfect Calibration')
+    plt.xlabel('Nominal Confidence Level')
+    plt.ylabel('Empirical Coverage')
+    plt.title(title)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
