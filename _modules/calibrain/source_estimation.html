@@ -1,0 +1,1257 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>calibrain.source_estimation &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/calibrain/source_estimation';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">calibrain.source_estimation</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for calibrain.source_estimation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">linalg</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">linalg</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sqrtm_sym</span><span class="p">,</span> <span class="n">eigh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">chi2</span><span class="p">,</span> <span class="n">norm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">cm</span>
+
+<span class="c1"># ===================</span>
+<span class="c1"># GAMMA-MAP Functions</span>
+<span class="c1"># ===================</span>
+
+<div class="viewcode-block" id="gamma_map">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.gamma_map">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gamma_map</span><span class="p">(</span>
+    <span class="n">L</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">,</span>
+    <span class="n">noise_var</span><span class="p">,</span>
+    <span class="c1"># noise_type=&quot;oracle&quot;,</span>
+    <span class="n">n_orient</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">tol</span><span class="o">=</span><span class="mf">1e-15</span><span class="p">,</span>
+    <span class="n">update_mode</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="c1"># threshold=1e-5,</span>
+    <span class="n">init_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="c1"># # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.</span>
+    <span class="c1"># if noise_type == &quot;oracle&quot;:</span>
+    <span class="c1">#     noise_cov = noise_var * np.eye(L.shape[0])</span>
+    
+    <span class="c1"># TODO: check whether we still need this</span>
+    <span class="k">if</span> <span class="n">init_gamma</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
+        <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],),</span> <span class="n">init_gamma</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">init_gamma</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;init_gamma should be a float, a tuple of two floats, or a list of floats.&quot;</span><span class="p">)</span>
+
+    <span class="n">x_hat_</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">posterior_cov</span> <span class="o">=</span> <span class="n">_gamma_map_opt</span><span class="p">(</span>
+        <span class="n">y</span><span class="p">,</span>
+        <span class="n">L</span><span class="p">,</span>
+        <span class="n">sigma_squared</span><span class="o">=</span><span class="n">noise_var</span><span class="p">,</span>
+        <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span>
+        <span class="n">maxit</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span>
+        <span class="n">init_gamma</span><span class="o">=</span><span class="n">init_gamma</span><span class="p">,</span>
+        <span class="n">update_mode</span><span class="o">=</span><span class="n">update_mode</span><span class="p">,</span>
+        <span class="n">group_size</span><span class="o">=</span><span class="n">n_orient</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">x_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">x_hat</span><span class="p">[</span><span class="n">active_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_hat_</span>
+
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">x_hat</span> <span class="o">=</span> <span class="n">x_hat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">x_hat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">posterior_cov</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gamma_map_opt</span><span class="p">(</span>
+    <span class="n">M</span><span class="p">,</span>
+    <span class="n">G</span><span class="p">,</span>
+    <span class="n">sigma_squared</span><span class="p">,</span>
+    <span class="n">maxit</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+    <span class="n">update_mode</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">group_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">init_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hierarchical Bayes (Gamma-MAP).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    M : array, shape=(n_sensors, n_times)</span>
+<span class="sd">        Observation.</span>
+<span class="sd">    G : array, shape=(n_sensors, n_sources)</span>
+<span class="sd">        Forward operator.</span>
+<span class="sd">    sigma_squared : float</span>
+<span class="sd">        Regularization parameter (noise variance).</span>
+<span class="sd">    maxit : int</span>
+<span class="sd">        Maximum number of iterations.</span>
+<span class="sd">    tol : float</span>
+<span class="sd">        Tolerance parameter for convergence.</span>
+<span class="sd">    group_size : int</span>
+<span class="sd">        Number of consecutive sources which use the same gamma.</span>
+<span class="sd">    update_mode : int</span>
+<span class="sd">        Update mode, 1: MacKay update (default), 3: Modified MacKay update.</span>
+<span class="sd">    init_gamma : array, shape=(n_sources,)</span>
+<span class="sd">        Initial values for posterior variances (init_gamma). If None, a</span>
+<span class="sd">        variance of 1.0 is used.</span>
+<span class="sd">    %(verbose)s</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X : array, shape=(n_active, n_times)</span>
+<span class="sd">        Estimated source time courses.</span>
+<span class="sd">    active_indices : array, shape=(n_active,)</span>
+<span class="sd">        Indices of active sources.</span>
+<span class="sd">    posterior_cov: array, shape=(n_active, n_active)</span>
+<span class="sd">        Posterior coveriance matrix of estimated active sources</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">n_sources</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n_sensors</span><span class="p">,</span> <span class="n">n_times</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span>
+    
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+
+    <span class="c1"># apply normalization so the numerical values are sane</span>
+    <span class="n">M_normalize_constant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="nb">ord</span><span class="o">=</span><span class="s2">&quot;fro&quot;</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">M_normalize_constant</span><span class="p">)</span>
+    <span class="n">sigma_squared</span> <span class="o">/=</span> <span class="n">M_normalize_constant</span>
+    <span class="n">G_normalize_constant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">/=</span> <span class="n">G_normalize_constant</span>
+
+    <span class="k">if</span> <span class="n">n_sources</span> <span class="o">%</span> <span class="n">group_size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Number of sources has to be evenly dividable by the &quot;</span> <span class="s2">&quot;group size&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">n_active</span> <span class="o">=</span> <span class="n">n_sources</span>
+    <span class="n">active_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_sources</span><span class="p">)</span>
+
+    <span class="n">gammas_full_old</span> <span class="o">=</span> <span class="n">init_gamma</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">update_mode</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">denom_fun</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># do nothing</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">denom_fun</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span>
+
+    <span class="n">last_size</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">for</span> <span class="n">itno</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxit</span><span class="p">):</span>
+        <span class="n">init_gamma</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">gidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">eps</span>
+        <span class="n">active_indices</span> <span class="o">=</span> <span class="n">active_indices</span><span class="p">[</span><span class="n">gidx</span><span class="p">]</span>
+        <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">init_gamma</span><span class="p">[</span><span class="n">gidx</span><span class="p">]</span>
+
+        <span class="c1"># update only active init_gamma (once set to zero it stays at zero)</span>
+        <span class="k">if</span> <span class="n">n_active</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">active_indices</span><span class="p">):</span>
+            <span class="n">n_active</span> <span class="o">=</span> <span class="n">active_indices</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="p">[:,</span> <span class="n">gidx</span><span class="p">]</span>
+
+        <span class="n">CM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">G</span> <span class="o">*</span> <span class="n">init_gamma</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:],</span> <span class="n">G</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">CM</span><span class="o">.</span><span class="n">flat</span><span class="p">[::</span> <span class="n">n_sensors</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sigma_squared</span>
+        <span class="c1"># Invert CM keeping symmetry</span>
+        <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">CM</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">S</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">del</span> <span class="n">CM</span>
+        <span class="n">CMinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">U</span> <span class="o">/</span> <span class="p">(</span><span class="n">S</span> <span class="o">+</span> <span class="n">eps</span><span class="p">),</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">CMinvG</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">CMinv</span><span class="p">,</span> <span class="n">G</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">CMinvG</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="p">)</span>  <span class="c1"># mult. w. Diag(gamma) in gamma update</span>
+        <span class="c1"># G_CMinvG = G.T @ CMinvG</span>
+
+        <span class="k">if</span> <span class="n">update_mode</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># MacKay fixed point update (10) in [1]</span>
+            <span class="n">numer</span> <span class="o">=</span> <span class="n">init_gamma</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">A</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">init_gamma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span> <span class="o">*</span> <span class="n">CMinvG</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">update_mode</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># modified MacKay fixed point update (11) in [1]</span>
+            <span class="n">numer</span> <span class="o">=</span> <span class="n">init_gamma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">A</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span> <span class="o">*</span> <span class="n">CMinvG</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># sqrt is applied below</span>
+        <span class="k">elif</span> <span class="n">update_mode</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># Expectation Maximization (EM) update</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">numer</span> <span class="o">=</span> <span class="n">init_gamma</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">A</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">init_gamma</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">init_gamma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span> <span class="o">*</span> <span class="n">CMinvG</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid value for update_mode&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">group_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">denom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">numer</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">numer</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">denom_fun</span><span class="p">(</span><span class="n">denom</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">numer_comb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numer</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">group_size</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">denom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">gammas_comb</span> <span class="o">=</span> <span class="n">numer_comb</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">denom_comb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">denom</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">group_size</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">gammas_comb</span> <span class="o">=</span> <span class="n">numer_comb</span> <span class="o">/</span> <span class="n">denom_fun</span><span class="p">(</span><span class="n">denom_comb</span><span class="p">)</span>
+
+            <span class="n">init_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">gammas_comb</span> <span class="o">/</span> <span class="n">group_size</span><span class="p">,</span> <span class="n">group_size</span><span class="p">)</span>
+
+        <span class="c1"># compute convergence criterion</span>
+        <span class="n">gammas_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sources</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">gammas_full</span><span class="p">[</span><span class="n">active_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">init_gamma</span>
+
+        <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gammas_full</span> <span class="o">-</span> <span class="n">gammas_full_old</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gammas_full_old</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">gammas_full_old</span> <span class="o">=</span> <span class="n">gammas_full</span>
+
+        <span class="n">breaking</span> <span class="o">=</span> <span class="n">err</span> <span class="o">&lt;</span> <span class="n">tol</span> <span class="ow">or</span> <span class="n">n_active</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)</span> <span class="o">!=</span> <span class="n">last_size</span> <span class="ow">or</span> <span class="n">breaking</span><span class="p">:</span>
+            <span class="c1"># logger.info(</span>
+            <span class="c1">#     &quot;Iteration: %d\t active set size: %d\t convergence: &quot;</span>
+            <span class="c1">#     &quot;%0.3e&quot; % (itno, len(init_gamma), err)</span>
+            <span class="c1"># )</span>
+            <span class="n">last_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">breaking</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="k">if</span> <span class="n">itno</span> <span class="o">&lt;</span> <span class="n">maxit</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Iteration: </span><span class="si">%d</span><span class="se">\t</span><span class="s2"> active set size: </span><span class="si">%d</span><span class="se">\t</span><span class="s2"> convergence: &quot;</span>
+            <span class="s2">&quot;</span><span class="si">%0.3e</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itno</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">),</span> <span class="n">err</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Convergence reached !</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Iteration: </span><span class="si">%d</span><span class="se">\t</span><span class="s2"> active set size: </span><span class="si">%d</span><span class="se">\t</span><span class="s2"> convergence: &quot;</span>
+            <span class="s2">&quot;</span><span class="si">%0.3e</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itno</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">),</span> <span class="n">err</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Convergence NOT reached !</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># undo normalization and compute final posterior mean</span>
+    <span class="n">n_const</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">M_normalize_constant</span><span class="p">)</span> <span class="o">/</span> <span class="n">G_normalize_constant</span>
+    <span class="n">x_active</span> <span class="o">=</span> <span class="n">n_const</span> <span class="o">*</span> <span class="n">init_gamma</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">A</span>
+
+    <span class="c1"># Compute the posterior convariance matrix as in eq. (2.10) in Hashemi, Ali. &quot;Advances in hierarchical Bayesian learning with applications to neuroimaging.&quot; (2023).</span>
+    <span class="c1"># pos_cov =  np.diag(init_gamma) - init_gamma[:, np.newaxis] * G_CMinvG * init_gamma</span>
+    <span class="n">posterior_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">init_gamma</span><span class="p">)</span> <span class="o">-</span> <span class="n">init_gamma</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">*</span> <span class="n">G</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">CMinv</span> <span class="o">@</span> <span class="n">G</span> <span class="o">*</span> <span class="n">init_gamma</span> 
+    <span class="c1"># A similar approach can be implmented (as Large_gamma is interpreted as adiagonal matrix with small_gammas:</span>
+    <span class="c1"># posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)</span>
+    
+    <span class="k">return</span> <span class="n">x_active</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">posterior_cov</span>
+
+<span class="c1"># ===================</span>
+<span class="c1"># eLORETA Functions</span>
+<span class="c1"># ===================</span>
+
+<div class="viewcode-block" id="sqrtm_sym">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.sqrtm_sym">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sqrtm_sym</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">inv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the square root (or inverse square root) of symmetric matrices, </span>
+<span class="sd">    handling both 2D and block-diagonal 3D cases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">M</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="c1"># Process each block separately (n_blocks, n, n)</span>
+        <span class="n">n_blocks</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_blocks</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_blocks</span><span class="p">):</span>
+            <span class="n">s_i</span><span class="p">,</span> <span class="n">U_i</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">s_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">s_i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">inv</span><span class="p">:</span>
+                <span class="n">s_i</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s_i</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s_i</span><span class="p">)</span>
+            <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">U_i</span> <span class="o">*</span> <span class="n">s_i</span><span class="p">)</span> <span class="o">@</span> <span class="n">U_i</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">s_i</span>
+        <span class="k">return</span> <span class="n">S</span><span class="p">,</span> <span class="n">s</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Original 2D case</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">U</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">inv</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="p">(</span><span class="n">U</span> <span class="o">*</span> <span class="n">s</span><span class="p">)</span> <span class="o">@</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">return</span> <span class="n">S</span><span class="p">,</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="normalize_R">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.normalize_R">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_R</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">G_3</span><span class="p">,</span> <span class="n">n_nzero</span><span class="p">,</span> <span class="n">force_equal</span><span class="p">,</span> <span class="n">n_src</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize the source covariance matrix (R) for consistency with eigenvalues.</span>
+<span class="sd">    </span>
+<span class="sd">    This function normalizes the product G @ R @ G.T so that its trace matches a</span>
+<span class="sd">    reference value (n_nzero).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    G : ndarray, shape (n_chan, n_src * n_orient)</span>
+<span class="sd">        The lead-field or forward matrix after applying whitening and source scaling.</span>
+<span class="sd">    R : ndarray</span>
+<span class="sd">        The source covariance matrix; may be a 1D vector (single orientation) or</span>
+<span class="sd">        a block diagonal structure (multiple orientations).</span>
+<span class="sd">    G_3 : ndarray or None</span>
+<span class="sd">        Reshaped version of G for multi-orientation sources (n_src x n_orient x n_chan),</span>
+<span class="sd">        or None for single orientation.</span>
+<span class="sd">    n_nzero : int</span>
+<span class="sd">        The number of non-zero sensor dimensions (typically, the number of sensors).</span>
+<span class="sd">    force_equal : bool</span>
+<span class="sd">        If True, enforce equal orientation weights (i.e., treat sources with single orientation).</span>
+<span class="sd">    n_src : int</span>
+<span class="sd">        Number of sources (after accounting for orientation).</span>
+<span class="sd">    n_orient : int</span>
+<span class="sd">        Number of orientations per source (1 for fixed, 3 for free orientation).</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    G_R_Gt : ndarray</span>
+<span class="sd">        The normalized product G @ R @ G.T.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If sources are scalar (single orientation) or forced to have equal orientation,</span>
+    <span class="c1"># perform element-wise multiplication for R.</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">force_equal</span><span class="p">:</span>  
+        <span class="c1"># R[:, np.newaxis] makes R a column vector, then multiply each column of G.T</span>
+        <span class="n">R_Gt</span> <span class="o">=</span> <span class="n">R</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">*</span> <span class="n">G</span><span class="o">.</span><span class="n">T</span>  
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># For multi-orientation: Perform matrix multiplication with reshaped G.</span>
+        <span class="n">R_Gt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">G_3</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_src</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c1"># Compute product G @ R @ G.T (the sensor-level covariance after applying R)</span>
+    <span class="n">G_R_Gt</span> <span class="o">=</span> <span class="n">G</span> <span class="o">@</span> <span class="n">R_Gt</span>
+    <span class="c1"># Compute the normalization factor as the trace divided by number of sensors (n_nzero)</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">G_R_Gt</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_nzero</span>
+    <span class="c1"># Scale the matrix and R by the normalization factor</span>
+    <span class="n">G_R_Gt</span> <span class="o">/=</span> <span class="n">norm</span>
+    <span class="n">R</span> <span class="o">/=</span> <span class="n">norm</span>
+    <span class="k">return</span> <span class="n">G_R_Gt</span></div>
+
+
+<div class="viewcode-block" id="get_G_3">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.get_G_3">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_G_3</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reshape and transpose the lead-field matrix G for multi-orientation sources.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    G : ndarray, shape (n_chan, n_src * n_orient)</span>
+<span class="sd">        The original lead-field matrix, after whitening and orientation‐prior scaling.</span>
+<span class="sd">    n_orient : int</span>
+<span class="sd">        Number of orientations per source (1 for fixed, 3 for free orientation).</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    ndarray or None :</span>
+<span class="sd">        If n_orient &gt; 1, returns an array of shape (n_src, n_orient, n_chan),</span>
+<span class="sd">        so that each source’s 3×n_chan lead-field slice is one block.</span>
+<span class="sd">        If n_orient == 1, returns None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># No multi-orientation; nothing to reshape</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># 1) G originally is (n_chan, n_src * n_orient).</span>
+        <span class="c1">#    We want to group every &#39;n_orient&#39; columns into one source.</span>
+        <span class="c1"># 2) First reshape to (n_chan, n_src, n_orient):</span>
+        <span class="c1">#       G.reshape(n_chan, n_src, n_orient)</span>
+        <span class="c1"># 3) Then transpose axes so that the block for source i is at G_3[i]:</span>
+        <span class="c1">#       .transpose(1, 2, 0)  →  (n_src, n_orient, n_chan)</span>
+        <span class="k">return</span> <span class="n">G</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="R_sqrt_mult">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.R_sqrt_mult">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">R_sqrt_mult</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">R_sqrt</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Efficiently compute the multiplication: other @ R_sqrt.</span>
+<span class="sd">    </span>
+<span class="sd">    This function handles both diagonal and block-diagonal cases for R_sqrt.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    other : ndarray, shape (n_chan, n_src * n_orient) or similar</span>
+<span class="sd">        The matrix to be multiplied with R_sqrt.</span>
+<span class="sd">    R_sqrt : ndarray</span>
+<span class="sd">        The square root of the source covariance matrix R. It is either a 1D vector</span>
+<span class="sd">        (for a diagonal matrix) or a 3D array (for block-diagonal multi-orientation case).</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    out : ndarray</span>
+<span class="sd">        The result of the matrix multiplication.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">R_sqrt</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Diagonal matrix represented as a vector</span>
+        <span class="c1"># Ensure compatible dimensions: other.shape[1] == size of R_sqrt</span>
+        <span class="k">assert</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">R_sqrt</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">R_sqrt</span> <span class="o">*</span> <span class="n">other</span>  <span class="c1"># Element-wise multiplication</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># For multi-orientation, each source has a 3x3 block.</span>
+        <span class="c1"># Assert dimensions of R_sqrt: (n_src, 3, 3)</span>
+        <span class="k">assert</span> <span class="n">R_sqrt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="c1"># other.shape[1] should be equal to (n_src*3)</span>
+        <span class="k">assert</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">R_sqrt</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">other</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="n">n_src</span> <span class="o">=</span> <span class="n">R_sqrt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Number of sources</span>
+        <span class="n">n_chan</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Number of channels/sensors</span>
+        
+        <span class="c1"># Reshape and transpose to perform block multiplication</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">R_sqrt</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_chan</span><span class="p">,</span> <span class="n">n_src</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_src</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">n_chan</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">T</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="compute_reginv2">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.compute_reginv2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_reginv2</span><span class="p">(</span><span class="n">sing</span><span class="p">,</span> <span class="n">n_nzero</span><span class="p">,</span> <span class="n">lambda2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the regularized inverse of singular values.</span>
+<span class="sd">    </span>
+<span class="sd">    This applies Tikhonov regularization in the SVD domain to handle small singular values.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    sing : array-like, singular values from the SVD.</span>
+<span class="sd">    n_nzero : int, number of non-zero singular values (typically number of sensors).</span>
+<span class="sd">    lambda2 : float, regularization parameter.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    reginv : array-like, the regularized inverses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Ensure the singular values are in floating point for precision.</span>
+    <span class="n">sing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sing</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">reginv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">sing</span><span class="p">)</span>  <span class="c1"># Initialize the output array</span>
+    <span class="c1"># Consider only the first n_nzero singular values.</span>
+    <span class="n">sing</span> <span class="o">=</span> <span class="n">sing</span><span class="p">[:</span><span class="n">n_nzero</span><span class="p">]</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+        <span class="c1"># Regularized inversion: sigma / (sigma^2 + lambda2)</span>
+        <span class="n">reginv</span><span class="p">[:</span><span class="n">n_nzero</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sing</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sing</span> <span class="o">/</span> <span class="p">(</span><span class="n">sing</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">lambda2</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">reginv</span></div>
+
+
+<div class="viewcode-block" id="compute_orient_prior">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.compute_orient_prior">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_orient_prior</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">loose</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute an orientation prior for sources.</span>
+<span class="sd">    </span>
+<span class="sd">    The orientation prior weights help to scale the source estimates according</span>
+<span class="sd">    to expected orientation variability (e.g., &quot;loose&quot; constraints for x and y directions).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    G : ndarray, the lead-field matrix.</span>
+<span class="sd">    n_orient : int, number of orientations per source.</span>
+<span class="sd">    loose : float, scaling factor for certain orientations.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    orient_prior : ndarray, shape (n_sources * n_orient,)</span>
+<span class="sd">        The prior weights for each source orientation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_sources</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">orient_prior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_sources</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1"># Default is weight of 1 for all sources</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">orient_prior</span>  <span class="c1"># No adjustment needed for single orientation</span>
+    <span class="c1"># For multi-orientation (e.g., free orientation with three components),</span>
+    <span class="c1"># the x and y orientations are scaled by the &#39;loose&#39; factor.</span>
+    <span class="n">orient_prior</span><span class="p">[::</span><span class="mi">3</span><span class="p">]</span> <span class="o">*=</span> <span class="n">loose</span>  <span class="c1"># Scale the first orientation (x)</span>
+    <span class="n">orient_prior</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">3</span><span class="p">]</span> <span class="o">*=</span> <span class="n">loose</span>  <span class="c1"># Scale the second orientation (y)</span>
+    <span class="c1"># The third orientation (z) remains unchanged (multiplied by 1)</span>
+    <span class="k">return</span> <span class="n">orient_prior</span></div>
+
+
+<div class="viewcode-block" id="safe_svd">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.safe_svd">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_svd</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Safely compute the SVD of matrix A.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    A : ndarray</span>
+<span class="sd">        The matrix for which to compute the singular value decomposition.</span>
+<span class="sd">    full_matrices : bool</span>
+<span class="sd">        Flag determining if full or reduced SVD is computed.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    U, S, Vh : ndarrays</span>
+<span class="sd">        The left singular vectors, singular values, and right singular vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="n">full_matrices</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_eloreta_kernel">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.compute_eloreta_kernel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_eloreta_kernel</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lambda2</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">whitener</span><span class="p">,</span> <span class="n">loose</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the eLORETA kernel and the posterior source covariance.</span>
+<span class="sd">    </span>
+<span class="sd">    This function carries out the main steps of the eLORETA estimation:</span>
+<span class="sd">      1. Whiten the lead-field matrix L.</span>
+<span class="sd">      2. Apply the orientation prior to the source covariance.</span>
+<span class="sd">      3. Initialize and iteratively update the source covariance matrix R.</span>
+<span class="sd">      4. Normalize R and compute the effective gain matrix.</span>
+<span class="sd">      5. Perform an SVD on the effective gain matrix and regularize the singular values.</span>
+<span class="sd">      6. Assemble the final inverse operator (kernel K).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    L : ndarray, shape (n_chan, n_src*n_orient)</span>
+<span class="sd">        The original lead-field matrix.</span>
+<span class="sd">    lambda2 : float, regularization parameter to stabilize the inversion.</span>
+<span class="sd">    n_orient : int, the number of orientations per source (1 for fixed orientation, 3 for free orientation).</span>
+<span class="sd">    whitener : ndarray, the whitening matrix derived from the noise covariance.</span>
+<span class="sd">    loose : float, parameter for the orientation prior (looseness of the constraints).</span>
+<span class="sd">    max_iter : int, maximum number of iterations for the iterative fitting procedure.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    K : ndarray, the eLORETA kernel (inverse operator) used to compute source estimates.</span>
+<span class="sd">    Sigma : ndarray, the posterior source covariance matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span> <span class="n">force_equal</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># taken from mne</span>
+    <span class="n">eps</span><span class="p">,</span> <span class="n">max_iter</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;max_iter&quot;</span><span class="p">]</span>
+    <span class="n">force_equal</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;force_equal&quot;</span><span class="p">])</span>  <span class="c1"># None means False</span>
+
+    <span class="n">G</span> <span class="o">=</span> <span class="n">whitener</span> <span class="o">@</span> <span class="n">L</span>
+    <span class="n">n_nzero</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># restore orientation prior</span>
+    <span class="n">source_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">orient_prior</span> <span class="o">=</span> <span class="n">compute_orient_prior</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">loose</span><span class="o">=</span><span class="n">loose</span><span class="p">)</span>
+    <span class="n">source_std</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">orient_prior</span><span class="p">)</span>
+
+    <span class="n">G</span> <span class="o">*=</span> <span class="n">source_std</span>
+
+    <span class="c1"># We do not multiply by the depth prior, as eLORETA should compensate for</span>
+    <span class="c1"># depth bias.</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">n_src</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">n_src</span> <span class="o">//=</span> <span class="n">n_orient</span>
+
+    <span class="k">assert</span> <span class="n">n_orient</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="c1"># src, sens, 3</span>
+    <span class="n">G_3</span> <span class="o">=</span> <span class="n">get_G_3</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_equal</span><span class="p">:</span>
+        <span class="c1"># Outer product</span>
+        <span class="n">R_prior</span> <span class="o">=</span> <span class="n">source_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_src</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">source_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_src</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">R_prior</span> <span class="o">=</span> <span class="n">source_std</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="c1"># The following was adapted under BSD license by permission of Guido Nolte</span>
+    <span class="k">if</span> <span class="n">force_equal</span> <span class="ow">or</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">R_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_src</span> <span class="o">*</span> <span class="n">n_orient</span><span class="p">,)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">R_shape</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">R_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_src</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">R_shape</span><span class="p">)</span>
+        <span class="n">R</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_orient</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="n">R</span> <span class="o">*=</span> <span class="n">R_prior</span>
+    <span class="n">this_normalize_R</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+        <span class="n">normalize_R</span><span class="p">,</span>
+        <span class="n">n_nzero</span><span class="o">=</span><span class="n">n_nzero</span><span class="p">,</span>
+        <span class="n">force_equal</span><span class="o">=</span><span class="n">force_equal</span><span class="p">,</span>
+        <span class="n">n_src</span><span class="o">=</span><span class="n">n_src</span><span class="p">,</span>
+        <span class="n">n_orient</span><span class="o">=</span><span class="n">n_orient</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">G_R_Gt</span> <span class="o">=</span> <span class="n">this_normalize_R</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">G_3</span><span class="p">)</span>
+    <span class="c1"># extra = &quot; (this make take a while)&quot; if n_orient == 3 else &quot;&quot;</span>
+    <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+        <span class="c1"># 1. Compute inverse of the weights (stabilized) and C</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">G_R_Gt</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">sidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">s</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">n_nzero</span><span class="p">]</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">sidx</span><span class="p">],</span> <span class="n">u</span><span class="p">[:,</span> <span class="n">sidx</span><span class="p">]</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">lambda2</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">u</span> <span class="o">*</span> <span class="n">s</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">s</span>
+
+        <span class="c1"># Update the weights</span>
+        <span class="n">R_last</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">R</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">)</span> <span class="o">*</span> <span class="n">G</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">G_3</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]),</span> <span class="n">G_3</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">force_equal</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sqrtm_sym</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">inv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">R</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">R</span><span class="p">[:],</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sqrtm_sym</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">inv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">*=</span> <span class="n">R_prior</span>  <span class="c1"># reapply our prior, eLORETA undoes it</span>
+        <span class="n">G_R_Gt</span> <span class="o">=</span> <span class="n">this_normalize_R</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">G_3</span><span class="p">)</span>
+
+        <span class="c1"># Check for weight convergence</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="o">-</span> <span class="n">R_last</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
+            <span class="n">R_last</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;eLORETA weight fitting did not converge (&gt;= </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">eps</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">G_R_Gt</span>
+    <span class="n">G</span> <span class="o">/=</span> <span class="n">source_std</span>  <span class="c1"># undo our biasing</span>
+    <span class="n">G_3</span> <span class="o">=</span> <span class="n">get_G_3</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">)</span>
+    <span class="n">this_normalize_R</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">G_3</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">G_3</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">force_equal</span><span class="p">:</span>
+        <span class="n">R_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">R_sqrt</span> <span class="o">=</span> <span class="n">sqrtm_sym</span><span class="p">(</span><span class="n">R</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">R_sqrt</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">R_shape</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">R_sqrt_mult</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">R_sqrt</span><span class="p">)</span>
+    <span class="n">eigen_fields</span><span class="p">,</span> <span class="n">sing</span><span class="p">,</span> <span class="n">eigen_leads</span> <span class="o">=</span> <span class="n">safe_svd</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="c1"># Precompute regularization terms for K and Σ_X</span>
+    <span class="n">reginv_k</span> <span class="o">=</span> <span class="n">compute_reginv2</span><span class="p">(</span><span class="n">sing</span><span class="p">,</span> <span class="n">n_nzero</span><span class="p">,</span> <span class="n">lambda2</span><span class="p">)</span>  <span class="c1"># σ_i / (σ_i² + λ)</span>
+    <span class="n">reginv_s</span> <span class="o">=</span> <span class="n">sing</span> <span class="o">*</span> <span class="n">reginv_k</span>  <span class="c1"># σ_i² / (σ_i² + λ) = σ_i * (σ_i / (σ_i² + λ))</span>
+    
+    <span class="c1"># Compute K using existing terms</span>
+    <span class="n">eigen_leads</span> <span class="o">=</span> <span class="n">R_sqrt_mult</span><span class="p">(</span><span class="n">eigen_leads</span><span class="p">,</span> <span class="n">R_sqrt</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">trans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">eigen_fields</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">whitener</span><span class="p">)</span>
+    <span class="n">trans</span> <span class="o">*=</span> <span class="n">reginv_k</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">eigen_leads</span><span class="p">,</span> <span class="n">trans</span><span class="p">)</span>
+    
+    <span class="c1"># Compute Σ_X directly from V and reginv_s</span>
+    <span class="n">eigen_leads_t</span> <span class="o">=</span> <span class="n">eigen_leads</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">eigen_leads_t</span> <span class="o">*=</span> <span class="n">reginv_s</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="c1"># each row scaled by σ_i / (σ_i² + λ)</span>
+    <span class="n">Sigma</span> <span class="o">=</span> <span class="n">R</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">eigen_leads</span><span class="p">,</span> <span class="n">eigen_leads_t</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">K</span><span class="p">,</span> <span class="n">Sigma</span></div>
+
+
+<div class="viewcode-block" id="eloreta">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.eloreta">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eloreta</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">noise_var</span><span class="p">,</span>  <span class="n">n_orient</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the eLORETA solution for EEG/MEG inverse modeling.</span>
+<span class="sd">    </span>
+<span class="sd">    This is the main interface function that:</span>
+<span class="sd">      - Preprocesses the lead-field and data,</span>
+<span class="sd">      - Applies noise whitening,</span>
+<span class="sd">      - Computes the eLORETA kernel,</span>
+<span class="sd">      - And finally estimates the source activity.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    L : ndarray, shape (n_chan, n_src*n_orient)</span>
+<span class="sd">        The lead-field (forward) matrix mapping sources to sensors.</span>
+<span class="sd">    y : ndarray, shape (n_chan, n_times) or (n_chan,)</span>
+<span class="sd">        The sensor data (EEG/MEG recordings) to be inverted.</span>
+
+<span class="sd">    n_orient : int</span>
+<span class="sd">        Number of orientations per source (1 for fixed or 3 for free orientation).</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    x : ndarray</span>
+<span class="sd">        The estimated source activations. The shape will be (n_src, n_times) for</span>
+<span class="sd">        single orientation or (n_src, n_orient, n_times) for free orientations.</span>
+<span class="sd">    Sigma : ndarray</span>
+<span class="sd">        The posterior source covariance, characterizing the uncertainty in estimates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>        
+    <span class="c1"># TODO: check if this work for all noise types</span>
+    <span class="n">noise_cov</span> <span class="o">=</span> <span class="n">noise_var</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> 
+    
+    <span class="c1"># Create the whitening matrix from the noise covariance:</span>
+    <span class="c1"># Typically computed as the inverse of the square root of the covariance.</span>
+    <span class="n">whitener</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">linalg</span><span class="o">.</span><span class="n">sqrtm</span><span class="p">(</span><span class="n">noise_cov</span><span class="p">))</span>
+    
+    <span class="c1"># Whiten both the sensor data and the lead-field matrix.</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">whitener</span> <span class="o">@</span> <span class="n">y</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">whitener</span> <span class="o">@</span> <span class="n">L</span>
+
+    <span class="c1"># Compute the eLORETA kernel and the posterior source covariance using the helper.</span>
+    <span class="c1"># alpha is lambda2 = noise_var</span>
+    <span class="n">K</span><span class="p">,</span> <span class="n">Sigma</span> <span class="o">=</span> <span class="n">compute_eloreta_kernel</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">lambda2</span><span class="o">=</span> <span class="n">noise_var</span><span class="p">,</span> <span class="n">n_orient</span><span class="o">=</span><span class="n">n_orient</span><span class="p">,</span> <span class="n">whitener</span><span class="o">=</span><span class="n">whitener</span><span class="p">)</span>
+    
+    <span class="c1"># Compute the mean source estimates.</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">K</span> <span class="o">@</span> <span class="n">y</span> <span class="c1"># get the source time courses with simple dot product</span>
+
+    <span class="c1"># If using free orientation sources (n_orient &gt; 1), reshape the output.</span>
+    <span class="k">if</span> <span class="n">n_orient</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_orient</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="n">active_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># All sources are active in eLORETA</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">Sigma</span>  <span class="c1"># Return source estimates, all active indices, and posterior covariance</span></div>
+
+
+
+<div class="viewcode-block" id="SourceEstimator">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.SourceEstimator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SourceEstimator</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="SourceEstimator.__init__">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.SourceEstimator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">solver_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_orient</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the SourceEstimator class.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).</span>
+<span class="sd">        - solver_params (dict, optional): Parameters for the solver function.</span>
+<span class="sd">        - logger (logging.Logger, optional): Logger instance for logging messages.</span>
+<span class="sd">        - n_orient (int, optional): Number of orientations for the sources.</span>
+<span class="sd">          Default is 1 (for fixed orientation) or 3 (for free orientation).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver_params</span> <span class="o">=</span> <span class="n">solver_params</span> <span class="k">if</span> <span class="n">solver_params</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="c1"># self.cov = cov</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_orient</span> <span class="o">=</span> <span class="n">n_orient</span></div>
+
+
+<div class="viewcode-block" id="SourceEstimator.fit">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.SourceEstimator.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the inverse solver to the data.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        - L (np.ndarray): Leadfield matrix of shape (n_sensors, n_sources).</span>
+<span class="sd">        - y (np.ndarray): Observed EEG/MEG signals of shape (n_sensors, n_times).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        - self: The fitted estimator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fitting the solver...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L_</span> <span class="o">=</span> <span class="n">L</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="SourceEstimator.predict">
+<a class="viewcode-back" href="../../api/source_estimation/SourceEstimator.html#calibrain.source_estimation.SourceEstimator.predict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noise_var</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict the source activity given the observed signals.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        - y (np.ndarray, optional): Observed EEG/MEG signals of shape (n_sensors, n_times). If None, uses the signals provided during `fit`.</span>
+<span class="sd">        - noise_var (float): Noise variance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        - x_hat (np.ndarray): Estimated source activity of shape (n_sources, n_times).</span>
+<span class="sd">        - active_indices (np.ndarray): Indices of active sources.</span>
+<span class="sd">        - posterior_cov (np.ndarray): Posterior covariance matrix of estimated sources.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;L_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;y_&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The estimator must be fitted with `fit(L, y)` before calling `predict()`.&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># enable the use to pass y for inference</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_</span>
+
+        <span class="c1"># Apply the solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Estimating sources...&quot;</span><span class="p">)</span>
+        <span class="n">x_hat</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">posterior_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L_</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">noise_var</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span> <span class="n">n_orient</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orient</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">solver_params</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">active_indices</span><span class="p">,</span> <span class="n">posterior_cov</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

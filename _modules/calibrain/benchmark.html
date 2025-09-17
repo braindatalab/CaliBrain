@@ -1,0 +1,893 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>calibrain.benchmark &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/calibrain/benchmark';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">calibrain.benchmark</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for calibrain.benchmark</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zipfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterGrid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mne</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">combinations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">wishart</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ellipse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">chi2</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricEvaluator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceEstimator</span><span class="p">,</span> <span class="n">SensorSimulator</span><span class="p">,</span> <span class="n">SourceSimulator</span><span class="p">,</span> <span class="n">UncertaintyEstimator</span><span class="p">,</span> <span class="n">Visualizer</span><span class="p">,</span> <span class="n">LeadfieldBuilder</span><span class="p">,</span> <span class="n">gamma_map</span><span class="p">,</span> <span class="n">eloreta</span>
+<span class="c1"># from calibrain.leadfield_builder import LeadfieldBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">inspect_object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.io.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIFF</span>
+
+<div class="viewcode-block" id="Benchmark">
+<a class="viewcode-back" href="../../api/benchmark/Benchmark.html#calibrain.benchmark.Benchmark">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Benchmark</span><span class="p">:</span>
+<div class="viewcode-block" id="Benchmark.__init__">
+<a class="viewcode-back" href="../../api/benchmark/Benchmark.html#calibrain.benchmark.Benchmark.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver</span> <span class="p">:</span> <span class="nb">callable</span><span class="p">,</span> <span class="n">solver_param_grid</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">data_param_grid</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">ERP_config</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">source_simulator</span> <span class="p">:</span> <span class="n">SourceSimulator</span><span class="p">,</span> <span class="n">leadfield_builder</span> <span class="p">:</span> <span class="n">LeadfieldBuilder</span><span class="p">,</span> <span class="n">sensor_simulator</span> <span class="p">:</span> <span class="n">SensorSimulator</span><span class="p">,</span> <span class="n">uncertainty_estimator</span> <span class="p">:</span> <span class="n">UncertaintyEstimator</span><span class="p">,</span> <span class="n">metric_evaluator</span> <span class="p">:</span> <span class="n">MetricEvaluator</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Benchmark class.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">        solver : callable</span>
+<span class="sd">            The solver function (e.g., gamma_map, eloreta).</span>
+<span class="sd">        solver_param_grid : dict</span>
+<span class="sd">            Grid of solver hyperparameters (e.g. noise_type, init_gamma).</span>
+<span class="sd">        data_param_grid : dict</span>
+<span class="sd">            Grid of data generation hyperparameters.</span>
+<span class="sd">        ERP_config : dict</span>
+<span class="sd">            Configuration for ERP simulation.</span>
+<span class="sd">        source_simulator : SourceSimulator</span>
+<span class="sd">            Instance of SourceSimulator for generating source data.</span>
+<span class="sd">        leadfield_builder : LeadfieldBuilder</span>
+<span class="sd">            Instance of LeadfieldBuilder for generating leadfields.</span>
+<span class="sd">        sensor_simulator : SensorSimulator</span>
+<span class="sd">            Instance of SensorSimulator for generating data.</span>
+<span class="sd">        uncertainty_estimator : UncertaintyEstimator</span>
+<span class="sd">            Instance of UncertaintyEstimator for uncertainty estimation.</span>
+<span class="sd">        metric_evaluator : MetricEvaluator</span>
+<span class="sd">            Instance of MetricEvaluator for evaluating metrics.</span>
+<span class="sd">        random_state : int, optional</span>
+<span class="sd">            Random seed for reproducibility.</span>
+<span class="sd">        logger : logging.Logger, optional</span>
+<span class="sd">            Logger instance for logging messages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver_param_grid</span> <span class="o">=</span> <span class="n">solver_param_grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_param_grid</span> <span class="o">=</span> <span class="n">data_param_grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ERP_config</span> <span class="o">=</span> <span class="n">ERP_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span> <span class="o">=</span> <span class="n">source_simulator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leadfield_builder</span> <span class="o">=</span> <span class="n">leadfield_builder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sensor_simulator</span> <span class="o">=</span> <span class="n">sensor_simulator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span> <span class="o">=</span> <span class="n">uncertainty_estimator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span> <span class="o">=</span> <span class="n">metric_evaluator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="k">if</span> <span class="n">logger</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Benchmark.create_experiment_directory">
+<a class="viewcode-back" href="../../api/benchmark/Benchmark.html#calibrain.benchmark.Benchmark.create_experiment_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_experiment_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">desired_order</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        - base_dir (str): Base directory for the experiment.</span>
+<span class="sd">        - params (dict): Dictionary of parameters.</span>
+<span class="sd">        - desired_order (list): List of parameter keys in the desired order for the directory structure.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns:</span>
+<span class="sd">        - experiment_dir (str): Path to the experiment directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Exclude &#39;cov&#39; and sanitize values for directory names</span>
+        <span class="n">sanitized_params_for_path</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;cov&quot;</span><span class="p">,</span> <span class="s2">&quot;run_id&quot;</span><span class="p">)</span>
+            <span class="c1"># Add other keys to exclude from path if necessary</span>
+        <span class="p">}</span>
+    
+        <span class="c1"># Desired order of parameters for the directory structure</span>
+        <span class="c1"># This list defines the specific order.</span>
+        <span class="k">if</span> <span class="n">desired_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">desired_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;solver&quot;</span><span class="p">,</span> <span class="s2">&quot;init_gamma&quot;</span><span class="p">,</span> <span class="s2">&quot;orientation_type&quot;</span><span class="p">,</span> <span class="s2">&quot;alpha_SNR&quot;</span><span class="p">,</span> <span class="s2">&quot;noise_type&quot;</span><span class="p">,</span> <span class="s2">&quot;nnz&quot;</span><span class="p">,</span> <span class="s2">&quot;seed&quot;</span><span class="p">]</span>
+        
+        <span class="n">path_components</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1"># Add parameters in the desired order if they exist in the sanitized params</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">desired_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">sanitized_params_for_path</span><span class="p">:</span>
+                <span class="n">path_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">sanitized_params_for_path</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">sanitized_params_for_path</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># Remove to avoid adding them again</span>
+                
+        <span class="c1"># Add any remaining parameters, sorted by key for consistent ordering</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sanitized_params_for_path</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">path_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+        <span class="c1"># Create subdirectories for each parameter component</span>
+        <span class="n">experiment_dir</span> <span class="o">=</span> <span class="n">base_dir</span>
+        <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">path_components</span><span class="p">:</span>
+            <span class="n">experiment_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">experiment_dir</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span>
+    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Create the directory structure if it doesn&#39;t exist</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">experiment_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to create experiment directory: </span><span class="si">{</span><span class="n">experiment_dir</span><span class="si">}</span><span class="s2">. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiment directory created: </span><span class="si">{</span><span class="n">experiment_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">experiment_dir</span></div>
+
+
+<div class="viewcode-block" id="Benchmark.run">
+<a class="viewcode-back" href="../../api/benchmark/Benchmark.html#calibrain.benchmark.Benchmark.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nruns</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fig_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;results/figures/uncertainty_analysis_figures&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run benchmarking by iterating over combinations of solver and data parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        - results (pd.DataFrame): DataFrame containing the results for each parameter combination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># -------------------------------------------------------------</span>
+        <span class="c1"># 1. Generate seeds and initialize bookkeeping</span>
+        <span class="c1"># -------------------------------------------------------------        </span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="n">seeds</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">nruns</span><span class="p">)</span>
+        <span class="n">results_list</span> <span class="o">=</span> <span class="p">[]</span>
+                
+        <span class="n">param_combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span>
+            <span class="n">ParameterGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver_param_grid</span><span class="p">),</span>
+            <span class="n">ParameterGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_param_grid</span><span class="p">),</span>
+            <span class="n">seeds</span>
+        <span class="p">))</span>
+         
+        <span class="c1"># -------------------------------------------------------------</span>
+        <span class="c1"># 2. Iterate over solver and data parameter combinations</span>
+        <span class="c1"># -------------------------------------------------------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting benchmark with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">param_combinations</span><span class="p">)</span><span class="si">}</span><span class="s2"> runs...&quot;</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">run_id</span><span class="p">,</span> <span class="p">(</span><span class="n">solver_params</span><span class="p">,</span> <span class="n">data_params</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">param_combinations</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">solver_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">))</span>
+            <span class="n">orientation_type</span> <span class="o">=</span> <span class="n">data_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;orientation_type&quot;</span><span class="p">)</span>
+            <span class="n">n_orient</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="n">orientation_type</span> <span class="o">==</span> <span class="s2">&quot;free&quot;</span> <span class="k">else</span> <span class="mi">1</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Run </span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">param_combinations</span><span class="p">)</span><span class="si">}</span><span class="s2">] Seed: </span><span class="si">{</span><span class="n">seed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver: </span><span class="si">{</span><span class="n">solver_name</span><span class="si">}</span><span class="s2"> | Params: </span><span class="si">{</span><span class="n">solver_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data Params: </span><span class="si">{</span><span class="n">data_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="n">this_result</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;run_id&#39;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span>
+                <span class="s2">&quot;seed&quot;</span><span class="p">:</span> <span class="n">seed</span><span class="p">,</span>
+                <span class="s2">&quot;solver&quot;</span><span class="p">:</span> <span class="n">solver_name</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">solver_params</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">data_params</span><span class="p">,</span>
+            <span class="p">}</span>
+            
+            <span class="n">n_trials</span> <span class="o">=</span> <span class="mi">5</span>
+            
+            <span class="n">global_source_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+            <span class="n">global_source_seeds</span> <span class="o">=</span> <span class="n">global_source_rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_trials</span><span class="p">)</span>
+
+            <span class="n">global_noise_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">123456</span><span class="p">)</span>
+            <span class="n">global_noise_seeds</span> <span class="o">=</span> <span class="n">global_noise_rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_trials</span><span class="p">)</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 3. Create directory</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="n">experiment_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_experiment_directory</span><span class="p">(</span>
+                    <span class="n">base_dir</span><span class="o">=</span><span class="n">fig_path</span><span class="p">,</span>
+                    <span class="n">params</span><span class="o">=</span><span class="n">this_result</span><span class="p">,</span>
+                    <span class="n">desired_order</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;solver&quot;</span><span class="p">,</span> <span class="s2">&quot;init_gamma&quot;</span><span class="p">,</span> <span class="s2">&quot;orientation_type&quot;</span><span class="p">,</span> <span class="s2">&quot;alpha_SNR&quot;</span><span class="p">,</span> <span class="s2">&quot;noise_type&quot;</span><span class="p">,</span> <span class="s2">&quot;gauss_noise_var&quot;</span><span class="p">,</span> <span class="s2">&quot;nnz&quot;</span><span class="p">,</span> <span class="s2">&quot;seed&quot;</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+                
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 4. Get leadfield matrix</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building leadfield matrix...&quot;</span><span class="p">)</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">get_leadfield</span><span class="p">(</span>
+                    <span class="n">subject</span><span class="o">=</span><span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;subject&#39;</span><span class="p">],</span>
+                    <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+                    <span class="n">retrieve_mode</span><span class="o">=</span><span class="s2">&quot;load&quot;</span>
+                <span class="p">)</span>
+                <span class="n">n_sensors</span><span class="p">,</span> <span class="n">n_sources</span> <span class="o">=</span> <span class="n">L</span><span class="o">.</span><span class="n">shape</span>
+                <span class="n">sensor_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">sensor_units</span>
+
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 5. Simulate source and sensor data</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Simulating source trials...&quot;</span><span class="p">)</span>
+                <span class="n">x_trials</span><span class="p">,</span> <span class="n">x_active_indices_trials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+                    <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+                    <span class="n">n_sources</span><span class="o">=</span><span class="n">n_sources</span><span class="p">,</span>
+                    <span class="n">nnz</span><span class="o">=</span><span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;nnz&#39;</span><span class="p">],</span>
+                    <span class="n">n_trials</span><span class="o">=</span><span class="n">n_trials</span><span class="p">,</span>
+                    <span class="n">global_seed</span><span class="o">=</span><span class="n">global_source_seeds</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">source_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">source_units</span>
+                
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 6. Simulate sensor and sensor data</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Simulating sensor trials...&quot;</span><span class="p">)</span>
+                <span class="n">y_clean_trials</span><span class="p">,</span> <span class="n">y_noisy_trials</span><span class="p">,</span> <span class="n">noise_trials</span><span class="p">,</span> <span class="n">noise_eta_trials</span> <span class="o">=</span>\
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+                        <span class="n">x_trials</span><span class="o">=</span><span class="n">x_trials</span><span class="p">,</span>
+                        <span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span>
+                        <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+                        <span class="n">alpha_SNR</span><span class="o">=</span><span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;alpha_SNR&#39;</span><span class="p">],</span>
+                        <span class="n">gauss_noise_var</span><span class="o">=</span><span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;gauss_noise_var&#39;</span><span class="p">],</span>
+                        <span class="n">n_trials</span><span class="o">=</span><span class="n">n_trials</span><span class="p">,</span>
+                        <span class="n">global_seed</span><span class="o">=</span><span class="n">global_noise_seeds</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sensor_simulator</span><span class="o">.</span><span class="n">sensor_units</span> <span class="o">=</span> <span class="n">sensor_units</span>  <span class="c1"># Set units based on leadfield</span>
+
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 7. Fit the source estimator and predict posterior mean &amp; covariance</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># Slice the first trial for processing</span>
+                <span class="n">trial_idx</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">x_one_trial</span> <span class="o">=</span> <span class="n">x_trials</span><span class="p">[</span><span class="n">trial_idx</span><span class="p">]</span>
+                <span class="n">x_active_indices_one_trial</span> <span class="o">=</span> <span class="n">x_active_indices_trials</span><span class="p">[</span><span class="n">trial_idx</span><span class="p">]</span>
+                <span class="n">y_noisy_one_trial</span> <span class="o">=</span> <span class="n">y_noisy_trials</span><span class="p">[</span><span class="n">trial_idx</span><span class="p">]</span>
+                <span class="n">noise_eta_one_trial</span> <span class="o">=</span> <span class="n">noise_eta_trials</span><span class="p">[</span><span class="n">trial_idx</span><span class="p">]</span> <span class="c1"># noise scaling factor (eta)</span>
+
+
+                <span class="c1"># # select noise type</span>
+                <span class="k">if</span> <span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;noise_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;oracle&#39;</span><span class="p">:</span>
+                    <span class="n">noise_var_one_trial</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;gauss_noise_var&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">noise_eta_one_trial</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+                <span class="c1"># take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):</span>
+                <span class="k">elif</span> <span class="n">data_params</span><span class="p">[</span><span class="s1">&#39;noise_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;baseline&#39;</span><span class="p">:</span>
+                    <span class="n">pre_stimulus_onset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">ERP_config</span><span class="p">[</span><span class="s1">&#39;stim_onset&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">ERP_config</span><span class="p">[</span><span class="s1">&#39;tmin&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">ERP_config</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">])</span>
+                    <span class="n">y_noisy_one_trial</span> <span class="o">=</span> <span class="n">y_noisy_one_trial</span><span class="p">[:,</span> <span class="p">:</span><span class="n">pre_stimulus_onset</span><span class="p">]</span>
+                    
+                    <span class="c1"># compute sensor noise variance</span>
+                    <span class="n">noise_var_one_trial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">y_noisy_one_trial</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fitting source estimator...&quot;</span><span class="p">)</span>
+                <span class="n">source_estimator</span> <span class="o">=</span> <span class="n">SourceEstimator</span><span class="p">(</span>
+                    <span class="n">solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">,</span>
+                    <span class="n">solver_params</span><span class="o">=</span><span class="n">solver_params</span><span class="p">,</span>
+                    <span class="n">n_orient</span><span class="o">=</span><span class="n">n_orient</span><span class="p">,</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
+                <span class="p">)</span>            
+                <span class="n">source_estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">y_noisy_one_trial</span><span class="p">)</span>            
+                <span class="n">x_hat_one_trial</span><span class="p">,</span> <span class="n">x_hat_active_indices_one_trial</span><span class="p">,</span> <span class="n">posterior_cov</span> <span class="o">=</span> <span class="n">source_estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                    <span class="n">y</span><span class="o">=</span><span class="n">y_noisy_one_trial</span><span class="p">,</span> <span class="n">noise_var</span><span class="o">=</span><span class="n">noise_var_one_trial</span>
+                <span class="p">)</span>
+
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 8. Estimate uncertainty (-&gt; credible intervals)</span>
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Estimating uncertainty...&quot;</span><span class="p">)</span>
+                                
+                <span class="c1"># TODO: check whether we still need to set keepdims=True.</span>
+                <span class="n">x_one_trial_avg_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_one_trial</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">x_hat_one_trial_avg_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_hat_one_trial</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(</span>
+                <span class="c1">#     x=x_avg_time,</span>
+                <span class="c1">#     x_hat_active_indices=x_hat_active_indices,</span>
+                <span class="c1">#     posterior_cov=posterior_cov,</span>
+                <span class="c1">#     orientation_type=orientation_type,</span>
+                <span class="c1"># )</span>
+
+                <span class="c1"># Find matched location between ground truth simulated sources and estimated sources</span>
+                <span class="c1"># Get boolean mask for sources present in both sets</span>
+                <span class="n">matched_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">x_hat_active_indices_one_trial</span><span class="p">,</span> 
+                                       <span class="n">x_active_indices_one_trial</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">matched_mask</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No intersection between true active sources and estimated active sources&quot;</span><span class="p">)</span>
+
+                    <span class="n">ci_lower_active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">confidence_levels</span><span class="p">),</span> <span class="n">n_orient</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">ci_upper_active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">confidence_levels</span><span class="p">),</span> <span class="n">n_orient</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+                    <span class="n">empirical_coverage_active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">confidence_levels</span><span class="p">))</span>
+                    <span class="p">)</span>
+
+                    <span class="n">empirical_coverage_active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">confidence_levels</span><span class="p">))</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Get relative indices within x_hat_active_indices (for posterior_cov slicing)</span>
+                    <span class="n">matched_relative_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">matched_mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="c1"># Get the actual source indices for data slicing</span>
+                    <span class="n">matched_absolute_indices</span> <span class="o">=</span> <span class="n">x_hat_active_indices_one_trial</span><span class="p">[</span><span class="n">matched_mask</span><span class="p">]</span>
+
+                    <span class="c1"># Slice data using absolute indices (both arrays are full-size)</span>
+                    <span class="n">x_matched</span> <span class="o">=</span> <span class="n">x_one_trial_avg_time</span><span class="p">[</span><span class="n">matched_absolute_indices</span><span class="p">]</span>  <span class="c1"># Use absolute for x (full array)</span>
+                    <span class="n">x_hat_matched</span> <span class="o">=</span> <span class="n">x_hat_one_trial_avg_time</span><span class="p">[</span><span class="n">matched_absolute_indices</span><span class="p">]</span>  <span class="c1"># Use absolute for x_hat (also full array)</span>
+
+                    <span class="c1"># Slice posterior covariance using relative indices (only contains active components)</span>
+                    <span class="n">posterior_cov_matched</span> <span class="o">=</span> <span class="n">posterior_cov</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span>
+                        <span class="n">matched_relative_indices</span><span class="p">,</span>
+                        <span class="n">matched_relative_indices</span>
+                    <span class="p">)]</span>
+
+                    <span class="c1"># Verify dimensions</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;x_matched shape: </span><span class="si">{</span><span class="n">x_matched</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;x_hat_matched shape: </span><span class="si">{</span><span class="n">x_hat_matched</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;posterior_cov_matched shape: </span><span class="si">{</span><span class="n">posterior_cov_matched</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                    <span class="c1"># Now all should have consistent dimensions</span>
+                    <span class="k">assert</span> <span class="n">x_matched</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">x_hat_matched</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">posterior_cov_matched</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    
+                    <span class="c1"># Compute confidence intervals</span>
+                    <span class="n">ci_lower_active</span><span class="p">,</span> <span class="n">ci_upper_active</span><span class="p">,</span> <span class="n">counts_within_ci_active</span><span class="p">,</span> <span class="n">empirical_coverage_active</span> <span class="o">=</span> \
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">get_confidence_intervals_data</span><span class="p">(</span>
+                            <span class="n">x</span><span class="o">=</span><span class="n">x_matched</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">x_hat_matched</span><span class="p">,</span>
+                            <span class="n">posterior_cov</span><span class="o">=</span><span class="n">posterior_cov_matched</span><span class="p">,</span>
+                            <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span>
+                        <span class="p">)</span>  
+
+                <span class="c1"># -------------------------------------------------------------</span>
+                <span class="c1"># 9. Evaluate metrics and store results</span>
+                <span class="c1"># -------------------------------------------------------------       </span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">evaluate_and_store_metrics</span><span class="p">(</span>
+                    <span class="n">current_results_dict</span><span class="o">=</span><span class="n">this_result</span><span class="p">,</span>
+                    <span class="n">metric_suffix</span><span class="o">=</span><span class="s2">&quot;_active_indices&quot;</span><span class="p">,</span>
+                    <span class="n">empirical_coverage</span><span class="o">=</span><span class="n">empirical_coverage_active</span><span class="p">,</span>  
+                    <span class="n">cov</span><span class="o">=</span><span class="n">posterior_cov</span><span class="p">,</span> <span class="c1">#_matched? TODO</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">x_one_trial_avg_time</span><span class="p">,</span>
+                    <span class="n">x_hat</span> <span class="o">=</span> <span class="n">x_hat_one_trial_avg_time</span><span class="p">,</span>
+                    <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+                    <span class="n">nnz</span><span class="o">=</span><span class="n">data_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nnz&quot;</span><span class="p">),</span>
+                    <span class="n">subject</span><span class="o">=</span><span class="n">data_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">),</span>
+                    <span class="n">fwd_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">leadfield_dir</span>
+                <span class="p">)</span>
+
+                <span class="c1"># --------------------------------------------------------------</span>
+                <span class="c1"># 10. Vizualization</span>
+                <span class="c1"># --------------------------------------------------------------</span>
+                <span class="n">viz</span> <span class="o">=</span> <span class="n">Visualizer</span><span class="p">(</span><span class="n">base_save_path</span><span class="o">=</span><span class="n">experiment_dir</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
+                <span class="n">viz</span><span class="o">.</span><span class="n">plot_all</span><span class="p">(</span>
+                    <span class="n">x_trials</span><span class="o">=</span><span class="n">x_trials</span><span class="p">,</span>
+                    <span class="n">x_active_indices_trials</span><span class="o">=</span><span class="n">x_active_indices_trials</span><span class="p">,</span>
+                    <span class="n">x_hat_one_trial</span><span class="o">=</span><span class="n">x_hat_one_trial</span><span class="p">,</span>
+                    <span class="n">x_hat_active_indices_one_trial</span><span class="o">=</span><span class="n">x_hat_active_indices_one_trial</span><span class="p">,</span>
+                    <span class="n">y_clean_trials</span><span class="o">=</span><span class="n">y_clean_trials</span><span class="p">,</span>
+                    <span class="n">y_noisy_trials</span><span class="o">=</span><span class="n">y_noisy_trials</span><span class="p">,</span>
+                    <span class="n">trial_idx</span><span class="o">=</span><span class="n">trial_idx</span><span class="p">,</span>
+                    <span class="n">n_sources</span><span class="o">=</span><span class="n">n_sources</span><span class="p">,</span>
+                    <span class="n">subject</span><span class="o">=</span><span class="n">data_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">),</span>
+                    <span class="n">subjects_dir</span><span class="o">=</span><span class="n">mne</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">sample</span><span class="o">.</span><span class="n">data_path</span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;subjects&#39;</span><span class="p">,</span> <span class="c1">#TODO: include MEG anatomical data</span>
+                    <span class="n">fwd_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">leadfield_builder</span><span class="o">.</span><span class="n">leadfield_dir</span><span class="p">,</span>
+                    <span class="n">nnz</span><span class="o">=</span><span class="n">data_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nnz&quot;</span><span class="p">),</span>
+                    <span class="n">ERP_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ERP_config</span><span class="p">,</span>
+                    <span class="n">sample_idx</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                    <span class="n">source_units</span><span class="o">=</span><span class="n">source_units</span><span class="p">,</span>
+                    <span class="n">sensor_units</span><span class="o">=</span><span class="n">sensor_units</span><span class="p">,</span>
+                    <span class="n">confidence_levels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">confidence_levels</span><span class="p">,</span>
+                    <span class="n">empirical_coverages</span><span class="o">=</span><span class="p">{</span>
+                        <span class="c1"># &#39;all_sources&#39;: all_sources_empirical_coverage,</span>
+                        <span class="s1">&#39;active_indices&#39;</span><span class="p">:</span> <span class="n">empirical_coverage_active</span>
+                    <span class="p">},</span>
+                    <span class="n">ci_lower</span><span class="o">=</span><span class="n">ci_lower_active</span><span class="p">,</span>
+                    <span class="n">ci_upper</span><span class="o">=</span><span class="n">ci_upper_active</span><span class="p">,</span>
+                    <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+                    <span class="n">result</span><span class="o">=</span><span class="n">this_result</span><span class="p">,</span>
+                    <span class="n">experiment_dir</span><span class="o">=</span><span class="n">experiment_dir</span><span class="p">,</span>
+                <span class="p">)</span>
+                
+                <span class="n">this_result</span><span class="p">[</span><span class="s1">&#39;active_indices_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_hat_active_indices_one_trial</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during benchmarking run_id </span><span class="si">{</span><span class="n">this_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;run_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">this_result</span><span class="p">[</span><span class="s2">&quot;error_message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="c1"># More specific error key</span>
+            
+            <span class="n">results_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_result</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Completed run_id </span><span class="si">{</span><span class="n">this_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;run_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Benchmarking completed.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results_list</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,1096 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Source Data Simulation with SourceSimulator &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=b14783f5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_tutorials/source_simulation_tutorial';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.2';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Visualization Tutorial" href="visualization_tutorial.html" />
+    <link rel="prev" title="Sensor Data Simulation with SensorSimulator" href="sensor_simulation_tutorial.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">📚 You are viewing CaliBrain v0.1.2 documentation</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation/README.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/README.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development/README.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/README.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../documentation/usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentation/results.html">Results</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/leadfield_simulation_example.html">Leadfield Matrix Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/run_experiments.html">Run benchmark experiments</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Tutorials</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="sensor_simulation_tutorial.html">Sensor Data Simulation with SensorSimulator</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Source Data Simulation with SourceSimulator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization_tutorial.html">Visualization Tutorial</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../documentation/README.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Tutorials</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Source Data Simulation with SourceSimulator</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-source-simulation-tutorial-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="source-data-simulation-with-sourcesimulator">
+<span id="tut-source-simulation"></span><span id="sphx-glr-auto-tutorials-source-simulation-tutorial-py"></span><h1>Source Data Simulation with SourceSimulator<a class="headerlink" href="#source-data-simulation-with-sourcesimulator" title="Link to this heading">#</a></h1>
+<p>This tutorial demonstrates how to use the <code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code> class
+to generate synthetic brain activity data for neuroimaging research (e.g., MEG/EEG
+source simulation). The SourceSimulator creates event-related potential (ERP)-like
+signals that can be used to test source localization algorithms, validate analysis
+pipelines, and benchmark uncertainty quantification methods.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Authors: Mohammad Orabe  &lt;m.orabe@icloud.com&gt;</span>
+<span class="c1"># License: AGPL-3.0 license</span>
+<span class="c1"># Copyright the CaliBrain contributors.</span>
+</pre></div>
+</div>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading">#</a></h2>
+<p>This tutorial focuses specifically on simulating stimulus-locked
+ERP-like signals at brain sources, which form the foundation for neuroimaging
+data simulation.</p>
+<p>The SourceSimulator creates band-limited, windowed signals that mimic realistic
+event-related potentials (ERPs) time-locked to stimulus onset. The class can
+simulate multi-trial source time courses, where each trial contains a specific
+number of active sources at randomly selected locations. These simulated source
+activities can then be used as input for forward modeling, inverse problem
+validation, and uncertainty quantification benchmarking.</p>
+<p><strong>Scope:</strong> The CaliBrain framework implements a comprehensive 7-stage pipeline for
+neuroimaging simulation and validation. This tutorial covers <strong>source-level
+simulation only</strong> - the generation of neural activity patterns at cortical locations.
+For projecting these sources to sensors using forward models and adding controlled
+noise, see the sensor simulation tutorial.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌───────────────┐    ┏━━━━━━━━━━━━━━━┓    ┌───────────────┐    ┌───────────────┐
+│   Leadfield   │ →  ┃   ★ Source    ┃ →  │    Sensor     │ →  │    Source     │
+│ Construction  │    ┃  Simulation   ┃    │  Simulation   │    │  Estimation   │
+└───────────────┘    ┗━━━━━━━━━━━━━━━┛    └───────────────┘    └───────────────┘
+                                                                      ↓
+                     ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+                     │  Evaluation   │ ←  │ Visualization │ ←  │  Uncertainty  │
+                     │               │    │               │    │   Estimation  │
+                     └───────────────┘    └───────────────┘    └───────────────┘
+</pre></div>
+</div>
+<section id="mathematical-formulation">
+<h3>Mathematical Formulation<a class="headerlink" href="#mathematical-formulation" title="Link to this heading">#</a></h3>
+<p>Let <span class="math notranslate nohighlight">\(N\)</span> denote the number of sources and <span class="math notranslate nohighlight">\(T\)</span> the
+number of time points.</p>
+<p>The ERP-like signal for each active source is generated through a 5-step process:</p>
+<p><strong>1. Generate white noise:</strong> Create a zero-mean white Gaussian noise sequence:</p>
+<div class="math notranslate nohighlight">
+\[w(t) \sim \mathcal{N}(0, 1) \quad \text{with length } T\]</div>
+<p><strong>2. Bandpass filter:</strong> Apply a 4th-order Butterworth bandpass filter:</p>
+<div class="math notranslate nohighlight">
+\[e(t) = \text{filtfilt}(b, a, w(t))\]</div>
+<p>where <span class="math notranslate nohighlight">\(b, a\)</span> are filter coefficients within the passband
+<span class="math notranslate nohighlight">\((f_{\min}, f_{\max})\)</span>.</p>
+<p><strong>3. Windowing:</strong> Apply a Hanning window <span class="math notranslate nohighlight">\(h(t) \in \mathbb{R}^{T}\)</span> to
+restrict temporal extent:</p>
+<div class="math notranslate nohighlight">
+\[\tilde{e}(t) = e(t) \cdot h(t)\]</div>
+<p><strong>4. Normalization:</strong> Standardize by peak amplitude:</p>
+<div class="math notranslate nohighlight">
+\[\hat{e}(t) = \frac{\tilde{e}(t)}{\max(|\tilde{e}(t)|)}\]</div>
+<p><strong>5. Amplitude scaling:</strong> Define signal strength using scalar
+<span class="math notranslate nohighlight">\(A \in \mathbb{R}_{+}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[x(t) = A \cdot \hat{e}(t)\]</div>
+<p>Each time series <span class="math notranslate nohighlight">\(x(t)\)</span> becomes a row in the source matrix
+<span class="math notranslate nohighlight">\(\mathbf{X} \in \mathbb{R}^{N \times T}\)</span>, containing all source time courses.</p>
+</section>
+<section id="multi-trial-simulation">
+<h3>Multi-Trial Simulation<a class="headerlink" href="#multi-trial-simulation" title="Link to this heading">#</a></h3>
+<p>The simulation supports generating multiple trials by iterating <span class="math notranslate nohighlight">\(n_{\text{trials}}\)</span> times.
+Within each iteration, the script generates source activity <span class="math notranslate nohighlight">\(\mathbf{X}\)</span> with a unique random seed, ensuring reproducible yet varied simulations across trials.</p>
+<p>The resulting data is organized as a 3D array: trials <span class="math notranslate nohighlight">\(\times\)</span> sources
+<span class="math notranslate nohighlight">\(\times\)</span> time points.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although multiple trials can be generated, this tutorial focuses on
+single-trial analysis since the inverse solvers and uncertainty estimation
+methods in CaliBrain typically operate on individual trials.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class"><span class="n">Path</span></a>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="the-sourcesimulator-class">
+<h2>The SourceSimulator Class<a class="headerlink" href="#the-sourcesimulator-class" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class is located in the
+<code class="docutils literal notranslate"><span class="pre">calibrain/source_simulation.py</span></code> module and serves as the core component
+for generating synthetic brain activity data at the source level.</p>
+<section id="class-methods">
+<h3>Class Methods<a class="headerlink" href="#class-methods" title="Link to this heading">#</a></h3>
+<dl class="simple">
+<dt>The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class consists of three core methods:</dt><dd><ul class="simple">
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_simulate_erp_waveform()</span></code>: Internal method for generating individual ERP-like signals</p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_simulate_source_time_courses()</span></code>: Internal method for creating time courses for multiple sources</p></li>
+<li><p><a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator.simulate" title="calibrain.source_simulation.SourceSimulator.simulate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">simulate()</span></code></a>: Main public method for multi-trial simulation. This is the main method that should be used as it wraps the core functionality. Later one can slice specific trials when needed.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class is part of the CaliBrain package and can be imported directly as follows:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceSimulator</span>
+</pre></div>
+</div>
+</section>
+<section id="basic-usage-example">
+<h3>Basic Usage Example<a class="headerlink" href="#basic-usage-example" title="Link to this heading">#</a></h3>
+<p>The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class expects a configuration dictionary for ERP parameters and a logger. However if we do not provide these, default values will be used.
+The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator.simulate" title="calibrain.source_simulation.SourceSimulator.simulate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">simulate()</span></code></a> function of the <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> class is the main entry point for running the simulation and also expects configuration parameters. If no parameters are provided, default values will be used.</p>
+<p>Quick demonstration with default parameters.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">demo_simulator</span> <span class="o">=</span> <span class="n">SourceSimulator</span><span class="p">()</span>   <span class="c1"># use default ERP parameters</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_demo</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">active_indices_demo</span></a> <span class="o">=</span> <span class="n">demo_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span> <span class="c1"># use default simulation parameters</span>
+
+<span class="c1"># We can always use the CaliBrain&#39;s utility function :func:`~calibrain.utils.inspect_object` to explore any</span>
+<span class="c1"># class structure and understand its available attributes and methods:</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">inspect_object</span>
+
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">class_info</span></a> <span class="o">=</span> <span class="n">inspect_object</span><span class="p">(</span><span class="n">demo_simulator</span><span class="p">,</span> <span class="n">show_private</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Attributes:
+  - ERP_config
+  - logger
+  - source_units
+
+Methods:
+  - simulate
+</pre></div>
+</div>
+</section>
+<section id="specific-configuration-and-simulation">
+<h3>Specific Configuration and Simulation<a class="headerlink" href="#specific-configuration-and-simulation" title="Link to this heading">#</a></h3>
+<p>The <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> follows a typical usage pattern:</p>
+<ul class="simple">
+<li><p><strong>Step 1:</strong> Configure ERP parameters</p></li>
+<li><p><strong>Step 2:</strong> Initialize the simulator</p></li>
+<li><p><strong>Step 3:</strong> Call simulate() method</p></li>
+<li><p><strong>Step 4:</strong> Analyze the returned data</p></li>
+</ul>
+<p>Let’s explore a more detailed example with custom configuration.</p>
+<p>Configure logging to see simulation progress</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/logging.html#logging.basicConfig" title="logging.basicConfig" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-function"><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span></a><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span></a><span class="p">,</span> <span class="c1"># Set to logging.DEBUG for more detailed output</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> | </span><span class="si">%(levelname)s</span><span class="s2"> | </span><span class="si">%(name)s</span><span class="s2"> | </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">handlers</span><span class="o">=</span><span class="p">[</span><a href="https://docs.python.org/3/library/logging.handlers.html#logging.StreamHandler" title="logging.StreamHandler" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class"><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span></a><span class="p">()]</span>
+<span class="p">)</span>
+<a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/logging.html#logging.getLogger" title="logging.getLogger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-function"><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span></a><span class="p">(</span><span class="s2">&quot;SourceSimulator&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The ERP configuration controls all aspects of the simulated brain activity.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;tmin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span>                <span class="c1"># Start time of epoch (seconds before stimulus)</span>
+    <span class="s2">&quot;tmax&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>                 <span class="c1"># End time of epoch (seconds after stimulus)</span>
+    <span class="s2">&quot;stim_onset&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>           <span class="c1"># Stimulus onset time (relative to epoch start)</span>
+    <span class="s2">&quot;sfreq&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span>                <span class="c1"># Sampling frequency in Hz</span>
+    <span class="s2">&quot;fmin&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>                   <span class="c1"># Minimum frequency for bandpass filter (Hz)</span>
+    <span class="s2">&quot;fmax&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>                   <span class="c1"># Maximum frequency for bandpass filter (Hz)</span>
+    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>            <span class="c1"># Amplitude scaling factor</span>
+    <span class="s2">&quot;random_erp_timing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>   <span class="c1"># Whether to randomize ERP onset and duration</span>
+    <span class="s2">&quot;erp_min_length&quot;</span><span class="p">:</span> <span class="kc">None</span>       <span class="c1"># Minimum ERP duration in samples (None = auto)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Create and Configure SourceSimulator</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">source_simulator</span> <span class="o">=</span> <span class="n">SourceSimulator</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">erp_config</span></a><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Default units: </span><span class="si">{</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">source_units</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># -&gt; Am</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>- Default units: 202 (FIFF_UNIT_AM)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Default units are set to Amperes (Am) which corresponds to FIFF.FIFF_UNIT_AM
+in MNE notation. This ensures compatibility with standard neuroimaging formats.
+See <a class="github reference external" href="https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py">mne-tools/mne-python</a> for details.</p>
+</div>
+<p>Now let’s generate realistic source activity with multiple trials:</p>
+<p>Simulation parameters</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulation_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>    <span class="c1"># Source orientation type</span>
+    <span class="s2">&quot;n_sources&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>               <span class="c1"># Total number of source locations</span>
+    <span class="s2">&quot;nnz&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>                      <span class="c1"># Number of active sources per trial</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>                 <span class="c1"># Number of trials to simulate</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">42</span>              <span class="c1"># Seed for reproducibility</span>
+<span class="p">}</span>
+
+<span class="c1"># Execute the simulation</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a> <span class="o">=</span> <span class="n">source_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulation_params</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>If you are not familiar with <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>, you can define the variables explicitly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">orientation_type</span> <span class="o">=</span> <span class="s2">&quot;fixed&quot;</span>
+<span class="n">n_sources</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">nnz</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">n_trials</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="mi">42</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a> <span class="o">=</span> <span class="n">source_simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+    <span class="n">orientation_type</span><span class="o">=</span><span class="n">orientation_type</span><span class="p">,</span>
+    <span class="n">n_sources</span><span class="o">=</span><span class="n">n_sources</span><span class="p">,</span>
+    <span class="n">nnz</span><span class="o">=</span><span class="n">nnz</span><span class="p">,</span>
+    <span class="n">n_trials</span><span class="o">=</span><span class="n">n_trials</span><span class="p">,</span>
+    <span class="n">global_seed</span><span class="o">=</span><span class="n">seed</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://book.pythontips.com/en/latest/args_and_kwargs.html">**kwargs documentation</a> for more details on this syntax.</p>
+</div>
+<p>Let’s inspect the simulation results</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Simulation Results:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Output shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> trials&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> sources&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2"> time points&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Active indices shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Data range: [</span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">] Am&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Active Sources by Trial:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">indices</span></a> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Trial </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: sources </span><span class="si">{</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">idx</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nb">sorted</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">indices</span></a><span class="p">)]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check for non-zero activity only in active sources</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_0</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># First trial</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">active_sources_0</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_nonzero</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.count_nonzero.html#numpy.count_nonzero" title="numpy.count_nonzero" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.any.html#numpy.any" title="numpy.any" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">any</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_0</span></a><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Validation:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Sources with non-zero activity: </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_nonzero</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Expected active sources: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">active_sources_0</span></a><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Match: </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_nonzero</span></a><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">active_sources_0</span></a><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Simulation Results:
+  - Output shape: (3, 50, 250)
+    - 3 trials
+    - 50 sources
+    - 250 time points
+  - Active indices shape: (3, 6)
+  - Data range: [-1.00e-09, 1.00e-09] Am
+
+Active Sources by Trial:
+  Trial 1: sources [16, 25, 30, 31, 35, 49]
+  Trial 2: sources [2, 13, 25, 38, 41, 48]
+  Trial 3: sources [0, 21, 23, 41, 45, 48]
+
+Validation:
+  - Sources with non-zero activity: 6
+  - Expected active sources: 6
+  - Match: True
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualization-with-calibrain">
+<h2>Visualization with CaliBrain<a class="headerlink" href="#visualization-with-calibrain" title="Link to this heading">#</a></h2>
+<p>The CaliBrain <a class="reference internal" href="../api/visualization/Visualizer.html#calibrain.visualization.Visualizer" title="calibrain.visualization.Visualizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Visualizer</span></code></a> provides sophisticated plotting capabilities for
+source data analysis</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">Visualizer</span>
+
+<span class="c1"># Create visualizer instance with output directory</span>
+<a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">save_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class"><span class="n">Path</span></a><span class="p">(</span><span class="s2">&quot;tutorial_results&quot;</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir" title="pathlib.Path.mkdir" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-method"><span class="n">save_path</span><span class="o">.</span><span class="n">mkdir</span></a><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">viz</span> <span class="o">=</span> <span class="n">Visualizer</span><span class="p">(</span><span class="n">base_save_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">save_path</span></a><span class="p">),</span> <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For an in-depth guide to the <a class="reference internal" href="../api/visualization/Visualizer.html#calibrain.visualization.Visualizer" title="calibrain.visualization.Visualizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Visualizer</span></code></a> class and advanced visualization techniques, refer to the <a class="reference internal" href="visualization_tutorial.html#tut-visualization"><span class="std std-ref">Visualization Tutorial</span></a> tutorial.</p>
+</div>
+<p><strong>Plot All Trials</strong></p>
+<p>First, let’s visualize source activity across all trials:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_source_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">source_simulator</span><span class="o">.</span><span class="n">ERP_config</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span>
+    <span class="n">x_active_indices</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">source_units</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># If None, all trials are plotted</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Source Activity - All Trials&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;source_simulation&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;all_trials_overview&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_source_simulation_tutorial_001.png" srcset="../_images/sphx_glr_source_simulation_tutorial_001.png" alt="Source Activity - All Trials, Source Activity - All Trials — Trial 1, Source Activity - All Trials — Trial 2, Source Activity - All Trials — Trial 3" class = "sphx-glr-single-img"/><p><strong>Plot Single Trial</strong></p>
+<p>Now let’s examine a single trial in detail:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">viz</span><span class="o">.</span><span class="n">plot_source_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">source_simulator</span><span class="o">.</span><span class="n">ERP_config</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="p">,</span>
+    <span class="n">x_active_indices</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_active_indices_trials</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">source_simulator</span><span class="o">.</span><span class="n">source_units</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Source Activity - Trial </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;source_simulation&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;trial_</span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trial_idx</span></a><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_source_simulation_tutorial_002.png" srcset="../_images/sphx_glr_source_simulation_tutorial_002.png" alt="Source Activity - Trial 1 (Trial 1)" class = "sphx-glr-single-img"/><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The visualization automatically converts units from Amperes (Am) to
+nanoAmperes (nAm) for better readability. No manual unit conversion is needed.</p>
+</div>
+</section>
+<section id="advanced-erp-configuration">
+<h2>Advanced ERP Configuration<a class="headerlink" href="#advanced-erp-configuration" title="Link to this heading">#</a></h2>
+<p>The SourceSimulator supports various ERP configurations for different
+experimental scenarios. Let’s explore different parameter combinations.</p>
+<p><strong>High-Frequency Fast ERPs</strong></p>
+<p>Configuration for simulating high-frequency, short-duration ERPs typical
+of early sensory responses:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fast_erp_config</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;tmin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="s2">&quot;tmax&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
+    <span class="s2">&quot;stim_onset&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">&quot;sfreq&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>                <span class="c1"># Higher sampling rate for fast dynamics</span>
+    <span class="s2">&quot;fmin&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>                   <span class="c1"># Higher frequency band (8-30 Hz)</span>
+    <span class="s2">&quot;fmax&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>            <span class="c1"># Larger amplitude for prominent responses</span>
+    <span class="s2">&quot;random_erp_timing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>   <span class="c1"># Random timing for realistic variability</span>
+    <span class="s2">&quot;erp_min_length&quot;</span><span class="p">:</span> <span class="mi">80</span>         <span class="c1"># Minimum duration in samples</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Low-Frequency Slow ERPs</strong></p>
+<p>Configuration for simulating low-frequency, long-duration ERPs typical
+of cognitive processing:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">slow_erp_config</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;tmin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">&quot;tmax&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="s2">&quot;stim_onset&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">&quot;sfreq&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>                <span class="c1"># Lower sampling rate sufficient for slow dynamics</span>
+    <span class="s2">&quot;fmin&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>                 <span class="c1"># Lower frequency band (0.5-3 Hz)</span>
+    <span class="s2">&quot;fmax&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>            <span class="c1"># Moderate amplitude</span>
+    <span class="s2">&quot;random_erp_timing&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Fixed timing for consistent late components</span>
+    <span class="s2">&quot;erp_min_length&quot;</span><span class="p">:</span> <span class="mi">150</span>        <span class="c1"># Longer minimum duration</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Create Simulators</strong></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">simulator_fast</span> <span class="o">=</span> <span class="n">SourceSimulator</span><span class="p">(</span><span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fast_erp_config</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+<span class="n">simulator_slow</span> <span class="o">=</span> <span class="n">SourceSimulator</span><span class="p">(</span><span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">slow_erp_config</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/logging.html#logging.Logger" title="logging.Logger" class="sphx-glr-backref-module-logging sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">logger</span></a><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Created specialized simulators:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Fast ERP simulator: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fast_erp_config</span></a><span class="p">[</span><span class="s1">&#39;fmin&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fast_erp_config</span></a><span class="p">[</span><span class="s1">&#39;fmax&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> Hz&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Slow ERP simulator: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">slow_erp_config</span></a><span class="p">[</span><span class="s1">&#39;fmin&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">slow_erp_config</span></a><span class="p">[</span><span class="s1">&#39;fmax&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> Hz&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Created specialized simulators:
+  - Fast ERP simulator: 8-30 Hz
+  - Slow ERP simulator: 0.5-3 Hz
+</pre></div>
+</div>
+<p><strong>Generate Comparative Simulations</strong></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">comparison_params</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;n_sources&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;nnz&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;n_trials&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;global_seed&quot;</span><span class="p">:</span> <span class="mi">42</span>
+<span class="p">}</span>
+
+<span class="c1"># Generate fast ERPs</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast_indices</span></a> <span class="o">=</span> <span class="n">simulator_fast</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">comparison_params</span></a><span class="p">)</span>
+
+<span class="c1"># Generate slow ERPs (use different seed for variety)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">comparison_params</span></a><span class="p">[</span><span class="s2">&quot;global_seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">84</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow_indices</span></a> <span class="o">=</span> <span class="n">simulator_slow</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">comparison_params</span></a><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Comparison Results:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Fast ERPs shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># (n_trials, n_sources, n_timepoints)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Slow ERPs shape: </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># (n_trials, n_sources, n_timepoints)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Fast ERP active sources: </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast_indices</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Slow ERP active sources: </span><span class="si">{</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow_indices</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Comparison Results:
+  Fast ERPs shape: (1, 20, 400)
+  Slow ERPs shape: (1, 20, 600)
+  Fast ERP active sources: [18 13 15]
+  Slow ERP active sources: [16  4 10]
+</pre></div>
+</div>
+<p>Now lets create comparative visualizations to highlight the differences:</p>
+<p><strong>Fast ERP visualization</strong></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_source_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator_fast</span><span class="o">.</span><span class="n">ERP_config</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast</span></a><span class="p">,</span>
+    <span class="n">x_active_indices</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_fast_indices</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">simulator_fast</span><span class="o">.</span><span class="n">source_units</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;High-Frequency Fast ERPs (8-30 Hz)&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;erp_comparison&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;fast_erp_simulation&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_source_simulation_tutorial_003.png" srcset="../_images/sphx_glr_source_simulation_tutorial_003.png" alt="High-Frequency Fast ERPs (8-30 Hz), High-Frequency Fast ERPs (8-30 Hz) — Trial 1" class = "sphx-glr-single-img"/><p><strong>Slow ERP visualization</strong></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">viz</span><span class="o">.</span><span class="n">plot_source_signals</span><span class="p">(</span>
+    <span class="n">ERP_config</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator_slow</span><span class="o">.</span><span class="n">ERP_config</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_trials</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow</span></a><span class="p">,</span>
+    <span class="n">x_active_indices</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">x_slow_indices</span></a><span class="p">,</span>
+    <span class="n">units</span><span class="o">=</span><span class="n">simulator_slow</span><span class="o">.</span><span class="n">source_units</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Low-Frequency Slow ERPs (0.5-3 Hz)&quot;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;erp_comparison&quot;</span><span class="p">,</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;slow_erp_simulation&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_source_simulation_tutorial_004.png" srcset="../_images/sphx_glr_source_simulation_tutorial_004.png" alt="Low-Frequency Slow ERPs (0.5-3 Hz), Low-Frequency Slow ERPs (0.5-3 Hz) — Trial 1" class = "sphx-glr-single-img"/></section>
+<section id="integration-with-calibrain-pipeline">
+<h2>Integration with CaliBrain Pipeline<a class="headerlink" href="#integration-with-calibrain-pipeline" title="Link to this heading">#</a></h2>
+<p>The SourceSimulator is designed to work seamlessly with other CaliBrain
+components in a complete neuroimaging simulation pipeline.</p>
+<p><strong>Example Pipeline Code</strong></p>
+<p>Here’s a conceptual example of how <a class="reference internal" href="../api/source_simulation/SourceSimulator.html#calibrain.source_simulation.SourceSimulator" title="calibrain.source_simulation.SourceSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceSimulator</span></code></a> integrates with
+other CaliBrain components:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pipeline_example</span></a> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Complete CaliBrain simulation pipeline example</span>
+
+<span class="s1">from calibrain import (</span>
+<span class="s1">    LeadfieldBuilder, SourceSimulator, SensorSimulator,</span>
+<span class="s1">    SourceEstimator, UncertaintyEstimator, MetricEvaluator, Visualizer</span>
+<span class="s1">)</span>
+
+<span class="s1"># 1. Build leadfield matrix</span>
+<span class="s1">leadfield_builder = LeadfieldBuilder(...)</span>
+<span class="s1">L = leadfield_builder.get_leadfield(</span>
+<span class="s1">    subject=&quot;fsaverage&quot;,</span>
+<span class="s1">    orientation_type=&quot;fixed&quot;</span>
+<span class="s1">)</span>
+
+<span class="s1"># 2. Simulate source activity</span>
+<span class="s1">source_simulator = SourceSimulator(ERP_config=erp_config)</span>
+<span class="s1">x_trials, x_active_indices = source_simulator.simulate(</span>
+<span class="s1">    orientation_type=&quot;fixed&quot;,</span>
+<span class="s1">    n_sources=L.shape[1],  # Match leadfield dimensions</span>
+<span class="s1">    nnz=5,</span>
+<span class="s1">    n_trials=10</span>
+<span class="s1">)</span>
+
+<span class="s1"># 3. Simulate sensor measurements</span>
+<span class="s1">sensor_simulator = SensorSimulator()</span>
+<span class="s1">y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(</span>
+<span class="s1">    x_trials=x_trials,</span>
+<span class="s1">    L=L,</span>
+<span class="s1">    alpha_SNR=0.1,</span>
+<span class="s1">    n_trials=10</span>
+<span class="s1">)</span>
+
+<span class="s1"># 4. Estimate sources</span>
+<span class="s1">source_estimator = SourceEstimator(solver=&quot;gamma_map&quot;)</span>
+<span class="s1">source_estimator.fit(L, y_noisy[0])</span>
+<span class="s1">x_hat, x_hat_indices, posterior_cov = source_estimator.predict(y_noisy[0])</span>
+
+<span class="s1"># 5. Estimate uncertainty (-&gt; credible intervals)</span>
+<span class="s1">uncertainty_estimator = UncertaintyEstimator()</span>
+<span class="s1">ci_lower, ci_upper, _, empirical_coverage = </span><span class="se">\\</span>
+<span class="s1">    uncertainty_estimator.get_confidence_intervals_data(</span>
+<span class="s1">        x=x_trials[0],</span>
+<span class="s1">        x_hat=x_hat,</span>
+<span class="s1">        posterior_cov=posterior_cov,</span>
+<span class="s1">        orientation_type=&quot;fixed&quot;</span>
+<span class="s1">    )</span>
+
+<span class="s1"># 6. Evaluate performance</span>
+<span class="s1">metric_evaluator = MetricEvaluator()</span>
+<span class="s1">metrics = metric_evaluator.evaluate(</span>
+<span class="s1">    x_true=x_trials[0],</span>
+<span class="s1">    x_hat=x_hat,</span>
+<span class="s1">    active_indices_true=x_active_indices[0],</span>
+<span class="s1">    active_indices_hat=x_hat_indices</span>
+<span class="s1">)</span>
+
+<span class="s1"># 7. Visualize results</span>
+<span class="s1">visualizer = Visualizer()</span>
+<span class="s1">visualizer.plot_source_comparison(x_trials, x_hat, x_active_indices)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.584 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-source-simulation-tutorial-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/17b3bdd7e03c514f7615ca47cba63a42/source_simulation_tutorial.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">source_simulation_tutorial.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/e739e81d464b6f448a2ce6d4b225c02a/source_simulation_tutorial.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">source_simulation_tutorial.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/921006a3d7ff970bfbe9119331a65a74/source_simulation_tutorial.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">source_simulation_tutorial.zip</span></code></a></p>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="sensor_simulation_tutorial.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Sensor Data Simulation with SensorSimulator</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="visualization_tutorial.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Visualization Tutorial</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background">Background</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-formulation">Mathematical Formulation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-trial-simulation">Multi-Trial Simulation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-sourcesimulator-class">The SourceSimulator Class</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#class-methods">Class Methods</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-usage-example">Basic Usage Example</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#specific-configuration-and-simulation">Specific Configuration and Simulation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visualization-with-calibrain">Visualization with CaliBrain</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-erp-configuration">Advanced ERP Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-with-calibrain-pipeline">Integration with CaliBrain Pipeline</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/auto_tutorials/source_simulation_tutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
