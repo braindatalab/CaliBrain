@@ -380,8 +380,8 @@ class SourceSimulator:
         self.logger.info(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
 
         # Print active indices for all trials, each trial on a new line
-        self.logger.info("Active indices for all trials:")
-        for i, indices in enumerate(active_indices_all_trials):
-            self.logger.info(f"  Trial {i+1}: {indices}")
+        # self.logger.info("Active indices for all trials:")
+        # for i, indices in enumerate(active_indices_all_trials):
+        #     self.logger.info(f"  Trial {i+1}: {indices}")
 
         return x_all_trials, active_indices_all_trials
