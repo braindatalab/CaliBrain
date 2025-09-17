@@ -251,7 +251,7 @@ class Benchmark:
                 x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
                     y=y_noisy_one_trial, noise_var=noise_var_one_trial
                 )
-
+                
                 # -------------------------------------------------------------
                 # 8. Estimate uncertainty (-> credible intervals)
                 # -------------------------------------------------------------
@@ -260,6 +260,10 @@ class Benchmark:
                 # TODO: check whether we still need to set keepdims=True.
                 x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
                 x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
+                
+                # Scale posterior variance by number of time points (averaging over time reduces variance)
+                n_time = x_one_trial.shape[1]
+                posterior_cov_avg_time = posterior_cov / n_time
 
                 # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
                 #     x=x_avg_time,
@@ -270,59 +274,59 @@ class Benchmark:
 
                 # Find matched location between ground truth simulated sources and estimated sources
                 # Get boolean mask for sources present in both sets
-                matched_mask = np.isin(x_hat_active_indices_one_trial, 
-                                       x_active_indices_one_trial)
+                # matched_mask = np.isin(x_hat_active_indices_one_trial, 
+                #                        x_active_indices_one_trial)
                 
-                if not np.any(matched_mask):
-                    self.logger.warning(f"No intersection between true active sources and estimated active sources")
+                # if not np.any(matched_mask):
+                #     self.logger.warning(f"No intersection between true active sources and estimated active sources")
 
-                    ci_lower_active = np.zeros(
-                        (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                    )
-                    ci_upper_active = np.zeros(
-                        (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                    )
+                #     ci_lower_active = np.zeros(
+                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
+                #     )
+                #     ci_upper_active = np.zeros(
+                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
+                #     )
 
-                    empirical_coverage_active = np.zeros(
-                        (len(self.uncertainty_estimator.confidence_levels))
-                    )
+                #     empirical_coverage_active = np.zeros(
+                #         (len(self.uncertainty_estimator.confidence_levels))
+                #     )
 
-                    empirical_coverage_active = np.zeros(
-                        (len(self.uncertainty_estimator.confidence_levels))
-                    )
-                else:
-                    # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
-                    matched_relative_indices = np.where(matched_mask)[0]
+                #     empirical_coverage_active = np.zeros(
+                #         (len(self.uncertainty_estimator.confidence_levels))
+                #     )
+                # else:
+                #     # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
+                #     matched_relative_indices = np.where(matched_mask)[0]
 
-                    # Get the actual source indices for data slicing
-                    matched_absolute_indices = x_hat_active_indices_one_trial[matched_mask]
+                #     # Get the actual source indices for data slicing
+                #     matched_absolute_indices = x_hat_active_indices_one_trial[matched_mask]
 
-                    # Slice data using absolute indices (both arrays are full-size)
-                    x_matched = x_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x (full array)
-                    x_hat_matched = x_hat_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x_hat (also full array)
+                #     # Slice data using absolute indices (both arrays are full-size)
+                #     x_matched = x_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x (full array)
+                #     x_hat_matched = x_hat_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x_hat (also full array)
 
-                    # Slice posterior covariance using relative indices (only contains active components)
-                    posterior_cov_matched = posterior_cov[np.ix_(
-                        matched_relative_indices,
-                        matched_relative_indices
-                    )]
+                #     # Slice posterior covariance using relative indices (only contains active components)
+                #     posterior_cov_matched = posterior_cov[np.ix_(
+                #         matched_relative_indices,
+                #         matched_relative_indices
+                #     )]
 
-                    # Verify dimensions
-                    print(f"x_matched shape: {x_matched.shape}")
-                    print(f"x_hat_matched shape: {x_hat_matched.shape}")  
-                    print(f"posterior_cov_matched shape: {posterior_cov_matched.shape}")
+                #     # Verify dimensions
+                #     print(f"x_matched shape: {x_matched.shape}")
+                #     print(f"x_hat_matched shape: {x_hat_matched.shape}")  
+                #     print(f"posterior_cov_matched shape: {posterior_cov_matched.shape}")
 
-                    # Now all should have consistent dimensions
-                    assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
+                #     # Now all should have consistent dimensions
+                #     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
                     
-                    # Compute confidence intervals
-                    ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverage_active = \
-                        self.uncertainty_estimator.get_confidence_intervals_data(
-                            x=x_matched,
-                            x_hat=x_hat_matched,
-                            posterior_cov=posterior_cov_matched,
-                            orientation_type=orientation_type
-                        )  
+                # Compute confidence intervals
+                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverage_active = \
+                    self.uncertainty_estimator.get_credible_intervals_data(
+                        x=x_one_trial_avg_time,
+                        x_hat=x_hat_one_trial_avg_time,
+                        posterior_cov=posterior_cov_avg_time,
+                        orientation_type=orientation_type
+                    )
 
                 # -------------------------------------------------------------
                 # 9. Evaluate metrics and store results
@@ -330,10 +334,10 @@ class Benchmark:
                 self.metric_evaluator.evaluate_and_store_metrics(
                     current_results_dict=this_result,
                     metric_suffix="_active_indices",
-                    empirical_coverage=empirical_coverage_active,  
-                    cov=posterior_cov, #_matched? TODO
-                    x = x_one_trial_avg_time,
-                    x_hat = x_hat_one_trial_avg_time,
+                    empirical_coverage=empirical_coverage_active,
+                    cov=posterior_cov_avg_time,  #_matched? TODO
+                    x=x_one_trial_avg_time,
+                    x_hat=x_hat_one_trial_avg_time,
                     orientation_type=orientation_type,
                     nnz=data_params.get("nnz"),
                     subject=data_params.get("subject"),

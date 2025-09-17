@@ -153,7 +153,7 @@ class UncertaintyEstimator:
                 break
         return cov
     
-    def _compute_confidence_ellipse(self, mean, cov, confidence_level=0.95):
+    def _compute_credible_ellipse(self, mean, cov, confidence_level=0.95):
         """
         Compute the parameters of a confidence ellipse for a given mean and covariance matrix.
         """
@@ -184,16 +184,16 @@ class UncertaintyEstimator:
         
         return width, height, angle
 
-    def _compute_confidence_intervals(self, mean : np.ndarray, std_dev : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
-        """Compute confidence intervals based on the diagonal of the covariance matrix.
+    def _compute_credible_intervals(self, mean : np.ndarray, std_dev : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
+        """Compute credible intervals based on the diagonal of the covariance matrix.
         Assumes inputs correspond only to the active components.
 
         Parameters
         ----------
         mean : np.ndarray
-            Mean array for active components, shape (n_sources, n_times).
+            Mean array for active components, shape (n_sources, n_times). For averaged time, n_times=1.
         std_dev : np.ndarray
-            Standard deviation array for active components, shape (n_sources, n_times).
+            Standard deviation array for active components, shape (n_sources, n_times). For averaged time, n_times=1.
         confidence_level : float, optional
             Confidence level for the intervals (e.g., 0.95 for 95%), by default 0.95
 
@@ -201,18 +201,19 @@ class UncertaintyEstimator:
         -------
         tuple[np.ndarray, np.ndarray]
         ci_lower : np.ndarray
-            Lower bounds of confidence intervals, shape (n_sources, n_times).
+            Lower bounds of credible intervals, shape (n_sources, n_times).
         ci_upper : np.ndarray
-            Upper bounds of confidence intervals, shape (n_sources, n_times).
+            Upper bounds of credible intervals, shape (n_sources, n_times).
         """
         # Calculate the Z-score corresponding to the confidence level for a normal distribution
         # Example: 0.95 -> z = 1.96
-        alpha = 1.0 - confidence_level
+        # alpha = 1.0 - confidence_level
         # z = np.abs(np.percentile(np.random.normal(0, 1, 1000000), [alpha / 2 * 100, (1 - alpha / 2) * 100]))[1]
-        z = norm.ppf(1 - alpha / 2)  # Two-tailed critical value
+        # z = norm.ppf(1 - alpha / 2)  # Two-tailed critical value
+        z = norm.ppf(0.5 + confidence_level / 2)  # critical value
         self.logger.debug(f"Z-score for confidence level {confidence_level}: {z:.4f}")
 
-        # Calculate confidence intervals: mean +/- z * std_dev
+        # Calculate credible intervals: mean +/- z * std_dev
         ci_lower = mean - z * std_dev
         ci_upper = mean + z * std_dev
 
@@ -226,24 +227,24 @@ class UncertaintyEstimator:
         return ci_lower, ci_upper
 
     def _count_values_within_ci(self, x : np.ndarray, ci_lower : np.ndarray, ci_upper : np.ndarray, orientation_type : str) -> np.ndarray:
-        """Count the number of ground truth values that lie within the confidence intervals for each time point.
+        """Count the number of ground truth values that lie within the credible intervals for each time point.
         Assumes input arrays correspond only to the active components.
 
         Parameters
         ----------
         x : np.ndarray
-            Ground truth source activity for active components, shape (n_sources, n_times).
+            Ground truth source activity for active components, shape (n_sources, n_times). For averaged time, n_times=1.
         ci_lower : np.ndarray
-            Lower bounds of confidence intervals for active components, shape (n_sources, n_times).
+            Lower bounds of credible intervals for active components, shape (n_sources, n_times). For averaged time, n_times=1.
         ci_upper : np.ndarray
-            Upper bounds of confidence intervals for active components, shape (n_sources, n_times).
+            Upper bounds of credible intervals for active components, shape (n_sources, n_times). For averaged time, n_times=1.
         orientation_type : str
             Orientation type of the sources, either 'fixed' or 'free'.
 
         Returns
         -------
         np.ndarray
-            Count of values within confidence intervals.
+            Count of values within credible intervals.
             - For "fixed" orientation: 1D array (n_times,) with counts per time point.
             - For "free" orientation: 2D array (3, n_times) with counts per orientation (X, Y, Z) per time point.
         
@@ -276,7 +277,7 @@ class UncertaintyEstimator:
                 ci_lower_orient = ci_lower[orient_mask, :]
                 ci_upper_orient = ci_upper[orient_mask, :]
 
-                # Count values within confidence intervals for the current orientation, summing over sources
+                # Count values within credible intervals for the current orientation, summing over sources
                 if x_orient.size > 0: # Ensure there are sources for this orientation
                      count_within_ci[i, :] = np.sum((x_orient >= ci_lower_orient) & (x_orient <= ci_upper_orient), axis=0)
                 # else: counts remain zero, which is correct
@@ -286,7 +287,7 @@ class UncertaintyEstimator:
     
         return count_within_ci
 
-    def get_confidence_intervals_data(
+    def get_credible_intervals_data(
         self,
         x : np.ndarray,
         x_hat: np.ndarray,
@@ -294,29 +295,29 @@ class UncertaintyEstimator:
         orientation_type: str
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Computes confidence intervals and counts of true values within those intervals.
+        Computes credible intervals and counts of true values within those intervals.
 
         Parameters:
         ----------
         x : np.ndarray
             Ground truth source activity.
-            Shape (n_sources, n_times).
+            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
         x_hat : np.ndarray
-            Estimated source activity (posterior mean).
-            Shape (n_sources, n_times).
+            Estimated source activity (posterior mean) averaged across time.
+            Shape (n_sources, n_times). For averaged time, n_times=1.
         posterior_cov : np.ndarray
-            Posterior covariance matrix of shape (n_sources, n_sources).
+            Posterior covariance matrix of shape (n_sources, n_sources) scaled by n_times.
         orientation_type : str
             Orientation type, either 'free' or 'fixed'.
 
         Returns:
         --------
         tuple
-            - ci_lower_stacked (np.ndarray): Lower bounds of confidence intervals for each confidence level.
+            - ci_lower_stacked (np.ndarray): Lower bounds of credible intervals for each confidence level.
                 Shape (n_confidence_levels, n_active_components, n_times).
-            - ci_upper_stacked (np.ndarray): Upper bounds of confidence intervals for each confidence level.
+            - ci_upper_stacked (np.ndarray): Upper bounds of credible intervals for each confidence level.
                 Shape (n_confidence_levels, n_active_components, n_times).  
-            - counts_array (np.ndarray): Counts of true values within confidence intervals for each confidence level.
+            - counts_array (np.ndarray): Counts of true values within credible intervals for each confidence level.
                 Shape (n_confidence_levels, 3, n_times) for free orientation,
                 or (n_confidence_levels, 1, n_times) for fixed orientation.
         """    
@@ -366,11 +367,11 @@ class UncertaintyEstimator:
         all_ci_upper_list = []
         collected_counts_within_ci_list = []
 
-        self.logger.info("Computing confidence intervals and hit counts for each confidence level.")
+        self.logger.info("Computing credible intervals and hit counts for each confidence level.")
         for cl_idx, confidence_level_val in enumerate(self.confidence_levels):
             self.logger.info(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
 
-            ci_lower, ci_upper = self._compute_confidence_intervals(
+            ci_lower, ci_upper = self._compute_credible_intervals(
                 mean=x_hat, 
                 std_dev=std_dev, 
                 confidence_level=confidence_level_val
@@ -398,10 +399,10 @@ class UncertaintyEstimator:
         ci_upper_stacked = np.stack(all_ci_upper_list, axis=0)
 
         self.logger.debug(f"Shapes returned: counts_array={counts_array.shape}, ci_lower_stacked={ci_lower_stacked.shape}, ci_upper_stacked={ci_upper_stacked.shape}")
-        
-        time_idx = 0
-        total_matched_sources = x.shape[0]
-        empirical_coverage = (counts_array / total_matched_sources)[:, 0, time_idx]
+
+        time_idx = 0  # For averaged time, only one time point exists
+        # note that counts_array is the sum values within CI, so we need to divide by number of sources to get empirical coverage
+        empirical_coverage = (counts_array / x_hat.shape[0])[:, 0, time_idx]
 
         return ci_lower_stacked, ci_upper_stacked, counts_array, empirical_coverage
 

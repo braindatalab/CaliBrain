@@ -1121,7 +1121,7 @@ class Visualizer:
             orientation_type=orientation_type,
             sharey=False,
             save_path="uncertainty_analysis",
-            file_name="confidence_intervals",
+            file_name="credible_intervals",
             show=False,
             figsize=(18, 13)
         )
@@ -1140,7 +1140,7 @@ class Visualizer:
             orientation_type=orientation_type,
             sharey=True,
             save_path="uncertainty_analysis",
-            file_name="confidence_intervals_shared-Yaxis",
+            file_name="credible_intervals_shared-Yaxis",
             show=False,
             figsize=(18, 13)
         )
@@ -1150,7 +1150,7 @@ class Visualizer:
             confidence_levels=confidence_levels,
             empirical_coverage=empirical_coverages['active_indices'],
             result=result,
-            which_legend="active_indices", # or "all_sources"
+            which_legend="all_sources", # or "active_indices"
             file_name='calibration_curve_active_sources',
             save_path='uncertainty_analysis',
             show=False,
