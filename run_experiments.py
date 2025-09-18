@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta
 from calibrain.utils import get_data_path
 
 def main():
@@ -70,7 +70,7 @@ def main():
         logger=logger,
     )
 
-    confidence_levels = np.arange(0.0, 1.1, 0.1) # 11 levels: [0.0, 0.1, ..., 1.0]
+    confidence_levels = np.append(np.arange(0.0, 1.0, 0.1), 0.99)  # [0.0, 0.1, ..., 0.9, 0.99]
     
     uncertainty_estimator = UncertaintyEstimator(
         confidence_levels=confidence_levels,
@@ -106,10 +106,10 @@ def main():
     }
     
     estimators = [
-        # (gamma_map, gamma_map_params, data_param_grid_meg),
+        (sflex_gamma_map, gamma_map_params, data_param_grid_meg),
+        (sflex_gamma_map, gamma_map_params, data_param_grid_eeg),
         (eloreta, eloreta_params, data_param_grid_meg),
-        # (gamma_map, gamma_map_params, data_param_grid_eeg),
-        # (eloreta, eloreta_params, data_param_grid_eeg),
+        (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
     metrics = [

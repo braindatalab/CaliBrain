@@ -244,6 +244,7 @@ class Benchmark:
                 source_estimator = SourceEstimator(
                     solver=self.solver,
                     solver_params=solver_params,
+                    subject=data_params['subject'],
                     n_orient=n_orient,
                     logger=self.logger
                 )            
@@ -320,7 +321,7 @@ class Benchmark:
                 #     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
                     
                 # Compute confidence intervals
-                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverage_active = \
+                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages = \
                     self.uncertainty_estimator.get_credible_intervals_data(
                         x=x_one_trial_avg_time,
                         x_hat=x_hat_one_trial_avg_time,
@@ -333,8 +334,7 @@ class Benchmark:
                 # -------------------------------------------------------------       
                 self.metric_evaluator.evaluate_and_store_metrics(
                     current_results_dict=this_result,
-                    metric_suffix="_active_indices",
-                    empirical_coverage=empirical_coverage_active,
+                    empirical_coverages=empirical_coverages,
                     cov=posterior_cov_avg_time,  #_matched? TODO
                     x=x_one_trial_avg_time,
                     x_hat=x_hat_one_trial_avg_time,
@@ -366,10 +366,7 @@ class Benchmark:
                     source_units=source_units,
                     sensor_units=sensor_units,
                     confidence_levels=self.uncertainty_estimator.confidence_levels,
-                    empirical_coverages={
-                        # 'all_sources': all_sources_empirical_coverage,
-                        'active_indices': empirical_coverage_active
-                    },
+                    empirical_coverages=empirical_coverages,
                     ci_lower=ci_lower_active,
                     ci_upper=ci_upper_active,
                     orientation_type=orientation_type,

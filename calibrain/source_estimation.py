@@ -1,14 +1,18 @@
 import numpy as np
-import pandas as pd
-from scipy import linalg
 import warnings
+from matplotlib import cm
+
 from sklearn.base import BaseEstimator, RegressorMixin
 from scipy import linalg
-
-from functools import partial
-from mne.utils import sqrtm_sym, eigh
+from scipy.spatial.distance import pdist, squareform
+from scipy.sparse import coo_matrix, kron, identity
 from scipy.stats import chi2, norm
-from matplotlib import cm
+from functools import partial
+import mne
+from mne.utils import sqrtm_sym, eigh
+from mne.io.constants import FIFF
+
+from calibrain.utils import get_data_path
 
 # ===================
 # GAMMA-MAP Functions
@@ -27,6 +31,7 @@ def gamma_map(
     init_gamma=None,
     verbose=True,
     logger=None,
+    **kwargs
 ):
     # # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
     # if noise_type == "oracle":
@@ -239,6 +244,144 @@ def _gamma_map_opt(
     # posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)
     
     return x_active, active_indices, posterior_cov
+
+
+# ==================
+# sFlex Functions
+# ==================
+
+def compute_B(src_coords, sigma, threshold_factor=3.0):
+    """
+    For a sparse basis field expansion we are using radial basis functions;
+    spherical Gaussian basis on R^3 (see formula (6) in [1]).
+    B[i,j] = (2πσ^2)^(-3/2) * exp(-||X[i]-X[j]||^2 / (2σ^2)),
+    truncated to radius r = threshold_factor * sigma for sparsity.
+
+    [1] Haufe et al., NIPS 2008.
+    """
+    src_coords = np.asarray(src_coords, float)
+    N, D = src_coords.shape                     # D should be 3 (x,y,z per location)
+    assert D == 3, "src_coords must have shape (N,3) with 3D coordinates."
+
+    dist2 = squareform(pdist(src_coords, 'sqeuclidean'))   # pairwise squared Euclidean distances (N×N)
+    r2 = (threshold_factor * sigma) ** 2          # squared cutoff radius
+    mask = dist2 <= r2                            # keep only neighbors within r
+    rows, cols = np.nonzero(mask)                 # COO indices for kept pairs
+
+    pref = (2.0 * np.pi * sigma**2) ** (-1.5)     # (2πσ²)^(-3/2) — 3D normalization factor
+    weights = pref * np.exp(-dist2[rows, cols] / (2.0 * sigma**2))  # Gaussian weights
+
+    B = coo_matrix((weights, (rows, cols)), shape=(N, N))  # build sparse matrix from triplets
+    B = (B + B.T) * 0.5                                 # symmetrize without doubling off-diagonals
+    return B.tocsr()                                     # CSR for fast algebra later
+
+
+def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
+    """
+    Unified s-FLEX + γ-MAP implementation for both fixed and free orientation cases.
+    
+    Parameters
+    ----------
+    L : ndarray
+        Lead field matrix.
+    y : ndarray
+        Sensor measurements.
+    sigma : float
+        Gaussian basis width parameter.
+    noise_var : float
+        Noise variance.
+    n_orient : int
+        Number of orientations (1 for fixed, 3 for free).
+    max_iter : int
+        Maximum number of iterations.
+    tol : float
+        Convergence tolerance.
+    update_mode : int
+        Gamma update mode.
+    init_gamma : ndarray or None
+        Initial gamma values.
+    verbose : bool
+        Whether to print progress.
+    logger : object
+        Logger object for progress reporting.
+    threshold_factor : float
+        Threshold factor for basis sparsity.
+        
+    Returns
+    -------
+    x_hat : ndarray
+        Estimated source activity.
+    active_indices : ndarray
+        Indices of active sources.
+    posterior_cov : ndarray
+        Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
+        whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
+    """
+    load_path = get_data_path() / f"{subject}-fwd.fif"
+    fwd = mne.read_forward_solution(load_path)
+    
+    if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
+        fwd = mne.convert_forward_solution(fwd, force_fixed=True)
+        
+    # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
+    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters
+
+    # Compute basis matrix: same for fixed-/free-orientation
+    B = compute_B(src_coords, sigma, threshold_factor)   # (N, N), sigma = 0.001 -- use small kernel width (in meters)
+    N = src_coords.shape[0]
+
+    # Handle orientation type
+    if n_orient == 1:
+        # Fixed-orientation case
+        assert L.shape[1] == N, f"L has {L.shape[1]} cols, expected N={N} for fixed-orientation."
+        G = L @ B        # (M × N)
+        group_size = 1
+    elif n_orient == 3:
+        # Free-orientation case
+        I3 = identity(3, format='csr')
+        B_big = kron(I3, B, format='csr')    # (3N, 3N) block-diag(B,B,B)
+        G = L @ B_big                        # (M, 3N)
+        group_size = 3
+    else:
+        raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
+  
+    # Run gamma-MAP on G
+    c_hat, active_indices, posterior_cov = gamma_map(
+        L=G,  # Use pseudo-lead field instead of original L
+        y=y,
+        noise_var=noise_var,
+        n_orient=group_size,  # Use appropriate group size: 1 (fixed) or 3 (free)
+        max_iter=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        init_gamma=init_gamma,
+        verbose=verbose,
+        logger=logger
+    )
+
+    # Reconstruct sources
+    # NOTE: gamma_map already returns FULL c_hat (zeros at inactive indices).
+    # NOTE: If n_orient==3, c_hat has shape (N, 3, T); flatten for linear ops.
+
+    if n_orient == 3 and c_hat.ndim == 3:  # Free-orientation
+        T = c_hat.shape[-1]
+        c_hat_vec = c_hat.reshape(3 * N, T)             # (3N, T)
+    else:                                  # Fixed-orientation
+        c_hat_vec = c_hat                                # (N, T)
+
+    # posterior mean and covaraince in source space (after B)
+    if n_orient == 1:  # fixed-orientation
+        x_hat = B @ c_hat_vec                            # (N, T)
+        # posterior covariance in source space using ACTIVE block only
+        posterior_cov = B[:, active_indices] @ posterior_cov @ B[:, active_indices].T
+    else:
+        x_hat = B_big @ c_hat_vec                        # (3N, T)
+        posterior_cov = B_big[:, active_indices] @ posterior_cov @ B_big[:, active_indices].T
+        # optional reshape back to (N, 3, T)
+        x_hat = x_hat.reshape(N, 3, -1)
+
+    return x_hat, active_indices, posterior_cov
+
 
 # ===================
 # eLORETA Functions
@@ -605,7 +748,7 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
     
     return K, Sigma
 
-def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None):
+def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
     """
     Compute the eLORETA solution for EEG/MEG inverse modeling.
     
@@ -660,19 +803,21 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None):
 
 
 class SourceEstimator(BaseEstimator, RegressorMixin):
-    def __init__(self, solver, solver_params=None, n_orient=1, logger=None):
+    def __init__(self, solver, solver_params=None, subject="fsaverage", n_orient=1, logger=None):
         """
         Initialize the SourceEstimator class.
 
         Parameters:
         - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
         - solver_params (dict, optional): Parameters for the solver function.
+        - subject (str, optional): Subject identifier for loading forward model.
         - logger (logging.Logger, optional): Logger instance for logging messages.
         - n_orient (int, optional): Number of orientations for the sources.
           Default is 1 (for fixed orientation) or 3 (for free orientation).
         """
         self.solver = solver
         self.solver_params = solver_params if solver_params else {}
+        self.subject = subject
         self.logger = logger
         # self.cov = cov
         self.n_orient = n_orient
@@ -714,7 +859,7 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
             y = self.y_
 
         # Apply the solver
-        self.logger.info("Estimating sources...")
-        x_hat, active_indices, posterior_cov = self.solver(self.L_, y, noise_var, logger=self.logger, n_orient=self.n_orient, **self.solver_params)
-        
+        self.logger.info(f"Estimating sources using {self.solver.__name__}...")
+        x_hat, active_indices, posterior_cov = self.solver(self.L_, y, noise_var, subject=self.subject, logger=self.logger, n_orient=self.n_orient, **self.solver_params)
+
         return x_hat, active_indices, posterior_cov
