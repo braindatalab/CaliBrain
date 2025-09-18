@@ -197,16 +197,17 @@ class SourceSimulator:
         erp_segment *= np.hanning(erp_duration_samples) 
         
         # Normalize the ERP segment by standard deviation (OLD APPROACH)
-        # std_erp_segment = np.std(erp_segment)
-        # if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
-        #     return waveform # Avoid division by zero; segment is flat
-        # erp_segment /= std_erp_segment # Normalize by its standard deviation
+        std_erp_segment = np.std(erp_segment)
+        if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
+            return waveform # Avoid division by zero; segment is flat
+        erp_segment /= std_erp_segment # Normalize by its standard deviation
         
         # Normalize the ERP segment by its peak amplitude
-        erp_peak = np.max(np.abs(erp_segment)) # Normalize by peak amplitude
-        if erp_peak < 1e-9: # Check if peak amplitude is effectively zero
-            return waveform # Avoid division by zero; segment is flat
-        erp_segment /= erp_peak
+        # erp_peak = np.max(np.abs(erp_segment)) # Normalize by peak amplitude
+        # if erp_peak < 1e-9: # Check if peak amplitude is effectively zero
+        #     return waveform # Avoid division by zero; segment is flat
+        # erp_segment /= erp_peak
+        
         erp_segment *= amplitude # Scale to desired amplitude
 
         # convert unit from nAm to Am
