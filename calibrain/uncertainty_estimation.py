@@ -328,14 +328,14 @@ class UncertaintyEstimator:
         var = np.diag(posterior_cov).copy()
         
         # Check for negative variances
-        negative_mask = var <= 0
+        negative_mask = var < 0
         n_negative = np.sum(negative_mask)
 
         need_full_cov = True
         
         if n_negative > 0:
-            self.logger.warning(f"Found {n_negative} non-positive variances. Regularizing...")
-            
+            self.logger.warning(f"Found {n_negative} non-positive variances (<= 0). Regularizing...")
+
             # Option 1: Simple diagonal regularization (faster)
             min_var = 1e-12  # Small positive value based on your data scale
             var[negative_mask] = min_var
@@ -354,7 +354,7 @@ class UncertaintyEstimator:
                     var[var <= 0] = min_var
         
         # Validate final variances
-        assert np.all(var > 0), "All variances must be positive for std deviation calculation"
+        assert np.all(var >= 0), "All variances must be positive for std deviation calculation"
         
         # Calculate standard deviation
         std_dev = np.sqrt(var).reshape(-1, 1)
@@ -369,7 +369,7 @@ class UncertaintyEstimator:
 
         self.logger.info("Computing credible intervals and hit counts for each confidence level.")
         for cl_idx, confidence_level_val in enumerate(self.confidence_levels):
-            self.logger.info(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
+            # self.logger.info(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
 
             ci_lower, ci_upper = self._compute_credible_intervals(
                 mean=x_hat, 

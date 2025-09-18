@@ -792,9 +792,9 @@ class Visualizer:
     def plot_calibration_curve(
         self,
         confidence_levels,
-        empirical_coverage,
+        empirical_coverages,
         result=None, # This dictionary is expected to contain the metrics
-        which_legend="active_indices", # or "all_sources"
+        # which_legend="active_indices", # or "all_sources"
         file_name='calibration_curve',
         save_path=None,
         show=True,
@@ -803,17 +803,17 @@ class Visualizer:
         Visualizes the calibration curve.
 
         Parameters:
-        - empirical_coverage (np.ndarray): 1D array of empirical coverage values,
-                                            corresponding to each confidence level in self.confidence_levels.
+        - empirical_coverages (ndarray): Array of empirical coverage values,
+                                        corresponding to each confidence level in self.confidence_levels.
         - results (dict): Dictionary possibly containing calibration metrics.
-        - which_legend (str): Specifies which set of metrics to display in the legend.
+        # - which_legend (str): Specifies which set of metrics to display in the legend.
         - file_name (str): Base name for the saved plot file.
         """            
         fig, ax = plt.subplots(figsize=(8, 6))
 
         # Plot the empirical coverage line and scatter points
-        ax.plot(confidence_levels, empirical_coverage, label="Empirical Coverage", marker='o', linestyle='-')
-        ax.scatter(confidence_levels, empirical_coverage, color='blue', s=50, zorder=5)
+        ax.plot(confidence_levels, empirical_coverages, label="Empirical Coverage", marker='o', linestyle='-')
+        ax.scatter(confidence_levels, empirical_coverages, color='blue', s=50, zorder=5)
 
         # Plot the ideal calibration line (diagonal)
         ax.plot(confidence_levels, confidence_levels, '--', label="Ideal Calibration", color='gray')
@@ -821,7 +821,7 @@ class Visualizer:
         # Fill the area between empirical and ideal calibration
         ax.fill_between(
             confidence_levels, 
-            empirical_coverage, 
+            empirical_coverages, 
             confidence_levels, 
             color='orange', 
             alpha=0.3, 
@@ -838,23 +838,14 @@ class Visualizer:
         handles, labels = ax.get_legend_handles_labels()
         
         # Determine which set of metrics to display
-        if which_legend == "active_indices":
-            metrics_to_display = {
-                'auc_deviation_active_indices': 'AUC area',
-                'max_positive_deviation_active_indices': 'Max Positive Dev.',
-                'max_negative_deviation_active_indices': 'Max Negative Dev.',
-                'max_absolute_deviation_active_indices': 'Max Abs Dev.',
-            }
-        elif which_legend == "all_sources":
-            metrics_to_display = {
-                'auc_deviation_all_sources': 'AUC area',
-                'max_positive_deviation_all_sources': 'Max Positive Dev.',
-                'max_negative_deviation_all_sources': 'Max Negative Dev.',
-                'max_absolute_deviation_all_sources': 'Max Abs Dev.',
-            }
-        else:
-            self.logger.error(f"Unknown which_legend value: {which_legend}. Expected 'active_indices' or 'all_sources'.")
-            return
+        metrics_to_display = {
+            "mean_posterior_std" : "mean posterior std",
+            "mean_calibration_error": "mean calibration error",
+            "max_underconfidence_deviation": "max underconfidence deviation",
+            "max_overconfidence_deviation": "max overconfidence deviation",
+            "mean_absolute_deviation": "mean absolute deviation",
+            "mean_signed_deviation": "mean signed deviation",
+        }
 
         if result:
             separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
@@ -868,9 +859,9 @@ class Visualizer:
                     handles.append(dummy_handle)
                     labels.append(f"{display_name}: {value:.3f}")
 
-        # Create the legend with potentially added metric values
-        ax.legend(handles, labels, loc='best', fontsize='small')
-        fig.tight_layout(rect=[0.05, 0.05, 1, 0.96]) 
+        # Place the legend outside the plot (right side)
+        ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize='small', borderaxespad=0.)
+        fig.tight_layout(rect=[0.05, 0.05, 0.8, 0.96]) 
 
         self._handle_figure_output(fig, file_name, save_path, show)
 
@@ -898,7 +889,7 @@ class Visualizer:
         source_units: str = FIFF.FIFF_UNIT_AM,
         sensor_units: str = FIFF.FIFF_UNIT_V,
         confidence_levels: np.ndarray = None,
-        empirical_coverages: dict = None,
+        empirical_coverages: np.ndarray = None,
         ci_lower: np.ndarray = None,
         ci_upper: np.ndarray = None,
         orientation_type: str = "fixed",
@@ -1148,10 +1139,9 @@ class Visualizer:
         # plot calibration curve - active sources
         self.plot_calibration_curve(
             confidence_levels=confidence_levels,
-            empirical_coverage=empirical_coverages['active_indices'],
+            empirical_coverages=empirical_coverages,
             result=result,
-            which_legend="all_sources", # or "active_indices"
-            file_name='calibration_curve_active_sources',
+            file_name='calibration_curve',
             save_path='uncertainty_analysis',
             show=False,
         )

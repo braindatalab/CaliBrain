@@ -27,13 +27,13 @@ class MetricEvaluator:
         self.logger = logger
 
     # Calibration curve metrics
-    def mean_calibration_error(self, empirical_coverage, **kwargs):
+    def mean_calibration_error(self, empirical_coverages, **kwargs):
         """Calculate the area under the curve (AUC) deviation, which measures the average calibration error.
         Parameters
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
             
         Returns
         -------
@@ -41,69 +41,69 @@ class MetricEvaluator:
             The AUC deviation value.
         """
         delta_c = np.diff(self.confidence_levels, prepend=self.confidence_levels[0])
-        abs_dev = np.abs(empirical_coverage - self.confidence_levels)
+        abs_dev = np.abs(empirical_coverages - self.confidence_levels)
         return np.sum(abs_dev * delta_c)
 
-    def max_underconfidence_deviation(self, empirical_coverage, **kwargs):
+    def max_underconfidence_deviation(self, empirical_coverages, **kwargs):
         """Calculate the maximum positive deviation from the confidence levels ().
         Parameters
         ----------
-        empirical_coverage : np.ndarray
+        empirical_coverages : np.ndarray
             Empirical coverage values.
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
         Returns
         -------
         float
             The maximum positive deviation value.
         """
-        deviation = empirical_coverage - self.confidence_levels
+        deviation = empirical_coverages - self.confidence_levels
         return np.max(deviation)
 
-    def max_overconfidence_deviation(self, empirical_coverage, **kwargs):
+    def max_overconfidence_deviation(self, empirical_coverages, **kwargs):
         """Calculate the maximum negative deviation from the confidence levels.
         Parameters
         ----------
-        empirical_coverage : np.ndarray
+        empirical_coverages : np.ndarray
             Empirical coverage values.
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
         Returns
         -------
         float
             The maximum negative deviation value.
         """
-        deviation = empirical_coverage - self.confidence_levels
+        deviation = empirical_coverages - self.confidence_levels
         return -np.min(deviation) #TODO: check whether we need the minus here!
 
-    def mean_absolute_deviation(self, empirical_coverage, **kwargs):
+    def mean_absolute_deviation(self, empirical_coverages, **kwargs):
         """Calculate the mean absolute deviation from the confidence levels.
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
         Returns
         -------
         float
             The maximum absolute deviation value.
         """
-        deviation = empirical_coverage - self.confidence_levels
+        deviation = empirical_coverages - self.confidence_levels
         return np.mean(np.abs(deviation))
 
-    def mean_signed_deviation(self, empirical_coverage, **kwargs):
+    def mean_signed_deviation(self, empirical_coverages, **kwargs):
         """Calculate the mean signed deviation from the confidence levels.
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
         Returns
         -------
         float
             The mean signed deviation value.
         """
-        deviation = empirical_coverage - self.confidence_levels
+        deviation = empirical_coverages - self.confidence_levels
         return np.mean(deviation)
 
     def mean_posterior_std(self, cov, **kwargs):
@@ -379,28 +379,21 @@ class MetricEvaluator:
         return accuracy_score
 
     # Evaluate and store metrics
-    def evaluate_and_store_metrics(self, current_results_dict : dict, metric_suffix="", **kwargs):
+    def evaluate_and_store_metrics(self, current_results_dict : dict, **kwargs):
         """Evaluate metrics and update the results dictionary.
 
         Parameters
         ----------
         current_results_dict : dict
             Dictionary to store the results of the metrics.
-        metric_suffix : str, optional
-            Suffix to add to metric keys (e.g., "_all_sources", "_active_indices").
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverage': np.ndarray, empirical coverage values.
+            - 'empirical_coverages': np.ndarray, empirical coverage values.
             - 'cov': np.ndarray, covariance matrix for uncertainty metrics.
         """
         if not self.metrics: # Handles if self.metrics is an empty list
-            self.logger.info(f"No metrics to call for suffix '{metric_suffix}' (self.metrics is empty).")
+            self.logger.info(f"No metrics to call' (self.metrics is empty).")
             return
-
-        self.logger.debug(
-            f"Evaluating metrics with suffix: '{metric_suffix}' from self.metrics: {self.metrics} "
-            f"for instance of {type(self).__name__}"
-        )
 
         for metric_name_str in self.metrics:
             metric_output = {} # Initialize for each metric
@@ -410,31 +403,31 @@ class MetricEvaluator:
                     method = getattr(self, metric_name_str)
                     
                     if callable(method):
-                        self.logger.debug(f"Calling metric method: {metric_name_str} with suffix '{metric_suffix}'")
+                        self.logger.debug(f"Calling metric method: {metric_name_str} with suffix")
 
                         # Call the metric method with kwargs, which should contain necessary parameters
                         result = method(**kwargs)
 
                         # Wrap scalar outputs into a dict
-                        metric_output = {f"{metric_name_str}{metric_suffix}": result}
+                        metric_output = {f"{metric_name_str}": result}
                     else:
                         self.logger.error(
                             f"Attribute '{metric_name_str}' found in {type(self).__name__} but it is not callable "
-                            f"(suffix: '{metric_suffix}'). Skipping."
+                            f"Skipping."
                         )
-                        metric_output = {f"{metric_name_str}{metric_suffix}_error": "Attribute not callable"}
+                        metric_output = {f"{metric_name_str}_error": "Attribute not callable"}
                 else:
                     self.logger.error(
                         f"Metric method '{metric_name_str}' not found in {type(self).__name__} "
-                        f"(suffix: '{metric_suffix}'). Skipping."
+                        f"Skipping."
                     )
-                    metric_output = {f"{metric_name_str}{metric_suffix}_error": "Method not found"}
-            
+                    metric_output = {f"{metric_name_str}_error": "Method not found"}
+
             except Exception as e:
                 self.logger.error(
-                    f"Unexpected error evaluating metric method {metric_name_str} (suffix: '{metric_suffix}') "
+                    f"Unexpected error evaluating metric method {metric_name_str} "
                     f"on '{type(self).__name__}': {e}", exc_info=True
                 )
-                metric_output = {f"{metric_name_str}{metric_suffix}_error": f"Execution error: {str(e)}"}
-            
+                metric_output = {f"{metric_name_str}_error": f"Execution error: {str(e)}"}
+
             current_results_dict.update(metric_output)
