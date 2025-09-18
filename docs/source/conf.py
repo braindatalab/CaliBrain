@@ -17,8 +17,8 @@ sys.path.insert(0, str(project_root))
 
 # ... Project information ...
 project = 'CaliBrain'
-copyright = '2025, Mohammad Orabe, Ismail Huseynov'
-author = 'Mohammad Orabe, Ismail Huseynov'
+copyright = '2025, Mohammad Orabe, Ismail Huseynov, Stefan Haufe'
+author = 'Mohammad Orabe, Ismail Huseynov, Stefan Haufe'
 print(f"DEBUG: calibrain.__version__ = {calibrain.__version__}")
 release = calibrain.__version__
 

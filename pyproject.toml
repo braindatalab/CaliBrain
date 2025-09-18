@@ -9,6 +9,7 @@ description = "Uncertainty estimation and calibration in EEG/MEG inverse source 
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
+    {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
 ]
 license = {text = "MIT"} # TODO
 readme = "README.md"
