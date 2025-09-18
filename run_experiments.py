@@ -50,7 +50,7 @@ def main():
         "sfreq": 250,
         "fmin": 1,
         "fmax": 5,
-        "amplitude": 50.0,
+        "amplitude": 12.0,
         "random_erp_timing": True,
         "erp_min_length": None,
     }
