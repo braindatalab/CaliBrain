@@ -803,67 +803,116 @@ class Visualizer:
         Visualizes the calibration curve.
 
         Parameters:
-        - empirical_coverages (ndarray): Array of empirical coverage values,
-                                        corresponding to each confidence level in self.confidence_levels.
+        - empirical_coverages (ndarray): Array of empirical coverage values, corresponding to each confidence level in self.confidence_levels.
         - results (dict): Dictionary possibly containing calibration metrics.
         # - which_legend (str): Specifies which set of metrics to display in the legend.
         - file_name (str): Base name for the saved plot file.
         """            
-        fig, ax = plt.subplots(figsize=(8, 6))
+        from scipy.interpolate import make_interp_spline
+        smooth_x = np.linspace(0.0, 1.0, 300)
+        spline = make_interp_spline(confidence_levels, empirical_coverages, k=2)
+        smooth_y = spline(smooth_x)
 
-        # Plot the empirical coverage line and scatter points
-        ax.plot(confidence_levels, empirical_coverages, label="Empirical Coverage", marker='o', linestyle='-')
-        ax.scatter(confidence_levels, empirical_coverages, color='blue', s=50, zorder=5)
-
-        # Plot the ideal calibration line (diagonal)
-        ax.plot(confidence_levels, confidence_levels, '--', label="Ideal Calibration", color='gray')
-
-        # Fill the area between empirical and ideal calibration
-        ax.fill_between(
-            confidence_levels, 
-            empirical_coverages, 
-            confidence_levels, 
-            color='orange', 
-            alpha=0.3, 
-            label="AUC Deviation Area"
-        )
-        
-        ax.set_xlabel("Nominal Confidence Level")
-        ax.set_ylabel("Empirical Coverage")
-        ax.set_title(file_name.replace('_', ' ').title())
-        ax.grid(True, linestyle=':', alpha=0.7)
+        fig, ax = plt.subplots(figsize=(7, 6))
+        ax.plot(smooth_x, smooth_y, label='Calibration Curve', color='blue')
+        ax.plot([0, 1], [0, 1], 'r--', label='Perfect Calibration')
+        ax.set_xlabel('Nominal Confidence Level')
+        ax.set_ylabel('Empirical Coverage')
+        ax.set_title('Calibration Curve')
+        ax.grid(True)
+        ax.legend()
+        fig.tight_layout()
         ax.set_aspect('equal', adjustable='box')
 
-        # Prepare legend: start with existing plot elements
-        handles, labels = ax.get_legend_handles_labels()
-        
-        # Determine which set of metrics to display
-        metrics_to_display = {
-            "mean_posterior_std" : "mean posterior std",
-            "mean_calibration_error": "mean calibration error",
-            "max_underconfidence_deviation": "max underconfidence deviation",
-            "max_overconfidence_deviation": "max overconfidence deviation",
-            "mean_absolute_deviation": "mean absolute deviation",
-            "mean_signed_deviation": "mean signed deviation",
-        }
-
-        if result:
-            separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
-            handles.append(separator_handle)
-            labels.append(separator_handle.get_label())
-
-            for key, display_name in metrics_to_display.items():
-                if key in result and result[key] is not None:
-                    value = result[key]
-                    dummy_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label=f"{display_name}: {value:.3f}")
-                    handles.append(dummy_handle)
-                    labels.append(f"{display_name}: {value:.3f}")
-
-        # Place the legend outside the plot (right side)
-        ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize='small', borderaxespad=0.)
-        fig.tight_layout(rect=[0.05, 0.05, 0.8, 0.96]) 
-
+        # if show:
+        #     fig.show()
         self._handle_figure_output(fig, file_name, save_path, show)
+        
+        # fig, ax = plt.subplots(figsize=(8, 6))
+
+        # # Plot the empirical coverage line and scatter points
+        # ax.plot(confidence_levels, empirical_coverages, label="Empirical Coverage", marker='o', linestyle='-')
+        # ax.scatter(confidence_levels, empirical_coverages, color='blue', s=50, zorder=5)
+
+        # # Plot the ideal calibration line (diagonal)
+        # ax.plot(confidence_levels, confidence_levels, '--', label="Ideal Calibration", color='gray')
+
+        # # Fill the area between empirical and ideal calibration
+        # ax.fill_between(
+        #     confidence_levels, 
+        #     empirical_coverages, 
+        #     confidence_levels, 
+        #     color='orange', 
+        #     alpha=0.3, 
+        #     label="AUC Deviation Area"
+        # )
+        
+        # ax.set_xlabel("Nominal Confidence Level")
+        # ax.set_ylabel("Empirical Coverage")
+        # ax.set_title(file_name.replace('_', ' ').title())
+        # ax.grid(True, linestyle=':', alpha=0.7)
+        # ax.set_aspect('equal', adjustable='box')
+
+        # # Prepare legend: start with existing plot elements
+        # handles, labels = ax.get_legend_handles_labels()
+        
+        # # Determine which set of metrics to display
+        # metrics_to_display = {
+        #     "mean_posterior_std" : "mean posterior std",
+        #     "mean_calibration_error": "mean calibration error",
+        #     "max_underconfidence_deviation": "max underconfidence deviation",
+        #     "max_overconfidence_deviation": "max overconfidence deviation",
+        #     "mean_absolute_deviation": "mean absolute deviation",
+        #     "mean_signed_deviation": "mean signed deviation",
+        # }
+
+        # if result:
+        #     separator_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label="---------------------------")
+        #     handles.append(separator_handle)
+        #     labels.append(separator_handle.get_label())
+
+        #     for key, display_name in metrics_to_display.items():
+        #         if key in result and result[key] is not None:
+        #             value = result[key]
+        #             dummy_handle = mlines.Line2D([], [], color='none', marker='', linestyle='None', label=f"{display_name}: {value:.3f}")
+        #             handles.append(dummy_handle)
+        #             labels.append(f"{display_name}: {value:.3f}")
+
+        # # Place the legend outside the plot (right side)
+        # ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize='small', borderaxespad=0.)
+        # fig.tight_layout(rect=[0.05, 0.05, 0.8, 0.96]) 
+
+        # self._handle_figure_output(fig, file_name, save_path, show)
+
+
+
+    # def plot_calibration_curve(confidence_levels, empirical_coverages, title="Calibration Curve"):
+    #     """
+    #     Plot the calibration curve comparing nominal vs. empirical confidence.
+
+    #     Parameters
+    #     ----------
+    #     nominal_confidences : ndarray
+    #         X-axis values (nominal confidence levels).
+    #     empirical_coverages : ndarray
+    #         Y-axis values (empirical coverages).
+    #     title : str
+    #         Title of the plot.
+    #     """
+    #     smooth_x = np.linspace(0.00, 0.99, 300)
+    #     spline = make_interp_spline(confidence_levels, empirical_coverages, k=2)
+    #     smooth_y = spline(smooth_x)
+
+    #     plt.figure(figsize=(7, 6))
+    #     plt.plot(smooth_x, smooth_y, label='Calibration Curve', color='blue')
+    #     plt.plot([0, 1], [0, 1], 'r--', label='Perfect Calibration')
+    #     plt.xlabel('Nominal Confidence Level')
+    #     plt.ylabel('Empirical Coverage')
+    #     plt.title(title)
+    #     plt.grid(True)
+    #     plt.legend()
+    #     plt.tight_layout()
+    #     plt.show()
 
 
     # ------------------------------------------------
