@@ -802,6 +802,293 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
     return x, active_indices, Sigma  # Return source estimates, all active indices, and posterior covariance
 
 
+# ==================
+# BMN Functions
+# ==================
+
+def compute_W(L, n_orient=1, beta=1e-6):
+    """
+    Compute sLORETA-type normalization matrix [1] W (N x N or 3N x 3N), block-diagonal.
+     
+    [1]. R.D. Pascual-Marqui. Standardized low-resolution brain electromagnetic tomography (sLORETA):
+         technical details. Meth. Find. Exp. Clin. Pharmacol., 24(1):5–12, 2002.
+    
+    Parameters
+    ----------
+    L : array, shape (M, N) or (M, 3N)
+        Lead-field matrix.
+    n_orient : int
+        Number of orientations (1 for fixed, 3 for free).
+    beta : float
+        Regularization parameter for numerical stability.
+        
+    Returns
+    -------
+    W : array
+        sLORETA-type normalization matrix.
+    """
+    M, dim = L.shape
+    
+    if n_orient == 1:
+        # Fixed-orientation case: W will be N x N diagonal
+        N = dim
+        
+        # Regularized inversion of L L^T
+        LLt = L @ L.T
+        LLt_reg = LLt + beta * np.eye(M)
+        LLt_inv = inv(LLt_reg)
+        
+        # Compute S_hat = L^T (L L^T)^{-1} L
+        S_hat = L.T @ LLt_inv @ L
+        
+        # For fixed orientation, extract diagonal elements (scalars)
+        W_diag = []
+        for n in range(N):
+            S_n = S_hat[n, n]  # Scalar for fixed-orientation case
+            W_n = 1.0 / np.sqrt(max(S_n, 1e-12))  # Avoid division by zero
+            W_diag.append(W_n)
+        
+        # Create diagonal matrix
+        W = np.diag(W_diag)
+        
+    elif n_orient == 3:
+        # Free-orientation case: W will be 3N x 3N block-diagonal
+        if dim % 3 != 0:
+            raise ValueError("Lead-field L must have 3N columns for free-orientation.")
+        N = dim // 3
+        
+        # Regularized inversion of L L^T
+        LLt = L @ L.T
+        LLt_reg = LLt + beta * np.eye(M)
+        LLt_inv = inv(LLt_reg)
+        
+        # Compute S_hat = L^T (L L^T)^{-1} L
+        S_hat = L.T @ LLt_inv @ L
+        
+        # Extract 3x3 blocks and compute W_n = inv(sqrtm(S_n))
+        W_blocks = []
+        for n in range(N):
+            S_n = S_hat[3*n:3*n+3, 3*n:3*n+3]
+            # Ensure S_n is positive definite
+            S_n = (S_n + S_n.T) / 2  # Symmetrize
+            eigenvals, eigenvecs = np.linalg.eigh(S_n)
+            eigenvals = np.maximum(eigenvals, 1e-12)
+            S_n_regularized = eigenvecs @ np.diag(eigenvals) @ eigenvecs.T
+            
+            W_n = inv(sqrtm(S_n_regularized))
+            W_blocks.append(W_n)
+        
+        # Create block-diagonal matrix
+        W = block_diag(W_blocks).toarray()
+        
+    else:
+        raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
+    
+    return W
+
+def BMN_opt(y, L, alpha, maxit=1000, tol=1e-6, update_mode=2, init_gamma=None, verbose=True):
+    """
+    Hierarchical Bayesian Minimum Norm (BMN) optimization with a common source variance (scalar gamma)
+    for all sources.
+    
+    Parameters
+    ----------
+    y : array, shape=(M, T)
+        Observation data: M/EEG data
+    L : array, shape=(M, N)
+        Forward operator (lead field or gain matrix)
+    alpha : float
+        Regularization parameter (noise variance).
+    maxit : int, optional
+        Maximum number of iterations. Default is 10000.
+    tol : float, optional
+        Tolerance for convergence. Default is 1e-6.
+    update_mode : int, optional
+        Update mode for common gamma:
+          - 1: MacKay update.
+          - 2: Convex bounding update.
+          - 3: EM (expectation maximization) update.
+    init_gamma : float, optional
+        Initial scalar gamma value. If None, it is initialized to 1.
+    verbose : bool, optional
+        If True, logs iteration details.
+    
+    Returns
+    -------
+    x_hat : array, shape=(N, T)
+        Estimated source time courses.
+    posterior_cov : array, shape=(N, N)
+        Posterior covariance of the source estimates.
+    gamma : float
+        A scalar gamma value for all sources.
+    """
+    L = L.copy()
+    y = y.copy()
+    
+    # Initialize gamma as SCALAR
+    if init_gamma is None:
+        gamma = 1.0
+    else:
+        gamma = float(init_gamma)
+
+    eps = np.finfo(float).eps
+    
+    # Ensure y is 2D
+    if y.ndim == 1:
+        y = y[:, np.newaxis]
+    
+    M, T = y.shape
+    N = L.shape[1]
+    
+    # Normalization: use normalized variables
+    y_normalize_constant = np.linalg.norm(y, "fro")**2
+    y = y / np.sqrt(y_normalize_constant)
+    alpha = alpha / y_normalize_constant
+    L_normalize_constant = np.linalg.norm(L, ord=np.inf)
+    L = L / L_normalize_constant
+
+    for itno in range(maxit):
+        gamma_old = gamma
+        
+        # Model covariance
+        model_cov = gamma * (L @ L.T) + np.eye(M) * alpha
+        
+        # SVD inverse
+        U, S, _ = np.linalg.svd(model_cov, full_matrices=False)
+        S_inv = 1.0 / (S + eps)
+        model_cov_inv = U @ np.diag(S_inv) @ U.T
+        
+        # Posterior computations
+        A = L.T @ model_cov_inv @ y
+        x_est = gamma * A
+        
+        # Posterior covariance
+        posterior_cov = gamma * np.eye(N) - gamma**2 * (L.T @ model_cov_inv @ L)
+        
+        # BMN uses scalar gamma updates
+        if update_mode == 1:
+            # MacKay update - average over time and all sources
+            numer = gamma**2 * np.mean(A**2)
+            denom = gamma * np.mean(np.sum(L * (model_cov_inv @ L), axis=0))
+            new_gamma = float(numer / max(denom, eps))
+            
+        elif update_mode == 2:
+            # Convex bounding update - average over time andd all sources
+            numer = gamma**2 * np.mean(A**2)
+            denom = np.mean(np.sum(L * (model_cov_inv @ L), axis=0))
+            new_gamma = float(np.sqrt(numer / max(denom, eps)))
+            
+        elif update_mode == 3:
+            # EM update - proper scalar formulation
+            # gamma**2 * np.mean(A**2) = np.sum(x_est**2) / N*T
+            data_term = np.sum(x_est**2) / T  # average over time and sources
+            trace_term = np.trace(posterior_cov)
+            new_gamma = float((data_term + trace_term) / N)
+            
+        else:
+            raise ValueError("Invalid update_mode. Use 1, 2, or 3.")
+        
+        # Ensure gamma remains scalar
+        gamma = float(new_gamma)
+        
+        # Convergence check
+        err = np.abs(gamma - gamma_old) / (gamma_old + eps)
+        if verbose:
+            print(f"Iteration {itno}: gamma = {gamma:.6e}, error = {err:.3e}")
+        if err < tol:
+            break
+
+    # Undo normalization
+    n_const = np.sqrt(y_normalize_constant) / L_normalize_constant
+    x_hat = n_const * x_est
+    posterior_cov = n_const**2 * posterior_cov
+
+    return x_hat, posterior_cov, gamma
+
+def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
+        update_mode=2, init_gamma=None, verbose=True, normalization=False, **kwargs):
+    """
+    Hierarchical Bayesian Minimum Norm (BMN) source reconstruction with a common source variance.
+    
+    Parameters
+    ----------
+    L : array, shape=(M, N)
+        Forward operator.
+    y : array, shape=(M, T)
+        Observation data.
+    noise_var : float, optional
+        Noise variance. Default is 1.0.
+    alpha : float, optional
+        Initial noise variance. Default is 0.2.
+    n_orient : int, optional
+        Number of orientations per source (1 or 3). Default is 1.
+    max_iter : int, optional
+        Maximum number of iterations. Default is 1000.
+    tol : float, optional
+        Tolerance for convergence. Default is 1e-15.
+    update_mode : int, optional
+        Update mode for common gamma (1 for Mackay update, 2 for convex bounding, 3 for EM update). Default is 2.
+    init_gamma : float, optional
+        Initial common gamma value. If None, it is set to 1.
+    verbose : bool, optional
+        If True, logs iteration details. Default is True.
+    
+    Returns
+    -------
+    x_hat : array, shape=(N, T) or (N, n_orient, T)
+        Estimated source time courses.
+    posterior_cov : array
+        Posterior covariance matrix of the estimates.
+    gamma : float
+        Final common (scalar) gamma value.
+    """
+    # Ensure y is 2D
+    if y.ndim == 1:
+        y = y[:, np.newaxis]
+    
+    # Handle noise variance
+    noise_cov = noise_var * np.eye(L.shape[0])
+    
+    # Apply sLORETA-type normalization if requested
+    # If LLt is ill-conditioned, beta=0 can make inv(LLt) unstable.
+    # In that case, use a tiny beta (e.g., 1e-6) for stability.
+    if normalization: # sLORETA-type normalization matrix
+        W = compute_W(L, n_orient=n_orient, beta=0) # or beta=beta
+        L_normal = L @ W
+    else:
+        W = np.eye(L.shape[1])  # Identity matrix
+        L_normal = L
+    
+    # Compute whitener matrix
+    whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    
+    # Whiten the data and forward operator
+    y_white = whitener @ y
+    L_white = whitener @ L_normal
+    
+    # Run BMN on whitened data
+    x_hat_normal, posterior_cov_normal, gamma = BMN_opt(
+        y_white, L_white, alpha=1.0, maxit=max_iter, tol=tol,
+        update_mode=update_mode, init_gamma=init_gamma, verbose=verbose
+    ) #alpha=1.0 on whitened data
+    
+    # Transform back to original source space
+    x_hat = W @ x_hat_normal
+    posterior_cov = W @ posterior_cov_normal @ W.T
+    
+    # Reshape for free orientation case
+    if n_orient > 1:
+        N_total = L.shape[1]
+        N_sources = N_total // n_orient
+        x_hat = x_hat.reshape((N_sources, n_orient, -1))
+    # TODO: # All sources are active in BMN
+    active_indices = np.arange(posterior_cov.shape[0])
+    
+    # return x_hat, posterior_cov, gamma
+    return x_hat, active_indices, posterior_cov
+
+
+
 class SourceEstimator(BaseEstimator, RegressorMixin):
     def __init__(self, solver, solver_params=None, subject="fsaverage", n_orient=1, logger=None):
         """
