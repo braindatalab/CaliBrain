@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN
 from calibrain.utils import get_data_path
 
 def main():
@@ -97,19 +97,21 @@ def main():
     }
         
     gamma_map_params = {
-        "init_gamma": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)   
-        # "noise_type": ["oracle"], # "baseline", "oracle", "joint_learning", "CV"
+        "init_gamma": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)
     }
     
-    eloreta_params = {
-        # "noise_type": ["oracle"],
+    BMN_params = {
+        "max_iter": [10]
     }
     
     estimators = [
-        (sflex_gamma_map, gamma_map_params, data_param_grid_meg),
-        (sflex_gamma_map, gamma_map_params, data_param_grid_eeg),
-        (eloreta, eloreta_params, data_param_grid_meg),
-        (eloreta, eloreta_params, data_param_grid_eeg),
+        (BMN, BMN_params, data_param_grid_meg),
+        (sflex_gamma_map, {}, data_param_grid_meg),
+        (eloreta, {}, data_param_grid_meg),
+        (gamma_map, gamma_map_params, data_param_grid_meg),
+        # (sflex_gamma_map, {}, data_param_grid_eeg),
+        # (eloreta, eloreta_params, data_param_grid_eeg),
+        # (gamma_map, gamma_map_params, data_param_grid_eeg),
     ]
 
     metrics = [
