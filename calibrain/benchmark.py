@@ -18,7 +18,7 @@ from scipy.stats import chi2
 from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta
 # from calibrain.leadfield_builder import LeadfieldBuilder
-from calibrain.utils import inspect_object
+from calibrain.utils import inspect_object, get_data_path
 from mne.io.constants import FIFF
 
 class Benchmark:
@@ -241,10 +241,10 @@ class Benchmark:
                     noise_var_one_trial = np.mean(np.std(y_noisy_one_trial, axis=1) ** 2)
 
                 self.logger.info("Fitting source estimator...")
+                solver_params['fwd_path'] = get_data_path() / f"{data_params['subject']}-fwd.fif"
                 source_estimator = SourceEstimator(
                     solver=self.solver,
                     solver_params=solver_params,
-                    subject=data_params['subject'],
                     n_orient=n_orient,
                     logger=self.logger
                 )            

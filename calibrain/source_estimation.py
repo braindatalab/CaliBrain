@@ -276,7 +276,7 @@ def compute_B(src_coords, sigma, threshold_factor=3.0):
     return B.tocsr()                                     # CSR for fast algebra later
 
 
-def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
+def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
     """
     Unified s-FLEX + γ-MAP implementation for both fixed and free orientation cases.
     
@@ -290,6 +290,8 @@ def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=
         Gaussian basis width parameter.
     noise_var : float
         Noise variance.
+    fwd_path : str or Path
+        Path to the forward solution file.
     n_orient : int
         Number of orientations (1 for fixed, 3 for free).
     max_iter : int
@@ -317,8 +319,7 @@ def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=
         Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
         whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
     """
-    load_path = get_data_path() / f"{subject}-fwd.fif"
-    fwd = mne.read_forward_solution(load_path)
+    fwd = mne.read_forward_solution(fwd_path)
     
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
@@ -1090,23 +1091,20 @@ def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
 
 
 class SourceEstimator(BaseEstimator, RegressorMixin):
-    def __init__(self, solver, solver_params=None, subject="fsaverage", n_orient=1, logger=None):
+    def __init__(self, solver, solver_params=None, n_orient=1, logger=None):
         """
         Initialize the SourceEstimator class.
 
         Parameters:
         - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
         - solver_params (dict, optional): Parameters for the solver function.
-        - subject (str, optional): Subject identifier for loading forward model.
         - logger (logging.Logger, optional): Logger instance for logging messages.
         - n_orient (int, optional): Number of orientations for the sources.
           Default is 1 (for fixed orientation) or 3 (for free orientation).
         """
         self.solver = solver
         self.solver_params = solver_params if solver_params else {}
-        self.subject = subject
         self.logger = logger
-        # self.cov = cov
         self.n_orient = n_orient
 
     def fit(self, L, y):
@@ -1147,6 +1145,6 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
 
         # Apply the solver
         self.logger.info(f"Estimating sources using {self.solver.__name__}...")
-        x_hat, active_indices, posterior_cov = self.solver(self.L_, y, noise_var, subject=self.subject, logger=self.logger, n_orient=self.n_orient, **self.solver_params)
+        x_hat, active_indices, posterior_cov = self.solver(self.L_, y, noise_var, logger=self.logger, n_orient=self.n_orient, **self.solver_params)
 
         return x_hat, active_indices, posterior_cov

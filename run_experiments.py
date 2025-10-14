@@ -104,9 +104,13 @@ def main():
         "max_iter": [10]
     }
     
+    sflex_gamma_map_params = {
+        # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
+    }
+    
     estimators = [
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg),
         (BMN, BMN_params, data_param_grid_meg),
-        (sflex_gamma_map, {}, data_param_grid_meg),
         (eloreta, {}, data_param_grid_meg),
         (gamma_map, gamma_map_params, data_param_grid_meg),
         # (sflex_gamma_map, {}, data_param_grid_eeg),
