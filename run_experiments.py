@@ -80,20 +80,20 @@ def main():
     # Define parameter grids for different data types
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [1, 10, 50],
+        "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.4, 0.6, 0.99],
+        "alpha_SNR": [0.5, 0.99],
         "gauss_noise_var": [1.0],
-        "noise_type": ["baseline", "oracle"], 
-        }
+        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv"],
+    }
     
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
         "nnz": [1, 10, 50],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.4, 0.6, 0.99],
+        "alpha_SNR": [0.0, 0.5, 0.99],
         "gauss_noise_var": [1.0],
-        "noise_type": ["oracle"],
+        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv"],
     }
         
     gamma_map_params = {
@@ -105,10 +105,10 @@ def main():
     }
     
     estimators = [
-        (BMN, BMN_params, data_param_grid_meg),
         (sflex_gamma_map, {}, data_param_grid_meg),
         (eloreta, {}, data_param_grid_meg),
-        (gamma_map, gamma_map_params, data_param_grid_meg),
+        (BMN, BMN_params, data_param_grid_meg),
+        # (gamma_map, gamma_map_params, data_param_grid_meg),
         # (sflex_gamma_map, {}, data_param_grid_eeg),
         # (eloreta, eloreta_params, data_param_grid_eeg),
         # (gamma_map, gamma_map_params, data_param_grid_eeg),
