@@ -2,7 +2,8 @@ import numpy as np
 import warnings
 from matplotlib import cm
 
-from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.model_selection import GridSearchCV, check_cv
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
 from scipy import linalg
 from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import coo_matrix, kron, identity
@@ -22,7 +23,6 @@ def gamma_map(
     L,
     y,
     noise_var,
-    # noise_type="oracle",
     n_orient=1,
     max_iter=1000,
     tol=1e-15,
@@ -276,7 +276,7 @@ def compute_B(src_coords, sigma, threshold_factor=3.0):
     return B.tocsr()                                     # CSR for fast algebra later
 
 
-def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
+def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
     """
     Unified s-FLEX + γ-MAP implementation for both fixed and free orientation cases.
     
@@ -317,9 +317,9 @@ def sflex_gamma_map(L, y, noise_var, subject, sigma=0.001, n_orient=1, max_iter=
         Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
         whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
     """
-    load_path = get_data_path() / f"{subject}-fwd.fif"
-    fwd = mne.read_forward_solution(load_path)
-    
+
+    fwd = mne.read_forward_solution(fwd_path)
+
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
         
@@ -1088,25 +1088,31 @@ def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
     return x_hat, active_indices, posterior_cov
 
 
-
-class SourceEstimator(BaseEstimator, RegressorMixin):
-    def __init__(self, solver, solver_params=None, subject="fsaverage", n_orient=1, logger=None):
+# ==================
+# Main Solver Class
+# ==================
+class SourceEstimator(BaseEstimator, ClassifierMixin):
+    def __init__(self, solver, solver_params=None, noise_var=None, n_orient=1, logger=None):
         """
         Initialize the SourceEstimator class.
 
         Parameters:
         - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
         - solver_params (dict, optional): Parameters for the solver function.
-        - subject (str, optional): Subject identifier for loading forward model.
+        - noise_var (float, optional): Noise variance for the solver.
         - logger (logging.Logger, optional): Logger instance for logging messages.
         - n_orient (int, optional): Number of orientations for the sources.
           Default is 1 (for fixed orientation) or 3 (for free orientation).
         """
+        # Follow sklearn convention: __init__ should *only* assign the passed
+        # parameters to attributes without mutating them. Keep `solver_params`
+        # as provided (None is allowed) so that clone can reconstruct the
+        # estimator exactly. Downstream code should treat None as an empty
+        # dict when invoking the solver.
         self.solver = solver
-        self.solver_params = solver_params if solver_params else {}
-        self.subject = subject
+        self.solver_params = solver_params
+        self.noise_var = noise_var
         self.logger = logger
-        # self.cov = cov
         self.n_orient = n_orient
 
     def fit(self, L, y):
@@ -1123,30 +1129,217 @@ class SourceEstimator(BaseEstimator, RegressorMixin):
         self.logger.info("Fitting the solver...")
         self.L_ = L
         self.y_ = y
+        
         return self
 
-    def predict(self, y=None, noise_var=None):
+    def _get_coef(self, y):
         """
-        Predict the source activity given the observed signals.
+        Internal method to compute the source estimates.
 
         Parameters:
-        - y (np.ndarray, optional): Observed EEG/MEG signals of shape (n_sensors, n_times). If None, uses the signals provided during `fit`.
-        - noise_var (float): Noise variance.
+        - y (np.ndarray): Observed EEG/MEG signals of shape (n_sensors, n_times).
 
         Returns:
         - x_hat (np.ndarray): Estimated source activity of shape (n_sources, n_times).
         - active_indices (np.ndarray): Indices of active sources.
         - posterior_cov (np.ndarray): Posterior covariance matrix of estimated sources.
         """
-        if not hasattr(self, "L_") or not hasattr(self, "y_"):
-            raise ValueError("The estimator must be fitted with `fit(L, y)` before calling `predict()`.")
+        if not hasattr(self, "L_"):
+            raise ValueError("The estimator must be fitted with `fit(L, y)` before calling `_get_coef()`.")
         
-        # enable the use to pass y for inference
-        if y is None: 
-            y = self.y_
-
         # Apply the solver
         self.logger.info(f"Estimating sources using {self.solver.__name__}...")
-        x_hat, active_indices, posterior_cov = self.solver(self.L_, y, noise_var, subject=self.subject, logger=self.logger, n_orient=self.n_orient, **self.solver_params)
+        coef = self.solver(
+            L=self.L_,
+            y=y,
+            noise_var=self.noise_var,
+            n_orient=self.n_orient,
+            logger=self.logger,
+            **(self.solver_params or {})
+        )
 
-        return x_hat, active_indices, posterior_cov
+        return coef # x_hat, active_indices, posterior_cov
+    
+    def predict(self, y=None):
+        return self._get_coef(y)
+
+# ==================
+# Cross validation
+# ==================
+
+DEFAULT_ALPHA_GRID = np.logspace(0, -2, 20)[1:]
+
+def _logdet(A):
+    """Compute the logdet of a positive semidefinite matrix."""
+    from scipy import linalg
+
+    vals = linalg.eigvalsh(A)
+    # avoid negative (numerical errors) or zero (semi-definite matrix) values
+    tol = vals.max() * vals.size * np.finfo(np.float64).eps
+    vals = np.where(vals > tol, vals, tol)
+    return np.sum(np.log(vals))
+
+def logdet_bregman_div_distance_nll(y, Sigma_Y):
+    """Compute the log-det Bregman divergence between two matrices."""
+    Sigma_Y_inv = np.linalg.inv(Sigma_Y)
+    n_features, n_times = y.shape
+    Cov_y = y @ y.T / n_times
+    log_like = np.mean(np.sum((y.T @ Sigma_Y_inv) * y.T, axis=1))
+    log_like -= _logdet(Cov_y @ Sigma_Y_inv)
+    out = log_like - n_features
+    return out
+
+class SpatialSolver(SourceEstimator):
+    """Lightweight sklearn-compatible adaptor around SourceEstimator for CV.
+
+    The constructor must store all input parameters as attributes and must not
+    mutate them so that sklearn.clone can work correctly (required by
+    GridSearchCV). The class implements a small-fit/predict wrapper around the
+    underlying solver so CV can call .fit/.predict as expected.
+    """
+    def __init__(self, solver, solver_params=None, noise_var=None, n_orient=1,  logger=None):
+        super().__init__(solver, solver_params=solver_params, noise_var=noise_var, n_orient=n_orient, logger=logger)
+
+    def fit(self, L, y):
+        """Fit by running the underlying solver to produce x_hat and posterior cov.
+
+        Parameters
+        ----------
+        L : ndarray
+            Leadfield matrix (n_sensors, n_sources)
+        y : ndarray
+            Sensor data (n_sensors, n_times)
+        """
+        # store inputs
+        self.L_ = L # Renamed from X to L to be consistent with SourceEstimator
+        self.y_ = y
+
+        # Call the underlying solver function stored on the parent
+        # SourceEstimator.predict expects the solver to return (x_hat, active_indices, posterior_cov)
+        # Use an empty dict if solver_params is None to avoid mutating
+        # constructor arguments during runtime.
+        solver_params = self.solver_params or {}
+        coef = self.solver(
+            self.L_,
+            self.y_,
+            self.noise_var,
+            n_orient=self.n_orient,
+            logger=self.logger,
+            **solver_params,
+        ) # x_hat, active_indices, posterior_cov
+        self.x_hat = coef[0]
+        
+        return self
+
+    def predict(self, L):
+        # Predict sensor data from leadfield L and estimated sources x_hat
+        
+        return L @ self.x_hat 
+
+    def score(self, L, y):
+        # Simple negative MSE score compatible with sklearn (higher is better)
+        y_pred = self.predict(L)
+        return -np.mean((y_pred - y) ** 2)
+
+class BaseCVSolver(BaseEstimator, ClassifierMixin):
+    def __init__(
+        self,
+        solver,
+        solver_params=None,
+        n_orient=1,
+        noise_variances=DEFAULT_ALPHA_GRID,
+        cv=5,
+        n_jobs=1,
+        logger=None,
+    ):
+        # Do not use mutable defaults. Store parameters exactly as passed so
+        # sklearn.clone can reconstruct this object. When calling the
+        # underlying solver, treat None as an empty dict.
+        self.solver = solver
+        self.noise_variances = noise_variances
+        self.solver_params = solver_params
+        self.n_orient = n_orient
+        self.cv = cv
+        self.n_jobs = n_jobs
+        self.noise_var = None
+        self.logger = logger
+
+    def fit(self, L, y):
+        self.L_ = L
+        self.y_ = y
+
+        return self
+
+    def predict(self, y):
+        self._get_noise_var(y)
+        coef_ = self.solver(
+            self.L_,
+            y,
+            noise_var=self.noise_var,
+            n_orient=self.n_orient,
+            **self.solver_params,
+            logger=self.logger,
+        )
+        return coef_
+
+
+class SpatialCVSolver(BaseCVSolver):
+    def _get_noise_var(self, y):
+        """Sets noise_var attribute with spatial cross-validation."""
+        gs = GridSearchCV(
+            estimator=SpatialSolver(
+                self.solver,
+                solver_params=self.solver_params,
+                noise_var=self.noise_var,
+                n_orient=self.n_orient,
+                logger=self.logger,
+            ),
+            param_grid=dict(noise_var=self.noise_variances),
+            scoring="neg_mean_squared_error",
+            cv=self.cv,
+            n_jobs=self.n_jobs,
+            error_score="raise",
+        )
+        self.logger.info("Running spatial cross-validation...")
+        gs.fit(self.L_, y)
+        self.grid_search_ = gs
+        self.noise_var = gs.best_estimator_.noise_var
+
+
+class TemporalCVSolver(BaseCVSolver):
+    def _get_noise_var(self, y):
+        """Sets noise_var attribute with temporal cross-validation."""
+        base_solver = SpatialSolver(
+            self.solver,
+            solver_params=self.solver_params,
+            noise_var=self.noise_var,
+            n_orient=self.n_orient,
+            logger=self.logger,
+        )
+        
+        cv = check_cv(self.cv)
+        scores = []
+        for noise_var in self.noise_variances:
+            noise_cov = noise_var * np.eye(self.L_.shape[0]) # TODO: check if this works for all noise types
+            
+            solver = clone(base_solver)
+            solver.set_params(noise_var=noise_var)
+            temporal_cv_scores = []
+            for train_idx, test_idx in cv.split(y.T):
+                solver.fit(self.L_, y[:, train_idx])
+                y_test = y[:, test_idx]
+
+                # X_Sqaure = solver.coef_ @ solver.coef_.T
+                # Cov_X = np.diag(np.linalg.norm(X_Sqaure, axis=0))
+                # Sigma_Y = noise_cov + ((self.L_ @ Cov_X) @ self.L_.T)
+
+                X_var = np.mean(solver.x_hat ** 2, axis=1)  # already zero mean
+                Sigma_Y = noise_cov + ((self.L_ * X_var[None, :]) @ self.L_.T)
+
+                temporal_cv_scores.append(
+                    logdet_bregman_div_distance_nll(y_test, Sigma_Y)
+                )
+            scores.append(np.mean(temporal_cv_scores))
+        self.noise_var = self.noise_variances[np.argmax((scores))]
+
+
