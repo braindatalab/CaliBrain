@@ -1284,7 +1284,6 @@ class BaseCVSolver(BaseEstimator, ClassifierMixin):
         )
         return coef_
 
-
 class SpatialCVSolver(BaseCVSolver):
     def _get_noise_var(self, y):
         """Sets noise_var attribute with spatial cross-validation."""
@@ -1306,7 +1305,6 @@ class SpatialCVSolver(BaseCVSolver):
         gs.fit(self.L_, y)
         self.grid_search_ = gs
         self.noise_var = gs.best_estimator_.noise_var
-
 
 class TemporalCVSolver(BaseCVSolver):
     def _get_noise_var(self, y):
@@ -1345,3 +1343,595 @@ class TemporalCVSolver(BaseCVSolver):
         self.noise_var = self.noise_variances[np.argmax((scores))]
 
 
+# =================
+# Joint Learning
+# =================
+
+def _lambda_opt(
+    M, G, x_hat_full, posterior_cov_active, active_indices, 
+    current_lambda, CMinv, update_mode_noise
+):
+    """
+    Update noise variance (lambda) using EM or Convex Bounding update rules.
+    
+    Parameters
+    ----------
+    M : array, shape=(n_sensors, n_times)
+        Normalized sensor data matrix.
+    G : array, shape=(n_sensors, n_active_sources)  
+        Normalized forward operator (only active columns after pruning).
+    x_hat_full : array, shape=(n_sources, n_times)
+        Source estimates for all sources (with zeros for inactive sources).
+    posterior_cov_active : array, shape=(n_active, n_active)
+        Posterior covariance matrix of active sources.
+    active_indices : array, shape=(n_active,)
+        Indices of currently active sources.
+    current_lambda : array, shape=(n_sensors,)
+        Current noise variance estimates for each sensor.
+    CMinv : array, shape=(n_sensors, n_sensors)
+        Inverse of the current sensor covariance matrix Σ_y^{-1}.
+    update_mode_noise : int
+        Update rule for noise learning:
+        - 1: Expectation-Maximization (EM) update
+        - 2: Convex Bounding (CB) update
+        
+    Returns
+    -------
+    lambda_new : array, shape=(n_sensors,)
+        Updated noise variance estimates for each sensor.
+        
+    Notes
+    -----
+    The function implements two different update rules for learning noise variances [1]:
+    
+    1. EM Update (update_mode_noise=1):
+       λ_m^{(k+1)} = (1/T) Σ_t [ (y_m(t) - [L x̂(t)]_m)^2 + [L Σ_x L^T]_mm ]
+       
+       This consists of two terms:
+       - Residual term: average squared reconstruction error
+       - Covariance term: accounts for uncertainty in source estimates
+       
+    2. Convex Bounding Update (update_mode_noise=2):
+       λ_m^{(k+1)} = √[ (1/T) Σ_t (y_m(t) - [L x̂(t)]_m)^2 / (Σ_y^{-1})_{mm} ]
+       
+       This provides a more stable update with better convergence properties.
+       
+    [1]. C. Cai, A. Hashemi, M. Diwakar, S. Haufe, K. Sekihara, S. S. Nagarajan, Robust
+    estimation of noise for electromagnetic brain imaging with the champagne 
+    algorithm, NeuroImage,225,2021,117411.
+
+    """
+    n_sensors = M.shape[0]
+    lambda_new = np.zeros(n_sensors)
+    
+    # Get full forward operator (with zeros for inactive columns in G_full)
+    G_full = np.zeros((G.shape[0], x_hat_full.shape[0]))
+    G_full[:, active_indices] = G
+    
+    # Get full posterior covariance (zeros for inactive sources)
+    posterior_cov_full = np.zeros((x_hat_full.shape[0], x_hat_full.shape[0]))
+    idx_active = np.ix_(active_indices, active_indices)
+    posterior_cov_full[idx_active] = posterior_cov_active
+    
+    if update_mode_noise == 1:
+        # EM update: λ_m = (1/T) Σ_t [ (y_m(t) - [L x_hat(t)]_m)^2 + [L Σ_x L^T]_mm ]
+        for m in range(n_sensors):
+            # Residual term: (1/T) Σ_t (y_m(t) - [L x_hat(t)]_m)^2
+            # Measures the average squared reconstruction error for sensor m
+            residual = M[m] - np.dot(G_full[m], x_hat_full)
+            residual_term = np.mean(residual ** 2)
+            
+            # Posterior covariance term: [L Σ_x L^T]_mm
+            # Accounts for uncertainty in source estimates
+            # This is the m-th diagonal element of L Σ_x L^T
+            L_m = G_full[m]  # m-th row of leadfield matrix
+            cov_term = np.dot(L_m, np.dot(posterior_cov_full, L_m))
+            
+            lambda_new[m] = residual_term + cov_term
+            
+    elif update_mode_noise == 2:
+        # Convex Bounding update: 
+        # λ_m = sqrt( [ (1/T) Σ_t (y_m(t) - [L x_hat(t)]_m)^2 ] / [ (Σ_y^{-1})_{mm} ] )
+        for m in range(n_sensors):
+            # Numerator: (1/T) Σ_t (y_m(t) - [L x_hat(t)]_m)^2
+            # Average squared reconstruction error for sensor m
+            residual = M[m] - np.dot(G_full[m], x_hat_full)
+            numerator = np.mean(residual ** 2)
+            
+            # Denominator: (Σ_y^{-1})_{mm} (m-th diagonal element of inverse sensor covariance)
+            # Represents the precision (inverse variance) of sensor m's measurements
+            denominator = CMinv[m, m]
+            
+            # Avoid division by zero - use current value if denominator is problematic
+            if denominator > 1e-16:
+                lambda_new[m] = np.sqrt(numerator / denominator)
+            else:
+                # If denominator is too small, keep the current noise estimate
+                lambda_new[m] = current_lambda[m]
+    
+    else:
+        raise ValueError("Noise update mode must be 1 (EM) or 2 (Convex Bounding)")
+    
+    return lambda_new
+
+def _gamma_lambda_opt(
+    M,
+    G,
+    init_gamma=None,
+    init_lambda=None,
+    maxit=1000,
+    tol=1e-6,
+    update_mode=2,
+    update_mode_noise=2,
+    group_size=1,
+    verbose=None,
+    logger=None,
+):
+    """
+    Hierarchical Bayes (Gamma-MAP) with joint source and noise learning.
+    
+    Parameters
+    ----------
+    M : array, shape=(n_sensors, n_times)
+        Sensor data matrix (will be normalized for numerical stability).
+    G : array, shape=(n_sensors, n_sources)
+        Lead field matrix (will be normalized for numerical stability).
+    init_gamma : array, shape=(n_sources,) or None
+        Initial source variance estimates. If None, initialized to ones.
+    init_lambda : array, shape=(n_sensors,) or None
+        Initial noise variance estimates. If None, initialized to ones.
+    maxit : int
+        Maximum number of iterations.
+    tol : float
+        Convergence tolerance for both gamma and lambda.
+    update_mode : int
+        Source update rule: 1 for MacKay, 2 for Convex Bounding, 3 for EM.
+    update_mode_noise : int
+            Noise update rule: 1 for EM, 2 for Convex Bounding.
+    group_size : int
+        Number of consecutive sources sharing the same gamma (for orientation constraints).
+    verbose : bool
+        Whether to print progress information.
+    logger : object
+        Logger object for progress reporting.
+        
+    Returns
+    -------
+    x_active : array, shape=(n_active, n_times)
+        Source estimates for active sources.
+    active_indices : array, shape=(n_active,)
+        Indices of active sources.
+    posterior_cov : array, shape=(n_active, n_active)
+        Posterior covariance of active sources.
+    learned_lambdas : array, shape=(n_sensors,)
+        Learned sensor-specific noise variances.
+    learned_lambda_scalar : float
+        Scalar noise variance (mean of learned_lambdas) for homoscedastic case.
+        
+    Notes
+    -----
+    This function implements joint learning of source variances (gamma) and 
+    noise variances (lambda) using an alternating optimization approach [1].
+    
+    The algorithm alternates between:
+    1. Updating source variances (gamma) given current noise estimates
+    2. Updating noise variances (lambda) given current source estimates
+    
+    Both heteroscedastic (sensor-specific) and homoscedastic (scalar) noise
+    estimates are provided for flexibility in downstream applications.
+    
+    [1]. C. Cai, A. Hashemi, M. Diwakar, S. Haufe, K. Sekihara, S. S. Nagarajan, Robust
+    estimation of noise for electromagnetic brain imaging with the champagne 
+    algorithm, NeuroImage,225,2021,117411.
+    """
+    G = G.copy()
+    M = M.copy()
+
+    n_sources = G.shape[1]
+    n_sensors, n_times = M.shape
+    
+    eps = np.finfo(float).eps
+
+    # Store original normalization constants for denormalization
+    M_normalize_constant = np.linalg.norm(np.dot(M, M.T), ord="fro")
+    if M_normalize_constant > 0:
+        M /= np.sqrt(M_normalize_constant)
+        if init_lambda is not None:
+            init_lambda /= M_normalize_constant
+    
+    G_normalize_constant = np.linalg.norm(G, ord=np.inf)
+    if G_normalize_constant > 0:
+        G /= G_normalize_constant
+
+    if n_sources % group_size != 0:
+        raise ValueError("Number of sources has to be evenly dividable by the group size")
+
+    # Initialize gamma
+    if init_gamma is None:
+        current_gamma = np.ones(n_sources, dtype=np.float64)
+    elif np.isscalar(init_gamma):
+        current_gamma = np.full(n_sources, init_gamma, dtype=np.float64)
+    elif len(init_gamma) == 2 and isinstance(init_gamma, tuple):
+        current_gamma = np.linspace(init_gamma[0], init_gamma[1], num=n_sources)
+    else:
+        current_gamma = init_gamma.copy()
+
+    # Initialize lambda (noise variance)
+    if init_lambda is None:
+        current_lambda = np.ones(n_sensors, dtype=np.float64)
+    elif np.isscalar(init_lambda):
+        current_lambda = np.full(n_sensors, init_lambda, dtype=np.float64)
+    elif len(init_lambda) == 2 and isinstance(init_lambda, tuple):
+        current_lambda = np.linspace(init_lambda[0], init_lambda[1], num=n_sensors)
+    else:
+        current_lambda = init_lambda.copy()
+
+    n_active = n_sources
+    active_indices = np.arange(n_sources)
+    gammas_full_old = current_gamma.copy()
+    lambda_old = current_lambda.copy()
+
+    # Source update function selection
+    if update_mode == 2:
+        denom_fun = np.sqrt
+    else:
+        def denom_fun(x):
+            return x
+
+    last_size = -1
+    for itno in range(maxit):
+        current_gamma = np.nan_to_num(current_gamma, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Prune inactive sources (those with gamma near zero)
+        gidx = np.abs(current_gamma) > eps
+        active_indices = active_indices[gidx]
+        current_gamma = current_gamma[gidx]
+
+        # Update only active gamma
+        if n_active > len(active_indices):
+            n_active = active_indices.size
+            G = G[:, gidx]
+
+        # Build sensor covariance matrix with current lambda
+        CM = np.dot(G * current_gamma[np.newaxis, :], G.T)
+        np.fill_diagonal(CM, CM.diagonal() + current_lambda)
+        
+        # Invert sensor covariance matrix
+        try:
+            U, S, _ = linalg.svd(CM, full_matrices=False)
+        except linalg.LinAlgError:
+            # If SVD fails, use pseudo-inverse
+            CMinv = linalg.pinv(CM)
+        else:
+            S = S[np.newaxis, :]
+            CMinv = np.dot(U / (S + eps), U.T)
+            
+        CMinvG = np.dot(CMinv, G)
+        A = np.dot(CMinvG.T, M)
+        G_CMinvG = np.dot(G.T, CMinvG)
+
+        # SOURCE UPDATE (GAMMA UPDATE)
+        if update_mode == 1:
+            # MacKay update
+            numer = current_gamma ** 2 * np.mean((A * A.conj()).real, axis=1)
+            denom = current_gamma * np.sum(G * CMinvG, axis=0)
+        elif update_mode == 2:
+            # Convex bounding update
+            numer = current_gamma * np.sqrt(np.mean((A * A.conj()).real, axis=1))
+            denom = np.sum(G * CMinvG, axis=0)
+        elif update_mode == 3:
+            # EM update
+            denom = None
+            numer = current_gamma ** 2 * np.mean((A * A.conj()).real, axis=1) + current_gamma * (
+                1 - current_gamma * np.sum(G * CMinvG, axis=0)
+            )
+        else:
+            raise ValueError("Invalid value for update_mode")
+
+        if group_size == 1:
+            if denom is None:
+                current_gamma = numer
+            else:
+                current_gamma = numer / np.maximum(denom_fun(denom), eps)
+        else:
+            numer_comb = np.sum(numer.reshape(-1, group_size), axis=1)
+            if denom is None:
+                gammas_comb = numer_comb
+            else:
+                denom_comb = np.sum(denom.reshape(-1, group_size), axis=1)
+                gammas_comb = numer_comb / denom_fun(denom_comb)
+            current_gamma = np.repeat(gammas_comb / group_size, group_size)
+
+        # Ensure gamma is non-negative
+        current_gamma = np.maximum(current_gamma, 0)
+
+        # Compute source estimates for noise update
+        x_active_current = current_gamma[:, None] * A
+        
+        # Build full source estimate
+        x_hat_full = np.zeros((n_sources, n_times))
+        x_hat_full[active_indices] = x_active_current
+        
+        # Build full posterior covariance
+        posterior_cov_active = np.diag(current_gamma) - current_gamma[:, np.newaxis] * G_CMinvG * current_gamma
+        
+        # NOISE VARIANCE UPDATE (LAMBDA UPDATE)
+        current_lambda = _lambda_opt(
+            M, G, x_hat_full, posterior_cov_active, active_indices, 
+            current_lambda, CMinv, update_mode_noise
+        )
+
+        # Compute convergence for both parameters
+        gammas_full = np.zeros(n_sources, dtype=np.float64)
+        gammas_full[active_indices] = current_gamma
+
+        err_gamma = np.sum(np.abs(gammas_full - gammas_full_old)) / np.sum(np.abs(gammas_full_old) + eps)
+        err_lambda = np.sum(np.abs(current_lambda - lambda_old)) / np.sum(np.abs(lambda_old) + eps)
+        
+        # Use AND condition for convergence (both must be below tolerance)
+        gamma_converged = err_gamma < tol
+        lambda_converged = err_lambda < tol
+        both_converged = gamma_converged and lambda_converged
+
+        gammas_full_old = gammas_full.copy()
+        lambda_old = current_lambda.copy()
+
+        breaking = both_converged or n_active == 0
+        if len(current_gamma) != last_size or (verbose and (breaking or itno % 10 == 0)):
+            convergence_status = "BOTH" if both_converged else f"gamma:{err_gamma:.3e}, lambda:{err_lambda:.3e}"
+            print(f"Iteration: {itno}\t active set size: {len(current_gamma)}\t convergence: {convergence_status}")
+            last_size = len(current_gamma)
+
+        if breaking:
+            break
+
+    if itno < maxit - 1:
+        if verbose:
+            print(f"Convergence reached at iteration {itno}!")
+    else:
+        if verbose:
+            print(f"Convergence NOT reached after {maxit} iterations!")
+        warnings.warn("Convergence NOT reached!")
+
+    # Undo normalization for sources
+    n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
+    x_active = n_const * current_gamma[:, None] * A
+
+    # Undo normalization for noise variances
+    lambdas = current_lambda * M_normalize_constant
+    
+    # Compute scalar noise variance (mean of sensor-specific variances)
+    lambda_scalar = np.mean(lambdas)
+
+    # Compute posterior covariance
+    posterior_cov = np.diag(current_gamma) - current_gamma[:, np.newaxis] * G_CMinvG * current_gamma
+    
+    return x_active, active_indices, posterior_cov, lambdas, lambda_scalar
+
+def gamma_lambda_map(
+    L,
+    y,
+    init_gamma=None,
+    init_lambda=None,
+    n_orient=1,
+    max_iter=1000,
+    tol=1e-15,
+    update_mode=2,           # For source updates
+    update_mode_noise=2,     # 1: EM, 2: Convex Bounding
+    verbose=True,
+    logger=None,
+    **kwargs
+):
+    """
+    Gamma-Lambda MAP algorithm for joint source and noise learning in M/EEG [1].
+    
+    This function implements a hierarchical Bayesian framework that simultaneously
+    estimates source activations and noise variances using an alternating
+    optimization approach.
+    
+    [1]. C. Cai, A. Hashemi, M. Diwakar, S. Haufe, K. Sekihara, S. S. Nagarajan, Robust
+    estimation of noise for electromagnetic brain imaging with the champagne 
+    algorithm, NeuroImage,225,2021,117411.
+    Parameters
+    ----------
+    L : array, shape=(n_sensors, n_sources)
+        Lead field matrix mapping sources to sensors.
+    y : array, shape=(n_sensors, n_times) or (n_sensors,)
+        Sensor measurements. If 1D, will be converted to 2D.
+    init_gamma : array, float, tuple, or None
+        Initial source variance estimates.
+    init_lambda : array, float, tuple, or None
+        Initial noise variance estimates.
+    n_orient : int
+        Number of orientations per source:
+        - 1: fixed-orientation 
+        - 3: free-orientation
+    max_iter : int
+        Maximum number of iterations for joint optimization.
+    tol : float
+        Convergence tolerance for both source and noise parameters.
+    update_mode : int
+        Source variance update rule:
+        - 1: MacKay update
+        - 2: Convex bounding update (default)
+        - 3: EM update
+    update_mode_noise : int
+        Noise variance update rule:
+        - 1: EM update
+        - 2: Convex bounding update (default)
+    verbose : bool
+        Whether to print iteration progress and convergence information.
+    logger : object
+        Logger object for progress reporting (optional).
+    **kwargs : dict
+        Additional keyword arguments (for future compatibility).
+        
+    Returns
+    -------
+    x_hat : array, shape=(n_sources, n_times) or (n_sources, n_orient, n_times)
+        Estimated source activations. Shape depends on n_orient.
+    active_indices : array, shape=(n_active,)
+        Indices of sources with non-zero variance (active sources).
+    posterior_cov : array, shape=(n_active, n_active)
+        Posterior covariance matrix of active sources.
+    lambdas : array, shape=(n_sensors,)
+        Learned sensor-specific noise variances (heteroscedastic).
+    lambda_scalar : float
+        Scalar noise variance (mean of learned_lambdas) for homoscedastic applications.
+        
+    Notes
+    -----
+    The algorithm implements joint Bayesian learning of:
+    
+    1. Source variances (γ) - controls sparsity of source reconstruction
+    2. Noise variances (λ) - models sensor-specific noise characteristics
+    
+    
+    The joint optimization alternates between source and noise updates until
+    both parameters converge simultaneously [1].
+    
+    """
+    # Ensure y is 2D (sensors x time)
+    if y.ndim == 1:
+        y = y[:, np.newaxis]
+        
+    n_sensors, n_times = y.shape
+    
+    # Initialize gamma with consistent pattern
+    if init_gamma is None:
+        init_gamma = np.ones(L.shape[1], dtype=np.float64)
+    elif isinstance(init_gamma, (float, np.float64, int, np.int64)):
+        init_gamma = np.full((L.shape[1],), init_gamma, dtype=np.float64)
+    elif len(init_gamma) == 2 and isinstance(init_gamma, tuple):
+        init_gamma = np.linspace(init_gamma[0], init_gamma[1], num=L.shape[1])
+    else:
+        raise ValueError(
+            "init_gamma should be a float, a tuple of two floats, "
+            "or an array of floats."
+        )
+
+    # Run joint gamma-lambda optimization
+    x_hat_, active_indices, posterior_cov, lambdas, lambda_scalar = _gamma_lambda_opt(
+        M=y,
+        G=L,
+        init_gamma=init_gamma,
+        init_lambda=init_lambda,
+        update_mode_noise=update_mode_noise,
+        maxit=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        group_size=n_orient,
+        verbose=verbose,
+        logger=logger,
+    )
+    
+    # Build full source estimate (including zeros for inactive sources)
+    x_hat = np.zeros((L.shape[1], y.shape[1]))
+    x_hat[active_indices] = x_hat_
+
+    # Handle orientation dimension for free orientation case
+    if n_orient > 1:
+        x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
+
+    return x_hat, active_indices, posterior_cov, lambdas, lambda_scalar
+
+def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=None, init_lambda=None, max_iter=1000, tol=1e-15, update_mode=2, update_mode_noise=2, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
+    """
+    sFLEX algorithm [1] with joint source and noise learning.
+    [1] Haufe et al., NIPS 2008.
+    Parameters
+    ----------
+    L : array
+        Lead field matrix
+    y : array  
+        Sensor measurements
+    fwd_path : str
+        Path to the forward solution file (FIF format)
+    sigma : float
+        Gaussian basis width parameter
+    n_orient : int
+        Number of orientations (1 for fixed, 3 for free)
+    init_gamma : array or None
+            Initial gamma values
+    init_lambda : array or None
+        Initial noise variance
+    max_iter : int
+        Maximum number of iterations
+    tol : float
+        Convergence tolerance
+    update_mode : int
+        Source update mode
+    update_mode_noise : int
+        Noise update mode (1: EM, 2: Convex bounding)
+    verbose : bool
+        Whether to print progress
+    logger : object
+        Logger object
+    threshold_factor : float
+        Threshold factor for basis sparsity
+        
+    Returns
+    -------
+    x_hat : array
+        Estimated source activity
+    active_indices : array
+        Indices of active sources  
+    posterior_cov : array
+        Posterior covariance of active sources
+    """
+
+    fwd = mne.read_forward_solution(fwd_path)
+
+    if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
+        fwd = mne.convert_forward_solution(fwd, force_fixed=True)
+        
+    # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
+    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters
+        
+    # Compute basis matrix (you have already B)
+    B = compute_B(src_coords, sigma, threshold_factor) #sigma =0.01
+    N = src_coords.shape[0]
+
+    # Handle orientation type
+    if n_orient == 1:
+        # Fixed-orientation case
+        assert L.shape[1] == N, f"L has {L.shape[1]} cols, expected N={N} for fixed-orientation."
+        G = L @ B  # (M × N)
+        group_size = 1
+    elif n_orient == 3:
+        # Free-orientation case - efficient implementation
+        assert L.shape[1] == 3 * N, f"L has {L.shape[1]} cols, expected 3N={3*N} for free-orientation."
+        
+        # Efficient block-wise computation
+        G_blocks = []
+        for orient in range(3):
+            L_block = L[:, orient * N : (orient+1) * N]
+            G_block = L_block @ B
+            G_blocks.append(G_block)
+        G = np.hstack(G_blocks)  # Shape: (M, 3N)
+        group_size = 3
+    else:
+        raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
+    
+    # Run gamma-lambda-MAP on the basis-transformed lead field (JOINT LEARNING)
+    c_hat, active_indices, posterior_cov, lambdas, lambda_scalar = gamma_lambda_map(
+        L=G, y=y, init_gamma=init_gamma, init_lambda=init_lambda, update_mode_noise=update_mode_noise,
+        n_orient=group_size, max_iter=max_iter, tol=tol, update_mode=update_mode,
+         verbose=verbose, logger=logger
+    ) # NOTE: lambda_scalar is the learned noise variance
+    
+    # Reconstruct sources from basis coefficients
+    if n_orient == 1:
+        # Fixed-orientation
+        x_hat = B @ c_hat  # (N, T)
+    else:
+        # Free-orientation
+        x_hat_blocks = []
+        for orient in range(3):
+            c_block = c_hat[orient * N : (orient+1) * N, :]
+            x_block = B @ c_block
+            x_hat_blocks.append(x_block)
+        # Stack along orientation dimension
+        x_hat = np.stack(x_hat_blocks, axis=1)  # Shape: (N, 3, T)
+    
+    return x_hat, active_indices, posterior_cov

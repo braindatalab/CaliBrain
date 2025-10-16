@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN, sflex_gamma_lambda_map
 from calibrain.utils import get_data_path
 
 def main():
@@ -77,16 +77,20 @@ def main():
         logger=logger,
     )  
       
+    # ==================================================================
     # Define parameter grids for different data types
+    # ==================================================================
+    # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
         "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5, 0.99],
+        "alpha_SNR": [0.5],
         "gauss_noise_var": [1.0],
-        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv"],
+        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv", "adaptive_learning"], # "adaptive_learning" is only for sflex_gamma_lambda_map
     }
     
+    # EEG data parameters
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
         "nnz": [1, 10, 50],
@@ -95,9 +99,16 @@ def main():
         "gauss_noise_var": [1.0],
         "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv"],
     }
+    
+    # =================================================================
+    # Define noise types
+    # =================================================================
         
-    gamma_map_params = {
-        "init_gamma": [0.001], #  0.001, 1.0, or tuple for random values (0.001, 0.1)
+    # ==================================================================
+    # Define estimators and their parameter grids
+    # ==================================================================
+    eloreta_params = {
+        # No specific hyperparameters to tune for eLORETA
     }
     
     BMN_params = {
@@ -105,14 +116,26 @@ def main():
     }
     
     sflex_gamma_map_params = {
+        'init_gamma': [0.001],
+        'sigma': [0.001],
+        'max_iter': [50],
+        # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
+    }
+    
+    # NOTE: sflex_gamma_lambda_map does not use noise variance from data simulation, but adaptively (noise learning) estimates noise variance along with source amplitude and location. So it ignores the noise_type in data_param_grid.
+    sflex_gamma_lambda_map_params = {
+        'init_gamma': [0.001],
+        'init_lambda': [0.1],
+        'sigma': [0.001],
+        'max_iter': [50],
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
     }
     
     estimators = [
-        (sflex_gamma_map, {}, data_param_grid_meg),
-        (eloreta, {}, data_param_grid_meg),
-        (BMN, BMN_params, data_param_grid_meg),
-        # (gamma_map, gamma_map_params, data_param_grid_meg),
+        # (eloreta, eloreta_params, data_param_grid_meg),
+        # (BMN, BMN_params, data_param_grid_meg),
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg),
+        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg),
         # (sflex_gamma_map, {}, data_param_grid_eeg),
         # (eloreta, eloreta_params, data_param_grid_eeg),
         # (gamma_map, gamma_map_params, data_param_grid_eeg),

@@ -105,9 +105,6 @@ def _lambda_opt(
     
     return lambda_new
 
-
-
-
 def _gamma_lambda_opt(
     M,
     G,
@@ -362,7 +359,6 @@ def _gamma_lambda_opt(
     
     return x_active, active_indices, posterior_cov, lambdas, lambda_scalar
 
-
 def gamma_lambda_map(
     L,
     y,
@@ -489,8 +485,6 @@ def gamma_lambda_map(
         x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
 
     return x_hat, active_indices, posterior_cov, lambdas, lambda_scalar
-
-
 
 def sflex_gamma_lambda_map(L, y, X, sigma, init_gamma=None, init_lambda=None, update_mode_noise=2, 
                     n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, 
