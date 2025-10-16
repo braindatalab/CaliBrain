@@ -148,30 +148,30 @@ def main():
     }
     
     estimators = [
-        # ------- MEG experiments -------
-        # eLORETA
-        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
-        # BMN
-        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
-        # sFLEX-Gamma-MAP
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
-        # sFLEX-Gamma-Lambda-MAP (with adaptive noise learning)
+        # ================ MEG experiments ================
+        # ---------------- eLORETA ----------------
+        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- BMN ----------------
+        (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- sFLEX-Gamma-MAP ----------------
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
-        
-        # ------- EEG experiments -------
-        # # eLORETA
+
+        # ================ EEG experiments ================
+        # ---------------- eLORETA ----------------
         # (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_eeg, CV_noise_params),
-        # # BMN
+        # ---------------- BMN ----------------
         # (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_eeg, CV_noise_params),
-        # # sFLEX-Gamma-MAP
+        # ---------------- sFLEX-Gamma-MAP ----------------
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, CV_noise_params),
-        # # sFLEX-Gamma-Lambda-MAP (with adaptive noise learning)
+        # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_eeg, adaptive_noise_params),
     ]
 
