@@ -23,7 +23,7 @@ from mne.io.constants import FIFF
 from calibrain import SpatialCVSolver, TemporalCVSolver
 
 class Benchmark:
-    def __init__(self, solver : callable, solver_param_grid : dict, data_param_grid : dict, ERP_config : dict, source_simulator : SourceSimulator, leadfield_builder : LeadfieldBuilder, sensor_simulator : SensorSimulator, uncertainty_estimator : UncertaintyEstimator, metric_evaluator : MetricEvaluator, random_state=42, logger=None):
+    def __init__(self, solver : callable, solver_param_grid : dict, data_param_grid : dict, noise_param_grid : dict, ERP_config : dict, source_simulator : SourceSimulator, leadfield_builder : LeadfieldBuilder, sensor_simulator : SensorSimulator, uncertainty_estimator : UncertaintyEstimator, metric_evaluator : MetricEvaluator, random_state=42, logger=None):
         """
         Initialize the Benchmark class.
 
@@ -35,6 +35,8 @@ class Benchmark:
             Grid of solver hyperparameters (e.g. noise_type, init_gamma).
         data_param_grid : dict
             Grid of data generation hyperparameters.
+        noise_param_grid : dict
+            Grid of noise-related hyperparameters.
         ERP_config : dict
             Configuration for ERP simulation.
         source_simulator : SourceSimulator
@@ -55,6 +57,7 @@ class Benchmark:
         self.solver = solver
         self.solver_param_grid = solver_param_grid
         self.data_param_grid = data_param_grid
+        self.noise_param_grid = noise_param_grid
         self.ERP_config = ERP_config
         self.source_simulator = source_simulator
         self.leadfield_builder = leadfield_builder
@@ -79,14 +82,14 @@ class Benchmark:
         # Exclude 'cov' and sanitize values for directory names
         sanitized_params_for_path = {
             k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_")
-            for k, v in params.items() if k not in ("cov", "run_id")
+            for k, v in params.items() if k not in ("run_id")
             # Add other keys to exclude from path if necessary
         }
     
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["subject", "solver", "init_gamma", "orientation_type", "alpha_SNR", "noise_type", "nnz", "seed"]
+            desired_order = ["solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"]
         
         path_components = []
         
@@ -115,7 +118,7 @@ class Benchmark:
         self.logger.info(f"Experiment directory created: {experiment_dir}")
         return experiment_dir
 
-    def run(self, nruns: int = 2, fig_path: str = "results/figures/uncertainty_analysis_figures"):
+    def run(self, nruns: int = 2, fig_path: str = "results/figures"):
         """
         Run benchmarking by iterating over combinations of solver and data parameters.
 
@@ -132,6 +135,7 @@ class Benchmark:
         param_combinations = list(product(
             ParameterGrid(self.solver_param_grid),
             ParameterGrid(self.data_param_grid),
+            ParameterGrid(self.noise_param_grid),
             seeds
         ))
          
@@ -139,8 +143,8 @@ class Benchmark:
         # 2. Iterate over solver and data parameter combinations
         # -------------------------------------------------------------
         self.logger.info(f"Starting benchmark with {len(param_combinations)} runs...")
-        
-        for run_id, (solver_params, data_params, seed) in enumerate(param_combinations, start=1):
+
+        for run_id, (solver_params, data_params, noise_params, seed) in enumerate(param_combinations, start=1):
             solver_name = getattr(self.solver, "__name__", str(self.solver))
             orientation_type = data_params.get("orientation_type")
             n_orient = 3 if orientation_type == "free" else 1
@@ -148,12 +152,14 @@ class Benchmark:
             
             self.logger.info(f"[Run {run_id}/{len(param_combinations)}] Seed: {seed}")
             self.logger.info(f"Solver: {solver_name} | Params: {solver_params}")
+            self.logger.info(f"Noise Params: {noise_params}")
             self.logger.info(f"Data Params: {data_params}")
             
             this_result = {
                 'run_id': run_id,
                 "seed": seed,
                 "solver": solver_name,
+                'noise_type': noise_params['noise_type'],
                 **{k: v for k, v in solver_params.items() if k != "fwd_path"},
                 **data_params,
             }
@@ -174,7 +180,7 @@ class Benchmark:
                     base_dir=fig_path,
                     params=this_result,
                     desired_order = [
-                        "subject", "solver", "orientation_type", "alpha_SNR", "noise_type", "gauss_noise_var", "nnz", "seed"
+                        "solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"
                     ]
                 )
                 
@@ -213,121 +219,88 @@ class Benchmark:
                         L=L,
                         orientation_type=orientation_type,
                         alpha_SNR=data_params['alpha_SNR'],
-                        gauss_noise_var=data_params['gauss_noise_var'],
+                        sensor_white_noise_var=data_params['sensor_white_noise_var'],
                         n_trials=n_trials,
                         global_seed=global_noise_seeds,
                 )
                 self.sensor_simulator.sensor_units = sensor_units  # Set units based on leadfield
 
                 # -------------------------------------------------------------
-                # 7. Fit the source estimator and predict posterior mean & covariance
+                # 7. Slice the first trial for processing
                 # -------------------------------------------------------------
-                # Slice the first trial for processing
                 trial_idx = 0
                 x_one_trial = x_trials[trial_idx]
                 x_active_indices_one_trial = x_active_indices_trials[trial_idx]
                 y_noisy_one_trial = y_noisy_trials[trial_idx]
                 noise_eta_one_trial = noise_eta_trials[trial_idx] # noise scaling factor (eta)
 
+                # -------------------------------------------------------------
+                # 8. Determine noise variance based on noise_type
+                # -------------------------------------------------------------
+                # Validate noise_type and set initial noise variance / cv callable
+                allowed_noise_types = {
+                    "joint_learning",
+                    "oracle",
+                    "baseline",
+                    "spatial_cv",
+                    "temporal_cv",
+                }
+                noise_type = noise_params.get("noise_type")
+                if noise_type not in allowed_noise_types:
+                    raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
 
-                if solver_name == 'sflex_gamma_lambda_map' and data_params['noise_type'] == 'adaptive_learning':
-                    self.logger.info("Fitting source estimator...")
-                    source_estimator = SourceEstimator(
+                if noise_type in ('spatial_cv', 'temporal_cv'):
+                    estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver                    
+
+                    # Create source estimator with CV for noise variance selection
+                    source_estimator = estimator(
                         solver=self.solver,
                         solver_params=solver_params,
                         n_orient=n_orient,
-                        logger=self.logger
+                        logger=self.logger,
+                        noise_variances=noise_params.get('default_alphas_grid', None),
+                        cv=noise_params.get('cv', 5),
+                        n_jobs=noise_params.get('n_jobs', 1),
                     )
-                    source_estimator.fit(L, y_noisy_one_trial)            
-                    x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
-                        y=y_noisy_one_trial
-                    )
-                
-                elif solver_name == 'sflex_gamma_lambda_map' and data_params['noise_type'] != 'adaptive_learning':
-                    continue
-                
-                elif solver_name in ('sflex_gamma_map', 'eloreta', 'BMN'):
-                    # for or other estimators (e.g., sflex_gamma_map, eloreta, BMN)
-                    # select noise type
-                    if data_params['noise_type'] == 'oracle':
-                        noise_var_one_trial = (data_params['gauss_noise_var'] * noise_eta_one_trial) ** 2
-
-                        self.logger.info("Fitting source estimator...")
-                        source_estimator = SourceEstimator(
-                            solver=self.solver,
-                            solver_params=solver_params,
-                            noise_var=noise_var_one_trial,
-                            n_orient=n_orient,
-                            logger=self.logger
-                        )
-                        source_estimator.fit(L, y_noisy_one_trial)            
-                        x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
-                            y=y_noisy_one_trial
-                        )                    
+                else:                                    
+                    if noise_type == 'oracle':
+                        noise_var_one_trial = (data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2                        
                         
-                    # take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
-                    elif data_params['noise_type'] == 'baseline':
-                        pre_stimulus_onset = int((self.source_simulator.ERP_config['stim_onset'] - self.source_simulator.ERP_config['tmin']) * self.source_simulator.ERP_config['sfreq'])
+                    # Take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
+                    elif noise_type == 'baseline':
+                        tmin = self.source_simulator.ERP_config['tmin']
+                        stim_onset = self.source_simulator.ERP_config['stim_onset']
+                        sfreq = self.source_simulator.ERP_config['sfreq']
+                        
+                        pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
                         y_noisy_one_trial = y_noisy_one_trial[:, :pre_stimulus_onset]
                         
                         # compute sensor noise variance
                         noise_var_one_trial = np.mean(np.std(y_noisy_one_trial, axis=1) ** 2)
 
-                        self.logger.info("Fitting source estimator...")
-                        source_estimator = SourceEstimator(
-                            solver=self.solver,
-                            solver_params=solver_params,
-                            noise_var=noise_var_one_trial,
-                            n_orient=n_orient,
-                            logger=self.logger
-                        )
-                        source_estimator.fit(L, y_noisy_one_trial)            
-                        x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
-                            y=y_noisy_one_trial
-                        )
-                    
-                    # select noise variance via cross-validation: support 'spatial_cv' and 'temporal_cv'
-                    elif data_params['noise_type'] in ('spatial_cv', 'temporal_cv'):
+                    elif noise_type == 'joint_learning':
+                        noise_var_one_trial = None
 
-                        # Candidate grid for noise variance
-                        default_alphas_grid = np.logspace(0, -2, 20)[1:]
-
-                        # Choose CV mode based on noise_type value
-                        cv_mode = 'temporal' if data_params['noise_type'] == 'temporal_cv' else 'spatial'
-
-                        if cv_mode == 'spatial':
-                            source_estimator = SpatialCVSolver(
-                                solver=self.solver,
-                                solver_params=solver_params,
-                                n_orient=n_orient,
-                                noise_variances=default_alphas_grid,
-                                logger=self.logger
-                            )
-                        elif cv_mode == 'temporal':
-                            source_estimator = TemporalCVSolver(
-                                solver=self.solver,
-                                solver_params=solver_params,
-                                n_orient=n_orient,
-                                noise_variances=default_alphas_grid,
-                                logger=self.logger
-                            )
-                        else:
-                            raise ValueError(f"Unknown cv_mode: {cv_mode}")
-
-                        # Run CV on the single trial (spatial CV splits sensors, temporal CV splits time)
-                        source_estimator.fit(L, y_noisy_one_trial)
-                        # noise_var_one_trial = float(source_estimator.noise_var) # TODO
-                        x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
-                        y=y_noisy_one_trial
+                    # Create source estimator with fixed noise variance
+                    source_estimator = SourceEstimator(
+                        solver=self.solver,
+                        solver_params=solver_params,
+                        noise_var=noise_var_one_trial,
+                        n_orient=n_orient,
+                        logger=self.logger
                     )
                     
-                    else:
-                        raise ValueError(f"Unknown noise_type: {data_params['noise_type']}")
-                
-                else:
-                    raise ValueError(f"Unknown solver: {solver_name}")
                 # -------------------------------------------------------------
-                # 8. Estimate uncertainty (-> credible intervals)
+                # 8. Fit the source estimator and predict posterior mean & cov
+                # -------------------------------------------------------------
+                self.logger.info(f"Fitting source estimator {self.solver.__name__}")
+                source_estimator.fit(L, y_noisy_one_trial)
+                x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
+                    y=y_noisy_one_trial
+                )    
+
+                # -------------------------------------------------------------
+                # 9. Estimate uncertainty (-> credible intervals)
                 # -------------------------------------------------------------
                 self.logger.info("Estimating uncertainty...")
                                 
@@ -403,7 +376,7 @@ class Benchmark:
                     )
 
                 # -------------------------------------------------------------
-                # 9. Evaluate metrics and store results
+                # 10. Evaluate metrics and store results
                 # -------------------------------------------------------------       
                 self.metric_evaluator.evaluate_and_store_metrics(
                     current_results_dict=this_result,
@@ -418,7 +391,7 @@ class Benchmark:
                 )
 
                 # --------------------------------------------------------------
-                # 10. Vizualization
+                # 11. Vizualization
                 # --------------------------------------------------------------
                 viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
                 viz.plot_all(

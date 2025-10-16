@@ -83,11 +83,10 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [5],
+        "nnz": [5, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5],
-        "gauss_noise_var": [1.0],
-        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv", "adaptive_learning"], # "adaptive_learning" is only for sflex_gamma_lambda_map
+        "alpha_SNR": [0.5, 0.99],
+        "sensor_white_noise_var": [1.0],
     }
     
     # EEG data parameters
@@ -96,25 +95,42 @@ def main():
         "nnz": [1, 10, 50],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.0, 0.5, 0.99],
-        "gauss_noise_var": [1.0],
-        "noise_type": ["baseline", "oracle", "spatial_cv", "temporal_cv"],
+        "sensor_white_noise_var": [1.0],
     }
     
     # =================================================================
-    # Define noise types
+    # Define noise parameter grids
     # =================================================================
-        
+    basic_noise_params = {
+        "noise_type": ["baseline", "oracle"],
+        # add noise parameters here if needed
+    }
+    
+    CV_noise_params = {
+        "noise_type": ["spatial_cv", "temporal_cv"],
+        'default_alphas_grid': [np.logspace(0, -2, 3)[1:]],
+        'cv': [2],
+        'n_jobs': [1],
+        # add noise parameters here if needed
+    }
+
+    adaptive_noise_params = {
+        "noise_type": ["joint_learning"], # for sflex_gamma_lambda_map
+        # add noise parameters here if needed
+    }
+
     # ==================================================================
     # Define estimators and their parameter grids
     # ==================================================================
     eloreta_params = {
         # No specific hyperparameters to tune for eLORETA
     }
-    
+
     BMN_params = {
-        "max_iter": [10]
+        "max_iter": [3],
+        'alpha': [1.0], # on whitened data. The implementation is hardcoded to 1.
     }
-    
+        
     sflex_gamma_map_params = {
         'init_gamma': [0.001],
         'sigma': [0.001],
@@ -124,21 +140,39 @@ def main():
     
     # NOTE: sflex_gamma_lambda_map does not use noise variance from data simulation, but adaptively (noise learning) estimates noise variance along with source amplitude and location. So it ignores the noise_type in data_param_grid.
     sflex_gamma_lambda_map_params = {
-        'init_gamma': [0.001],
+        'init_gamma': [0.1], 
         'init_lambda': [0.1],
         'sigma': [0.001],
-        'max_iter': [50],
+        'max_iter': [1000],
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
     }
     
     estimators = [
-        # (eloreta, eloreta_params, data_param_grid_meg),
-        # (BMN, BMN_params, data_param_grid_meg),
-        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg),
-        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg),
-        # (sflex_gamma_map, {}, data_param_grid_eeg),
-        # (eloreta, eloreta_params, data_param_grid_eeg),
-        # (gamma_map, gamma_map_params, data_param_grid_eeg),
+        # ------- MEG experiments -------
+        # eLORETA
+        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        # BMN
+        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        # sFLEX-Gamma-MAP
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # sFLEX-Gamma-Lambda-MAP (with adaptive noise learning)
+        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        
+        # ------- EEG experiments -------
+        # # eLORETA
+        # (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_eeg, CV_noise_params),
+        # # BMN
+        # (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_eeg, CV_noise_params),
+        # # sFLEX-Gamma-MAP
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, basic_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, CV_noise_params),
+        # # sFLEX-Gamma-Lambda-MAP (with adaptive noise learning)
+        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_eeg, adaptive_noise_params),
     ]
 
     metrics = [
@@ -164,11 +198,12 @@ def main():
 
     nruns = 1
     df = []
-    for solver, solver_param_grid, data_param_grid in estimators:
+    for solver, solver_param_grid, data_param_grid, noise_param_grid in estimators:
         benchmark = Benchmark(
             solver=solver,
             solver_param_grid=solver_param_grid,
             data_param_grid=data_param_grid,
+            noise_param_grid=noise_param_grid,
             ERP_config=ERP_config,
             source_simulator=source_simulator,
             leadfield_builder=leadfield_builder,
