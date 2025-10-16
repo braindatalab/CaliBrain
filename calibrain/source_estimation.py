@@ -27,7 +27,6 @@ def gamma_map(
     max_iter=1000,
     tol=1e-15,
     update_mode=2,
-    # threshold=1e-5,
     init_gamma=None,
     verbose=True,
     logger=None,

@@ -81,7 +81,7 @@ class SensorSimulator:
 
         return y
 
-    def _add_noise(self, y_clean: np.ndarray, alpha_SNR: float = 0.5, gauss_noise_var: float = 1.0, noise_seed: int = 42) -> Tuple[np.ndarray, np.ndarray, float]:
+    def _add_noise(self, y_clean: np.ndarray, alpha_SNR: float = 0.5, sensor_white_noise_var: float = 1.0, noise_seed: int = 42) -> Tuple[np.ndarray, np.ndarray, float]:
         """
         Adds homoscedastic (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
 
@@ -93,7 +93,7 @@ class SensorSimulator:
             Desired signal-to-noise ratio between 0 and 1.
             - 0.0 means full noise, no signal.
             - 1.0 means no noise, only signal.
-        gauss_noise_var : float
+        sensor_white_noise_var : float
             Standard deviation of the base Gaussian noise.
         noise_seed : int
             Seed for the random number generator to ensure reproducibility.
@@ -105,7 +105,7 @@ class SensorSimulator:
         eps_scaled : np.ndarray
             The noise added to the clean signal.
         eta : float
-            The scaling factor used for the noise (noise variance = eta^2 * gauss_noise_var^2).
+            The scaling factor used for the noise (noise variance = eta^2 * sensor_white_noise_var^2).
         """
         if not (0.0 <= alpha_SNR <= 1.0):
             raise ValueError("alpha_SNR must be in [0, 1].")
@@ -117,7 +117,7 @@ class SensorSimulator:
             return y_clean.copy(), eps, 0.0
 
         # Sample white Gaussian noise
-        eps = noise_rng.normal(loc=0.0, scale=gauss_noise_var, size=y_clean.shape)
+        eps = noise_rng.normal(loc=0.0, scale=sensor_white_noise_var, size=y_clean.shape)
 
         # Compute Frobenius norms
         signal_norm = np.linalg.norm(y_clean, ord='fro')
@@ -142,7 +142,7 @@ class SensorSimulator:
         L: np.ndarray,
         orientation_type: str = "fixed",
         alpha_SNR: float = 0.5,
-        gauss_noise_var: float = 1.0,
+        sensor_white_noise_var: float = 1.0,
         n_trials: int = 1,
         global_seed: int = 42,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -163,7 +163,7 @@ class SensorSimulator:
             Desired signal-to-noise ratio between 0 and 1.
             - 0.0 means full noise, no signal.
             - 1.0 means no noise, only signal.
-        gauss_noise_var : float
+        sensor_white_noise_var : float
             Standard deviation of the noise to be added.
         n_trials : int
             Number of trials to simulate. Default is 1.
@@ -198,7 +198,7 @@ class SensorSimulator:
             y_clean = self._project_sources_to_sensors(x=x_trial, L=L, orientation_type='fixed')
 
             # Add noise to the clean sensor data for this trial
-            y_noisy, noise, noise_scaling_factor_eta = self._add_noise(y_clean, alpha_SNR, gauss_noise_var, noise_seed)
+            y_noisy, noise, noise_scaling_factor_eta = self._add_noise(y_clean, alpha_SNR, sensor_white_noise_var, noise_seed)
 
             y_clean_all_trials.append(y_clean)
             y_noisy_all_trials.append(y_noisy)
