@@ -46,10 +46,20 @@ def gamma_map(
     else:
         raise ValueError("init_gamma should be a float, a tuple of two floats, or a list of floats.")
 
+    # Handle noise variance
+    noise_cov = noise_var * np.eye(L.shape[0])
+    
+    # Compute whitener matrix
+    whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    
+    # Whiten the data and forward operator
+    y_white = whitener @ y
+    L_white = whitener @ L
+    
     x_hat_, active_indices, posterior_cov = _gamma_map_opt(
         y,
         L,
-        sigma_squared=noise_var,
+        sigma_squared=1.0,
         tol=tol,
         maxit=max_iter,
         init_gamma=init_gamma,
@@ -790,7 +800,7 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
 
     # Compute the eLORETA kernel and the posterior source covariance using the helper.
     # alpha is lambda2 = noise_var
-    K, Sigma = compute_eloreta_kernel(L, lambda2= noise_var, n_orient=n_orient, whitener=whitener)
+    K, Sigma = compute_eloreta_kernel(L, lambda2=1.0, n_orient=n_orient, whitener=whitener)
     
     # Compute the mean source estimates.
     x = K @ y # get the source time courses with simple dot product
@@ -1006,7 +1016,7 @@ def BMN_opt(y, L, alpha, maxit=1000, tol=1e-6, update_mode=2, init_gamma=None, v
 
     return x_hat, posterior_cov, gamma
 
-def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
+def BMN(L, y, noise_var, n_orient=1, max_iter=100, tol=1e-15,
         update_mode=2, init_gamma=None, verbose=True, normalization=False, **kwargs):
     """
     Hierarchical Bayesian Minimum Norm (BMN) source reconstruction with a common source variance.
@@ -1019,8 +1029,6 @@ def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
         Observation data.
     noise_var : float, optional
         Noise variance. Default is 1.0.
-    alpha : float, optional
-        Initial noise variance. Default is 0.2.
     n_orient : int, optional
         Number of orientations per source (1 or 3). Default is 1.
     max_iter : int, optional
