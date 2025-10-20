@@ -74,6 +74,7 @@ def main():
     
     uncertainty_estimator = UncertaintyEstimator(
         confidence_levels=confidence_levels,
+        nominal_coverages=1 - confidence_levels,
         logger=logger,
     )  
       
@@ -83,9 +84,9 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [5, 10],
+        "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.5, 0.99],
+        "alpha_SNR": [0.99],
         "sensor_white_noise_var": [1.0],
     }
     
@@ -127,7 +128,7 @@ def main():
     }
 
     BMN_params = {
-        "max_iter": [3],
+        "max_iter": [10],
         'alpha': [1.0], # on whitened data. The implementation is hardcoded to 1.
     }
         
@@ -150,16 +151,16 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
-        # ---------------- BMN ----------------
+        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        # # ---------------- BMN ----------------
         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
-        # ---------------- sFLEX-Gamma-MAP ----------------
-        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
-        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
-        # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        # # ---------------- sFLEX-Gamma-MAP ----------------
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
+        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
 
         # ================ EEG experiments ================
         # ---------------- eLORETA ----------------
@@ -192,6 +193,7 @@ def main():
 
     metric_evaluator = MetricEvaluator(
         confidence_levels=confidence_levels,
+        nominal_coverages= 1 - confidence_levels,
         metrics=metrics,
         logger=logger
     )

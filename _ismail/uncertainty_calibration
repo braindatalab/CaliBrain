@@ -230,8 +230,8 @@ def calibration_CV(x_hat, x_true, post_cov, alpha_levels, n_folds=5, random_stat
         train_intervals = credible_intervals(x_hat_train, post_var_train, alpha_levels)
         train_empirical = empirical_coverage(x_true_train, train_intervals, alpha_levels)
         
-        # TRAIN: Fit isotonic regression (empirical → nominal coverage)
-        # Preserves monotonicity: higher confidence → higher coverage
+        # TRAIN: Fit isotonic regression (empirical -> nominal coverage)
+        # Preserves monotonicity: higher confidence -> higher coverage
         ir_model = IsotonicRegression(out_of_bounds='clip')
         ir_model.fit(train_empirical, nominal_cov)
         
@@ -252,7 +252,6 @@ def calibration_CV(x_hat, x_true, post_cov, alpha_levels, n_folds=5, random_stat
         
         # Accumulate calibrated coverages
         cal_coverages += test_calibrated
-        
         print(f"  Fold {fold+1}: {len(train_idx)} train, {len(test_idx)} test sources")
     
     # Average across all folds
@@ -406,6 +405,7 @@ def run_calibration_analysis(x_hat, x_true, post_cov, alpha_levels=None, n_folds
     # Step 2: Cross-validation calibration
     print("\n2. Running source-wise cross-validation calibration...")
     post_empirical, fold_results = calibration_CV(x_hat, x_true, post_cov, alpha_levels, n_folds)
+    
     post_metrics = calibration_metrics(nominal_cov, post_empirical)
     
     improvement = (pre_metrics['AAD'] - post_metrics['AAD']) / pre_metrics['AAD'] * 100
@@ -449,6 +449,12 @@ def run_calibration_analysis(x_hat, x_true, post_cov, alpha_levels=None, n_folds
 # Fixed configuration parameters
 alpha_levels = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) # we can increase the number of significance levels
 n_folds = 5 # CV
+
+n_sources = 100
+n_times = 200
+x_hat = np.random.randn(n_sources, n_times) 
+x_true = np.random.randn(n_sources, n_times)
+post_cov = linalg.toeplitz(0.5 ** np.arange(n_sources))
 
 # Run complete calibration analysis
 results, fig = run_calibration_analysis(

@@ -298,7 +298,11 @@ class Benchmark:
                 x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
                     y=y_noisy_one_trial
                 )    
-
+                posterior_var = self.uncertainty_estimator.get_posterior_variance(
+                    posterior_cov=posterior_cov,
+                    orientation_type=orientation_type
+                )
+                
                 # -------------------------------------------------------------
                 # 9. Estimate uncertainty (-> credible intervals)
                 # -------------------------------------------------------------
@@ -310,7 +314,8 @@ class Benchmark:
                 
                 # Scale posterior variance by number of time points (averaging over time reduces variance)
                 n_time = x_one_trial.shape[1]
-                posterior_cov_avg_time = posterior_cov / n_time
+                posterior_var_avg_time = posterior_var / n_time
+                # posterior_cov_avg_time = posterior_cov / n_time
 
                 # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
                 #     x=x_avg_time,
@@ -367,28 +372,68 @@ class Benchmark:
                 #     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
                     
                 # Compute confidence intervals
-                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages = \
+                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
                     self.uncertainty_estimator.get_credible_intervals_data(
                         x=x_one_trial_avg_time,
                         x_hat=x_hat_one_trial_avg_time,
-                        posterior_cov=posterior_cov_avg_time,
+                        posterior_var=posterior_var_avg_time,
                         orientation_type=orientation_type
                     )
 
-                # -------------------------------------------------------------
-                # 10. Evaluate metrics and store results
-                # -------------------------------------------------------------       
-                self.metric_evaluator.evaluate_and_store_metrics(
-                    current_results_dict=this_result,
-                    empirical_coverages=empirical_coverages,
-                    cov=posterior_cov_avg_time,  #_matched? TODO
+                # Calibrate using CV
+                empirical_coverages_post_cal, fold_results = \
+                    self.uncertainty_estimator.calibration_CV(
                     x=x_one_trial_avg_time,
                     x_hat=x_hat_one_trial_avg_time,
+                    posterior_var=posterior_var_avg_time,
+                    orientation_type='fixed', n_folds=5, random_state=42)
+                    
+                # -------------------------------------------------------------
+                # 10. Evaluate metrics and merge them into this_result
+                # -------------------------------------------------------------
+                metric_kwargs = dict(
+                    x=x_one_trial_avg_time,
+                    x_hat=x_hat_one_trial_avg_time,
+                    posterior_var=posterior_var_avg_time,
                     orientation_type=orientation_type,
                     nnz=data_params.get("nnz"),
                     subject=data_params.get("subject"),
-                    fwd_path=self.leadfield_builder.leadfield_dir
+                    fwd_path=self.leadfield_builder.leadfield_dir,
                 )
+
+                try:
+                    metric_results_pre_cal = self.metric_evaluator.evaluate_metrics(
+                        empirical_coverages=empirical_coverages_pre_cal,
+                        **metric_kwargs
+                    )
+                    # store metrics with suffix to indicate pre-calibration
+                    suffixed_pre = {f"pre_cal_{k}": v for k, v in metric_results_pre_cal.items()}
+                    this_result.update(suffixed_pre)
+
+                    metric_results_post_cal = self.metric_evaluator.evaluate_metrics(
+                        empirical_coverages=empirical_coverages_post_cal,
+                        **metric_kwargs
+                    )
+                    # store metrics with suffix to indicate post-calibration
+                    suffixed_post = {f"post_cal_{k}": v for k, v in metric_results_post_cal.items()}
+                    this_result.update(suffixed_post)
+
+                    for k in self.metric_evaluator.metrics:
+                        # compute improvement using the original metric keys, store as <metric>_improvement
+                        improvement_key = f"improvement_{k}"
+                        try:
+                            pre = metric_results_pre_cal.get(k)
+                            post = metric_results_post_cal.get(k)
+                            if pre is None or post is None:
+                                this_result[improvement_key] = None
+                            else:
+                                this_result[improvement_key] = (pre - post) / pre * 100
+                        except Exception:
+                            this_result[improvement_key] = None
+                        
+                except Exception as e:
+                    self.logger.error(f"Error while evaluating metrics: {e}", exc_info=True)
+                    this_result.update({"metric_evaluation_error": str(e)})
 
                 # --------------------------------------------------------------
                 # 11. Vizualization
@@ -412,7 +457,9 @@ class Benchmark:
                     source_units=source_units,
                     sensor_units=sensor_units,
                     confidence_levels=self.uncertainty_estimator.confidence_levels,
-                    empirical_coverages=empirical_coverages,
+                    nominal_coverages=self.uncertainty_estimator.nominal_coverages,
+                    empirical_coverages=empirical_coverages_pre_cal,
+                    empirical_coverages_post_cal=empirical_coverages_post_cal,
                     ci_lower=ci_lower_active,
                     ci_upper=ci_upper_active,
                     orientation_type=orientation_type,

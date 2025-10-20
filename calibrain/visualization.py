@@ -915,6 +915,74 @@ class Visualizer:
     #     plt.show()
 
 
+    def plot_pre_post_calibration_curves(
+        self,
+        confidence_levels,
+        nominal_coverages,
+        empirical_coverages_pre,
+        empirical_coverages_post,
+        file_name='pre_post_calibration_curve',
+        save_path='uncertainty_analysis',
+        show=False,
+        ):
+        """
+        Plot pre- and post-calibration curves for uncertainty quantification.
+        Parameters
+        ----------
+        confidence_levels : ndarray
+            Array of confidence levels.
+        nominal_coverages : ndarray
+            Array of nominal coverage values.
+        empirical_coverages_pre : ndarray
+            Array of empirical coverage values before calibration.
+        empirical_coverages_post : ndarray
+            Array of empirical coverage values after calibration.
+        file_name : str, optional
+            Name of the file to save the plot, by default 'pre_post_calibration_curve'.
+        save_path : str, optional
+            Path to save the plot, by default 'uncertainty_analysis'.
+        show : bool, optional
+            Whether to display the plot, by default False.
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        
+        # Plot 1: Calibration curves
+        ax1.plot(nominal_coverages, empirical_coverages_pre, 'bo-', label='Pre-calibration', linewidth=2, markersize=6)
+        ax1.plot(nominal_coverages, empirical_coverages_post, 'ro-', label='Post-calibration', linewidth=2, markersize=6)
+        ax1.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
+        # ax1.plot([1, 0], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
+
+
+        ax1.set_xlabel('Nominal Coverage (1 - Confidence Level)')
+        ax1.set_ylabel('Empirical Coverage')
+        ax1.set_title('Calibration Curves')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        ax1.invert_xaxis()
+        ax1.set_aspect('equal')
+        
+        # Plot 2: Calibration errors
+        pre_errors = np.abs(empirical_coverages_pre - nominal_coverages)
+        post_errors = np.abs(empirical_coverages_post - nominal_coverages)
+
+        x_pos = np.arange(len(nominal_coverages))
+        width = 0.35
+        
+        ax2.bar(x_pos - width/2, pre_errors, width, label='Pre-calibration', alpha=0.7, color='blue')
+        ax2.bar(x_pos + width/2, post_errors, width, label='Post-calibration', alpha=0.7, color='red')
+
+        ax2.set_xlabel('Nominal Coverage (1 - Confidence Level)')
+        ax2.set_ylabel('Absolute Error')
+        ax2.set_title('Calibration Errors')
+        ax2.set_xticks(x_pos)
+        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_coverages])
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        self._handle_figure_output(fig, file_name, save_path, show)   
+           
+        
     # ------------------------------------------------
     # Wrap up all visualizations into a single method
     # ------------------------------------------------
@@ -938,7 +1006,9 @@ class Visualizer:
         source_units: str = FIFF.FIFF_UNIT_AM,
         sensor_units: str = FIFF.FIFF_UNIT_V,
         confidence_levels: np.ndarray = None,
+        nominal_coverages: np.ndarray = None,
         empirical_coverages: np.ndarray = None,
+        empirical_coverages_post_cal: np.ndarray = None,
         ci_lower: np.ndarray = None,
         ci_upper: np.ndarray = None,
         orientation_type: str = "fixed",
@@ -1005,8 +1075,12 @@ class Visualizer:
             Sensor signal units, by default FIFF.FIFF_UNIT_V
         confidence_levels : np.ndarray, optional
             Confidence levels for uncertainty analysis
+        nominal_coverages : dict, optional
+            Nominal coverage data for calibration
         empirical_coverages : dict, optional
             Empirical coverage data for calibration
+        empirical_coverages_post_cal : dict, optional
+            Post-calibration empirical coverage data
         ci_lower : np.ndarray, optional
             Lower confidence bounds
         ci_upper : np.ndarray, optional
@@ -1191,6 +1265,16 @@ class Visualizer:
             empirical_coverages=empirical_coverages,
             result=result,
             file_name='calibration_curve',
+            save_path='uncertainty_analysis',
+            show=False,
+        )
+        
+        self.plot_pre_post_calibration_curves(
+            confidence_levels=confidence_levels,
+            nominal_coverages=nominal_coverages,
+            empirical_coverages_pre=empirical_coverages,
+            empirical_coverages_post=empirical_coverages_post_cal,
+            file_name='pre_post_calibration_curve',
             save_path='uncertainty_analysis',
             show=False,
         )

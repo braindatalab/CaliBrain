@@ -10,7 +10,7 @@ from mne.inverse_sparse.mxne_inverse import _make_sparse_stc
 from sklearn.metrics import jaccard_score, mean_squared_error, f1_score
 
 class MetricEvaluator:
-    def __init__(self, confidence_levels : np.ndarray = None, metrics : list[str] = None, logger : logging.Logger = None):
+    def __init__(self, confidence_levels : np.ndarray = None, nominal_coverages : np.ndarray = None, metrics : list[str] = None, logger : logging.Logger = None):
         """
         Initialize the MetricEvaluator with confidence levels, metrics, and a logger.
         Parameters
@@ -25,6 +25,9 @@ class MetricEvaluator:
         self.confidence_levels = confidence_levels
         self.metrics = metrics if metrics is not None else []
         self.logger = logger
+        
+        # Coverage probabilities
+        self.nominal_coverages = nominal_coverages
 
     # Calibration curve metrics
     def mean_calibration_error(self, empirical_coverages, **kwargs):
@@ -40,8 +43,8 @@ class MetricEvaluator:
         float
             The AUC deviation value.
         """
-        delta_c = np.diff(self.confidence_levels, prepend=self.confidence_levels[0])
-        abs_dev = np.abs(empirical_coverages - self.confidence_levels)
+        delta_c = np.diff(self.nominal_coverages, prepend=self.nominal_coverages[0])
+        abs_dev = np.abs(empirical_coverages - self.nominal_coverages)
         return np.sum(abs_dev * delta_c)
 
     def max_underconfidence_deviation(self, empirical_coverages, **kwargs):
@@ -58,7 +61,7 @@ class MetricEvaluator:
         float
             The maximum positive deviation value.
         """
-        deviation = empirical_coverages - self.confidence_levels
+        deviation = empirical_coverages - self.nominal_coverages
         return np.max(deviation)
 
     def max_overconfidence_deviation(self, empirical_coverages, **kwargs):
@@ -75,7 +78,7 @@ class MetricEvaluator:
         float
             The maximum negative deviation value.
         """
-        deviation = empirical_coverages - self.confidence_levels
+        deviation = empirical_coverages - self.nominal_coverages
         return -np.min(deviation) #TODO: check whether we need the minus here!
 
     def mean_absolute_deviation(self, empirical_coverages, **kwargs):
@@ -89,7 +92,7 @@ class MetricEvaluator:
         float
             The maximum absolute deviation value.
         """
-        deviation = empirical_coverages - self.confidence_levels
+        deviation = empirical_coverages - self.nominal_coverages
         return np.mean(np.abs(deviation))
 
     def mean_signed_deviation(self, empirical_coverages, **kwargs):
@@ -103,22 +106,23 @@ class MetricEvaluator:
         float
             The mean signed deviation value.
         """
-        deviation = empirical_coverages - self.confidence_levels
+        deviation = empirical_coverages - self.nominal_coverages
         return np.mean(deviation)
 
-    def mean_posterior_std(self, cov, **kwargs):
+    def mean_posterior_std(self, posterior_var, **kwargs):
         """Calculate the mean posterior standard deviation.
         Parameters
         ----------
+        posterior_var : np.ndarray
+            Posterior variance vector of shape (n_sources,).
         kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'cov': np.ndarray, covariance matrix for uncertainty metrics.
+            Additional keyword arguments that may be needed for metric calculations
         Returns
         -------
         float
             The mean posterior standard deviation.
         """
-        posterior_std = np.sqrt(np.diag(cov))
+        posterior_std = np.sqrt(posterior_var).reshape(-1, 1)
         # If a mask is needed, it should be an attribute of self, e.g., self.active_mask
         # For now, calculating mean over all available std values.
         # if hasattr(self, 'active_mask') and self.active_mask is not None:
@@ -378,56 +382,52 @@ class MetricEvaluator:
         accuracy_score = (tp + tn) / total
         return accuracy_score
 
-    # Evaluate and store metrics
-    def evaluate_and_store_metrics(self, current_results_dict : dict, **kwargs):
-        """Evaluate metrics and update the results dictionary.
+    # Evaluate metrics and return results as a dictionary (side-effect free)
+    def evaluate_metrics(self, **kwargs) -> dict:
+        """Evaluate configured metrics and return a dict mapping metric names to values.
 
         Parameters
         ----------
-        current_results_dict : dict
-            Dictionary to store the results of the metrics.
         kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-            - 'cov': np.ndarray, covariance matrix for uncertainty metrics.
+            Keyword arguments passed to metric methods (e.g., empirical_coverages, cov, x, x_hat, orientation_type, subject, fwd_path, nnz).
+
+        Returns
+        -------
+        dict
+            Dictionary mapping metric names (or metric_name_error) to computed results.
         """
-        if not self.metrics: # Handles if self.metrics is an empty list
-            self.logger.info(f"No metrics to call' (self.metrics is empty).")
-            return
+        logger = self.logger or logging.getLogger(__name__)
+        results = {}
+
+        if not self.metrics:  # Handles if self.metrics is an empty list
+            logger.info("No metrics to evaluate (self.metrics is empty).")
+            return results
 
         for metric_name_str in self.metrics:
-            metric_output = {} # Initialize for each metric
-            
             try:
                 if hasattr(self, metric_name_str):
                     method = getattr(self, metric_name_str)
-                    
+
                     if callable(method):
-                        self.logger.debug(f"Calling metric method: {metric_name_str} with suffix")
-
-                        # Call the metric method with kwargs, which should contain necessary parameters
+                        logger.debug(f"Calling metric method: {metric_name_str}")
                         result = method(**kwargs)
-
-                        # Wrap scalar outputs into a dict
-                        metric_output = {f"{metric_name_str}": result}
+                        results[metric_name_str] = result
                     else:
-                        self.logger.error(
-                            f"Attribute '{metric_name_str}' found in {type(self).__name__} but it is not callable "
-                            f"Skipping."
+                        logger.error(
+                            f"Attribute '{metric_name_str}' found in {type(self).__name__} but it is not callable. Skipping."
                         )
-                        metric_output = {f"{metric_name_str}_error": "Attribute not callable"}
+                        results[f"{metric_name_str}_error"] = "Attribute not callable"
                 else:
-                    self.logger.error(
-                        f"Metric method '{metric_name_str}' not found in {type(self).__name__} "
-                        f"Skipping."
+                    logger.error(
+                        f"Metric method '{metric_name_str}' not found in {type(self).__name__}. Skipping."
                     )
-                    metric_output = {f"{metric_name_str}_error": "Method not found"}
+                    results[f"{metric_name_str}_error"] = "Method not found"
 
             except Exception as e:
-                self.logger.error(
-                    f"Unexpected error evaluating metric method {metric_name_str} "
-                    f"on '{type(self).__name__}': {e}", exc_info=True
+                logger.error(
+                    f"Unexpected error evaluating metric method {metric_name_str} on '{type(self).__name__}': {e}",
+                    exc_info=True,
                 )
-                metric_output = {f"{metric_name_str}_error": f"Execution error: {str(e)}"}
+                results[f"{metric_name_str}_error"] = f"Execution error: {str(e)}"
 
-            current_results_dict.update(metric_output)
+        return results
