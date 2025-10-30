@@ -12,7 +12,8 @@ from functools import partial
 import mne
 from mne.utils import sqrtm_sym, eigh
 from mne.io.constants import FIFF
-
+from numpy.linalg import inv
+from scipy.linalg import sqrtm
 from calibrain.utils import get_data_path
 
 # ===================
@@ -46,10 +47,20 @@ def gamma_map(
     else:
         raise ValueError("init_gamma should be a float, a tuple of two floats, or a list of floats.")
 
-    x_hat_, active_indices, posterior_cov = _gamma_map_opt(
+    noise_cov = noise_var * np.eye(L.shape[0]) 
+    
+    # Create the whitening matrix from the noise covariance:
+    # Typically computed as the inverse of the square root of the covariance.
+    whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    
+    # Whiten both the sensor data and the lead-field matrix.
+    y = whitener @ y
+    L = whitener @ L
+    
+    x_hat_, active_indices, posterior_cov, gammas_full = _gamma_map_opt(
         y,
         L,
-        sigma_squared=noise_var,
+        sigma_squared=1.0,
         tol=tol,
         maxit=max_iter,
         init_gamma=init_gamma,
@@ -63,8 +74,12 @@ def gamma_map(
 
     if n_orient > 1:
         x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
+        
+    
+    # take the norm of the vector gammas_full
+    gamma = np.linalg.norm(gammas_full)
 
-    return x_hat, active_indices, posterior_cov
+    return x_hat, active_indices, posterior_cov, gamma
 
 def _gamma_map_opt(
     M,
@@ -242,7 +257,7 @@ def _gamma_map_opt(
     # A similar approach can be implmented (as Large_gamma is interpreted as adiagonal matrix with small_gammas:
     # posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)
     
-    return x_active, active_indices, posterior_cov
+    return x_active, active_indices, posterior_cov, gammas_full
 
 
 # ==================
@@ -347,7 +362,7 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
   
     # Run gamma-MAP on G
-    c_hat, active_indices, posterior_cov = gamma_map(
+    c_hat, active_indices, posterior_cov, gamma = gamma_map(
         L=G,  # Use pseudo-lead field instead of original L
         y=y,
         noise_var=noise_var,
@@ -381,7 +396,7 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         # optional reshape back to (N, 3, T)
         x_hat = x_hat.reshape(N, 3, -1)
 
-    return x_hat, active_indices, posterior_cov
+    return x_hat, active_indices, posterior_cov, gamma
 
 
 # ===================
@@ -790,7 +805,7 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
 
     # Compute the eLORETA kernel and the posterior source covariance using the helper.
     # alpha is lambda2 = noise_var
-    K, Sigma = compute_eloreta_kernel(L, lambda2= noise_var, n_orient=n_orient, whitener=whitener)
+    K, Sigma = compute_eloreta_kernel(L, lambda2= 1.0, n_orient=n_orient, whitener=whitener)
     
     # Compute the mean source estimates.
     x = K @ y # get the source time courses with simple dot product
@@ -800,7 +815,7 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
         x = x.reshape((-1, n_orient, x.shape[1]))
 
     active_indices = np.arange(Sigma.shape[0])  # All sources are active in eLORETA
-    return x, active_indices, Sigma  # Return source estimates, all active indices, and posterior covariance
+    return x, active_indices, Sigma, None  # Return source estimates, all active indices, and posterior covariance
 
 
 # ==================
@@ -1006,8 +1021,8 @@ def BMN_opt(y, L, alpha, maxit=1000, tol=1e-6, update_mode=2, init_gamma=None, v
 
     return x_hat, posterior_cov, gamma
 
-def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
-        update_mode=2, init_gamma=None, verbose=True, normalization=False, **kwargs):
+def BMN(L, y, noise_var, n_orient=1, max_iter=100, tol=1e-15,
+        update_mode=2, init_gamma=None, verbose=True, normalization=True, **kwargs):
     """
     Hierarchical Bayesian Minimum Norm (BMN) source reconstruction with a common source variance.
     
@@ -1086,7 +1101,7 @@ def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
     active_indices = np.arange(posterior_cov.shape[0])
     
     # return x_hat, posterior_cov, gamma
-    return x_hat, active_indices, posterior_cov
+    return x_hat, active_indices, posterior_cov, gamma
 
 
 # ==================
@@ -1885,8 +1900,7 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
         
     # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
-    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters
-        
+    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters    
     # Compute basis matrix (you have already B)
     B = compute_B(src_coords, sigma, threshold_factor) #sigma =0.01
     N = src_coords.shape[0]
@@ -1933,4 +1947,4 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
         # Stack along orientation dimension
         x_hat = np.stack(x_hat_blocks, axis=1)  # Shape: (N, 3, T)
     
-    return x_hat, active_indices, posterior_cov
+    return x_hat, active_indices, posterior_cov, None

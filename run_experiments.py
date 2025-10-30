@@ -70,7 +70,7 @@ def main():
         logger=logger,
     )
 
-    confidence_levels = np.append(np.arange(0.0, 1.0, 0.1), 0.99)  # [0.0, 0.1, ..., 0.9, 0.99]
+    confidence_levels = np.append(np.arange(0.1, 1.0, 0.1), 0.99)  # [0.1, 0.2, ..., 0.9, 0.99]
     
     uncertainty_estimator = UncertaintyEstimator(
         confidence_levels=confidence_levels,
@@ -84,20 +84,20 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [10],
+        "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.99],
+        "alpha_SNR": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99],
         "sensor_white_noise_var": [1.0],
     }
     
     # EEG data parameters
-    data_param_grid_eeg = {
-        "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 10, 50],
-        "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.0, 0.5, 0.99],
-        "sensor_white_noise_var": [1.0],
-    }
+    # data_param_grid_eeg = {
+    #     "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
+    #     "nnz": [1, 10, 50],
+    #     "orientation_type": ["fixed"], # "fixed", "free"
+    #     "alpha_SNR": [0.0, 0.5, 0.99],
+    #     "sensor_white_noise_var": [1.0],
+    # }
     
     # =================================================================
     # Define noise parameter grids
@@ -128,14 +128,14 @@ def main():
     }
 
     BMN_params = {
-        "max_iter": [10],
-        'alpha': [1.0], # on whitened data. The implementation is hardcoded to 1.
+        "max_iter": [1000],
+        'normalization': [True]
     }
         
     sflex_gamma_map_params = {
         'init_gamma': [0.001],
         'sigma': [0.001],
-        'max_iter': [50],
+        'max_iter': [1000],
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
     }
     
@@ -148,19 +148,27 @@ def main():
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
     }
     
+    gamma_map_params = {
+        'init_gamma': [0.001],
+        'max_iter': [1000],
+    }
+    
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
-        # # ---------------- BMN ----------------
+        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- BMN ----------------
         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
-        # # ---------------- sFLEX-Gamma-MAP ----------------
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
-        # # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- sFLEX-Gamma-MAP ----------------
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
+        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        # ---------------- Gamma-MAP ----------------
+        (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
+        
 
         # ================ EEG experiments ================
         # ---------------- eLORETA ----------------
@@ -178,11 +186,13 @@ def main():
 
     metrics = [
         "mean_posterior_std",               # Uncertainty
+        
         "mean_calibration_error",           # Calibration (auc)
+        "mean_signed_deviation",            # Calibration
+        "mean_absolute_deviation",          # Calibration
         "max_underconfidence_deviation",    # Calibration
         "max_overconfidence_deviation",     # Calibration
-        "mean_absolute_deviation",          # Calibration
-        "mean_signed_deviation",            # Calibration
+        
         "emd",                              # spatial accuracy
         "jaccard_error",                    # spatial accuracy
         "mse",                              # spatial accuracy
@@ -219,6 +229,11 @@ def main():
         df.append(results_df)
 
     results_df = pd.concat(df)
+    results_df.sort_values(by=['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'],inplace=True, ascending=True)
+    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma']
+    cols = [c for c in desired_order if c in results_df.columns] + \
+           [c for c in results_df.columns if c not in desired_order]
+    results_df = results_df[cols]
     results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
     print(results_df.head())
