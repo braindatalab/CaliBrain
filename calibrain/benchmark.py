@@ -89,7 +89,7 @@ class Benchmark:
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"]
+            desired_order = ["solver", "alpha_SNR", "noise_type", "orientation_type", "nnz",  "sensor_white_noise_var", "subject", "seed"]
         
         path_components = []
         
@@ -180,7 +180,7 @@ class Benchmark:
                     base_dir=fig_path,
                     params=this_result,
                     desired_order = [
-                        "solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"
+                        "solver", "noise_type", "alpha_SNR", "orientation_type", "nnz", "sensor_white_noise_var", "subject", "seed"
                     ]
                 )
                 
@@ -264,19 +264,38 @@ class Benchmark:
                     )
                 else:                                    
                     if noise_type == 'oracle':
+                        print("----- oracle noise variance estimation -----")
                         noise_var_one_trial = (data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2                        
                         
                     # Take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
                     elif noise_type == 'baseline':
+                        print("----- baseline noise variance estimation -----")
                         tmin = self.source_simulator.ERP_config['tmin']
                         stim_onset = self.source_simulator.ERP_config['stim_onset']
                         sfreq = self.source_simulator.ERP_config['sfreq']
                         
                         pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
-                        y_noisy_one_trial = y_noisy_one_trial[:, :pre_stimulus_onset]
-                        
-                        # compute sensor noise variance
-                        noise_var_one_trial = np.mean(np.std(y_noisy_one_trial, axis=1) ** 2)
+                        # Take pre-stimulus slice for baseline variance estimation but DO NOT
+                        # overwrite the full trial `y_noisy_one_trial` which must be used
+                        # by the solver to see the evoked signal. Overwriting the full
+                        # trial caused the solver to run only on noise and made `gamma`
+                        # insensitive to SNR changes.
+                        if pre_stimulus_onset <= 0:
+                            # Fallback: use entire trial if computed index is invalid
+                            self.logger.warning(
+                                "Computed pre_stimulus_onset <= 0; using full trial for baseline estimation"
+                            )
+                            y_pre = y_noisy_one_trial
+                        else:
+                            y_pre = y_noisy_one_trial[:, :pre_stimulus_onset]
+
+                        # compute sensor noise variance from pre-stimulus window
+                        noise_var_one_trial = np.mean(np.std(y_pre, axis=1) ** 2)
+                        # record for debugging/inspection
+                        self.logger.info(
+                            f"Baseline noise variance (trial {run_id}): {noise_var_one_trial:.3e}, eta: {noise_eta_one_trial:.3e}"
+                        )
+                        this_result['noise_var_one_trial'] = float(noise_var_one_trial)
 
                     elif noise_type == 'joint_learning':
                         noise_var_one_trial = None
@@ -295,9 +314,11 @@ class Benchmark:
                 # -------------------------------------------------------------
                 self.logger.info(f"Fitting source estimator {self.solver.__name__}")
                 source_estimator.fit(L, y_noisy_one_trial)
-                x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
+                x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov, gamma = source_estimator.predict(
                     y=y_noisy_one_trial
                 )    
+                this_result['gamma'] = gamma
+                
                 posterior_var = self.uncertainty_estimator.get_posterior_variance(
                     posterior_cov=posterior_cov,
                     orientation_type=orientation_type
@@ -307,69 +328,16 @@ class Benchmark:
                 # 9. Estimate uncertainty (-> credible intervals)
                 # -------------------------------------------------------------
                 self.logger.info("Estimating uncertainty...")
+                if solver_name == 'gamma_map':
+                    self.logger.info("Skipping uncertainty estimation for gamma_map solver.")
+                    continue
                                 
-                # TODO: check whether we still need to set keepdims=True.
                 x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
                 x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
                 
                 # Scale posterior variance by number of time points (averaging over time reduces variance)
                 n_time = x_one_trial.shape[1]
                 posterior_var_avg_time = posterior_var / n_time
-                # posterior_cov_avg_time = posterior_cov / n_time
-
-                # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
-                #     x=x_avg_time,
-                #     x_hat_active_indices=x_hat_active_indices,
-                #     posterior_cov=posterior_cov,
-                #     orientation_type=orientation_type,
-                # )
-
-                # Find matched location between ground truth simulated sources and estimated sources
-                # Get boolean mask for sources present in both sets
-                # matched_mask = np.isin(x_hat_active_indices_one_trial, 
-                #                        x_active_indices_one_trial)
-                
-                # if not np.any(matched_mask):
-                #     self.logger.warning(f"No intersection between true active sources and estimated active sources")
-
-                #     ci_lower_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                #     )
-                #     ci_upper_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                #     )
-
-                #     empirical_coverage_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels))
-                #     )
-
-                #     empirical_coverage_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels))
-                #     )
-                # else:
-                #     # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
-                #     matched_relative_indices = np.where(matched_mask)[0]
-
-                #     # Get the actual source indices for data slicing
-                #     matched_absolute_indices = x_hat_active_indices_one_trial[matched_mask]
-
-                #     # Slice data using absolute indices (both arrays are full-size)
-                #     x_matched = x_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x (full array)
-                #     x_hat_matched = x_hat_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x_hat (also full array)
-
-                #     # Slice posterior covariance using relative indices (only contains active components)
-                #     posterior_cov_matched = posterior_cov[np.ix_(
-                #         matched_relative_indices,
-                #         matched_relative_indices
-                #     )]
-
-                #     # Verify dimensions
-                #     print(f"x_matched shape: {x_matched.shape}")
-                #     print(f"x_hat_matched shape: {x_hat_matched.shape}")  
-                #     print(f"posterior_cov_matched shape: {posterior_cov_matched.shape}")
-
-                #     # Now all should have consistent dimensions
-                #     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
                     
                 # Compute confidence intervals
                 ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
