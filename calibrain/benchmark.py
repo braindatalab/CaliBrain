@@ -89,7 +89,7 @@ class Benchmark:
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"]
+            desired_order = ["solver", "alpha_SNR", "noise_type", "orientation_type", "nnz",  "sensor_white_noise_var", "subject", "seed"]
         
         path_components = []
         
@@ -180,7 +180,7 @@ class Benchmark:
                     base_dir=fig_path,
                     params=this_result,
                     desired_order = [
-                        "solver", "noise_type", "orientation_type", "nnz", "alpha_SNR", "sensor_white_noise_var", "subject", "seed"
+                        "solver", "noise_type", "alpha_SNR", "orientation_type", "nnz", "sensor_white_noise_var", "subject", "seed"
                     ]
                 )
                 
@@ -235,6 +235,28 @@ class Benchmark:
                 noise_eta_one_trial = noise_eta_trials[trial_idx] # noise scaling factor (eta)
 
                 # -------------------------------------------------------------
+                # 7a. Baseline noise variance estimate (pre-stimulus window)
+                # -------------------------------------------------------------
+                tmin = self.source_simulator.ERP_config['tmin']
+                stim_onset = self.source_simulator.ERP_config['stim_onset']
+                sfreq = self.source_simulator.ERP_config['sfreq']
+                pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
+                if pre_stimulus_onset <= 0:
+                    self.logger.warning(
+                        "Computed pre_stimulus_onset <= 0; using full trial for baseline estimation"
+                    )
+                    y_pre = y_noisy_one_trial
+                else:
+                    y_pre = y_noisy_one_trial[:, :pre_stimulus_onset]
+
+                try:
+                    baseline_noise_var = float(np.mean(np.std(y_pre, axis=1) ** 2))
+                except Exception:
+                    baseline_noise_var = None
+                if not baseline_noise_var or not np.isfinite(baseline_noise_var):
+                    baseline_noise_var = 1.0  # safe fallback
+
+                # -------------------------------------------------------------
                 # 8. Determine noise variance based on noise_type
                 # -------------------------------------------------------------
                 # Validate noise_type and set initial noise variance / cv callable
@@ -250,42 +272,47 @@ class Benchmark:
                     raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
 
                 if noise_type in ('spatial_cv', 'temporal_cv'):
+                    grid_factors = np.logspace(-2, 2, 10)
+                    alphas = baseline_noise_var * grid_factors
+                    noise_variances = np.unique(alphas).tolist()
+                    if not noise_variances:
+                        noise_variances = [baseline_noise_var]
                     estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver                    
 
                     # Create source estimator with CV for noise variance selection
-                    source_estimator = estimator(
+                    source_estimator = estimator( 
                         solver=self.solver,
                         solver_params=solver_params,
                         n_orient=n_orient,
                         logger=self.logger,
-                        noise_variances=noise_params.get('default_alphas_grid', None),
+                        # noise_variances=noise_params.get('default_alphas_grid', None),
+                        noise_variances=noise_variances,
                         cv=noise_params.get('cv', 5),
                         n_jobs=noise_params.get('n_jobs', 1),
                     )
                 else:                                    
                     if noise_type == 'oracle':
-                        noise_var_one_trial = (data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2                        
+                        print("----- oracle noise variance estimation -----")
+                        noise_var = float((data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2)
                         
                     # Take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
                     elif noise_type == 'baseline':
-                        tmin = self.source_simulator.ERP_config['tmin']
-                        stim_onset = self.source_simulator.ERP_config['stim_onset']
-                        sfreq = self.source_simulator.ERP_config['sfreq']
-                        
-                        pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
-                        y_noisy_one_trial = y_noisy_one_trial[:, :pre_stimulus_onset]
-                        
-                        # compute sensor noise variance
-                        noise_var_one_trial = np.mean(np.std(y_noisy_one_trial, axis=1) ** 2)
+                        print("----- baseline noise variance estimation -----")
+                        noise_var = baseline_noise_var
+                        # record for debugging/inspection
+                        self.logger.info(
+                            f"Baseline noise variance (trial {run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
+                        )
 
                     elif noise_type == 'joint_learning':
-                        noise_var_one_trial = None
+                        noise_var = None
+
 
                     # Create source estimator with fixed noise variance
                     source_estimator = SourceEstimator(
                         solver=self.solver,
                         solver_params=solver_params,
-                        noise_var=noise_var_one_trial,
+                        noise_var=noise_var,
                         n_orient=n_orient,
                         logger=self.logger
                     )
@@ -295,100 +322,103 @@ class Benchmark:
                 # -------------------------------------------------------------
                 self.logger.info(f"Fitting source estimator {self.solver.__name__}")
                 source_estimator.fit(L, y_noisy_one_trial)
-                x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov = source_estimator.predict(
-                    y=y_noisy_one_trial
-                )    
+                solver_output = source_estimator.predict(y=y_noisy_one_trial)
 
+                x_hat_one_trial = solver_output.get("posterior_mean")
+                x_hat_active_indices_one_trial = solver_output.get("active_indices")
+                posterior_cov = solver_output.get("posterior_cov")
+                
+                noise_var = solver_output.get("noise_var")
+                gamma = solver_output.get("gamma")
+                
+                this_result['gamma'] = gamma
+                this_result["noise_var"] = noise_var
+                
+                posterior_var = self.uncertainty_estimator.get_posterior_variance(
+                    posterior_cov=posterior_cov,
+                    orientation_type=orientation_type
+                )
+                this_result['mean_posterior_variance'] = np.mean(posterior_var)
+                
                 # -------------------------------------------------------------
                 # 9. Estimate uncertainty (-> credible intervals)
                 # -------------------------------------------------------------
                 self.logger.info("Estimating uncertainty...")
+                if solver_name == 'gamma_map':
+                    self.logger.info("Skipping uncertainty estimation for gamma_map solver.")
+                    results_list.append(this_result)
+                    continue
                                 
-                # TODO: check whether we still need to set keepdims=True.
                 x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
                 x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
                 
                 # Scale posterior variance by number of time points (averaging over time reduces variance)
                 n_time = x_one_trial.shape[1]
-                posterior_cov_avg_time = posterior_cov / n_time
-
-                # full_posterior_cov = self.uncertainty_estimator.construct_full_covariance(
-                #     x=x_avg_time,
-                #     x_hat_active_indices=x_hat_active_indices,
-                #     posterior_cov=posterior_cov,
-                #     orientation_type=orientation_type,
-                # )
-
-                # Find matched location between ground truth simulated sources and estimated sources
-                # Get boolean mask for sources present in both sets
-                # matched_mask = np.isin(x_hat_active_indices_one_trial, 
-                #                        x_active_indices_one_trial)
-                
-                # if not np.any(matched_mask):
-                #     self.logger.warning(f"No intersection between true active sources and estimated active sources")
-
-                #     ci_lower_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                #     )
-                #     ci_upper_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels), n_orient, 1)
-                #     )
-
-                #     empirical_coverage_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels))
-                #     )
-
-                #     empirical_coverage_active = np.zeros(
-                #         (len(self.uncertainty_estimator.confidence_levels))
-                #     )
-                # else:
-                #     # Get relative indices within x_hat_active_indices (for posterior_cov slicing)
-                #     matched_relative_indices = np.where(matched_mask)[0]
-
-                #     # Get the actual source indices for data slicing
-                #     matched_absolute_indices = x_hat_active_indices_one_trial[matched_mask]
-
-                #     # Slice data using absolute indices (both arrays are full-size)
-                #     x_matched = x_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x (full array)
-                #     x_hat_matched = x_hat_one_trial_avg_time[matched_absolute_indices]  # Use absolute for x_hat (also full array)
-
-                #     # Slice posterior covariance using relative indices (only contains active components)
-                #     posterior_cov_matched = posterior_cov[np.ix_(
-                #         matched_relative_indices,
-                #         matched_relative_indices
-                #     )]
-
-                #     # Verify dimensions
-                #     print(f"x_matched shape: {x_matched.shape}")
-                #     print(f"x_hat_matched shape: {x_hat_matched.shape}")  
-                #     print(f"posterior_cov_matched shape: {posterior_cov_matched.shape}")
-
-                #     # Now all should have consistent dimensions
-                #     assert x_matched.shape[0] == x_hat_matched.shape[0] == posterior_cov_matched.shape[0]
+                posterior_var_avg_time = posterior_var / n_time
                     
                 # Compute confidence intervals
-                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages = \
+                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
                     self.uncertainty_estimator.get_credible_intervals_data(
                         x=x_one_trial_avg_time,
                         x_hat=x_hat_one_trial_avg_time,
-                        posterior_cov=posterior_cov_avg_time,
+                        posterior_var=posterior_var_avg_time,
                         orientation_type=orientation_type
                     )
 
-                # -------------------------------------------------------------
-                # 10. Evaluate metrics and store results
-                # -------------------------------------------------------------       
-                self.metric_evaluator.evaluate_and_store_metrics(
-                    current_results_dict=this_result,
-                    empirical_coverages=empirical_coverages,
-                    cov=posterior_cov_avg_time,  #_matched? TODO
+                # Calibrate using CV
+                empirical_coverages_post_cal, fold_results = \
+                    self.uncertainty_estimator.calibration_CV(
                     x=x_one_trial_avg_time,
                     x_hat=x_hat_one_trial_avg_time,
+                    posterior_var=posterior_var_avg_time,
+                    orientation_type='fixed', n_folds=5, random_state=42)
+                    
+                # -------------------------------------------------------------
+                # 10. Evaluate metrics and merge them into this_result
+                # -------------------------------------------------------------
+                metric_kwargs = dict(
+                    x=x_one_trial_avg_time,
+                    x_hat=x_hat_one_trial_avg_time,
+                    posterior_var=posterior_var_avg_time,
                     orientation_type=orientation_type,
                     nnz=data_params.get("nnz"),
                     subject=data_params.get("subject"),
-                    fwd_path=self.leadfield_builder.leadfield_dir
+                    fwd_path=self.leadfield_builder.leadfield_dir,
                 )
+
+                try:
+                    metric_results_pre_cal = self.metric_evaluator.evaluate_metrics(
+                        empirical_coverages=empirical_coverages_pre_cal,
+                        **metric_kwargs
+                    )
+                    # store metrics with suffix to indicate pre-calibration
+                    suffixed_pre = {f"pre_cal_{k}": v for k, v in metric_results_pre_cal.items()}
+                    this_result.update(suffixed_pre)
+
+                    metric_results_post_cal = self.metric_evaluator.evaluate_metrics(
+                        empirical_coverages=empirical_coverages_post_cal,
+                        **metric_kwargs
+                    )
+                    # store metrics with suffix to indicate post-calibration
+                    suffixed_post = {f"post_cal_{k}": v for k, v in metric_results_post_cal.items()}
+                    this_result.update(suffixed_post)
+
+                    for k in self.metric_evaluator.metrics:
+                        # compute improvement using the original metric keys, store as <metric>_improvement
+                        improvement_key = f"improvement_{k}"
+                        try:
+                            pre = metric_results_pre_cal.get(k)
+                            post = metric_results_post_cal.get(k)
+                            if pre is None or post is None:
+                                this_result[improvement_key] = None
+                            else:
+                                this_result[improvement_key] = (pre - post) / pre * 100
+                        except Exception:
+                            this_result[improvement_key] = None
+                        
+                except Exception as e:
+                    self.logger.error(f"Error while evaluating metrics: {e}", exc_info=True)
+                    this_result.update({"metric_evaluation_error": str(e)})
 
                 # --------------------------------------------------------------
                 # 11. Vizualization
@@ -412,7 +442,9 @@ class Benchmark:
                     source_units=source_units,
                     sensor_units=sensor_units,
                     confidence_levels=self.uncertainty_estimator.confidence_levels,
-                    empirical_coverages=empirical_coverages,
+                    nominal_coverages=self.uncertainty_estimator.nominal_coverages,
+                    empirical_coverages=empirical_coverages_pre_cal,
+                    empirical_coverages_post_cal=empirical_coverages_post_cal,
                     ci_lower=ci_lower_active,
                     ci_upper=ci_upper_active,
                     orientation_type=orientation_type,
@@ -420,7 +452,12 @@ class Benchmark:
                     experiment_dir=experiment_dir,
                 )
                 
-                this_result['active_indices_size'] = len(x_hat_active_indices_one_trial)
+                active_indices_size = (
+                    len(x_hat_active_indices_one_trial)
+                    if x_hat_active_indices_one_trial is not None
+                    else 0
+                )
+                this_result['active_indices_size'] = active_indices_size
 
             except Exception as e:
                 self.logger.error(f"Error during benchmarking run_id {this_result.get('run_id', 'N/A')}: {e}", exc_info=True)

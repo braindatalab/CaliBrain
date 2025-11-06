@@ -1,0 +1,473 @@
+"""
+Uncertainty Calibration Analysis: Source-wise Cross-Validation with Isotonic Regression
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import linalg
+from scipy.stats import norm
+from sklearn.isotonic import IsotonicRegression
+from sklearn.model_selection import KFold
+
+# ============================================================================
+# CALIBRATION ANALYSIS (TIME-AVERAGED)
+# ============================================================================
+
+def time_average_estimates(x_hat, post_cov, x_true):
+    """
+    Compute time-averaged estimates for uncertainty calibration
+    
+    Parameters:
+    -----------
+    x_hat : ndarray, shape (n_sources, n_times)
+        Estimated source time courses
+    post_cov : ndarray, shape (n_sources, n_sources)
+        Posterior covariance matrix
+    x_true : ndarray, shape (n_sources, n_times)
+        True source time courses
+    
+    Returns:
+    --------
+    x_hat_avg : ndarray, shape (n_sources,)
+        Time-averaged source estimates
+    x_true_avg : ndarray, shape (n_sources,)
+        Time-averaged true sources
+    post_var_avg : ndarray, shape (n_sources,)
+        Scaled posterior variances (Σ/T)
+    
+    -------
+    """
+    n_sources, n_times = x_hat.shape
+    
+    # Average source estimates and true sources over time dimension
+    x_hat_avg = np.mean(x_hat, axis=1)
+    x_true_avg = np.mean(x_true, axis=1)
+    
+    # Scale posterior variance by 1/T (due to averaging)
+    # This reduces uncertainty by factor of T (e.g., Σ/T)
+    post_var_avg = np.diag(post_cov) / n_times
+    
+    return x_hat_avg, x_true_avg, post_var_avg
+
+def credible_intervals(x_hat_avg, post_var_avg, alpha_levels):
+    """
+    Compute credible intervals for time-averaged estimates
+    
+    Parameters:
+    -----------
+    x_hat_avg : ndarray, shape (n_sources,)
+        Time-averaged source estimates
+    post_var_avg : ndarray, shape (n_sources,)
+        Scaled posterior variances
+    alpha_levels : array-like
+        Significance levels [0.1, 0.2, ..., 0.9]
+    
+    Returns:
+    --------
+    intervals : dict
+        Dictionary with 'lower' and 'upper' bounds for each alpha level
+    
+    Theory:
+    -------
+    For normal distribution: CI = μ ± z_{1-α/2} * √σ²
+    where z_{1-α/2} is the (1-α/2) quantile of standard normal distribution
+    Note: alpha = significance or confidence level => 1 - alpha = credible mass or nominal coverage probability
+    """
+    intervals = {}
+    
+    for alpha in alpha_levels:
+        # Two-tailed z-score for confidence level (1-α)
+        z = norm.ppf(1 - alpha/2)
+        
+        # Margin of error
+        margin = z * np.sqrt(post_var_avg)
+        
+        intervals[alpha] = {
+            'lower': x_hat_avg - margin,
+            'upper': x_hat_avg + margin
+        }
+    
+    return intervals
+
+def empirical_coverage(x_true_avg, intervals, alpha_levels):
+    """
+    Compute empirical coverage probabilities
+    
+    Parameters:
+    -----------
+    x_true_avg : ndarray, shape (n_sources,)
+        Time-averaged true source values
+    intervals : dict
+        Credible intervals from credible_intervals()
+    alpha_levels : array-like
+        Significance levels
+    
+    Returns:
+    --------
+    coverages : ndarray
+        Empirical coverage probabilities for each confidence level
+    
+    -------
+    Measures what percentage of true values fall within the credible intervals
+    Perfect calibration: empirical coverage = nominal coverage or confidence level
+    """
+    coverages = []
+    
+    for alpha in alpha_levels:
+        lower = intervals[alpha]['lower']
+        upper = intervals[alpha]['upper']
+        
+        # Check if true values fall within intervals
+        covered = (x_true_avg >= lower) & (x_true_avg <= upper)
+        coverages.append(np.mean(covered))
+    
+    return np.array(coverages)
+
+def calibration_metrics(nominal_coverages, empirical_coverages):
+    """
+    Compute calibration quality metrics
+    
+    Parameters:
+    -----------
+    nominal_coverages : ndarray
+        Expected coverage probabilities (1 - alpha_levels)
+    empirical_coverages : ndarray
+        Actual observed coverage probabilities
+    
+    Returns:
+    --------
+    metrics : dict
+        Dictionary of calibration metrics:
+        - AAD: Average Absolute Deviation (lower = better)
+        - ASD: Average Signed Deviation 
+               (+ = underconfident/intervals too wide, - = overconfident/intervals too narrow)
+        - Max_Under: Maximum undercoverage error
+        - Max_Over: Maximum overcoverage error
+    """
+    errors = empirical_coverages - nominal_coverages
+    
+    return {
+        'AAD': np.mean(np.abs(errors)),      # Overall calibration error
+        'ASD': np.mean(errors),              # Bias direction: + = underconfident, - = overconfident
+        'Max_Under': np.max(errors),         # Worst underconfidence case
+        'Max_Over': -np.min(errors),         # Worst overconfidence case
+    }
+
+# ============================================================================
+#  CALIBRATION WITH ISOTONIC REGRESSION
+# ============================================================================
+
+def calibration_CV(x_hat, x_true, post_cov, alpha_levels, n_folds=5, random_state=42):
+    """
+    Calibrate credible intervals using isotonic regression (IR) with source-wise cross-validation avoiding overfitting
+    
+    Parameters:
+    -----------
+    x_hat : ndarray, shape (n_sources, n_times)
+        Estimated source time courses
+    x_true : ndarray, shape (n_sources, n_times)  
+        True source time courses
+    post_cov : ndarray, shape (n_sources, n_sources)
+        Posterior covariance matrix
+    alpha_levels : array-like
+        Significance levels for credible intervals
+    n_folds : int
+        Number of cross-validation folds
+    random_state : int
+        Random seed for reproducible splits
+    
+    Returns:
+    --------
+    cal_coverages : ndarray
+        Calibrated coverage probabilities averaged across folds
+    fold_results : list
+        Detailed results for each fold
+    
+    Methodology:
+    ------------
+    1. Split sources, use cross-validation to train/test IR model to avoid overfitting
+    2. For each fold:
+       - Train: Compute empirical coverage on training sources
+       - Train: Fit isotonic regression (empirical → nominal coverage)
+       - Test: Apply calibration to test sources
+    3. Average results across folds
+    
+    Theory
+    ------------
+    Learns the mapping from observed empirical coverage to desired nominal coverage
+    using monotonic regression to preserve probability ordering
+    """
+    n_sources = x_hat.shape[0]
+    
+    # Convert alpha levels to nominal coverage probabilities
+    # alpha=0.1 → 90% credible interval, alpha=0.2 → 80% credible interval, etc.
+    nominal_cov = 1 - np.array(alpha_levels)
+    
+    # Compute time-averaged data 
+    x_hat_avg, x_true_avg, post_var_avg = time_average_estimates(x_hat, post_cov, x_true)
+    
+    # Initialize cross-validation with shuffling and fixed seed
+    kf = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+    source_idx = np.arange(n_sources)
+    
+    cal_coverages = np.zeros(len(alpha_levels))
+    fold_results = []
+    
+    print(f"Running {n_folds}-fold source-wise calibration:")
+    print(f"Splitting {n_sources} sources into training/test sets")
+    
+    for fold, (train_idx, test_idx) in enumerate(kf.split(source_idx)):
+        # Split sources (not time points!)
+        x_hat_train = x_hat_avg[train_idx]
+        x_true_train = x_true_avg[train_idx]
+        post_var_train = post_var_avg[train_idx]
+        
+        x_hat_test = x_hat_avg[test_idx]
+        x_true_test = x_true_avg[test_idx]
+        post_var_test = post_var_avg[test_idx]
+        
+        # TRAIN: Compute empirical coverage on training sources
+        train_intervals = credible_intervals(x_hat_train, post_var_train, alpha_levels)
+        train_empirical = empirical_coverage(x_true_train, train_intervals, alpha_levels)
+        
+        # TRAIN: Fit isotonic regression (empirical -> nominal coverage)
+        # Preserves monotonicity: higher confidence -> higher coverage
+        ir_model = IsotonicRegression(out_of_bounds='clip')
+        ir_model.fit(train_empirical, nominal_cov)
+        
+        # TEST: Apply calibration to test sources
+        test_intervals = credible_intervals(x_hat_test, post_var_test, alpha_levels)
+        test_empirical = empirical_coverage(x_true_test, test_intervals, alpha_levels)
+        test_calibrated = ir_model.transform(test_empirical)
+        
+        # Store fold results
+        fold_results.append({
+            'train_empirical': train_empirical,
+            'test_empirical': test_empirical,
+            'calibrated': test_calibrated,
+            'n_train': len(train_idx),
+            'n_test': len(test_idx),
+            'fold': fold
+        })
+        
+        # Accumulate calibrated coverages
+        cal_coverages += test_calibrated
+        print(f"  Fold {fold+1}: {len(train_idx)} train, {len(test_idx)} test sources")
+    
+    # Average across all folds
+    cal_coverages /= n_folds
+    
+    print("Calibration completed successfully!")
+    return cal_coverages, fold_results
+
+def plot_calibration(nominal_cov, pre_empirical, post_empirical):
+    """
+    Plot calibration curves and errors
+    
+    Parameters:
+    -----------
+    nominal_cov : ndarray
+        Nominal confidence levels
+    pre_empirical : ndarray
+        Empirical coverage before calibration
+    post_empirical : ndarray  
+        Empirical coverage after calibration
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # Plot 1: Calibration curves
+    ax1.plot(nominal_cov, pre_empirical, 'bo-', label='Pre-calibration', linewidth=2, markersize=6)
+    ax1.plot(nominal_cov, post_empirical, 'ro-', label='Post-calibration', linewidth=2, markersize=6)
+    ax1.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
+    
+    ax1.set_xlabel('Nominal Confidence Level')
+    ax1.set_ylabel('Empirical Coverage')
+    ax1.set_title('Calibration Curves')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    ax1.set_aspect('equal')
+    
+    # Plot 2: Calibration errors
+    pre_errors = np.abs(pre_empirical - nominal_cov)
+    post_errors = np.abs(post_empirical - nominal_cov)
+    
+    x_pos = np.arange(len(nominal_cov))
+    width = 0.35
+    
+    ax2.bar(x_pos - width/2, pre_errors, width, label='Pre-calibration', alpha=0.7, color='blue')
+    ax2.bar(x_pos + width/2, post_errors, width, label='Post-calibration', alpha=0.7, color='red')
+    
+    ax2.set_xlabel('Confidence Level')
+    ax2.set_ylabel('Absolute Error')
+    ax2.set_title('Calibration Errors')
+    ax2.set_xticks(x_pos)
+    ax2.set_xticklabels([f'{c:.1f}' for c in nominal_cov])
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return fig
+
+
+def create_metrics_table(pre_metrics, post_metrics):
+    """
+    Create comprehensive metrics comparison table
+    
+    Parameters:
+    -----------
+    pre_metrics : dict
+        Calibration metrics before calibration
+    post_metrics : dict
+        Calibration metrics after calibration
+    
+    Returns:
+    --------
+    Prints formatted table comparing all calibration metrics
+    """
+    metrics_names = ['AAD', 'ASD', 'Max_Under', 'Max_Over']
+    metrics_labels = ['Average Absolute Deviation', 'Average Signed Deviation', 
+                     'Maximum Under-coverage', 'Maximum Over-coverage']
+    
+    print("\n" + "="*60)
+    print("CALIBRATION METRICS COMPARISON")
+    print("="*60)
+    print(f"{'Metric':<25} {'Pre-calibration':<15} {'Post-calibration':<15}")
+    print("-"*60)
+    
+    for name, label in zip(metrics_names, metrics_labels):
+        pre_val = pre_metrics[name]
+        post_val = post_metrics[name]
+        
+        print(f"{label:<25} {pre_val:<15.4f} {post_val:<15.4f}")
+    
+    print("="*60)
+    
+    
+    # Overall assessment
+    improvement = (pre_metrics['AAD'] - post_metrics['AAD']) / pre_metrics['AAD'] * 100
+    print(f"\nOVERALL ASSESSMENT:")
+    print(f"• Calibration improvement: {improvement:+.1f}%")
+    
+# ============================================================================
+# COMPLETE CALIBRATION PIPELINE
+# ============================================================================
+
+def run_calibration_analysis(x_hat, x_true, post_cov, alpha_levels=None, n_folds=5):
+    """
+    Complete calibration analysis pipeline
+    
+    Parameters:
+    -----------
+    x_hat : ndarray, shape (n_sources, n_times)
+        Source estimates
+    x_true : ndarray, shape (n_sources, n_times)
+        True source activations  
+    post_cov : ndarray, shape (n_sources, n_sources)
+        Posterior covariance matrix
+    alpha_levels : array-like, optional
+        Significance levels (default: [0.1, 0.2, ..., 0.9])
+    n_folds : int
+        Number of cross-validation folds
+    
+    Returns:
+    --------
+    results : dict
+        Comprehensive results dictionary containing:
+        - pre_calibration: coverages and metrics before calibration
+        - post_calibration: coverages and metrics after calibration  
+        - fold_results: detailed CV fold information
+        - alpha_levels: significance levels used
+        - nominal_coverages: corresponding confidence levels
+    fig : matplotlib Figure
+        Calibration visualization plots
+    """
+    # Default configuration
+    if alpha_levels is None:
+        alpha_levels = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    
+    nominal_cov = 1 - alpha_levels
+    
+    print("CALIBRATION ANALYSIS")
+    print("=" * 50)
+    
+    # Step 1: Pre-calibration baseline
+    print("1. Computing pre-calibration baseline...")
+    x_hat_avg, x_true_avg, post_var_avg = time_average_estimates(x_hat, post_cov, x_true)
+    pre_intervals = credible_intervals(x_hat_avg, post_var_avg, alpha_levels)
+    pre_empirical = empirical_coverage(x_true_avg, pre_intervals, alpha_levels)
+    pre_metrics = calibration_metrics(nominal_cov, pre_empirical)
+    
+    print(f"   Pre-calibration AAD: {pre_metrics['AAD']:.4f}")
+    
+    
+    # Step 2: Cross-validation calibration
+    print("\n2. Running source-wise cross-validation calibration...")
+    post_empirical, fold_results = calibration_CV(x_hat, x_true, post_cov, alpha_levels, n_folds)
+    
+    post_metrics = calibration_metrics(nominal_cov, post_empirical)
+    
+    improvement = (pre_metrics['AAD'] - post_metrics['AAD']) / pre_metrics['AAD'] * 100
+    
+    print(f"   Post-calibration AAD: {post_metrics['AAD']:.4f}")
+    print(f"   Improvement: {improvement:+.1f}%")
+    
+    # Step 3: Visualization
+    print("\n3. Generating calibration plots...")
+    fig = plot_calibration(nominal_cov, pre_empirical, post_empirical)
+    
+    # Step 4: Comprehensive metrics table
+    print("4. Creating metrics table...")
+    create_metrics_table(pre_metrics, post_metrics)
+    
+    # Step 5: Compile results
+    results = {
+        'pre_calibration': {
+            'coverages': pre_empirical,
+            'metrics': pre_metrics
+        },
+        'post_calibration': {
+            'coverages': post_empirical, 
+            'metrics': post_metrics
+        },
+        'improvement_percent': improvement,
+        'fold_results': fold_results,
+        'alpha_levels': alpha_levels,
+        'nominal_coverages': nominal_cov
+    }
+    
+    return results, fig
+
+
+# ============================================================================
+# SIMPLE USAGE EXAMPLE WITH SOURCE ESTIMATES
+# ============================================================================
+
+# After running your simulated dataset and source reconstruction method under the fixed parameters:
+
+# Fixed configuration parameters
+alpha_levels = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) # we can increase the number of significance levels
+n_folds = 5 # CV
+
+n_sources = 100
+n_times = 200
+x_hat = np.random.randn(n_sources, n_times) 
+x_true = np.random.randn(n_sources, n_times)
+post_cov = linalg.toeplitz(0.5 ** np.arange(n_sources))
+
+# Run complete calibration analysis
+results, fig = run_calibration_analysis(
+    x_hat=x_hat,          # Your current source estimates (n_sources × n_times)
+    x_true=x_true,        # True source activations (from simulation dataset)
+    post_cov=post_cov,    # Your current posterior covariance matrix (n_sources × n_sources)
+    alpha_levels=alpha_levels,
+    n_folds=n_folds
+)
+
+# Access specific results ( you can monitor all metrics as well)
+pre_aad = results['pre_calibration']['metrics']['AAD']
+post_aad = results['post_calibration']['metrics']['AAD']
+improvement = results['improvement_percent']
+
+print(f"Calibration improved from {pre_aad:.4f} to {post_aad:.4f} AAD ({improvement:+.1f}%)")
