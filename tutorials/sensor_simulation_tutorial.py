@@ -634,7 +634,10 @@ y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
 # 4. Estimate sources
 source_estimator = SourceEstimator(solver="gamma_map")
 source_estimator.fit(L, y_noisy[0])
-x_hat, x_hat_indices, posterior_cov = source_estimator.predict(y_noisy[0])
+    solver_result = source_estimator.predict(y_noisy[0])
+    x_hat = solver_result["posterior_mean"]
+    x_hat_indices = solver_result.get("active_indices")
+    posterior_cov = solver_result.get("posterior_cov")
 
 # 5. Estimate uncertainty (-> credible intervals)
 uncertainty_estimator = UncertaintyEstimator()
