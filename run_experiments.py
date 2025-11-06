@@ -86,7 +86,7 @@ def main():
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
         "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99],
+        "alpha_SNR": [0.1, 0.3, 0.4, 0.6, 0.8, 0.99],
         "sensor_white_noise_var": [1.0],
     }
     
@@ -109,9 +109,9 @@ def main():
     
     CV_noise_params = {
         "noise_type": ["spatial_cv", "temporal_cv"],
-        'default_alphas_grid': [np.logspace(0, -2, 3)[1:]],
+        # 'default_alphas_grid': [np.logspace(0, -2, 20)[1:]], # will be set within the benchmark loop based on baseline noise variance
         'cv': [2],
-        'n_jobs': [1],
+        'n_jobs': [10],
         # add noise parameters here if needed
     }
 
@@ -133,7 +133,7 @@ def main():
     }
         
     sflex_gamma_map_params = {
-        'init_gamma': [0.001],
+        'init_gamma': [0.1],
         'sigma': [0.001],
         'max_iter': [1000],
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
@@ -149,7 +149,7 @@ def main():
     }
     
     gamma_map_params = {
-        'init_gamma': [0.001],
+        'init_gamma': [0.1],
         'max_iter': [1000],
     }
     
@@ -168,6 +168,7 @@ def main():
         (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
         (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
+        (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),
         
 
         # ================ EEG experiments ================
@@ -230,7 +231,7 @@ def main():
 
     results_df = pd.concat(df)
     results_df.sort_values(by=['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'],inplace=True, ascending=True)
-    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma']
+    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var', 'mean_posterior_variance']
     cols = [c for c in desired_order if c in results_df.columns] + \
            [c for c in results_df.columns if c not in desired_order]
     results_df = results_df[cols]
