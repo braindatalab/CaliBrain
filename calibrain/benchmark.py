@@ -235,6 +235,28 @@ class Benchmark:
                 noise_eta_one_trial = noise_eta_trials[trial_idx] # noise scaling factor (eta)
 
                 # -------------------------------------------------------------
+                # 7a. Baseline noise variance estimate (pre-stimulus window)
+                # -------------------------------------------------------------
+                tmin = self.source_simulator.ERP_config['tmin']
+                stim_onset = self.source_simulator.ERP_config['stim_onset']
+                sfreq = self.source_simulator.ERP_config['sfreq']
+                pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
+                if pre_stimulus_onset <= 0:
+                    self.logger.warning(
+                        "Computed pre_stimulus_onset <= 0; using full trial for baseline estimation"
+                    )
+                    y_pre = y_noisy_one_trial
+                else:
+                    y_pre = y_noisy_one_trial[:, :pre_stimulus_onset]
+
+                try:
+                    baseline_noise_var = float(np.mean(np.std(y_pre, axis=1) ** 2))
+                except Exception:
+                    baseline_noise_var = None
+                if not baseline_noise_var or not np.isfinite(baseline_noise_var):
+                    baseline_noise_var = 1.0  # safe fallback
+
+                # -------------------------------------------------------------
                 # 8. Determine noise variance based on noise_type
                 # -------------------------------------------------------------
                 # Validate noise_type and set initial noise variance / cv callable
@@ -250,61 +272,47 @@ class Benchmark:
                     raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
 
                 if noise_type in ('spatial_cv', 'temporal_cv'):
+                    grid_factors = np.logspace(-2, 2, 10)
+                    alphas = baseline_noise_var * grid_factors
+                    noise_variances = np.unique(alphas).tolist()
+                    if not noise_variances:
+                        noise_variances = [baseline_noise_var]
                     estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver                    
 
                     # Create source estimator with CV for noise variance selection
-                    source_estimator = estimator(
+                    source_estimator = estimator( 
                         solver=self.solver,
                         solver_params=solver_params,
                         n_orient=n_orient,
                         logger=self.logger,
-                        noise_variances=noise_params.get('default_alphas_grid', None),
+                        # noise_variances=noise_params.get('default_alphas_grid', None),
+                        noise_variances=noise_variances,
                         cv=noise_params.get('cv', 5),
                         n_jobs=noise_params.get('n_jobs', 1),
                     )
                 else:                                    
                     if noise_type == 'oracle':
                         print("----- oracle noise variance estimation -----")
-                        noise_var_one_trial = (data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2                        
+                        noise_var = float((data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2)
                         
                     # Take the pre-stimulus data segment in sensor space, calculate the standard deviation (across time) for each channel and average them, then we will have a baseline sigma (for a single trial):
                     elif noise_type == 'baseline':
                         print("----- baseline noise variance estimation -----")
-                        tmin = self.source_simulator.ERP_config['tmin']
-                        stim_onset = self.source_simulator.ERP_config['stim_onset']
-                        sfreq = self.source_simulator.ERP_config['sfreq']
-                        
-                        pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
-                        # Take pre-stimulus slice for baseline variance estimation but DO NOT
-                        # overwrite the full trial `y_noisy_one_trial` which must be used
-                        # by the solver to see the evoked signal. Overwriting the full
-                        # trial caused the solver to run only on noise and made `gamma`
-                        # insensitive to SNR changes.
-                        if pre_stimulus_onset <= 0:
-                            # Fallback: use entire trial if computed index is invalid
-                            self.logger.warning(
-                                "Computed pre_stimulus_onset <= 0; using full trial for baseline estimation"
-                            )
-                            y_pre = y_noisy_one_trial
-                        else:
-                            y_pre = y_noisy_one_trial[:, :pre_stimulus_onset]
-
-                        # compute sensor noise variance from pre-stimulus window
-                        noise_var_one_trial = np.mean(np.std(y_pre, axis=1) ** 2)
+                        noise_var = baseline_noise_var
                         # record for debugging/inspection
                         self.logger.info(
-                            f"Baseline noise variance (trial {run_id}): {noise_var_one_trial:.3e}, eta: {noise_eta_one_trial:.3e}"
+                            f"Baseline noise variance (trial {run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
                         )
-                        this_result['noise_var_one_trial'] = float(noise_var_one_trial)
 
                     elif noise_type == 'joint_learning':
-                        noise_var_one_trial = None
+                        noise_var = None
+
 
                     # Create source estimator with fixed noise variance
                     source_estimator = SourceEstimator(
                         solver=self.solver,
                         solver_params=solver_params,
-                        noise_var=noise_var_one_trial,
+                        noise_var=noise_var,
                         n_orient=n_orient,
                         logger=self.logger
                     )
@@ -314,15 +322,23 @@ class Benchmark:
                 # -------------------------------------------------------------
                 self.logger.info(f"Fitting source estimator {self.solver.__name__}")
                 source_estimator.fit(L, y_noisy_one_trial)
-                x_hat_one_trial, x_hat_active_indices_one_trial, posterior_cov, gamma = source_estimator.predict(
-                    y=y_noisy_one_trial
-                )    
+                solver_output = source_estimator.predict(y=y_noisy_one_trial)
+
+                x_hat_one_trial = solver_output.get("posterior_mean")
+                x_hat_active_indices_one_trial = solver_output.get("active_indices")
+                posterior_cov = solver_output.get("posterior_cov")
+                
+                noise_var = solver_output.get("noise_var")
+                gamma = solver_output.get("gamma")
+                
                 this_result['gamma'] = gamma
+                this_result["noise_var"] = noise_var
                 
                 posterior_var = self.uncertainty_estimator.get_posterior_variance(
                     posterior_cov=posterior_cov,
                     orientation_type=orientation_type
                 )
+                this_result['mean_posterior_variance'] = np.mean(posterior_var)
                 
                 # -------------------------------------------------------------
                 # 9. Estimate uncertainty (-> credible intervals)
@@ -330,6 +346,7 @@ class Benchmark:
                 self.logger.info("Estimating uncertainty...")
                 if solver_name == 'gamma_map':
                     self.logger.info("Skipping uncertainty estimation for gamma_map solver.")
+                    results_list.append(this_result)
                     continue
                                 
                 x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
@@ -435,7 +452,12 @@ class Benchmark:
                     experiment_dir=experiment_dir,
                 )
                 
-                this_result['active_indices_size'] = len(x_hat_active_indices_one_trial)
+                active_indices_size = (
+                    len(x_hat_active_indices_one_trial)
+                    if x_hat_active_indices_one_trial is not None
+                    else 0
+                )
+                this_result['active_indices_size'] = active_indices_size
 
             except Exception as e:
                 self.logger.error(f"Error during benchmarking run_id {this_result.get('run_id', 'N/A')}: {e}", exc_info=True)
