@@ -3,16 +3,18 @@ import os
 from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
 from scipy.stats import chi2, norm
 from itertools import combinations, zip_longest
-from matplotlib.patches import Ellipse
-
 import mne
 import logging
 
+from sklearn.isotonic import IsotonicRegression
+from sklearn.model_selection import KFold
+
 
 class UncertaintyEstimator:
-    def __init__(self, confidence_levels : np.ndarray = None, logger : logging.Logger = None):
+    def __init__(self, confidence_levels : np.ndarray = None, nominal_coverages : np.ndarray = None, logger : logging.Logger = None):
         """
         Initialize the uncertainty estimator.
         
@@ -20,10 +22,13 @@ class UncertaintyEstimator:
         -----------
         confidence_levels : list, optional
             List of confidence levels to compute confidence ellipses. Default is np.arange(0.0, 1.1, 0.1).
+        nominal_coverages : np.ndarray, optional
+            Array of nominal coverage probabilities corresponding to the confidence levels.
         logger : logging.Logger, optional
             Logger instance for logging messages.
         """
         self.confidence_levels = confidence_levels
+        self.nominal_coverages = nominal_coverages
         self.logger = logger
 
     def construct_full_covariance(
@@ -283,43 +288,27 @@ class UncertaintyEstimator:
                 # else: counts remain zero, which is correct
 
             self.logger.debug(f"Free orientation counts shape: {count_within_ci.shape}")
-
-    
+            
         return count_within_ci
 
-    def get_credible_intervals_data(
+
+    def get_posterior_variance(
         self,
-        x : np.ndarray,
-        x_hat: np.ndarray,
         posterior_cov: np.ndarray,
         orientation_type: str
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Computes credible intervals and counts of true values within those intervals.
-
+        Extract and regularize the posterior variance from the covariance matrix.
         Parameters:
         ----------
-        x : np.ndarray
-            Ground truth source activity.
-            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
-        x_hat : np.ndarray
-            Estimated source activity (posterior mean) averaged across time.
-            Shape (n_sources, n_times). For averaged time, n_times=1.
         posterior_cov : np.ndarray
             Posterior covariance matrix of shape (n_sources, n_sources) scaled by n_times.
         orientation_type : str
-            Orientation type, either 'free' or 'fixed'.
-
+            Orientation type, either 'free' or 'fixed'. 
         Returns:
-        --------
-        tuple
-            - ci_lower_stacked (np.ndarray): Lower bounds of credible intervals for each confidence level.
-                Shape (n_confidence_levels, n_active_components, n_times).
-            - ci_upper_stacked (np.ndarray): Upper bounds of credible intervals for each confidence level.
-                Shape (n_confidence_levels, n_active_components, n_times).  
-            - counts_array (np.ndarray): Counts of true values within credible intervals for each confidence level.
-                Shape (n_confidence_levels, 3, n_times) for free orientation,
-                or (n_confidence_levels, 1, n_times) for fixed orientation.
+        -------
+        np.ndarray
+            Posterior variance vector of shape (n_sources, n_times).
         """    
         # Ensure covariance matrix is positive semi-definite for variance calculation
         # Note: _make_psd might modify cov in place if not careful, consider passing a copy if needed elsewhere. However, we only need the diagonal here, so modifying cov might be acceptable if not used later.
@@ -356,11 +345,47 @@ class UncertaintyEstimator:
         # Validate final variances
         assert np.all(var >= 0), "All variances must be positive for std deviation calculation"
         
+        return var
+
+    def get_credible_intervals_data(
+        self,
+        x : np.ndarray,
+        x_hat: np.ndarray,
+        posterior_var: np.ndarray,
+        orientation_type: str
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Computes credible intervals and counts of true values within those intervals.
+
+        Parameters:
+        ----------
+        x : np.ndarray
+            Ground truth source activity.
+            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
+        x_hat : np.ndarray
+            Estimated source activity (posterior mean) averaged across time.
+            Shape (n_sources, n_times). For averaged time, n_times=1.
+        posterior_var : np.ndarray
+            Posterior variance vector of shape (n_sources,).
+        orientation_type : str
+            Orientation type, either 'free' or 'fixed'.
+
+        Returns:
+        --------
+        tuple
+            - ci_lower_stacked (np.ndarray): Lower bounds of credible intervals for each confidence level.
+                Shape (n_confidence_levels, n_active_components, n_times).
+            - ci_upper_stacked (np.ndarray): Upper bounds of credible intervals for each confidence level.
+                Shape (n_confidence_levels, n_active_components, n_times).  
+            - counts_array (np.ndarray): Counts of true values within credible intervals for each confidence level.
+                Shape (n_confidence_levels, 3, n_times) for free orientation,
+                or (n_confidence_levels, 1, n_times) for fixed orientation.
+        """
         # Calculate standard deviation
-        std_dev = np.sqrt(var).reshape(-1, 1)
-        
+        std_dev = np.sqrt(posterior_var).reshape(-1, 1)
+
         # Add debugging info
-        self.logger.info(f"Variance range: [{np.min(var):.2e}, {np.max(var):.2e}]")
+        self.logger.info(f"Variance range: [{np.min(posterior_var):.2e}, {np.max(posterior_var):.2e}]")
         self.logger.info(f"Std dev range: [{np.min(std_dev):.2e}, {np.max(std_dev):.2e}]")
 
         all_ci_lower_list = []
@@ -428,3 +453,117 @@ class UncertaintyEstimator:
         print(f"  Negative diagonal elements: {np.sum(full_diag < 0)}")
         print(f"  Zero diagonal elements: {np.sum(full_diag == 0)}")
         # print(f"  Rank: {np.linalg.matrix_rank(full_posterior_cov)}")
+
+    def calibration_CV(self, x, x_hat, posterior_var, orientation_type='fixed', n_folds=5, random_state=42):
+        """
+        Calibrate credible intervals using isotonic regression (IR) with source-wise cross-validation avoiding overfitting
+        
+        Parameters:
+        -----------
+        Computes credible intervals and counts of true values within those intervals.
+
+        Parameters:
+        ----------
+        x : np.ndarray
+            Ground truth source activity.
+            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
+        x_hat : np.ndarray
+            Estimated source activity (posterior mean) averaged across time.
+            Shape (n_sources, n_times). For averaged time, n_times=1.
+        posterior_var : np.ndarray
+            Posterior variance vector of shape (n_sources,).
+        orientation_type : str
+            Orientation type, either 'free' or 'fixed'.
+        n_folds : int
+            Number of cross-validation folds
+        random_state : int
+            Random seed for reproducible splits
+        
+        Returns:
+        --------
+        cal_coverages : ndarray
+            Calibrated coverage probabilities averaged across folds
+        fold_results : list
+            Detailed results for each fold
+        
+        Methodology:
+        ------------
+        1. Split sources, use cross-validation to train/test IR model to avoid overfitting
+        2. For each fold:
+        - Train: Compute empirical coverage on training sources
+        - Train: Fit isotonic regression (empirical → nominal coverage)
+        - Test: Apply calibration to test sources
+        3. Average results across folds
+        
+        Theory
+        ------------
+        Learns the mapping from observed empirical coverage to desired nominal coverage
+        using monotonic regression to preserve probability ordering
+        """
+        n_sources = x_hat.shape[0]
+        
+        # Initialize cross-validation with shuffling and fixed seed
+        kf = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+        source_idx = np.arange(n_sources)
+        
+        calibrated_coverages = np.zeros(len(self.confidence_levels))
+        fold_results = []
+        
+        print(f"Running {n_folds}-fold source-wise calibration:")
+        print(f"Splitting {n_sources} sources into training/test sets")
+        
+        for fold, (train_idx, test_idx) in enumerate(kf.split(source_idx)):
+            # Split sources (not time points!)
+            x_train = x[train_idx]
+            x_hat_train = x_hat[train_idx]
+            posterior_var_train = posterior_var[train_idx]
+            
+            x_test = x[test_idx]
+            x_hat_test = x_hat[test_idx]
+            posterior_var_test = posterior_var[test_idx]
+            
+            # Compute empirical coverages for train set
+            _, _, _, empirical_coverages_train = self.get_credible_intervals_data(
+                x=x_train,
+                x_hat=x_hat_train,
+                posterior_var=posterior_var_train,
+                orientation_type=orientation_type
+                )
+            
+            # Compute empirical coverages for test set
+            _, _, _, empirical_coverages_test = self.get_credible_intervals_data(
+                    x=x_test,
+                    x_hat=x_hat_test,
+                    posterior_var=posterior_var_test,
+                    orientation_type=orientation_type
+                )
+            
+            # TRAIN: Fit isotonic regression (empirical -> nominal coverage)
+            # Preserves monotonicity: higher confidence -> higher coverage
+            ir_model = IsotonicRegression(out_of_bounds='clip')
+            ir_model.fit(empirical_coverages_train, self.nominal_coverages)
+            
+            # TEST: Apply calibration to test sources
+            test_calibrated = ir_model.transform(empirical_coverages_test)
+            
+            # Store fold results
+            fold_results.append({
+                'train_empirical': empirical_coverages_train,
+                'test_empirical': empirical_coverages_test,
+                'calibrated': test_calibrated,
+                'n_train': len(train_idx),
+                'n_test': len(test_idx),
+                'fold': fold
+            })
+            
+            # Accumulate calibrated coverages
+            calibrated_coverages += test_calibrated
+            
+            print(f"  Fold {fold+1}: {len(train_idx)} train, {len(test_idx)} test sources")
+        
+        # Average across all folds
+        calibrated_coverages /= n_folds
+        
+        print("Calibration completed successfully!")
+        return calibrated_coverages, fold_results
+    

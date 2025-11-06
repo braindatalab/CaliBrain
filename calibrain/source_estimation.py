@@ -12,7 +12,8 @@ from functools import partial
 import mne
 from mne.utils import sqrtm_sym, eigh
 from mne.io.constants import FIFF
-
+from numpy.linalg import inv
+from scipy.linalg import sqrtm
 from calibrain.utils import get_data_path
 
 # ===================
@@ -46,10 +47,20 @@ def gamma_map(
     else:
         raise ValueError("init_gamma should be a float, a tuple of two floats, or a list of floats.")
 
-    x_hat_, active_indices, posterior_cov = _gamma_map_opt(
+    noise_cov = noise_var * np.eye(L.shape[0]) 
+    
+    # Create the whitening matrix from the noise covariance:
+    # Typically computed as the inverse of the square root of the covariance.
+    whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    
+    # Whiten both the sensor data and the lead-field matrix.
+    y = whitener @ y
+    L = whitener @ L
+    
+    x_hat_, active_indices, posterior_cov, gammas_full = _gamma_map_opt(
         y,
         L,
-        sigma_squared=noise_var,
+        sigma_squared=noise_var, # 1.0,
         tol=tol,
         maxit=max_iter,
         init_gamma=init_gamma,
@@ -63,8 +74,18 @@ def gamma_map(
 
     if n_orient > 1:
         x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
+        
+    
+    # take the norm of the vector gammas_full
+    gammas_norm = np.linalg.norm(gammas_full)
 
-    return x_hat, active_indices, posterior_cov
+    return {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "noise_var": noise_var,
+        "active_indices": active_indices,
+        "gamma": gammas_norm,
+    }
 
 def _gamma_map_opt(
     M,
@@ -210,10 +231,10 @@ def _gamma_map_opt(
 
         breaking = err < tol or n_active == 0
         if len(init_gamma) != last_size or breaking:
-            # logger.info(
-            #     "Iteration: %d\t active set size: %d\t convergence: "
-            #     "%0.3e" % (itno, len(init_gamma), err)
-            # )
+            logger.info(
+                "Iteration: %d\t active set size: %d\t convergence: "
+                "%0.3e" % (itno, len(init_gamma), err)
+            )
             last_size = len(init_gamma)
 
         if breaking:
@@ -242,7 +263,7 @@ def _gamma_map_opt(
     # A similar approach can be implmented (as Large_gamma is interpreted as adiagonal matrix with small_gammas:
     # posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)
     
-    return x_active, active_indices, posterior_cov
+    return x_active, active_indices, posterior_cov, gammas_full
 
 
 # ==================
@@ -319,7 +340,7 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
     """
 
-    fwd = mne.read_forward_solution(fwd_path)
+    fwd = mne.read_forward_solution(fwd_path, verbose="error")
 
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
@@ -347,7 +368,7 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
   
     # Run gamma-MAP on G
-    c_hat, active_indices, posterior_cov = gamma_map(
+    gamma_result = gamma_map(
         L=G,  # Use pseudo-lead field instead of original L
         y=y,
         noise_var=noise_var,
@@ -359,6 +380,11 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         verbose=verbose,
         logger=logger
     )
+    c_hat = gamma_result["posterior_mean"]
+    active_indices = gamma_result.get("active_indices")
+    posterior_cov = gamma_result.get("posterior_cov")
+    gamma = gamma_result.get("gamma")
+    noise_var_result = gamma_result.get("noise_var", noise_var)
 
     # Reconstruct sources
     # NOTE: gamma_map already returns FULL c_hat (zeros at inactive indices).
@@ -381,7 +407,13 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         # optional reshape back to (N, 3, T)
         x_hat = x_hat.reshape(N, 3, -1)
 
-    return x_hat, active_indices, posterior_cov
+    return {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "noise_var": noise_var_result,
+        "active_indices": active_indices,
+        "gamma": gamma,
+    }
 
 
 # ===================
@@ -790,7 +822,12 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
 
     # Compute the eLORETA kernel and the posterior source covariance using the helper.
     # alpha is lambda2 = noise_var
-    K, Sigma = compute_eloreta_kernel(L, lambda2= noise_var, n_orient=n_orient, whitener=whitener)
+    K, Sigma = compute_eloreta_kernel(
+        L, 
+        lambda2=noise_var, # 1.0,
+        n_orient=n_orient,
+        whitener=whitener
+    )
     
     # Compute the mean source estimates.
     x = K @ y # get the source time courses with simple dot product
@@ -800,7 +837,12 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
         x = x.reshape((-1, n_orient, x.shape[1]))
 
     active_indices = np.arange(Sigma.shape[0])  # All sources are active in eLORETA
-    return x, active_indices, Sigma  # Return source estimates, all active indices, and posterior covariance
+    return {
+        "posterior_mean": x,
+        "posterior_cov": Sigma,
+        "noise_var": noise_var,
+        "active_indices": active_indices,
+    }
 
 
 # ==================
@@ -887,130 +929,92 @@ def compute_W(L, n_orient=1, beta=1e-6):
     
     return W
 
-def BMN_opt(y, L, alpha, maxit=1000, tol=1e-6, update_mode=2, init_gamma=None, verbose=True):
+def BMN_bayesian_opt(y, L, alpha, maxit=1000, tol=1e-9, init_gamma=None, verbose=True):
     """
-    Hierarchical Bayesian Minimum Norm (BMN) optimization with a common source variance (scalar gamma)
-    for all sources.
-    
-    Parameters
-    ----------
-    y : array, shape=(M, T)
-        Observation data: M/EEG data
-    L : array, shape=(M, N)
-        Forward operator (lead field or gain matrix)
-    alpha : float
-        Regularization parameter (noise variance).
-    maxit : int, optional
-        Maximum number of iterations. Default is 10000.
-    tol : float, optional
-        Tolerance for convergence. Default is 1e-6.
-    update_mode : int, optional
-        Update mode for common gamma:
-          - 1: MacKay update.
-          - 2: Convex bounding update.
-          - 3: EM (expectation maximization) update.
-    init_gamma : float, optional
-        Initial scalar gamma value. If None, it is initialized to 1.
-    verbose : bool, optional
-        If True, logs iteration details.
-    
-    Returns
-    -------
-    x_hat : array, shape=(N, T)
-        Estimated source time courses.
-    posterior_cov : array, shape=(N, N)
-        Posterior covariance of the source estimates.
-    gamma : float
-        A scalar gamma value for all sources.
+    BMN optimization using the trace-based fixed-point rule.
+    THEORY-CONSISTENT OPTIMIZER
+    Uses the trace-based fixed-point update rule:
+    gamma <- gamma * sqrt(  [(1/T) tr(Y^T Siginv LL^T Siginv Y)] / [tr(Siginv LL^T)]  )
     """
     L = L.copy()
     y = y.copy()
-    
-    # Initialize gamma as SCALAR
-    if init_gamma is None:
-        gamma = 1.0
-    else:
-        gamma = float(init_gamma)
 
+    # Initialize gamma
+    gamma = 1.0 if init_gamma is None else float(init_gamma)
     eps = np.finfo(float).eps
-    
+
     # Ensure y is 2D
     if y.ndim == 1:
         y = y[:, np.newaxis]
-    
+
     M, T = y.shape
     N = L.shape[1]
-    
-    # Normalization: use normalized variables
-    y_normalize_constant = np.linalg.norm(y, "fro")**2
-    y = y / np.sqrt(y_normalize_constant)
-    alpha = alpha / y_normalize_constant
-    L_normalize_constant = np.linalg.norm(L, ord=np.inf)
-    L = L / L_normalize_constant
+
+    # Normalization for numerical stability
+    y_original_scale = np.linalg.norm(y, "fro")          # ||Y||_F
+    L_original_scale = np.linalg.norm(L, ord=2)          # ||L||_2
+    y = y / y_original_scale
+    L = L / L_original_scale
+    alpha = alpha / (y_original_scale**2)
+    # ------------------------------------------------------------------
+
+    # Precompute LLt
+    LLt = L @ L.T  # (M x M)
 
     for itno in range(maxit):
         gamma_old = gamma
-        
-        # Model covariance
-        model_cov = gamma * (L @ L.T) + np.eye(M) * alpha
-        
-        # SVD inverse
-        U, S, _ = np.linalg.svd(model_cov, full_matrices=False)
+
+        # Sigma_y = alpha I + gamma LLt
+        Sigma_y = alpha * np.eye(M) + gamma * LLt
+
+        # Inversion with SVD for numerical stability
+        U, S, Vt = np.linalg.svd(Sigma_y, full_matrices=False)
         S_inv = 1.0 / (S + eps)
-        model_cov_inv = U @ np.diag(S_inv) @ U.T
-        
-        # Posterior computations
-        A = L.T @ model_cov_inv @ y
-        x_est = gamma * A
-        
-        # Posterior covariance
-        posterior_cov = gamma * np.eye(N) - gamma**2 * (L.T @ model_cov_inv @ L)
-        
-        # BMN uses scalar gamma updates
-        if update_mode == 1:
-            # MacKay update - average over time and all sources
-            numer = gamma**2 * np.mean(A**2)
-            denom = gamma * np.mean(np.sum(L * (model_cov_inv @ L), axis=0))
-            new_gamma = float(numer / max(denom, eps))
-            
-        elif update_mode == 2:
-            # Convex bounding update - average over time andd all sources
-            numer = gamma**2 * np.mean(A**2)
-            denom = np.mean(np.sum(L * (model_cov_inv @ L), axis=0))
-            new_gamma = float(np.sqrt(numer / max(denom, eps)))
-            
-        elif update_mode == 3:
-            # EM update - proper scalar formulation
-            # gamma**2 * np.mean(A**2) = np.sum(x_est**2) / N*T
-            data_term = np.sum(x_est**2) / T  # average over time and sources
-            trace_term = np.trace(posterior_cov)
-            new_gamma = float((data_term + trace_term) / N)
-            
-        else:
-            raise ValueError("Invalid update_mode. Use 1, 2, or 3.")
-        
-        # Ensure gamma remains scalar
-        gamma = float(new_gamma)
-        
+        Siginv = U @ np.diag(S_inv) @ Vt
+
+        # Trace-based numerator and denominator
+        # numerator = (1/T) tr( Y^T Siginv LLt Siginv Y )
+        B = Siginv @ y
+        numerator = float(np.trace(B.T @ LLt @ B)) / T
+
+        # denominator = tr( Siginv LLt )
+        denominator = float(np.trace(Siginv @ LLt))
+
+        # Fixed-point (multiplicative) update
+        ratio = numerator / max(denominator, eps)
+        gamma = float(gamma * np.sqrt(max(ratio, eps)))
+
         # Convergence check
-        err = np.abs(gamma - gamma_old) / (gamma_old + eps)
+        err = abs(gamma - gamma_old) / (abs(gamma_old) + eps)
         if verbose:
-            print(f"Iteration {itno}: gamma = {gamma:.6e}, error = {err:.3e}")
+            print(f"Iteration {itno}: gamma = {gamma:.6e}, err = {err:.3e}")
         if err < tol:
             break
 
+    # Final posterior (in normalized space)
+    Sigma_y = alpha * np.eye(M) + gamma * LLt
+    U, S, Vt = np.linalg.svd(Sigma_y, full_matrices=False)
+    S_inv = 1.0 / (S + eps)
+    Siginv = U @ np.diag(S_inv) @ Vt
+
+    A = L.T @ Siginv @ y          # (N x T)
+    x_est = gamma * A             # (N x T)
+
+    LS = Siginv @ L               # (M x N)
+    LtS_L = L.T @ LS              # (N x N)
+    posterior_cov = gamma * np.eye(N) - (gamma**2) * LtS_L
+
     # Undo normalization
-    n_const = np.sqrt(y_normalize_constant) / L_normalize_constant
-    x_hat = n_const * x_est
-    posterior_cov = n_const**2 * posterior_cov
+    scale_factor = y_original_scale / L_original_scale
+    x_hat = scale_factor * x_est
+    posterior_cov = (scale_factor**2) * posterior_cov
 
     return x_hat, posterior_cov, gamma
 
-def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
-        update_mode=2, init_gamma=None, verbose=True, normalization=False, **kwargs):
+def BMN(L, y, noise_var, n_orient=1, max_iter=100, tol=1e-15, init_gamma=None, verbose=True, normalization=False, **kwargs):
     """
-    Hierarchical Bayesian Minimum Norm (BMN) source reconstruction with a common source variance.
-    
+    BMN estimate with (optional) sLORETA normalization.
+
     Parameters
     ----------
     L : array, shape=(M, N)
@@ -1046,47 +1050,48 @@ def BMN(L, y, noise_var, alpha=0.2, n_orient=1, max_iter=100, tol=1e-15,
     # Ensure y is 2D
     if y.ndim == 1:
         y = y[:, np.newaxis]
-    
-    # Handle noise variance
+
+    # Noise covariance
     noise_cov = noise_var * np.eye(L.shape[0])
-    
-    # Apply sLORETA-type normalization if requested
-    # If LLt is ill-conditioned, beta=0 can make inv(LLt) unstable.
-    # In that case, use a tiny beta (e.g., 1e-6) for stability.
-    if normalization: # sLORETA-type normalization matrix
-        W = compute_W(L, n_orient=n_orient, beta=0) # or beta=beta
+
+    # sLORETA-type normalization (fixed-orientation case)
+    if normalization:
+        W = compute_W(L, n_orient=n_orient, beta=1e-6)  # beta only for numerical stability in code
         L_normal = L @ W
     else:
-        W = np.eye(L.shape[1])  # Identity matrix
+        W = np.eye(L.shape[1])
         L_normal = L
-    
-    # Compute whitener matrix
+
+    # Whitening matrix
     whitener = linalg.inv(linalg.sqrtm(noise_cov))
-    
-    # Whiten the data and forward operator
     y_white = whitener @ y
     L_white = whitener @ L_normal
     
-    # Run BMN on whitened data
-    x_hat_normal, posterior_cov_normal, gamma = BMN_opt(
-        y_white, L_white, alpha=1.0, maxit=max_iter, tol=tol,
-        update_mode=update_mode, init_gamma=init_gamma, verbose=verbose
-    ) #alpha=1.0 on whitened data
+    x_hat_normal, posterior_cov_normal, gamma = BMN_bayesian_opt(
+         y_white, L_white, alpha=noise_var, maxit=max_iter, tol=tol,
+         init_gamma=init_gamma, verbose=verbose
+    )
     
-    # Transform back to original source space
+
+    # Map back if W was used
     x_hat = W @ x_hat_normal
     posterior_cov = W @ posterior_cov_normal @ W.T
-    
-    # Reshape for free orientation case
+
+    # Reshape for free-orientation if requested
     if n_orient > 1:
         N_total = L.shape[1]
         N_sources = N_total // n_orient
         x_hat = x_hat.reshape((N_sources, n_orient, -1))
-    # TODO: # All sources are active in BMN
-    active_indices = np.arange(posterior_cov.shape[0])
     
-    # return x_hat, posterior_cov, gamma
-    return x_hat, active_indices, posterior_cov
+    active_indices = np.arange(posterior_cov.shape[0])
+            
+    return {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "noise_var": noise_var,
+        "active_indices": active_indices,
+        "gamma": gamma,
+    }
 
 
 # ==================
@@ -1150,7 +1155,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         
         # Apply the solver
         self.logger.info(f"Estimating sources using {self.solver.__name__}...")
-        coef = self.solver(
+        result = self.solver(
             L=self.L_,
             y=y,
             noise_var=self.noise_var,
@@ -1158,8 +1163,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
             logger=self.logger,
             **(self.solver_params or {})
         )
-
-        return coef # x_hat, active_indices, posterior_cov
+        return result
     
     def predict(self, y=None):
         return self._get_coef(y)
@@ -1219,23 +1223,21 @@ class SpatialSolver(SourceEstimator):
         # SourceEstimator.predict expects the solver to return (x_hat, active_indices, posterior_cov)
         # Use an empty dict if solver_params is None to avoid mutating
         # constructor arguments during runtime.
-        solver_params = self.solver_params or {}
-        coef = self.solver(
+        self.result_ = self.solver(
             self.L_,
             self.y_,
             self.noise_var,
             n_orient=self.n_orient,
             logger=self.logger,
-            **solver_params,
-        ) # x_hat, active_indices, posterior_cov
-        self.x_hat = coef[0]
-        
+            **(self.solver_params or {}),
+        )
+
         return self
 
     def predict(self, L):
         # Predict sensor data from leadfield L and estimated sources x_hat
-        
-        return L @ self.x_hat 
+        posterior_mean = self.result_.get("posterior_mean")
+        return L @ posterior_mean  # posterior_mean is x_hat
 
     def score(self, L, y):
         # Simple negative MSE score compatible with sklearn (higher is better)
@@ -1273,15 +1275,15 @@ class BaseCVSolver(BaseEstimator, ClassifierMixin):
 
     def predict(self, y):
         self._get_noise_var(y)
-        coef_ = self.solver(
+        coef = self.solver(
             self.L_,
             y,
             noise_var=self.noise_var,
             n_orient=self.n_orient,
-            **self.solver_params,
             logger=self.logger,
+            **(self.solver_params or {}),
         )
-        return coef_
+        return coef
 
 class SpatialCVSolver(BaseCVSolver):
     def _get_noise_var(self, y):
@@ -1328,18 +1330,18 @@ class TemporalCVSolver(BaseCVSolver):
                 solver.fit(self.L_, y[:, train_idx])
                 y_test = y[:, test_idx]
 
-                # X_Sqaure = solver.coef_ @ solver.coef_.T
-                # Cov_X = np.diag(np.linalg.norm(X_Sqaure, axis=0))
-                # Sigma_Y = noise_cov + ((self.L_ @ Cov_X) @ self.L_.T)
-
-                X_var = np.mean(solver.x_hat ** 2, axis=1)  # already zero mean
+                posterior_mean = solver.result_.get("posterior_mean")
+                X_var = np.mean(posterior_mean ** 2, axis=1)
                 Sigma_Y = noise_cov + ((self.L_ * X_var[None, :]) @ self.L_.T)
 
                 temporal_cv_scores.append(
                     logdet_bregman_div_distance_nll(y_test, Sigma_Y)
                 )
             scores.append(np.mean(temporal_cv_scores))
-        self.noise_var = self.noise_variances[np.argmax((scores))]
+        scores = np.asarray(scores)
+        best_idx = int(np.argmax(scores))
+        # best_idx = int(np.argmin(scores))
+        self.noise_var = self.noise_variances[best_idx]
 
 
 # =================
@@ -1705,7 +1707,7 @@ def _gamma_lambda_opt(
     # Compute posterior covariance
     posterior_cov = np.diag(current_gamma) - current_gamma[:, np.newaxis] * G_CMinvG * current_gamma
     
-    return x_active, active_indices, posterior_cov, lambdas, lambda_scalar
+    return x_active, active_indices, posterior_cov, lambdas, lambda_scalar, gammas_full
 
 def gamma_lambda_map(
     L,
@@ -1810,7 +1812,7 @@ def gamma_lambda_map(
         )
 
     # Run joint gamma-lambda optimization
-    x_hat_, active_indices, posterior_cov, lambdas, lambda_scalar = _gamma_lambda_opt(
+    x_hat_, active_indices, posterior_cov, lambdas, lambda_scalar, gammas_full = _gamma_lambda_opt(
         M=y,
         G=L,
         init_gamma=init_gamma,
@@ -1832,7 +1834,14 @@ def gamma_lambda_map(
     if n_orient > 1:
         x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
 
-    return x_hat, active_indices, posterior_cov, lambdas, lambda_scalar
+    return {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "noise_var": lambda_scalar,
+        "active_indices": active_indices,
+        "noise_var_per_sensor": lambdas,
+        "gammas_full": gammas_full,
+    }
 
 def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=None, init_lambda=None, max_iter=1000, tol=1e-15, update_mode=2, update_mode_noise=2, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
     """
@@ -1879,14 +1888,13 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
         Posterior covariance of active sources
     """
 
-    fwd = mne.read_forward_solution(fwd_path)
+    fwd = mne.read_forward_solution(fwd_path, verbose="error")
 
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
         
     # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
-    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters
-        
+    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters    
     # Compute basis matrix (you have already B)
     B = compute_B(src_coords, sigma, threshold_factor) #sigma =0.01
     N = src_coords.shape[0]
@@ -1913,11 +1921,26 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
         raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
     
     # Run gamma-lambda-MAP on the basis-transformed lead field (JOINT LEARNING)
-    c_hat, active_indices, posterior_cov, lambdas, lambda_scalar = gamma_lambda_map(
-        L=G, y=y, init_gamma=init_gamma, init_lambda=init_lambda, update_mode_noise=update_mode_noise,
-        n_orient=group_size, max_iter=max_iter, tol=tol, update_mode=update_mode,
-         verbose=verbose, logger=logger
-    ) # NOTE: lambda_scalar is the learned noise variance
+    gamma_lambda_result = gamma_lambda_map(
+        L=G,
+        y=y,
+        init_gamma=init_gamma,
+        init_lambda=init_lambda,
+        update_mode_noise=update_mode_noise,
+        n_orient=group_size,
+        max_iter=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        verbose=verbose,
+        logger=logger,
+    )  # NOTE: lambda_scalar is the learned noise variance
+
+    c_hat = gamma_lambda_result["posterior_mean"]
+    active_indices = gamma_lambda_result.get("active_indices")
+    posterior_cov = gamma_lambda_result.get("posterior_cov")
+    lambdas = gamma_lambda_result.get("noise_var_per_sensor")
+    lambda_scalar = gamma_lambda_result.get("noise_var")
+    gammas_full = gamma_lambda_result.get("gammas_full")
     
     # Reconstruct sources from basis coefficients
     if n_orient == 1:
@@ -1933,4 +1956,13 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
         # Stack along orientation dimension
         x_hat = np.stack(x_hat_blocks, axis=1)  # Shape: (N, 3, T)
     
-    return x_hat, active_indices, posterior_cov
+    # take the norm of gammas
+    gammas_norm = np.linalg.norm(gammas_full)
+
+    return {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "noise_var": lambda_scalar,
+        "active_indices": active_indices,
+        "gamma": gammas_norm,
+    }
