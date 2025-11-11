@@ -60,7 +60,7 @@ def gamma_map(
     x_hat_, active_indices, posterior_cov, gammas_full = _gamma_map_opt(
         y,
         L,
-        sigma_squared=noise_var, # 1.0,
+        sigma_squared=1.0,
         tol=tol,
         maxit=max_iter,
         init_gamma=init_gamma,
@@ -824,7 +824,7 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
     # alpha is lambda2 = noise_var
     K, Sigma = compute_eloreta_kernel(
         L, 
-        lambda2=noise_var, # 1.0,
+        lambda2=1.0,
         n_orient=n_orient,
         whitener=whitener
     )

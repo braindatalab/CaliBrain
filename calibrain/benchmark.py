@@ -353,8 +353,8 @@ class Benchmark:
                 x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
                 
                 # Scale posterior variance by number of time points (averaging over time reduces variance)
-                n_time = x_one_trial.shape[1]
-                posterior_var_avg_time = posterior_var / n_time
+                n_times = x_one_trial.shape[1]
+                posterior_var_avg_time = posterior_var / n_times
                     
                 # Compute confidence intervals
                 ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \

@@ -86,7 +86,7 @@ def main():
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
         "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.4, 0.6, 0.8, 0.99],
+        "alpha_SNR": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.99],
         "sensor_white_noise_var": [1.0],
     }
     
@@ -103,13 +103,14 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["baseline", "oracle"],
+        "noise_type": ["oracle"], # "baseline", 
         # add noise parameters here if needed
     }
     
+    default_alphas_grid = np.logspace(0, -2, 20)[1:]
     CV_noise_params = {
         "noise_type": ["spatial_cv", "temporal_cv"],
-        # 'default_alphas_grid': [np.logspace(0, -2, 20)[1:]], # will be set within the benchmark loop based on baseline noise variance
+        'default_alphas_grid': [default_alphas_grid], # will be set within the benchmark loop based on baseline noise variance
         'cv': [2],
         'n_jobs': [10],
         # add noise parameters here if needed
@@ -151,23 +152,24 @@ def main():
     gamma_map_params = {
         'init_gamma': [0.1],
         'max_iter': [1000],
+        'tol': [1e-15]
     }
     
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
-        (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
+        # (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
         (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),
         
 
