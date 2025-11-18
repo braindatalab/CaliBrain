@@ -284,10 +284,10 @@ print(f"  - Noisy sensor data shape: {y_noisy_demo.shape}")
 
 from mne.io.constants import FIFF
 
-print(demo_sensor_simulator.sensor_units) # -> Tesla (T)
+print(demo_sensor_simulator.units) # -> Tesla (T)
 
-demo_sensor_simulator.sensor_units = FIFF.FIFF_UNIT_V
-print(demo_sensor_simulator.sensor_units) # -> Volts (V)
+demo_sensor_simulator.units = FIFF.FIFF_UNIT_V
+print(demo_sensor_simulator.units) # -> Volts (V)
 
 # %%
 # Realistic Simulation Pipeline
@@ -377,7 +377,7 @@ x_trials, x_active_indices_trials = source_simulator.simulate(**source_params)
 print(f"Generated source activity:")
 print(f"  - Shape: {x_trials.shape} (trials x sources x time)")
 print(f"  - Active sources per trial: {[len(indices) for indices in x_active_indices_trials]}")
-print(f"  - Source units: {source_simulator.source_units}")
+print(f"  - Source units: {source_simulator.units}")
 
 # %%
 # .. note::
@@ -391,7 +391,7 @@ print(f"  - Source units: {source_simulator.source_units}")
 
 # Create sensor simulator
 sensor_simulator = SensorSimulator(logger=logger)
-print(f"- Default sensor units: {sensor_simulator.sensor_units}")
+print(f"- Default sensor units: {sensor_simulator.units}")
 
 
 
@@ -401,7 +401,7 @@ print(f"- Default sensor units: {sensor_simulator.sensor_units}")
 #    in MNE notation for MEG magnetometer sensors. Usually, the units will be
 #    automatically updated based on the leadfield matrix sensor type during simulation.
 
-sensor_simulator.sensor_units = leadfield_builder.sensor_units
+sensor_simulator.units = leadfield_builder.sensor_units
 
 # %%
 # Visualization with CaliBrain
@@ -458,7 +458,8 @@ viz.plot_sensor_signals(
     y_trials=y_clean_trials,                     # Only plot clean signals
     # trial_idx = 0,
     # channels=[0, 10],                          # or "all"
-    units=sensor_simulator.sensor_units,
+    units=sensor_simulator.units,
+    unitmult=sensor_simulator.unitmult,
     mode="concatenate",                          # or "stack"
     title="Sensor Signals (All trials concatenated)",
     save_dir="data_simulation",
@@ -473,7 +474,8 @@ viz.plot_sensor_signals(
     y_trials=y_noisy_trials,                    # Only noisy signals
     # trial_idx = 0,
     channels="all",                              # or "all"
-    units=sensor_simulator.sensor_units,
+    units=sensor_simulator.units,
+    unitmult=sensor_simulator.unitmult,
     mode="stack",                                # or "stack"
     title="Sensor Signals (All Trials stacked)",
     save_dir="data_simulation",
@@ -488,7 +490,8 @@ viz.plot_sensor_signals(
     y_trials=y_noisy_trials,
     # trial_idx = 0,
     # channels=[0, 10],                           # or "all"
-    units=sensor_simulator.sensor_units,
+    units=sensor_simulator.units,
+    unitmult=sensor_simulator.unitmult,
     mode="concatenate",                           # or "stack"
     title="Sensor Signals (All trials concatenated)",
     save_dir="data_simulation",
@@ -564,6 +567,7 @@ viz.plot_sensor_signals(
     ERP_config=erp_config,
     y_trials=y_noisy_high,
     units=leadfield_builder.sensor_units,
+    unitmult=leadfield_builder.sensor_unitmult,
     trial_idx=0,
     title="High SNR (α_SNR = 0.9) - Clean vs Noisy",
     save_dir="snr_comparison",
@@ -577,6 +581,7 @@ viz.plot_sensor_signals(
     ERP_config=erp_config,
     y_trials=y_noisy_low,
     units=leadfield_builder.sensor_units,
+    unitmult=leadfield_builder.sensor_unitmult,
     trial_idx=0,
     title="Low SNR (α_SNR = 0.1) - Clean vs Noisy",
     save_dir="snr_comparison",

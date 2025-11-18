@@ -197,7 +197,7 @@ source_simulator = SourceSimulator(
     ERP_config=erp_config,
     logger=logger
 )
-print(f"- Default units: {source_simulator.source_units}") # -> Am
+print(f"- Default units: {source_simulator.units}") # -> Am
 
 # %%
 # .. note::
@@ -293,7 +293,7 @@ viz.plot_source_signals(
     ERP_config=source_simulator.ERP_config,
     x_trials=x_trials,
     x_active_indices=x_active_indices_trials,
-    units=source_simulator.source_units,
+    units=source_simulator.units,
     trial_idx=None,  # If None, all trials are plotted
     title="Source Activity - All Trials",
     save_dir="source_simulation",
@@ -311,7 +311,7 @@ viz.plot_source_signals(
     ERP_config=source_simulator.ERP_config,
     x_trials=x_trials,
     x_active_indices=x_active_indices_trials,
-    units=source_simulator.source_units,
+    units=source_simulator.units,
     trial_idx=trial_idx,
     title=f"Source Activity - Trial {trial_idx+1}",
     save_dir="source_simulation", 
@@ -411,7 +411,7 @@ viz.plot_source_signals(
     ERP_config=simulator_fast.ERP_config,
     x_trials=x_fast,
     x_active_indices=x_fast_indices,
-    units=simulator_fast.source_units,
+    units=simulator_fast.units,
     title="High-Frequency Fast ERPs (8-30 Hz)",
     save_dir="erp_comparison",
     file_name="fast_erp_simulation",
@@ -425,7 +425,7 @@ viz.plot_source_signals(
     ERP_config=simulator_slow.ERP_config,
     x_trials=x_slow,
     x_active_indices=x_slow_indices,
-    units=simulator_slow.source_units,
+    units=simulator_slow.units,
     title="Low-Frequency Slow ERPs (0.5-3 Hz)",
     save_dir="erp_comparison",
     file_name="slow_erp_simulation", 
