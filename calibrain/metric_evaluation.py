@@ -10,30 +10,29 @@ from mne.inverse_sparse.mxne_inverse import _make_sparse_stc
 from sklearn.metrics import jaccard_score, mean_squared_error, f1_score
 
 class MetricEvaluator:
-    def __init__(self, confidence_levels : np.ndarray = None, nominal_coverages : np.ndarray = None, metrics : list[str] = None, logger : logging.Logger = None):
+    def __init__(self, nominal_coverages : np.ndarray = None, metrics : list[str] = None, logger : logging.Logger = None):
         """
         Initialize the MetricEvaluator with confidence levels, metrics, and a logger.
         Parameters
         ----------
-        confidence_levels : np.ndarray, optional
-            Array of confidence levels to evaluate metrics against.
-        metrics : list[str], optional
+        nominal_coverages : np.ndarray
+            Nominal confidence levels (c) - what we expect theoretically.
+        metrics : list[str]
             List of metric names (method names) to evaluate.
-        logger : logging.Logger, optional
+        logger : logging.Logger
             Logger instance for logging debug and error messages.
         """
-        self.confidence_levels = confidence_levels
+        self.nominal_coverages = nominal_coverages
         self.metrics = metrics if metrics is not None else []
         self.logger = logger
-        
-        # Coverage probabilities
-        self.nominal_coverages = nominal_coverages
 
     # Calibration curve metrics
     def mean_calibration_error(self, empirical_coverages, **kwargs):
         """Calculate the area under the curve (AUC) deviation, which measures the average calibration error.
         Parameters
         ----------
+        empirical_coverages : np.ndarray
+            Empirical coverage values.
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
             - 'empirical_coverages': np.ndarray, empirical coverage values.
@@ -48,8 +47,14 @@ class MetricEvaluator:
         return np.sum(abs_dev * delta_c)
 
     def max_underconfidence_deviation(self, empirical_coverages, **kwargs):
-        """Calculate the maximum positive deviation from the confidence levels ().
-        Parameters
+        """
+        Calculate the maximum positive deviation (MUD) from the confidence levels ().
+        Parameters:
+        
+        MUD = max_i(ĉ_i - c_i)
+        
+        Represents the largest observed deviation due to underconfidence.
+        Identifies the most conservative confidence level.        
         ----------
         empirical_coverages : np.ndarray
             Empirical coverage values.
@@ -65,7 +70,13 @@ class MetricEvaluator:
         return np.max(deviation)
 
     def max_overconfidence_deviation(self, empirical_coverages, **kwargs):
-        """Calculate the maximum negative deviation from the confidence levels.
+        """
+        Calculate the maximum negative deviation from the confidence levels:
+        
+        MOD = -min_i(ĉ_i - c_i)
+        
+        It is Negated Minimal Deviation and represents the largest observed deviation due to overconfidence.
+        Identifies the most overconfident confidence level.        
         Parameters
         ----------
         empirical_coverages : np.ndarray
@@ -82,7 +93,14 @@ class MetricEvaluator:
         return -np.min(deviation) #TODO: check whether we need the minus here!
 
     def mean_absolute_deviation(self, empirical_coverages, **kwargs):
-        """Calculate the mean absolute deviation from the confidence levels.
+        """
+        Calculate the mean absolute deviation from the confidence levels.
+        
+        MAD = (1/K) * Σ_{i=1}^{K} |ĉ_i - c_i|
+        
+        Measures the average magnitude of deviation between empirical and nominal coverage.
+        Lower values indicate better overall calibration.
+        
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
@@ -96,7 +114,15 @@ class MetricEvaluator:
         return np.mean(np.abs(deviation))
 
     def mean_signed_deviation(self, empirical_coverages, **kwargs):
-        """Calculate the mean signed deviation from the confidence levels.
+        """
+        Calculate the mean signed deviation from the confidence levels.
+        Mean Signed Deviation (MSD)
+        
+        MSD = (1/K) * Σ_{i=1}^{K} (ĉ_i - c_i)
+        
+        Captures directional bias in calibration.
+        - Positive values: systematic underconfidence (intervals are too wide)
+        - Negative values: systematic overconfidence (intervals are too narrow)   
         ----------
         kwargs : dict
             Additional keyword arguments that may be needed for metric calculations:
@@ -110,7 +136,12 @@ class MetricEvaluator:
         return np.mean(deviation)
 
     def mean_posterior_std(self, posterior_var, **kwargs):
-        """Calculate the mean posterior standard deviation.
+        """
+        Calculate the mean posterior standard deviation across all sources.
+        
+        This provides a single-number summary of the overall uncertainty level.
+        Lower values indicate more confident estimates on average.
+        
         Parameters
         ----------
         posterior_var : np.ndarray
@@ -149,53 +180,54 @@ class MetricEvaluator:
             Earth Mover's Distance between normalized source distributions.
         """
         if orientation_type == "fixed":
-            temp = np.linalg.norm(x, axis=1)
-            a_mask = temp != 0
-            a = temp[a_mask]
+            temp_true = np.linalg.norm(x, axis=1)
+            a_mask = temp_true != 0
+            a = temp_true[a_mask]
 
-            temp = np.linalg.norm(x_hat, axis=1)
-            b_mask = temp != 0
-            b = temp[b_mask]
-            # temp_ = np.partition(-temp, nnz)
-            # b = -temp_[:nnz]  # get n(=nnz) max amplitudes
-            # b = -temp_[:nnz]  # get n(=nnz) max amplitudes
-        
+            temp_est = np.linalg.norm(x_hat, axis=1)
+            b_mask = temp_est != 0
+            b = temp_est[b_mask]
+            
         elif orientation_type == "free":
-            temp = np.linalg.norm(x, axis=2)
-            temp = np.linalg.norm(temp, axis=1)
-            a_mask = temp != 0
-            a = temp[a_mask]
+            temp_true = np.linalg.norm(x, axis=2)
+            temp_true = np.linalg.norm(temp_true, axis=1)
+            a_mask = temp_true != 0
+            a = temp_true[a_mask]
 
-            temp = np.linalg.norm(x_hat, axis=2)
-            temp = np.linalg.norm(temp, axis=1)
-            b_mask = temp != 0
-            b = temp[b_mask]
-            # temp_ = np.partition(-temp, nnz)
-            # b = -temp_[:nnz]  # get n(=nnz) max amplitudes
+            temp_est = np.linalg.norm(x_hat, axis=2)
+            temp_est = np.linalg.norm(temp_est, axis=1)
+            b_mask = temp_est != 0
+            b = temp_est[b_mask]
+        else:
+            raise ValueError(f"Unknown orientation_type: {orientation_type}")
 
-        
-        # Step 3: Load the forward solution and extract source locations
+        # Handle edge cases
+        if len(a) == 0 or len(b) == 0:
+            self.logger.warning("No active sources found for EMD computation")
+            return np.inf
+
+        # Load forward solution and extract source locations
         fwd = read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
-
-        # if orientation_type == "fixed":
-        #     if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:
-        #         fwd = convert_forward_solution(fwd, force_fixed=True) # surf_ori=True
-
         fwd = convert_forward_solution(fwd, force_fixed=True)
         src = fwd["src"]
 
+        # Create sparse source time courses
         stc_a = _make_sparse_stc(a[:, None], a_mask, fwd, tmin=1, tstep=1)
         stc_b = _make_sparse_stc(b[:, None], b_mask, fwd, tmin=1, tstep=1)
 
+        # Extract source coordinates
         rr_a = np.r_[src[0]["rr"][stc_a.lh_vertno], src[1]["rr"][stc_a.rh_vertno]]
         rr_b = np.r_[src[0]["rr"][stc_b.lh_vertno], src[1]["rr"][stc_b.rh_vertno]]
+        
+        # Compute distance matrix between source locations
         M = cdist(rr_a, rr_b, metric="euclidean")
 
-        # Normalize a and b as EMD is defined between probability distributions
-        a /= a.sum()
-        b /= b.sum()
+        # Normalize amplitudes to form probability distributions
+        a_norm = a / a.sum()
+        b_norm = b / b.sum()
 
-        return emd2(a, b, M)
+        # Compute Earth Mover's Distance
+        return emd2(a_norm, b_norm, M)
 
     def jaccard_error(self, x, x_hat, orientation_type=None, **kwargs):
         """
