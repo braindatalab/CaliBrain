@@ -75,11 +75,9 @@ def main():
     )
 
     # nominal coverage levels   
-    confidence_levels = np.append(np.arange(0.1, 1.0, 0.1), 0.99)  # [0.1, 0.2, ..., 0.9, 0.99]
-    
+    nominal_coverages = np.arange(0.1, 1.1, 0.1)  # [0.1, 0.2, ..., 1.0] # 10 values
     uncertainty_estimator = UncertaintyEstimator(
-        confidence_levels=confidence_levels,
-        nominal_coverages=1 - confidence_levels,
+        nominal_coverages=nominal_coverages,
         logger=logger,
     )  
       
@@ -166,7 +164,7 @@ def main():
         (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
@@ -180,10 +178,10 @@ def main():
 
         # ================ EEG experiments ================
         # ---------------- eLORETA ----------------
-        (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_eeg, CV_noise_params),
         # ---------------- BMN ----------------
-        (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_eeg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, basic_noise_params),
@@ -210,8 +208,8 @@ def main():
     ]
 
     metric_evaluator = MetricEvaluator(
-        confidence_levels=confidence_levels,
-        nominal_coverages= 1 - confidence_levels,
+        confidence_levels=nominal_coverages,
+        nominal_coverages= 1 - nominal_coverages,
         metrics=metrics,
         logger=logger
     )
@@ -236,9 +234,15 @@ def main():
         results_df = benchmark.run(nruns=nruns)
         df.append(results_df)
 
+    # this_result['avg_posterior_variance'] = np.mean(posterior_var)
+    # this_result['std_posterior_variance'] = np.std(np.sqrt(posterior_var))
+    # this_result['avg_posterior_mean'] = np.mean(x_hat_one_trial)
+    # this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
+    
     results_df = pd.concat(df)
     results_df.sort_values(by=['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'],inplace=True, ascending=True)
-    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var', 'mean_posterior_variance']
+    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var', 'avg_posterior_mean', 'std_posterior_mean', 'avg_posterior_variance', 'std_posterior_variance']
+    
     cols = [c for c in desired_order if c in results_df.columns] + \
            [c for c in results_df.columns if c not in desired_order]
     results_df = results_df[cols]

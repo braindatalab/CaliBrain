@@ -14,22 +14,92 @@ from sklearn.model_selection import KFold
 
 
 class UncertaintyEstimator:
-    def __init__(self, confidence_levels : np.ndarray = None, nominal_coverages : np.ndarray = None, logger : logging.Logger = None):
+    def __init__(self, nominal_coverages: np.ndarray = None, 
+                 logger: logging.Logger = None):
         """
-        Initialize the uncertainty estimator.
+        Initialize the uncertainty estimator with nominal coverages (theoretical or claimed confidence levels).
         
         Parameters:
         -----------
-        confidence_levels : list, optional
-            List of confidence levels to compute confidence ellipses. Default is np.arange(0.0, 1.1, 0.1).
-        nominal_coverages : np.ndarray, optional
-            Array of nominal coverage probabilities corresponding to the confidence levels.
-        logger : logging.Logger, optional
-            Logger instance for logging messages.
+        nominal_coverages : np.ndarray
+            Nominal confidence levels (c) - what we expect theoretically
         """
-        self.confidence_levels = confidence_levels
+        if nominal_coverages is None:
+            # Include 0 and 1 for proper calibration curve endpoints
+            nominal_coverages = np.array([0.0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 
+                                        0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0])
+            
+        # Validate that all nominal coverages are between 0 and 1
+        if np.any(nominal_coverages < 0) or np.any(nominal_coverages > 1):
+            raise ValueError("Nominal coverages must be between 0 and 1")
+            
         self.nominal_coverages = nominal_coverages
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
+        
+        # Precompute z-scores for common confidence levels
+        self.z_scores = {}
+        for c in nominal_coverages:
+            if c == 0.0:
+                self.z_scores[c] = 0.0  # Zero width interval
+            elif c == 1.0:
+                self.z_scores[c] = np.inf  # Infinite interval
+            else:
+                self.z_scores[c] = norm.ppf((1 + c) / 2)
+
+    def get_posterior_variance(
+        self,
+        posterior_cov: np.ndarray,
+        orientation_type: str
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Extract and regularize the posterior variance from the covariance matrix.
+        Parameters:
+        ----------
+        posterior_cov : np.ndarray
+            Posterior covariance matrix of shape (n_sources, n_sources) scaled by n_times.
+        orientation_type : str
+            Orientation type, either 'free' or 'fixed'. 
+        Returns:
+        -------
+        np.ndarray
+            Posterior variance vector of shape (n_sources, n_times).
+        """    
+        # Ensure covariance matrix is positive semi-definite for variance calculation
+        # Note: _make_psd might modify cov in place if not careful, consider passing a copy if needed elsewhere. However, we only need the diagonal here, so modifying cov might be acceptable if not used later.
+
+        # Extract diagonal variances
+        var = np.diag(posterior_cov).copy()
+        
+        # Check for negative variances
+        negative_mask = var < 0
+        n_negative = np.sum(negative_mask)
+
+        need_full_cov = True
+        
+        if n_negative > 0:
+            self.logger.warning(f"Found {n_negative} non-positive variances (<= 0). Regularizing...")
+
+            # Option 1: Simple diagonal regularization (faster)
+            min_var = 1e-12  # Small positive value based on your data scale
+            var[negative_mask] = min_var
+            self.logger.info(f"Clipped {n_negative} variances to {min_var}")
+            
+            # Option 2: Full PSD regularization (more principled but slower)
+            # Only do this if we need the full covariance matrix elsewhere
+            if need_full_cov:
+                cov_psd = self._make_psd(posterior_cov.copy())
+                var = np.diag(cov_psd)
+                
+                # Recheck after PSD adjustment
+                remaining_negative = np.sum(var <= 0)
+                if remaining_negative > 0:
+                    self.logger.warning(f"Still {remaining_negative} non-positive variances after PSD adjustment")
+                    var[var <= 0] = min_var
+        
+        # Validate final variances
+        assert np.all(var >= 0), "All variances must be positive for std deviation calculation"
+        
+        return var
 
     def construct_full_covariance(
         self,
@@ -107,354 +177,171 @@ class UncertaintyEstimator:
         self.logger.debug(f"Constructed full covariance matrix of shape {full_posterior_cov.shape}")
         return full_posterior_cov
 
-    def _compute_top_covariance_pairs(self, cov, top_k=None):
+    def _make_psd(self, cov: np.ndarray, epsilon: float = 1e-12) -> np.ndarray:
         """
-        Compute and optionally sort the magnitudes of covariances for all pairs of dimensions.
-
-        Parameters:
-            cov (array-like): Covariance matrix of shape (n, n).
-            top_k (int, optional): Number of top pairs to return. If None, return all pairs.
-
-        Returns:
-            list: A sorted list of tuples. Each tuple contains:
-                - A pair of indices (i, j).
-                - The absolute magnitude of their covariance.
+        Proper PSD regularization using eigenvalue clipping.
         """
-        # Ensure covariance matrix is a NumPy array
-        cov = np.asarray(cov)
-
-        # Get all unique pairs of indices
-        n = cov.shape[0]
-        pairs = list(combinations(range(n), 2))
-
-        # Compute magnitudes of covariances for each pair
-        pair_cov_magnitudes = [(pair, np.abs(cov[pair[0], pair[1]])) for pair in pairs]
-
-        # Sort by covariance magnitude in descending order
-        sorted_pairs = sorted(pair_cov_magnitudes, key=lambda x: x[1], reverse=True)
-
-        # Return top-k pairs if specified
-        if top_k is not None:
-            return sorted_pairs[:top_k]
-        return sorted_pairs
-
-    def _make_psd(self, cov: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:
-        """
-        Ensure that the covariance matrix is positive semi-definite by adding epsilon to the diagonal.
-        """
-        self.logger.info("Computing eigenvalues...")
+        # Ensure symmetric
+        cov = (cov + cov.T) / 2.0
         
-        max_iterations = 100
-        iterations = 0
-        # compute eigenvalues
-        eigenvalues = np.linalg.eigvals(cov)
-        while not np.all(eigenvalues >= 0):
-            self.logger.info(f"Iteration {iterations + 1}: Covariance matrix is not PSD.")
-            cov += np.eye(cov.shape[0]) * epsilon
-            epsilon *= 10
-            iterations += 1
-            if iterations > max_iterations:
-                self.logger.warning("Covariance matrix could not be made positive semi-definite.")
-                break
-        return cov
-    
-    def _compute_credible_ellipse(self, mean, cov, confidence_level=0.95):
-        """
-        Compute the parameters of a confidence ellipse for a given mean and covariance matrix.
-        """
-        # Validate covariance matrix
-        condition_number = np.linalg.cond(cov)
-        if condition_number > 1e10:
-            print("Covariance matrix is ill-conditioned")
+        # Eigen decomposition
+        eigenvals, eigenvecs = np.linalg.eigh(cov)
         
-        # Regularize covariance matrix if not positive definite by adding gradually increasing epsilon to the diagonal.
-        if not np.all(np.linalg.eigvals(cov) > 0):
-            cov_psd = self._make_psd(cov.copy(), epsilon=1e-6)
+        # Clip negative eigenvalues
+        eigenvals_clipped = np.maximum(eigenvals, epsilon)
         
-        chi2_val = chi2.ppf(confidence_level, df=2)
-
-        eigenvals, eigenvecs = np.linalg.eigh(cov_psd)
+        # Reconstruct
+        cov_psd = eigenvecs @ np.diag(eigenvals_clipped) @ eigenvecs.T
         
-        if np.all(eigenvals > 0):
-            print("Covariance matrix is now positive definite.")
-        else:
-            print("Covariance matrix is still not positive definite.")
-
-        order = np.argsort(eigenvals)[::-1]
-        eigenvals = eigenvals[order]
-        eigenvecs = eigenvecs[:, order]
-
-        width, height = 2 * np.sqrt(eigenvals * chi2_val)
-        angle = np.degrees(np.arctan2(eigenvecs[1, 0], eigenvecs[0, 0]))
+        # Ensure symmetry
+        cov_psd = (cov_psd + cov_psd.T) / 2.0
         
-        return width, height, angle
-
-    def _compute_credible_intervals(self, mean : np.ndarray, std_dev : np.ndarray, confidence_level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
-        """Compute credible intervals based on the diagonal of the covariance matrix.
-        Assumes inputs correspond only to the active components.
-
-        Parameters
-        ----------
-        mean : np.ndarray
-            Mean array for active components, shape (n_sources, n_times). For averaged time, n_times=1.
-        std_dev : np.ndarray
-            Standard deviation array for active components, shape (n_sources, n_times). For averaged time, n_times=1.
-        confidence_level : float, optional
-            Confidence level for the intervals (e.g., 0.95 for 95%), by default 0.95
-
-        Returns
-        -------
-        tuple[np.ndarray, np.ndarray]
-        ci_lower : np.ndarray
-            Lower bounds of credible intervals, shape (n_sources, n_times).
-        ci_upper : np.ndarray
-            Upper bounds of credible intervals, shape (n_sources, n_times).
-        """
-        # Calculate the Z-score corresponding to the confidence level for a normal distribution
-        # Example: 0.95 -> z = 1.96
-        # alpha = 1.0 - confidence_level
-        # z = np.abs(np.percentile(np.random.normal(0, 1, 1000000), [alpha / 2 * 100, (1 - alpha / 2) * 100]))[1]
-        # z = norm.ppf(1 - alpha / 2)  # Two-tailed critical value
-        z = norm.ppf(0.5 + confidence_level / 2)  # critical value
-        self.logger.debug(f"Z-score for confidence level {confidence_level}: {z:.4f}")
-
-        # Calculate credible intervals: mean +/- z * std_dev
-        ci_lower = mean - z * std_dev
-        ci_upper = mean + z * std_dev
-
-        self.logger.debug(f"Computed CI shapes: lower={ci_lower.shape}, upper={ci_upper.shape}")
-
-        # The distinction between 'fixed' and 'free' is not needed here,
-        # as the inputs `mean` and `cov` are already specific to the active components.
-        # The interpretation of these components (fixed source vs. free orientation component)
-        # happens in other functions like _count_values_within_ci.
-
-        return ci_lower, ci_upper
-
-    def _count_values_within_ci(self, x : np.ndarray, ci_lower : np.ndarray, ci_upper : np.ndarray, orientation_type : str) -> np.ndarray:
-        """Count the number of ground truth values that lie within the credible intervals for each time point.
-        Assumes input arrays correspond only to the active components.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Ground truth source activity for active components, shape (n_sources, n_times). For averaged time, n_times=1.
-        ci_lower : np.ndarray
-            Lower bounds of credible intervals for active components, shape (n_sources, n_times). For averaged time, n_times=1.
-        ci_upper : np.ndarray
-            Upper bounds of credible intervals for active components, shape (n_sources, n_times). For averaged time, n_times=1.
-        orientation_type : str
-            Orientation type of the sources, either 'fixed' or 'free'.
-
-        Returns
-        -------
-        np.ndarray
-            Count of values within credible intervals.
-            - For "fixed" orientation: 1D array (n_times,) with counts per time point.
-            - For "free" orientation: 2D array (3, n_times) with counts per orientation (X, Y, Z) per time point.
-        
-        Notes
-        -----
-        - active_indices is used only for "free" orientation to determine the orientation of each active component.            
-        """
-        n_times = x.shape[1]
-
-        if orientation_type == "fixed":
-            # Sum over all active sources for each time point
-            count_within_ci = np.sum((x >= ci_lower) & (x <= ci_upper), axis=0)
-            self.logger.debug(f"Fixed orientation counts shape: {count_within_ci.shape}")
-
-        elif orientation_type == "free":
-            # Initialize counts for each orientation (X, Y, Z) and each time point
-            count_within_ci = np.zeros((3, n_times))
-
-            # Determine the orientation for each row in the input arrays based on the original active_indices
-            # orientations = active_indices % 3 # Shape: (n_active_components,)
-            # TODO: hardcoded synthetic orientations for free orientation as active_indices are not used in this function
-            orientations = np.array([0, 1, 2] * (x.shape[0] // 3))
-            
-            for i in range(3): # Iterate through X, Y, Z
-                # Create a mask for rows corresponding to the current orientation
-                orient_mask = (orientations == i)
-
-                # Select the rows for the current orientation from the input arrays
-                x_orient = x[orient_mask, :]
-                ci_lower_orient = ci_lower[orient_mask, :]
-                ci_upper_orient = ci_upper[orient_mask, :]
-
-                # Count values within credible intervals for the current orientation, summing over sources
-                if x_orient.size > 0: # Ensure there are sources for this orientation
-                     count_within_ci[i, :] = np.sum((x_orient >= ci_lower_orient) & (x_orient <= ci_upper_orient), axis=0)
-                # else: counts remain zero, which is correct
-
-            self.logger.debug(f"Free orientation counts shape: {count_within_ci.shape}")
-            
-        return count_within_ci
-
-
-    def get_posterior_variance(
-        self,
-        posterior_cov: np.ndarray,
-        orientation_type: str
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Extract and regularize the posterior variance from the covariance matrix.
-        Parameters:
-        ----------
-        posterior_cov : np.ndarray
-            Posterior covariance matrix of shape (n_sources, n_sources) scaled by n_times.
-        orientation_type : str
-            Orientation type, either 'free' or 'fixed'. 
-        Returns:
-        -------
-        np.ndarray
-            Posterior variance vector of shape (n_sources, n_times).
-        """    
-        # Ensure covariance matrix is positive semi-definite for variance calculation
-        # Note: _make_psd might modify cov in place if not careful, consider passing a copy if needed elsewhere. However, we only need the diagonal here, so modifying cov might be acceptable if not used later.
-
-        # Extract diagonal variances
-        var = np.diag(posterior_cov).copy()
-        
-        # Check for negative variances
-        negative_mask = var < 0
-        n_negative = np.sum(negative_mask)
-
-        need_full_cov = True
-        
+        n_negative = np.sum(eigenvals < 0)
         if n_negative > 0:
-            self.logger.warning(f"Found {n_negative} non-positive variances (<= 0). Regularizing...")
-
-            # Option 1: Simple diagonal regularization (faster)
-            min_var = 1e-12  # Small positive value based on your data scale
-            var[negative_mask] = min_var
-            self.logger.info(f"Clipped {n_negative} variances to {min_var}")
+            self.logger.warning(f"Clipped {n_negative} negative eigenvalues")
             
-            # Option 2: Full PSD regularization (more principled but slower)
-            # Only do this if we need the full covariance matrix elsewhere
-            if need_full_cov:
-                cov_psd = self._make_psd(posterior_cov.copy())
-                var = np.diag(cov_psd)
-                
-                # Recheck after PSD adjustment
-                remaining_negative = np.sum(var <= 0)
-                if remaining_negative > 0:
-                    self.logger.warning(f"Still {remaining_negative} non-positive variances after PSD adjustment")
-                    var[var <= 0] = min_var
-        
-        # Validate final variances
-        assert np.all(var >= 0), "All variances must be positive for std deviation calculation"
-        
-        return var
+        return cov_psd
 
-    def get_credible_intervals_data(
-        self,
-        x : np.ndarray,
-        x_hat: np.ndarray,
-        posterior_var: np.ndarray,
-        orientation_type: str
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    # ========== CREDIBLE INTERVALS AND COVERAGE =========
+    def _compute_credible_intervals(
+        self, 
+        mean: np.ndarray, 
+        variance: np.ndarray, 
+        nominal_coverage: float
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Computes credible intervals and counts of true values within those intervals.
+        Compute credible intervals with proper handling of extremes.
+        
+        For c=0: Zero-width intervals (lower = upper = mean)
+        For c=1: Infinite intervals ([-∞, +∞])
+        For others: Normal intervals
+        """
+        if nominal_coverage == 0.0:
+            # Zero-width intervals
+            return mean.copy(), mean.copy()
+        elif nominal_coverage == 1.0:
+            # Infinite intervals
+            return np.full_like(mean, -np.inf), np.full_like(mean, np.inf)
+        else:
+            # Normal intervals
+            z = self.z_scores[nominal_coverage]
+            std_dev = np.sqrt(variance)
+            ci_lower = mean - z * std_dev
+            ci_upper = mean + z * std_dev
+            return ci_lower, ci_upper
 
+    def compute_empirical_coverage(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray, 
+        posterior_var: np.ndarray,
+        nominal_coverage: float
+    ) -> float:
+        """
+        Compute empirical coverage for given nominal coverage level.
+        
+        ĉ = (1/N) * Σ_{i=1}^N I[x_i^{true} ∈ CI_i^{(c)}]
+        
         Parameters:
-        ----------
-        x : np.ndarray
-            Ground truth source activity.
-            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
+        -----------
+        x_true : np.ndarray
+            Ground truth source activity, shape (n_sources, n_times) or (n_sources,)
         x_hat : np.ndarray
-            Estimated source activity (posterior mean) averaged across time.
-            Shape (n_sources, n_times). For averaged time, n_times=1.
+            Posterior mean estimates, shape (n_sources, n_times) or (n_sources,)
         posterior_var : np.ndarray
-            Posterior variance vector of shape (n_sources,).
-        orientation_type : str
-            Orientation type, either 'free' or 'fixed'.
-
+            Posterior variance, shape (n_sources, n_times) or (n_sources,)
+        nominal_coverage : float
+            Nominal coverage level c (what we expect)
+            
+            
         Returns:
         --------
-        tuple
-            - ci_lower_stacked (np.ndarray): Lower bounds of credible intervals for each confidence level.
-                Shape (n_confidence_levels, n_active_components, n_times).
-            - ci_upper_stacked (np.ndarray): Upper bounds of credible intervals for each confidence level.
-                Shape (n_confidence_levels, n_active_components, n_times).  
-            - counts_array (np.ndarray): Counts of true values within credible intervals for each confidence level.
-                Shape (n_confidence_levels, 3, n_times) for free orientation,
-                or (n_confidence_levels, 1, n_times) for fixed orientation.
+        ci_lower : np.ndarray
+            Lower bounds of credible intervals
+        ci_upper : np.ndarray
+            Upper bounds of credible intervals
+        ci_count : int
+            Number of true values within credible intervals
+        empirical_coverage : float
+            Empirical coverage ĉ (what we actually get)
         """
-        # Calculate standard deviation
-        std_dev = np.sqrt(posterior_var).reshape(-1, 1)
+        # Compute credible intervals
+        ci_lower, ci_upper = self._compute_credible_intervals(
+            x_hat, posterior_var, nominal_coverage
+        )
+        
+        # Count how many true values fall within intervals
+        within_ci = (x_true >= ci_lower) & (x_true <= ci_upper)
+        empirical_coverage = np.mean(within_ci)
+        
+        return ci_lower, ci_upper, np.sum(within_ci), empirical_coverage
 
-        # Add debugging info
-        self.logger.info(f"Variance range: [{np.min(posterior_var):.2e}, {np.max(posterior_var):.2e}]")
-        self.logger.info(f"Std dev range: [{np.min(std_dev):.2e}, {np.max(std_dev):.2e}]")
-
-        all_ci_lower_list = []
-        all_ci_upper_list = []
-        collected_counts_within_ci_list = []
-
-        self.logger.info("Computing credible intervals and hit counts for each confidence level.")
-        for cl_idx, confidence_level_val in enumerate(self.confidence_levels):
-            # self.logger.info(f"Processing confidence level {cl_idx + 1}/{len(self.confidence_levels)}: {confidence_level_val:.2f}")
-
-            ci_lower, ci_upper = self._compute_credible_intervals(
-                mean=x_hat, 
-                std_dev=std_dev, 
-                confidence_level=confidence_level_val
-            )
-
-            count_within_ci = self._count_values_within_ci(
-                x=x,
-                ci_lower=ci_lower,
-                ci_upper=ci_upper,
-                orientation_type=orientation_type
-            )
+    def get_calibration_curve(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_var: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute calibration curve showing empirical vs nominal coverage.
+        
+        Parameters:
+        -----------
+        x_true : np.ndarray
+            Ground truth source activity, shape (n_sources, n_times) or (n_sources,)
+        x_hat : np.ndarray
+            Posterior mean estimates, shape (n_sources, n_times) or (n_sources,)
+        posterior_var : np.ndarray
+            Posterior variance, shape (n_sources, n_times) or (n_sources,)
             
-            all_ci_lower_list.append(ci_lower)
-            all_ci_upper_list.append(ci_upper)
-            collected_counts_within_ci_list.append(count_within_ci)
-
-        counts_array = np.array(collected_counts_within_ci_list)
+        Returns:
+        --------
+        dict
+            Dictionary containing nominal coverages, empirical coverages, and credible interval bounds. Each key is:
+            - "nominal_coverages": np.ndarray of nominal coverage levels
+            - "empirical_coverages": np.ndarray of empirical coverage levels
+            - "ci_lowers": np.ndarray of lower bounds of credible intervals
+            - "ci_uppers": np.ndarray of upper bounds of credible intervals
+            - "ci_counts": np.ndarray of counts of true values within credible intervals
+        """
+        # Flatten arrays to treat all sources and time points as independent observations
+        x_true_flat = x_true.flatten()
+        x_hat_flat = x_hat.flatten()
+        posterior_var_flat = posterior_var.flatten()
         
-        # Ensure counts_array is 3D for consistent handling later,
-        # especially if it's (L, T) for fixed, make it (L, 1, T)
-        if orientation_type == 'fixed' and counts_array.ndim == 2: 
-            counts_array = counts_array[:, np.newaxis, :] 
+        n_observations = x_true_flat.shape[0]
+        self.logger.info(f"Computing calibration curve for {n_observations} observations")
         
-        ci_lower_stacked = np.stack(all_ci_lower_list, axis=0)
-        ci_upper_stacked = np.stack(all_ci_upper_list, axis=0)
-
-        self.logger.debug(f"Shapes returned: counts_array={counts_array.shape}, ci_lower_stacked={ci_lower_stacked.shape}, ci_upper_stacked={ci_upper_stacked.shape}")
-
-        time_idx = 0  # For averaged time, only one time point exists
-        # note that counts_array is the sum values within CI, so we need to divide by number of sources to get empirical coverage
-        empirical_coverage = (counts_array / x_hat.shape[0])[:, 0, time_idx]
-
-        return ci_lower_stacked, ci_upper_stacked, counts_array, empirical_coverage
-
-    def debug_covariance(self, posterior_cov, full_posterior_cov, step_name):
-        """Debug covariance matrix properties"""
-        print(f"\n--- {step_name} ---")
+        # Compute empirical coverage for each nominal coverage level
+        empirical_coverages = []
+        ci_lowers = []
+        ci_uppers = []
+        ci_counts = []
         
-        # Original covariance
-        orig_eigenvals = np.linalg.eigvals(posterior_cov)
-        print(f"Original posterior_cov:")
-        print(f"  Shape: {posterior_cov.shape}")
-        print(f"  Eigenvalues range: [{np.min(orig_eigenvals):.2e}, {np.max(orig_eigenvals):.2e}]")
-        print(f"  Rank: {np.linalg.matrix_rank(posterior_cov)}")
-        print(f"  Condition number: {np.linalg.cond(posterior_cov):.2e}")
+        for nominal_coverage in self.nominal_coverages:
+            ci_lower, ci_upper, ci_count, coverage = self.compute_empirical_coverage(
+                x_true_flat, x_hat_flat, posterior_var_flat, nominal_coverage
+            )
+            # Store
+            ci_uppers.append(ci_upper)
+            ci_counts.append(ci_count)
+            ci_lowers.append(ci_lower)
+            empirical_coverages.append(coverage)
+            
+            self.logger.debug(f"c = {nominal_coverage:.3f}: ĉ = {coverage:.3f}")
         
-        # Full covariance
-        full_eigenvals = np.linalg.eigvals(full_posterior_cov)
-        full_diag = np.diag(full_posterior_cov)
-        print(f"Full posterior_cov:")
-        print(f"  Shape: {full_posterior_cov.shape}")
-        print(f"  Eigenvalues range: [{np.min(full_eigenvals):.2e}, {np.max(full_eigenvals):.2e}]")
-        print(f"  Diagonal range: [{np.min(full_diag):.2e}, {np.max(full_diag):.2e}]")
-        print(f"  Negative diagonal elements: {np.sum(full_diag < 0)}")
-        print(f"  Zero diagonal elements: {np.sum(full_diag == 0)}")
-        # print(f"  Rank: {np.linalg.matrix_rank(full_posterior_cov)}")
 
-    def calibration_CV(self, x, x_hat, posterior_var, orientation_type='fixed', n_folds=5, random_state=42):
+        return {
+            "nominal_coverages": self.nominal_coverages,
+            "empirical_coverages": np.array(empirical_coverages),
+            "ci_lowers": np.array(ci_lowers),
+            "ci_uppers": np.array(ci_uppers),
+            "ci_counts": np.array(ci_counts)
+        }
+
+    #  ========= CALIBRATION METHODS =========
+    def calibration_CV(self, x, x_hat, posterior_var, n_folds=5, random_state=42):
         """
         Calibrate credible intervals using isotonic regression (IR) with source-wise cross-validation avoiding overfitting
         
@@ -506,7 +393,7 @@ class UncertaintyEstimator:
         kf = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
         source_idx = np.arange(n_sources)
         
-        calibrated_coverages = np.zeros(len(self.confidence_levels))
+        calibrated_coverages = np.zeros(len(self.nominal_coverages))
         fold_results = []
         
         print(f"Running {n_folds}-fold source-wise calibration:")
@@ -523,33 +410,31 @@ class UncertaintyEstimator:
             posterior_var_test = posterior_var[test_idx]
             
             # Compute empirical coverages for train set
-            _, _, _, empirical_coverages_train = self.get_credible_intervals_data(
-                x=x_train,
+            train_coverage_dict = self.get_calibration_curve(
+                x_true=x_train,
                 x_hat=x_hat_train,
                 posterior_var=posterior_var_train,
-                orientation_type=orientation_type
                 )
             
             # Compute empirical coverages for test set
-            _, _, _, empirical_coverages_test = self.get_credible_intervals_data(
-                    x=x_test,
+            test_coverage_dict = self.get_calibration_curve(
+                    x_true=x_test,
                     x_hat=x_hat_test,
                     posterior_var=posterior_var_test,
-                    orientation_type=orientation_type
                 )
             
             # TRAIN: Fit isotonic regression (empirical -> nominal coverage)
             # Preserves monotonicity: higher confidence -> higher coverage
             ir_model = IsotonicRegression(out_of_bounds='clip')
-            ir_model.fit(empirical_coverages_train, self.nominal_coverages)
+            ir_model.fit(train_coverage_dict['empirical_coverages'], self.nominal_coverages)
             
             # TEST: Apply calibration to test sources
-            test_calibrated = ir_model.transform(empirical_coverages_test)
+            test_calibrated = ir_model.transform(test_coverage_dict['empirical_coverages'])
             
             # Store fold results
             fold_results.append({
-                'train_empirical': empirical_coverages_train,
-                'test_empirical': empirical_coverages_test,
+                'train_empirical': train_coverage_dict['empirical_coverages'],
+                'test_empirical': test_coverage_dict['empirical_coverages'],
                 'calibrated': test_calibrated,
                 'n_train': len(train_idx),
                 'n_test': len(test_idx),
@@ -566,4 +451,113 @@ class UncertaintyEstimator:
         
         print("Calibration completed successfully!")
         return calibrated_coverages, fold_results
+    #  
+
+    # ========= DEBUGGING FUNCTIONS =========
+    def debug_covariance(self, posterior_cov, full_posterior_cov, step_name):
+        """Debug covariance matrix properties"""
+        print(f"\n--- {step_name} ---")
+        
+        # Original covariance
+        orig_eigenvals = np.linalg.eigvals(posterior_cov)
+        print(f"Original posterior_cov:")
+        print(f"  Shape: {posterior_cov.shape}")
+        print(f"  Eigenvalues range: [{np.min(orig_eigenvals):.2e}, {np.max(orig_eigenvals):.2e}]")
+        print(f"  Rank: {np.linalg.matrix_rank(posterior_cov)}")
+        print(f"  Condition number: {np.linalg.cond(posterior_cov):.2e}")
+        
+        # Full covariance
+        full_eigenvals = np.linalg.eigvals(full_posterior_cov)
+        full_diag = np.diag(full_posterior_cov)
+        print(f"Full posterior_cov:")
+        print(f"  Shape: {full_posterior_cov.shape}")
+        print(f"  Eigenvalues range: [{np.min(full_eigenvals):.2e}, {np.max(full_eigenvals):.2e}]")
+        print(f"  Diagonal range: [{np.min(full_diag):.2e}, {np.max(full_diag):.2e}]")
+        print(f"  Negative diagonal elements: {np.sum(full_diag < 0)}")
+        print(f"  Zero diagonal elements: {np.sum(full_diag == 0)}")
+        # print(f"  Rank: {np.linalg.matrix_rank(full_posterior_cov)}")
+
+    def debug_posterior_properties(self, x_hat: np.ndarray, posterior_cov: np.ndarray):
+        """
+        Debug function to check posterior properties.
+        """
+        print("\n=== POSTERIOR PROPERTIES ===")
+        print(f"x_hat shape: {x_hat.shape}")
+        print(f"posterior_cov shape: {posterior_cov.shape}")
+        
+        # Check if covariance is positive definite
+        eigenvals = np.linalg.eigvals(posterior_cov)
+        min_eigenval = np.min(eigenvals)
+        max_eigenval = np.max(eigenvals)
+        condition_number = np.linalg.cond(posterior_cov)
+        
+        print(f"Eigenvalue range: [{min_eigenval:.2e}, {max_eigenval:.2e}]")
+        print(f"Condition number: {condition_number:.2e}")
+        print(f"Negative eigenvalues: {np.sum(eigenvals < 0)}")
+        
+        # Check variances
+        variances = np.diag(posterior_cov)
+        print(f"Variance range: [{np.min(variances):.2e}, {np.max(variances):.2e}]")
+        print(f"Zero variances: {np.sum(variances == 0)}")
+
+    # def _compute_top_covariance_pairs(self, cov, top_k=None):
+    #     """
+    #     Compute and optionally sort the magnitudes of covariances for all pairs of dimensions.
+
+    #     Parameters:
+    #         cov (array-like): Covariance matrix of shape (n, n).
+    #         top_k (int, optional): Number of top pairs to return. If None, return all pairs.
+
+    #     Returns:
+    #         list: A sorted list of tuples. Each tuple contains:
+    #             - A pair of indices (i, j).
+    #             - The absolute magnitude of their covariance.
+    #     """
+    #     # Ensure covariance matrix is a NumPy array
+    #     cov = np.asarray(cov)
+
+    #     # Get all unique pairs of indices
+    #     n = cov.shape[0]
+    #     pairs = list(combinations(range(n), 2))
+
+    #     # Compute magnitudes of covariances for each pair
+    #     pair_cov_magnitudes = [(pair, np.abs(cov[pair[0], pair[1]])) for pair in pairs]
+
+    #     # Sort by covariance magnitude in descending order
+    #     sorted_pairs = sorted(pair_cov_magnitudes, key=lambda x: x[1], reverse=True)
+
+    #     # Return top-k pairs if specified
+    #     if top_k is not None:
+    #         return sorted_pairs[:top_k]
+    #     return sorted_pairs
     
+    # def _compute_credible_ellipse(self, mean, cov, confidence_level=0.95):
+    #     """
+    #     Compute the parameters of a confidence ellipse for a given mean and covariance matrix.
+    #     """
+    #     # Validate covariance matrix
+    #     condition_number = np.linalg.cond(cov)
+    #     if condition_number > 1e10:
+    #         print("Covariance matrix is ill-conditioned")
+        
+    #     # Regularize covariance matrix if not positive definite by adding gradually increasing epsilon to the diagonal.
+    #     if not np.all(np.linalg.eigvals(cov) > 0):
+    #         cov_psd = self._make_psd(cov.copy(), epsilon=1e-6)
+        
+    #     chi2_val = chi2.ppf(confidence_level, df=2)
+
+    #     eigenvals, eigenvecs = np.linalg.eigh(cov_psd)
+        
+    #     if np.all(eigenvals > 0):
+    #         print("Covariance matrix is now positive definite.")
+    #     else:
+    #         print("Covariance matrix is still not positive definite.")
+
+    #     order = np.argsort(eigenvals)[::-1]
+    #     eigenvals = eigenvals[order]
+    #     eigenvecs = eigenvecs[:, order]
+
+    #     width, height = 2 * np.sqrt(eigenvals * chi2_val)
+    #     angle = np.degrees(np.arctan2(eigenvecs[1, 0], eigenvecs[0, 0]))
+        
+    #     return width, height, angle

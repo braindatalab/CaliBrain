@@ -1,0 +1,234 @@
+import numpy as np
+from scipy import linalg
+import warnings
+from scipy.sparse import block_diag
+from scipy.linalg import sqrtm, inv
+import matplotlib.pyplot as plt
+import logging
+from scipy.stats import norm
+
+class UncertaintyEstimator:
+    def __init__(self, nominal_coverages: np.ndarray = None, 
+                 logger: logging.Logger = None):
+        """
+        Initialize the uncertainty estimator with nominal coverages (theoretical or claimed confidence levels).
+        
+        Parameters:
+        -----------
+        nominal_coverages : np.ndarray
+            Nominal confidence levels (c) - what we expect theoretically
+        """
+        if nominal_coverages is None:
+            # Include 0 and 1 for proper calibration curve endpoints
+            nominal_coverages = np.array([0.0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 
+                                        0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0])
+            
+        # Validate that all nominal coverages are between 0 and 1
+        if np.any(nominal_coverages < 0) or np.any(nominal_coverages > 1):
+            raise ValueError("Nominal coverages must be between 0 and 1")
+            
+        self.nominal_coverages = nominal_coverages
+        self.logger = logger or logging.getLogger(__name__)
+        
+        # Precompute z-scores for common confidence levels
+        self.z_scores = {}
+        for c in nominal_coverages:
+            if c == 0.0:
+                self.z_scores[c] = 0.0  # Zero width interval
+            elif c == 1.0:
+                self.z_scores[c] = np.inf  # Infinite interval
+            else:
+                self.z_scores[c] = norm.ppf((1 + c) / 2)
+
+    def _make_psd(self, cov: np.ndarray, epsilon: float = 1e-12) -> np.ndarray:
+        """
+        Proper PSD regularization using eigenvalue clipping.
+        """
+        # Ensure symmetric
+        cov = (cov + cov.T) / 2.0
+        
+        # Eigen decomposition
+        eigenvals, eigenvecs = np.linalg.eigh(cov)
+        
+        # Clip negative eigenvalues
+        eigenvals_clipped = np.maximum(eigenvals, epsilon)
+        
+        # Reconstruct
+        cov_psd = eigenvecs @ np.diag(eigenvals_clipped) @ eigenvecs.T
+        
+        # Ensure symmetry
+        cov_psd = (cov_psd + cov_psd.T) / 2.0
+        
+        n_negative = np.sum(eigenvals < 0)
+        if n_negative > 0:
+            self.logger.warning(f"Clipped {n_negative} negative eigenvalues")
+            
+        return cov_psd
+
+    def _compute_credible_intervals(
+        self, 
+        mean: np.ndarray, 
+        variance: np.ndarray, 
+        nominal_coverage: float
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute credible intervals with proper handling of extremes.
+        
+        For c=0: Zero-width intervals (lower = upper = mean)
+        For c=1: Infinite intervals ([-∞, +∞])
+        For others: Normal intervals
+        """
+        if nominal_coverage == 0.0:
+            # Zero-width intervals
+            return mean.copy(), mean.copy()
+        elif nominal_coverage == 1.0:
+            # Infinite intervals
+            return np.full_like(mean, -np.inf), np.full_like(mean, np.inf)
+        else:
+            # Normal intervals
+            z = self.z_scores[nominal_coverage]
+            std_dev = np.sqrt(variance)
+            ci_lower = mean - z * std_dev
+            ci_upper = mean + z * std_dev
+            return ci_lower, ci_upper
+
+    def compute_empirical_coverage(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray, 
+        posterior_std: np.ndarray,
+        nominal_coverage: float
+    ) -> float:
+        """
+        Compute empirical coverage for given nominal coverage level.
+        
+        ĉ = (1/N) * Σ_{i=1}^N I[x_i^{true} ∈ CI_i^{(c)}]
+        
+        Parameters:
+        -----------
+        nominal_coverage : float
+            Nominal coverage level c (what we expect)
+            
+        Returns:
+        --------
+        empirical_coverage : float
+            Empirical coverage ĉ (what we actually get)
+        """
+        # Compute credible intervals
+        ci_lower, ci_upper = self._compute_credible_intervals(
+            x_hat, posterior_std**2, nominal_coverage
+        )
+        
+        # Count how many true values fall within intervals
+        within_ci = (x_true >= ci_lower) & (x_true <= ci_upper)
+        empirical_coverage = np.mean(within_ci)
+        
+        return empirical_coverage
+
+    def get_calibration_curve(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_std: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute calibration curve showing empirical vs nominal coverage.
+        
+        Parameters:
+        -----------
+        x_true : np.ndarray
+            Ground truth source activity, shape (n_sources, n_times) or (n_sources,)
+        x_hat : np.ndarray
+            Posterior mean estimates, shape (n_sources, n_times) or (n_sources,)
+        posterior_std : np.ndarray
+            Posterior standard deviation, shape (n_sources, n_times) or (n_sources,)
+            
+        Returns:
+        --------
+        nominal_coverages : np.ndarray
+            Nominal coverage levels [c] (what we expect)
+        empirical_coverages : np.ndarray
+            Empirical coverage probabilities [ĉ] (what we actually get)
+        """
+        # Flatten arrays to treat all sources and time points as independent observations
+        x_true_flat = x_true.flatten()
+        x_hat_flat = x_hat.flatten()
+        posterior_std_flat = posterior_std.flatten()
+        
+        n_observations = x_true_flat.shape[0]
+        self.logger.info(f"Computing calibration curve for {n_observations} observations")
+        
+        # Compute empirical coverage for each nominal coverage level
+        empirical_coverages = []
+        
+        for nominal_coverage in self.nominal_coverages:
+            coverage = self.compute_empirical_coverage(
+                x_true_flat, x_hat_flat, posterior_std_flat, nominal_coverage
+            )
+            empirical_coverages.append(coverage)
+            
+            self.logger.debug(f"c = {nominal_coverage:.3f}: ĉ = {coverage:.3f}")
+        
+        return self.nominal_coverages, np.array(empirical_coverages)
+
+    def plot_calibration_curve(self, nominal_coverages: np.ndarray, empirical_coverages: np.ndarray):
+        """
+        Plot calibration curve with perfect calibration line.
+        
+        Parameters:
+        -----------
+        nominal_coverages : np.ndarray
+            Nominal coverage levels (x-axis)
+        empirical_coverages : np.ndarray
+            Empirical coverage levels (y-axis)
+        """
+        plt.figure(figsize=(8, 8))
+        
+        # Plot empirical calibration
+        plt.plot(nominal_coverages, empirical_coverages, 'bo-', linewidth=2, markersize=6, 
+                label='Empirical Coverage (ĉ)')
+        
+        # Plot perfect calibration line: ĉ = c
+        plt.plot([0, 1], [0, 1], 'r--', linewidth=2, label='Perfect Calibration (ĉ = c)')
+        
+        plt.xlabel('Nominal Coverage Level (c)')
+        plt.ylabel('Empirical Coverage (ĉ)')
+        plt.title('Calibration Curve: Empirical vs Nominal Coverage')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.axis('equal')
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        
+        # Add diagonal reference
+        plt.plot([0, 1], [0, 1], 'r--', alpha=0.5)
+        
+        plt.tight_layout()
+        plt.show()
+
+    
+
+    def debug_posterior_properties(self, x_hat: np.ndarray, posterior_cov: np.ndarray):
+        """
+        Debug function to check posterior properties.
+        """
+        print("\n=== POSTERIOR PROPERTIES ===")
+        print(f"x_hat shape: {x_hat.shape}")
+        print(f"posterior_cov shape: {posterior_cov.shape}")
+        
+        # Check if covariance is positive definite
+        eigenvals = np.linalg.eigvals(posterior_cov)
+        min_eigenval = np.min(eigenvals)
+        max_eigenval = np.max(eigenvals)
+        condition_number = np.linalg.cond(posterior_cov)
+        
+        print(f"Eigenvalue range: [{min_eigenval:.2e}, {max_eigenval:.2e}]")
+        print(f"Condition number: {condition_number:.2e}")
+        print(f"Negative eigenvalues: {np.sum(eigenvals < 0)}")
+        
+        # Check variances
+        variances = np.diag(posterior_cov)
+        print(f"Variance range: [{np.min(variances):.2e}, {np.max(variances):.2e}]")
+        print(f"Zero variances: {np.sum(variances == 0)}")
+
+

@@ -346,11 +346,15 @@ class Benchmark:
                 this_result['gamma'] = gamma
                 this_result["noise_var"] = noise_var
                 
+                # TODO: write a test hier before psd check
                 posterior_var = self.uncertainty_estimator.get_posterior_variance(
                     posterior_cov=posterior_cov,
                     orientation_type=orientation_type
                 )
-                this_result['mean_posterior_variance'] = np.mean(posterior_var)
+                this_result['avg_posterior_variance'] = np.mean(posterior_var)
+                this_result['std_posterior_variance'] = np.std(np.sqrt(posterior_var))
+                this_result['avg_posterior_mean'] = np.mean(x_hat_one_trial)
+                this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
                 
                 # -------------------------------------------------------------
                 # 9. Estimate uncertainty (-> credible intervals)
@@ -368,22 +372,28 @@ class Benchmark:
                 n_times = x_one_trial.shape[1]
                 posterior_var_avg_time = posterior_var / n_times
                     
-                # Compute credible intervals
-                ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
-                    self.uncertainty_estimator.get_credible_intervals_data(
-                        x=x_one_trial_avg_time,
-                        x_hat=x_hat_one_trial_avg_time,
-                        posterior_var=posterior_var_avg_time,
-                        orientation_type=orientation_type
-                    )
+                # Compute credible intervals data
+                # ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
+                #     self.uncertainty_estimator.get_credible_intervals_data(
+                #         x=x_one_trial_avg_time,
+                #         x_hat=x_hat_one_trial_avg_time,
+                #         posterior_var=posterior_var_avg_time,
+                #         orientation_type=orientation_type
+                #     )
+                    
+                preCal_coverage_dict = self.uncertainty_estimator.get_calibration_curve(
+                    x_true=x_one_trial_avg_time,
+                    x_hat=x_hat_one_trial_avg_time,
+                    posterior_var=posterior_var_avg_time
+                )
 
                 # Calibrate using CV
-                empirical_coverages_post_cal, fold_results = \
+                postCal_empirical_coverages, fold_results = \
                     self.uncertainty_estimator.calibration_CV(
                     x=x_one_trial_avg_time,
                     x_hat=x_hat_one_trial_avg_time,
                     posterior_var=posterior_var_avg_time,
-                    orientation_type='fixed', n_folds=5, random_state=42)
+                    n_folds=5, random_state=42)
                     
                 # -------------------------------------------------------------
                 # 10. Evaluate metrics and merge them into this_result
@@ -400,7 +410,7 @@ class Benchmark:
 
                 try:
                     metric_results_pre_cal = self.metric_evaluator.evaluate_metrics(
-                        empirical_coverages=empirical_coverages_pre_cal,
+                        empirical_coverages=preCal_coverage_dict['empirical_coverages'],
                         **metric_kwargs
                     )
                     # store metrics with suffix to indicate pre-calibration
@@ -408,7 +418,7 @@ class Benchmark:
                     this_result.update(suffixed_pre)
 
                     metric_results_post_cal = self.metric_evaluator.evaluate_metrics(
-                        empirical_coverages=empirical_coverages_post_cal,
+                        empirical_coverages=postCal_empirical_coverages,
                         **metric_kwargs
                     )
                     # store metrics with suffix to indicate post-calibration
@@ -454,13 +464,12 @@ class Benchmark:
                     source_units=source_units,
                     source_unitmult=source_unitmult,
                     sensor_units=sensor_units,
-                    sensor_unitmult=sensor_unitmult,
-                    confidence_levels=self.uncertainty_estimator.confidence_levels,
+                    confidence_levels=self.uncertainty_estimator.nominal_coverages,
                     nominal_coverages=self.uncertainty_estimator.nominal_coverages,
-                    empirical_coverages=empirical_coverages_pre_cal,
-                    empirical_coverages_post_cal=empirical_coverages_post_cal,
-                    ci_lower=ci_lower_active,
-                    ci_upper=ci_upper_active,
+                    empirical_coverages=preCal_coverage_dict['empirical_coverages'],
+                    empirical_coverages_post_cal=postCal_empirical_coverages,
+                    ci_lower=preCal_coverage_dict.get('ci_lowers'),
+                    ci_upper=preCal_coverage_dict.get('ci_uppers'),
                     orientation_type=orientation_type,
                     result=this_result,
                     experiment_dir=experiment_dir,

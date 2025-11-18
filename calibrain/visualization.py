@@ -851,45 +851,93 @@ class Visualizer:
         plt.tight_layout(rect=[0, 0.05, 1, 0.96])        
         
         self._handle_figure_output(fig, file_name, save_path, show)
-                          
-    def plot_calibration_curve(
-        self,
-        confidence_levels,
-        empirical_coverages,
-        result=None, # This dictionary is expected to contain the metrics
-        # which_legend="active_indices", # or "all_sources"
-        file_name='calibration_curve',
-        save_path=None,
-        show=True,
-    ):
+
+    def plot_calibration(self, nominal_coverage, pre_empirical_coverage, post_empirical_coverage, file_name='calibration_curve', save_path=None, show=False):
         """
-        Visualizes the calibration curve.
-
+        Plot calibration curves and errors
+        
         Parameters:
-        - empirical_coverages (ndarray): Array of empirical coverage values, corresponding to each confidence level in self.confidence_levels.
-        - results (dict): Dictionary possibly containing calibration metrics.
-        # - which_legend (str): Specifies which set of metrics to display in the legend.
-        - file_name (str): Base name for the saved plot file.
-        """            
-        from scipy.interpolate import make_interp_spline
-        smooth_x = np.linspace(0.0, 1.0, 300)
-        spline = make_interp_spline(confidence_levels, empirical_coverages, k=2)
-        smooth_y = spline(smooth_x)
-
-        fig, ax = plt.subplots(figsize=(7, 6))
-        ax.plot(smooth_x, smooth_y, label='Calibration Curve', color='blue')
-        ax.plot([0, 1], [0, 1], 'r--', label='Perfect Calibration')
-        ax.set_xlabel('Nominal Confidence Level')
-        ax.set_ylabel('Empirical Coverage')
-        ax.set_title('Calibration Curve')
-        ax.grid(True)
-        ax.legend()
-        fig.tight_layout()
-        ax.set_aspect('equal', adjustable='box')
-
-        # if show:
-        #     fig.show()
+        - nominal_coverage (ndarray): Array of nominal coverage levels (confidence levels).
+        - pre_empirical_coverage (ndarray): Empirical coverage before calibration.
+        - post_empirical_coverage (ndarray): Empirical coverage after calibration.
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        
+        # Plot 1: Calibration curves
+        ax1.plot(nominal_coverage, pre_empirical_coverage, 'bo-', label='Pre-calibration', linewidth=2, markersize=6)
+        ax1.plot(nominal_coverage, post_empirical_coverage, 'ro-', label='Post-calibration', linewidth=2, markersize=6)
+        ax1.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
+        
+        ax1.set_xlabel('Nominal Confidence Level')
+        ax1.set_ylabel('Empirical Coverage')
+        ax1.set_title('Calibration Curves')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        ax1.set_aspect('equal')
+        
+        # Plot 2: Calibration errors
+        pre_errors = np.abs(pre_empirical_coverage - nominal_coverage)
+        post_errors = np.abs(post_empirical_coverage - nominal_coverage)
+        
+        x_pos = np.arange(len(nominal_coverage))
+        width = 0.35
+        
+        ax2.bar(x_pos - width/2, pre_errors, width, label='Pre-calibration', alpha=0.7, color='blue')
+        ax2.bar(x_pos + width/2, post_errors, width, label='Post-calibration', alpha=0.7, color='red')
+        
+        ax2.set_xlabel('Confidence Level')
+        ax2.set_ylabel('Absolute Error')
+        ax2.set_title('Calibration Errors')
+        ax2.set_xticks(x_pos)
+        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_coverage])
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
         self._handle_figure_output(fig, file_name, save_path, show)
+        
+                          
+    # def plot_calibration_curve(
+    #     self,
+    #     confidence_levels,
+    #     empirical_coverages,
+    #     result=None, # This dictionary is expected to contain the metrics
+    #     # which_legend="active_indices", # or "all_sources"
+    #     file_name='calibration_curve',
+    #     save_path=None,
+    #     show=True,
+    # ):
+    #     """
+    #     Visualizes the calibration curve.
+
+    #     Parameters:
+    #     - empirical_coverages (ndarray): Array of empirical coverage values, corresponding to each confidence level in self.confidence_levels.
+    #     - results (dict): Dictionary possibly containing calibration metrics.
+    #     # - which_legend (str): Specifies which set of metrics to display in the legend.
+    #     - file_name (str): Base name for the saved plot file.
+    #     """            
+    #     from scipy.interpolate import make_interp_spline
+    #     smooth_x = np.linspace(0.0, 1.0, 300)
+    #     spline = make_interp_spline(confidence_levels, empirical_coverages, k=2)
+    #     smooth_y = spline(smooth_x)
+
+    #     fig, ax = plt.subplots(figsize=(7, 6))
+    #     ax.plot(smooth_x, smooth_y, label='Calibration Curve', color='blue')
+    #     ax.plot([0, 1], [0, 1], 'r--', label='Perfect Calibration')
+    #     ax.set_xlabel('Nominal Confidence Level')
+    #     ax.set_ylabel('Empirical Coverage')
+    #     ax.set_title('Calibration Curve')
+    #     ax.grid(True)
+    #     ax.legend()
+    #     fig.tight_layout()
+    #     ax.set_aspect('equal', adjustable='box')
+
+    #     # if show:
+    #     #     fig.show()
+    #     self._handle_figure_output(fig, file_name, save_path, show)
+        
+        # ---------- end of function ----------
         
         # fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -1346,24 +1394,32 @@ class Visualizer:
         )
         
         # plot calibration curve - active sources
-        self.plot_calibration_curve(
-            confidence_levels=confidence_levels,
-            empirical_coverages=empirical_coverages,
-            result=result,
+        # self.plot_calibration_curve(
+        #     confidence_levels=confidence_levels,
+        #     empirical_coverages=empirical_coverages,
+        #     result=result,
+        #     file_name='calibration_curve',
+        #     save_path='uncertainty_analysis',
+        #     show=False,
+        # )
+        self.plot_calibration(
+            nominal_coverage=nominal_coverages,
+            pre_empirical_coverage=empirical_coverages,
+            post_empirical_coverage=empirical_coverages_post_cal,
             file_name='calibration_curve',
             save_path='uncertainty_analysis',
             show=False,
         )
         
-        self.plot_pre_post_calibration_curves(
-            confidence_levels=confidence_levels,
-            nominal_coverages=nominal_coverages,
-            empirical_coverages_pre=empirical_coverages,
-            empirical_coverages_post=empirical_coverages_post_cal,
-            file_name='pre_post_calibration_curve',
-            save_path='uncertainty_analysis',
-            show=False,
-        )
+        # self.plot_pre_post_calibration_curves(
+        #     confidence_levels=confidence_levels,
+        #     nominal_coverages=nominal_coverages,
+        #     empirical_coverages_pre=empirical_coverages,
+        #     empirical_coverages_post=empirical_coverages_post_cal,
+        #     file_name='pre_post_calibration_curve',
+        #     save_path='uncertainty_analysis',
+        #     show=False,
+        # )
 
 
 
