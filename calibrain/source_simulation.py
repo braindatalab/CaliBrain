@@ -52,7 +52,7 @@ class SourceSimulator:
             - sfreq: 250 (sampling frequency in Hz)
             - fmin: 1 (minimum frequency for the bandpass filter in Hz)
             - fmax: 5 (maximum frequency for the bandpass filter in Hz)
-            - amplitude: 1.0 (amplitude of the ERP waveform)
+            - amplitude_distribution: parameters for the log-normal dipole-moment distribution (nAm)
             - random_erp_timing: True (if True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized)
             - erp_min_length : Optional[int] (minimum length of the ERP waveform in samples; if None, a default value is used)
         logger : Optional[logging.Logger], optional
@@ -65,7 +65,11 @@ class SourceSimulator:
             "sfreq": 250,
             "fmin": 1,
             "fmax": 5,
-            "amplitude": 1.0,
+            "amplitude_distribution": {
+                "median": 10.0,   # nAm
+                "sigma": 0.35,
+                "clip": (2.5, 50.0),
+            },
             "random_erp_timing": True,
             "erp_min_length": None,
         }
@@ -73,7 +77,32 @@ class SourceSimulator:
         self.logger = logger if logger else logging.getLogger(__name__)
         
         # Default units for ERP simulation
-        self.source_units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
+        self.kind: int = FIFF.FIFFV_DIPOLE_WAVE # Dipole time curve. Encoded into "1000"
+        self.units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
+        self.unitmult: int = FIFF.FIFF_UNITM_N # (Nano = 1e-9)
+        
+
+    def _sample_source_amplitude(self, rng: np.random.RandomState) -> float:
+        """
+        Sample a dipole moment amplitude (in nAm) from the configured distribution.
+        """
+        base_amplitude = 10.0
+        dist_cfg = self.ERP_config.get("amplitude_distribution")
+        if not dist_cfg:
+            return max(base_amplitude, 0.0)
+
+        clip_bounds = dist_cfg.get("clip")
+        median = float(dist_cfg.get("median", base_amplitude))
+        sigma = float(dist_cfg.get("sigma", 0.35))
+        safe_median = max(median, 1e-6)
+        mu = np.log(safe_median)
+        amplitude = rng.lognormal(mean=mu, sigma=sigma)
+
+        if clip_bounds is not None:
+            low, high = clip_bounds
+            amplitude = float(np.clip(amplitude, low, high))
+
+        return amplitude
 
     def _simulate_erp_waveform(
         self,
@@ -82,7 +111,7 @@ class SourceSimulator:
         """
         Generate a smoothed ERP-like waveform for a single source.
 
-        This method creates an ERP-like signal segment using bandpass-filtered white noise, applies a Hanning window, normalizes and scales by the specified amplitude, and places the segment at a randomized or fixed position after the stimulus onset within the time course.
+        This method creates an ERP-like signal segment using bandpass-filtered white noise, applies a Hanning window, normalizes and scales by a dipole moment sampled from a configurable distribution, and places the segment at a randomized or fixed position after the stimulus onset within the time course.
         
         Parameters
         ----------
@@ -111,7 +140,6 @@ class SourceSimulator:
         sfreq = self.ERP_config['sfreq']
         fmin = self.ERP_config['fmin']
         fmax = self.ERP_config['fmax']
-        amplitude = self.ERP_config['amplitude']
         random_erp_timing = self.ERP_config['random_erp_timing']
         erp_min_length = self.ERP_config['erp_min_length']
 
@@ -196,22 +224,36 @@ class SourceSimulator:
         # Apply Hanning window over the ERP segment
         erp_segment *= np.hanning(erp_duration_samples) 
         
-        # Normalize the ERP segment by standard deviation (OLD APPROACH)
-        std_erp_segment = np.std(erp_segment)
-        if std_erp_segment < 1e-9: # Check if standard deviation is effectively zero
-            return waveform # Avoid division by zero; segment is flat
-        erp_segment /= std_erp_segment # Normalize by its standard deviation
-        
-        # Normalize the ERP segment by its peak amplitude
-        # erp_peak = np.max(np.abs(erp_segment)) # Normalize by peak amplitude
-        # if erp_peak < 1e-9: # Check if peak amplitude is effectively zero
-        #     return waveform # Avoid division by zero; segment is flat
+        # ---
+        # OLD NORMALIZATION APPROACHES (kept for reference)
+        # std_erp_segment = np.std(erp_segment)
+        # if std_erp_segment < 1e-9:
+        #     return waveform
+        # erp_segment /= std_erp_segment
+        #
+        # erp_peak = np.max(np.abs(erp_segment))
+        # if erp_peak < 1e-9:
+        #     return waveform
         # erp_segment /= erp_peak
-        
-        erp_segment *= amplitude # Scale to desired amplitude
+        # ---
 
-        # convert unit from nAm to Am
-        erp_segment *= 1e-9
+        # Normalize by peak so that sampled amplitudes correspond to physical peak moments
+        erp_peak = np.max(np.abs(erp_segment))
+        if erp_peak < 1e-9:
+            return waveform
+
+        erp_segment /= erp_peak
+
+        # Draw a dipole moment from the configured distribution (nAm)
+        sampled_amplitude = self._sample_source_amplitude(source_duration_rng)
+        erp_segment *= sampled_amplitude
+
+        # --- 
+        # OLD: convert unit from nAm to Am
+        # if self.units == FIFF.FIFF_UNIT_AM:
+        # erp_segment *= 1e-9
+        # NEW: Do not scale as the units are already in nAm and we will work with nAm based on units and unitmult
+        # ---
         
         # Place the generated ERP segment into the output signal at the determined start
         end_sample_for_erp_segment = actual_placement_start_sample + len(erp_segment)
@@ -234,7 +276,7 @@ class SourceSimulator:
         """
         Generate simulated source time courses for a single trial.
 
-        This method creates ERP-like signals for a subset of active sources, determined by `nnz`. For each active source, an ERP waveform is generated using a bandpass-filtered noise segment, optionally randomized in onset and duration, and scaled by the specified amplitude. The ERP waveform is placed at the appropriate time index based on `stim_onset`.
+        This method creates ERP-like signals for a subset of active sources, determined by `nnz`. For each active source, an ERP waveform is generated using a bandpass-filtered noise segment, optionally randomized in onset and duration, and scaled by an amplitude sampled from the log-normal distribution. The ERP waveform is placed at the appropriate time index based on `stim_onset`.
 
         Parameters
         ----------
