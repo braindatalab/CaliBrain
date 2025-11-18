@@ -81,10 +81,86 @@ class LeadfieldBuilder:
         self.logger = logger if logger else logging.getLogger(__name__)
         self.leadfield_dir = Path(leadfield_dir)
         
-        # Parameter set during building the leadfield
-        self.sensor_units = None
-        
-        self.logger.info("LeadfieldBuilder initialized successfully.")
+        # Parameters describing the simulated/loaded sensors
+        self.sensor_units: Optional[int] = None
+        self.sensor_unitmult: Optional[int] = None
+        self.sensor_kind: Optional[int] = None
+        self.coil_type: Optional[int] = None
+    
+    def _set_sensor_metadata(
+        self,
+        *,
+        kind: Optional[Union[int, np.integer]] = None,
+        unit: Optional[Union[int, np.integer]] = None,
+        unit_mul: Optional[Union[int, np.integer]] = None,
+        coil_type: Optional[Union[int, np.integer]] = None,
+    ) -> None:
+        """Assign sensor metadata, coercing numpy scalars to ints."""
+        if kind is not None:
+            self.sensor_kind = int(kind)
+        if unit is not None:
+            self.sensor_units = int(unit)
+        if unit_mul is not None:
+            self.sensor_unitmult = int(unit_mul)
+        if coil_type is not None:
+            self.coil_type = int(coil_type)
+    
+    def _scale_leadfield(self, leadfield: np.ndarray) -> np.ndarray:
+        """Scale leadfield to fT/nAm or µV/nAm for better readability."""
+        if self.sensor_units is None:
+            return leadfield
+
+        target_mul = None
+        scale = None
+
+        if self.sensor_units in (FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M):
+            target_mul = FIFF.FIFF_UNITM_F  # femto
+            scale = 1e6  # 1e15 (T->fT) * 1e-9 (nAm -> Am)
+        elif self.sensor_units == FIFF.FIFF_UNIT_V:
+            target_mul = FIFF.FIFF_UNITM_MU  # micro
+            scale = 1e-3  # 1e6 (V->µV) * 1e-9 (nAm -> Am)
+
+        if target_mul is None or scale is None:
+            return leadfield
+
+        # If already scaled to desired multiplier, do nothing
+        if self.sensor_unitmult == target_mul:
+            return leadfield
+
+        # Only scale when multiplier is undefined or base SI
+        if self.sensor_unitmult not in (None, FIFF.FIFF_UNITM_NONE):
+            return leadfield
+
+        leadfield = leadfield * scale
+        self.sensor_unitmult = target_mul
+        return leadfield
+
+    def _store_sensor_metadata_from_info(self, info: Optional[mne.Info]) -> None:
+        """Capture sensor metadata (kind/unit/unit_mul) from an info object."""
+        if info is None or "chs" not in info or not info["chs"]:
+            return
+        chs = info["chs"]
+        first = chs[0]
+        kind = first.get("kind")
+        unit = first.get("unit")
+        unit_mul = first.get("unit_mul")
+        coil_type = first.get("coil_type")
+        self._set_sensor_metadata(
+            kind=kind, unit=unit, unit_mul=unit_mul, coil_type=coil_type
+        )
+
+    def _load_sensor_metadata_from_npz(self, data) -> None:
+        """Load stored sensor metadata from a saved npz leadfield."""
+        sensor_kind = data.get("sensor_kind")
+        sensor_units = data.get("sensor_units", data.get("units"))
+        sensor_unitmult = data.get("sensor_unitmult")
+        coil_type = data.get("coil_type")
+        self._set_sensor_metadata(
+            kind=sensor_kind,
+            unit=sensor_units,
+            unit_mul=sensor_unitmult,
+            coil_type=coil_type,
+        )
 
     def handle_source_space(self) -> mne.SourceSpaces:
         """
@@ -238,7 +314,9 @@ class LeadfieldBuilder:
             load_path = Path(fname)
             if load_path.exists():
                 self.logger.info(f"Loading info object from file: {load_path}")
-                return mne.io.read_info(load_path)
+                info = mne.io.read_info(load_path)
+                self._store_sensor_metadata_from_info(info)
+                return info
             else:
                 self.logger.warning(f"Info file does not exist: {load_path}. Creating from scratch...")
         else:
@@ -258,6 +336,7 @@ class LeadfieldBuilder:
             **kwargs
         )
         info.set_montage(montage)
+        self._store_sensor_metadata_from_info(info)
 
         if info_cfg.get("save", False):
             save_fname = self.save_path / f"{self.subject}-info.fif"
@@ -305,6 +384,7 @@ class LeadfieldBuilder:
                 try:
                     self.logger.info(f"Loading forward solution from file: {load_path}")
                     fwd = mne.read_forward_solution(load_path)
+                    self._store_sensor_metadata_from_info(fwd["info"])
                     # Optional: Check if loaded orientation matches config
                     loaded_ori = "fixed" if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI else "free"
                     if loaded_ori != orientation_type:
@@ -333,6 +413,7 @@ class LeadfieldBuilder:
             **kwargs
         )
         self.logger.info("Forward solution created successfully.")
+        self._store_sensor_metadata_from_info(fwd["info"])
 
         if orientation_type == "fixed":
             surf_ori = forward_solution_cfg.get("surf_ori", True)
@@ -404,6 +485,7 @@ class LeadfieldBuilder:
                         self.logger.info(f"Loaded free orientation leadfield: {leadfield.shape}")
                     else:
                         raise ValueError(f"Loaded leadfield has unexpected shape: {leadfield.shape}")
+                    leadfield = self._scale_leadfield(leadfield)
                     return leadfield
                 except Exception as e:
                     self.logger.warning(f"Failed to load leadfield matrix from file: {e}. Proceeding to compute it.")
@@ -414,6 +496,8 @@ class LeadfieldBuilder:
 
         if fwd is None:
             raise ValueError("Forward solution (fwd) must be provided to compute leadfield matrix when not loading from file.")
+
+        self._store_sensor_metadata_from_info(fwd["info"])
 
         self.logger.info("Extracting leadfield matrix from the forward solution...")
         leadfield = fwd["sol"]["data"] 
@@ -436,10 +520,21 @@ class LeadfieldBuilder:
         else:
             self.logger.warning("Unknown leadfield orientation type in forward solution.")
 
+        leadfield = self._scale_leadfield(leadfield)
+
         if leadfield_cfg.get("save", False) and orientation_type:
             save_fname = self.save_path / f"{self.subject}-leadfield-{orientation_type}.npz"
             self.logger.info(f"Saving computed leadfield matrix to file: {save_fname}")
-            np.savez(save_fname, leadfield=leadfield)
+            payload = {"leadfield": leadfield}
+            if self.sensor_units is not None:
+                payload["sensor_units"] = self.sensor_units
+            if self.sensor_unitmult is not None:
+                payload["sensor_unitmult"] = self.sensor_unitmult
+            if self.sensor_kind is not None:
+                payload["sensor_kind"] = self.sensor_kind
+            if self.coil_type is not None:
+                payload["coil_type"] = self.coil_type
+            np.savez(save_fname, **payload)
 
         return leadfield
 
@@ -541,25 +636,8 @@ class LeadfieldBuilder:
                     if "leadfield" not in data and "lead_field" not in data:
                         raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
                     leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
-                    
-                    try:
-                        data_unit = data.get("units", None)
-                        if data_unit is not None:
-                            if data_unit == FIFF.FIFF_UNIT_V:
-                                self.sensor_units = FIFF.FIFF_UNIT_V
-                            elif data_unit == FIFF.FIFF_UNIT_T:
-                                self.sensor_units = FIFF.FIFF_UNIT_T
-                            elif data_unit == FIFF.FIFF_UNIT_T_M:
-                                self.sensor_units = FIFF.FIFF_UNIT_T_M
-                            else:
-                                self.sensor_units = "unknown"
-                                self.logger.warning(f"Unknown data unit '{data_unit}' in leadfield file. Defaulting to provided unit.")
-                        else:
-                            self.sensor_units = ["unknown"]
-                            self.logger.warning(f"Unknown data unit '{data_unit}' in leadfield file. Defaulting to 'unknown'.")
-                    except KeyError:
-                        self.logger.warning("No data unit specified in leadfield file. Defaulting to 'unknown'.")
-                        self.sensor_units = ["unknown"]
+                    self._load_sensor_metadata_from_npz(data)
+                    leadfield = self._scale_leadfield(leadfield)
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
@@ -584,6 +662,10 @@ class LeadfieldBuilder:
                 L_simulator = LeadfieldBuilder(config=config, logger=self.logger)
                 leadfield = L_simulator.simulate()
                 self.logger.info(f"Simulated leadfield matrix with shape {leadfield.shape}")
+                self.sensor_units = L_simulator.sensor_units
+                self.sensor_unitmult = L_simulator.sensor_unitmult
+                self.sensor_kind = L_simulator.sensor_kind
+                self.coil_type = L_simulator.coil_type
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
