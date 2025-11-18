@@ -1,3 +1,15 @@
+import numpy as np
+import pandas as pd
+import logging # Import logging
+import numpy as np
+from mne.io.constants import FIFF
+from scipy.spatial.distance import cdist
+from mne import read_forward_solution, convert_forward_solution
+from ot import emd2  # Earth Mover's Distance (Wasserstein-2)
+from mne.inverse_sparse.mxne_inverse import _make_sparse_stc
+from sklearn.metrics import jaccard_score, mean_squared_error, f1_score
+
+
 # ============================================================================
 # METRIC EVALUATOR CLASS
 # ============================================================================
