@@ -117,7 +117,7 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
             data_path = Path(os.environ['CALIBRAIN_DATA'])
         else:
             # Default to calibrain/data directory relative to this module
-            calibrain_root = Path(__file__).parent  # calibrain module directory
+            calibrain_root = Path(__file__).parent.parent
             data_path = calibrain_root / 'data'
         data_path = Path(data_path)
     else:
