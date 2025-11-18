@@ -42,8 +42,29 @@ class SensorSimulator:
         """
         self.logger = logger if logger else logging.getLogger(__name__)
         
-        #  Prameters that will be set during simulation
-        self.sensor_units = FIFF.FIFF_UNIT_T  # Default unit for MEG (mag) sensors (T)
+        # Default metadata: assume MEG magnetometers unless overridden
+        self.kind: int = FIFF.FIFFV_MEG_CH
+        self.units: int = FIFF.FIFF_UNIT_T
+        self.unitmult: int = FIFF.FIFF_UNITM_F
+        self.coil_type: Optional[int] = None
+
+    def set_sensor_metadata(
+        self,
+        *,
+        kind: Optional[int] = None,
+        units: Optional[int] = None,
+        unitmult: Optional[int] = None,
+        coil_type: Optional[int] = None,
+    ) -> None:
+        """Update sensor metadata (FIFF kind/unit/multiplier) atomically."""
+        if kind is not None:
+            self.kind = kind
+        if units is not None:
+            self.units = units
+        if unitmult is not None:
+            self.unitmult = unitmult
+        if coil_type is not None:
+            self.coil_type = coil_type
                 
     def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray, orientation_type: str) -> np.ndarray:
         """
@@ -223,4 +244,3 @@ class SensorSimulator:
             L = L.reshape(L.shape[0], -1)
             
         return y_clean_all_trials, y_noisy_all_trials, noise_all_trials, noise_eta_all_trials
-
