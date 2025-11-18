@@ -70,11 +70,9 @@ def main():
         logger=logger,
     )
 
-    confidence_levels = np.append(np.arange(0.1, 1.0, 0.1), 0.99)  # [0.1, 0.2, ..., 0.9, 0.99]
-    
+    nominal_coverages = np.arange(0.1, 1.1, 0.1)  # [0.1, 0.2, ..., 1.0] # 10 values
     uncertainty_estimator = UncertaintyEstimator(
-        confidence_levels=confidence_levels,
-        nominal_coverages=1 - confidence_levels,
+        nominal_coverages=nominal_coverages,
         logger=logger,
     )  
       
@@ -205,8 +203,8 @@ def main():
     ]
 
     metric_evaluator = MetricEvaluator(
-        confidence_levels=confidence_levels,
-        nominal_coverages= 1 - confidence_levels,
+        confidence_levels=nominal_coverages,
+        nominal_coverages= 1 - nominal_coverages,
         metrics=metrics,
         logger=logger
     )
