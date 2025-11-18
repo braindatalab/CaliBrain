@@ -929,89 +929,91 @@ def compute_W(L, n_orient=1, beta=1e-6):
     
     return W
 
-def BMN_bayesian_opt(y, L, alpha, maxit=1000, tol=1e-9, init_gamma=None, verbose=True):
+def BMN_bayesian_opt(y, L, alpha, maxit=10000, tol=1e-6, init_gamma=None, verbose=True):
     """
-    BMN optimization using the trace-based fixed-point rule.
-    THEORY-CONSISTENT OPTIMIZER
-    Uses the trace-based fixed-point update rule:
-    gamma <- gamma * sqrt(  [(1/T) tr(Y^T Siginv LL^T Siginv Y)] / [tr(Siginv LL^T)]  )
+    BMN optimization using Bayesian evidence maximization for common source variance.
     """
     L = L.copy()
     y = y.copy()
-
+    
     # Initialize gamma
-    gamma = 1.0 if init_gamma is None else float(init_gamma)
-    eps = np.finfo(float).eps
+    if init_gamma is None:
+        gamma = 1.0
+    else:
+        gamma = float(init_gamma)
 
+    eps = np.finfo(float).eps
+    
     # Ensure y is 2D
     if y.ndim == 1:
         y = y[:, np.newaxis]
-
+    
     M, T = y.shape
     N = L.shape[1]
-
-    # Normalization for numerical stability
-    y_original_scale = np.linalg.norm(y, "fro")          # ||Y||_F
-    L_original_scale = np.linalg.norm(L, ord=2)          # ||L||_2
+    
+    # Store original scaling for reconstruction
+    y_original_scale = np.linalg.norm(y, "fro")
+    L_original_scale = np.linalg.norm(L, ord=2)
+    
+    # Normalize for numerical stability
     y = y / y_original_scale
     L = L / L_original_scale
     alpha = alpha / (y_original_scale**2)
-    # ------------------------------------------------------------------
-
-    # Precompute LLt
-    LLt = L @ L.T  # (M x M)
-
+    
+    # Precompute L Lᵀ for efficiency
+    LLt = L @ L.T
+    
     for itno in range(maxit):
         gamma_old = gamma
-
-        # Sigma_y = alpha I + gamma LLt
-        Sigma_y = alpha * np.eye(M) + gamma * LLt
-
-        # Inversion with SVD for numerical stability
-        U, S, Vt = np.linalg.svd(Sigma_y, full_matrices=False)
+        
+        # Model covariance: C = γLLᵀ + αI
+        model_cov = gamma * LLt + alpha * np.eye(M)
+        
+        # Efficient inverse using SVD
+        U, S, Vt = np.linalg.svd(model_cov, full_matrices=False)
         S_inv = 1.0 / (S + eps)
-        Siginv = U @ np.diag(S_inv) @ Vt
-
-        # Trace-based numerator and denominator
-        # numerator = (1/T) tr( Y^T Siginv LLt Siginv Y )
-        B = Siginv @ y
-        numerator = float(np.trace(B.T @ LLt @ B)) / T
-
-        # denominator = tr( Siginv LLt )
-        denominator = float(np.trace(Siginv @ LLt))
-
-        # Fixed-point (multiplicative) update
-        ratio = numerator / max(denominator, eps)
-        gamma = float(gamma * np.sqrt(max(ratio, eps)))
-
+        model_cov_inv = U @ np.diag(S_inv) @ Vt
+        
+        # BAYESIAN EVIDENCE MAXIMIZATION UPDATE
+        # Numerator: [yᵀ C⁻¹ L Lᵀ C⁻¹ y] / T
+        model_cov_inv_y = model_cov_inv @ y
+        numerator = np.trace(y.T @ model_cov_inv @ LLt @ model_cov_inv_y) / T  # DIVIDE BY T!
+        
+        # Denominator: tr(C⁻¹ L Lᵀ)
+        model_cov_inv_LLt = model_cov_inv @ LLt
+        denominator = np.trace(model_cov_inv_LLt)
+        
+        # Fixed-point update
+        gamma = numerator / max(denominator, eps)
+        
         # Convergence check
-        err = abs(gamma - gamma_old) / (abs(gamma_old) + eps)
+        err = np.abs(gamma - gamma_old) / (gamma_old + eps)
         if verbose:
-            print(f"Iteration {itno}: gamma = {gamma:.6e}, err = {err:.3e}")
+            print(f"Iteration {itno}: gamma = {gamma:.6e}, error = {err:.3e}")
         if err < tol:
             break
 
-    # Final posterior (in normalized space)
-    Sigma_y = alpha * np.eye(M) + gamma * LLt
-    U, S, Vt = np.linalg.svd(Sigma_y, full_matrices=False)
+    # Final posterior computation
+    model_cov = gamma * LLt + alpha * np.eye(M)
+    U, S, Vt = np.linalg.svd(model_cov, full_matrices=False)
     S_inv = 1.0 / (S + eps)
-    Siginv = U @ np.diag(S_inv) @ Vt
-
-    A = L.T @ Siginv @ y          # (N x T)
-    x_est = gamma * A             # (N x T)
-
-    LS = Siginv @ L               # (M x N)
-    LtS_L = L.T @ LS              # (N x N)
-    posterior_cov = gamma * np.eye(N) - (gamma**2) * LtS_L
-
-    # Undo normalization
+    model_cov_inv = U @ np.diag(S_inv) @ Vt
+    
+    # Source estimates
+    A = L.T @ model_cov_inv @ y
+    x_est = gamma * A
+    
+    # Posterior covariance
+    posterior_cov = gamma * np.eye(N) - gamma**2 * (L.T @ model_cov_inv @ L)
+    
+    # Rescale back to original units
     scale_factor = y_original_scale / L_original_scale
     x_hat = scale_factor * x_est
     posterior_cov = (scale_factor**2) * posterior_cov
-
+    
     return x_hat, posterior_cov, gamma
 
-def BMN(L, y, noise_var, n_orient=1, max_iter=100, tol=1e-15, init_gamma=None, verbose=True, normalization=False, **kwargs):
+def BMN(L, y, noise_var, n_orient=1, max_iter=1000, tol=1e-15, init_gamma=None, verbose=True, normalization=False, **kwargs):
     """
     BMN estimate with (optional) sLORETA normalization.
 
@@ -1062,18 +1064,20 @@ def BMN(L, y, noise_var, n_orient=1, max_iter=100, tol=1e-15, init_gamma=None, v
         W = np.eye(L.shape[1])
         L_normal = L
 
-    # Whitening matrix
+    # Compute whitener matrix
     whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    
+    # Whiten the data and forward operator
     y_white = whitener @ y
     L_white = whitener @ L_normal
     
+    # Use alpha = 1.0 for whitened data
     x_hat_normal, posterior_cov_normal, gamma = BMN_bayesian_opt(
-         y_white, L_white, alpha=noise_var, maxit=max_iter, tol=tol,
+         y_white, L_white, alpha=1.0, maxit=max_iter, tol=tol,
          init_gamma=init_gamma, verbose=verbose
     )
-    
 
-    # Map back if W was used
+    # Transform back to original source space
     x_hat = W @ x_hat_normal
     posterior_cov = W @ posterior_cov_normal @ W.T
 
