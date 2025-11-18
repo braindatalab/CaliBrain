@@ -10,6 +10,42 @@ from mne.io.constants import FIFF
 import matplotlib.lines as mlines # For creating custom legend handles
 
 class Visualizer:
+    _UNIT_BASE_LABELS = {
+        FIFF.FIFF_UNIT_AM: "Am",
+        FIFF.FIFF_UNIT_T: "T",
+        FIFF.FIFF_UNIT_T_M: "T/m",
+        FIFF.FIFF_UNIT_V: "V",
+    }
+
+    _UNIT_PREFIXES = {
+        FIFF.FIFF_UNITM_E: "E",
+        FIFF.FIFF_UNITM_T: "T",
+        FIFF.FIFF_UNITM_GIG: "G",
+        FIFF.FIFF_UNITM_MEG: "M",
+        FIFF.FIFF_UNITM_K: "k",
+        FIFF.FIFF_UNITM_H: "h",
+        FIFF.FIFF_UNITM_DA: "da",
+        FIFF.FIFF_UNITM_NONE: "",
+        FIFF.FIFF_UNITM_D: "d",
+        FIFF.FIFF_UNITM_C: "c",
+        FIFF.FIFF_UNITM_M: "m",
+        FIFF.FIFF_UNITM_MU: "µ",
+        FIFF.FIFF_UNITM_N: "n",
+        FIFF.FIFF_UNITM_P: "p",
+        FIFF.FIFF_UNITM_F: "f",
+        FIFF.FIFF_UNITM_A: "a",
+    }
+
+    def _format_unit_label(self, units: Optional[Union[int, str]], unitmult: Optional[int]) -> str:
+        if isinstance(units, str):
+            return units
+        if units is None:
+            return "a.u."
+        base = self._UNIT_BASE_LABELS.get(units)
+        if base is None:
+            return "a.u."
+        prefix = self._UNIT_PREFIXES.get(unitmult, "") if unitmult is not None else ""
+        return f"{prefix}{base}"
     def __init__(self, base_save_path: str = "results/figures", logger: Optional[logging.Logger] = None):
         self.base_save_path = Path(base_save_path)
         self.logger = logger or logging.getLogger(__name__)
@@ -121,19 +157,16 @@ class Visualizer:
         ERP_config: dict,
         x_trials: np.ndarray,
         x_active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
-        units: Optional[str] = None,
+        units: Optional[Union[str, int]] = None,
+        unitmult: Optional[int] = None,
         trial_idx: Optional[int] = None,
         title: Optional[str] = "Source Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
     ):
-        # convert the data from A to nAm for better readability
-        if units == FIFF.FIFF_UNIT_AM:
-            x_scaled = x_trials * 1e9  
-            units = "nAm"
-        else:
-            raise ValueError(f"Unsupported units for source signals: {units}. Expected FIFF.FIFF_UNIT_AM.")
+        unit_label = self._format_unit_label(units, unitmult)
+        x_scaled = x_trials
 
         if trial_idx is not None:
             indices = None
@@ -144,7 +177,7 @@ class Visualizer:
                 ERP_config=ERP_config,
                 x_trial=x_scaled if x_scaled.ndim < 3 else x_scaled[trial_idx],
                 active_indices=indices,
-                units=units,
+                units=unit_label,
                 trial_idx=trial_idx,
                 title=title,
             )
@@ -154,7 +187,7 @@ class Visualizer:
                 ERP_config=ERP_config,
                 x_trials=x_scaled,
                 active_indices=x_active_indices,
-                units=units,
+                units=unit_label,
                 title=title,
             )
             file_name = file_name or "source_signals_all_trials"
@@ -282,7 +315,8 @@ class Visualizer:
         y_trials: np.ndarray,
         trial_idx: Optional[int] = None,
         channels: Optional[Union[Sequence[int], str]] = None,
-        units: Optional[str] = None,
+        units: Optional[Union[str, int]] = None,
+        unitmult: Optional[int] = None,
         mode: str = "stack",  # "stack" | "concatenate"
         title: str = "Sensor Signals",
         save_dir: Optional[str] = None,
@@ -301,33 +335,23 @@ class Visualizer:
                 "random_erp_timing": True,
                 "erp_min_length": None,
         }
-        # for better readability convert the data from T to fT for MEG magnetometers channels and T/m to fT/m for MEG gradiometers channels, and V to μV for EEG channels
-        if units == FIFF.FIFF_UNIT_T:
-            y_trials_scaled = y_trials * 1e15  # Convert Tesla to femtoTesla (fT)
-            units = "fT"
-        elif units == FIFF.FIFF_UNIT_T_M:
-            y_trials_scaled = y_trials * 1e15  # Convert T/m to fT/m
-            units = "fT/m"
-        elif units == FIFF.FIFF_UNIT_V:
-            y_trials_scaled = y_trials * 1e6  # Convert V to μV
-            units = "μV"
-        else:
-            raise ValueError(f"Unsupported units for sensor signals: {units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
+        unit_label = self._format_unit_label(units, unitmult)
+        y_trials_scaled = y_trials
 
         if mode == "stack":
             self._plot_sensors_all_trials(
-                ERP_config, y_trials_scaled, channels, units, title, save_dir, file_name, show
+                ERP_config, y_trials_scaled, channels, unit_label, title, save_dir, file_name, show
             )
         elif mode == "concatenate":
             self._plot_concatenated_sensor_trials(
-                y_trials_scaled, ERP_config, channels, units, title, save_dir, file_name, show
+                y_trials_scaled, ERP_config, channels, unit_label, title, save_dir, file_name, show
             )
         elif mode == "single":
             if trial_idx is None:
                 trial_idx = 0
                 self.logger.warning("No trial index provided, defaulting to 0.")
             self._plot_sensors_single_trial(
-                ERP_config, y_trials_scaled[trial_idx], trial_idx, channels, units, title, save_dir, file_name, show
+                ERP_config, y_trials_scaled[trial_idx], trial_idx, channels, unit_label, title, save_dir, file_name, show
             )
         else:
             raise ValueError(f"Unknown mode: {mode}")
@@ -339,6 +363,7 @@ class Visualizer:
         x_hat_one_trial,
         orientations,
         source_units,
+        source_unitmult: Optional[int],
         sample_idx,
         subject,
         subjects_dir,
@@ -370,12 +395,9 @@ class Visualizer:
             stc_x_t0 = mne.SourceEstimate(x_one_trial[:, sample_idx], vertices=vertices, tmin=0, tstep=1/sfreq)
             stc_x_hat_t0 = mne.SourceEstimate(x_hat_one_trial[:, sample_idx], vertices=vertices, tmin=0, tstep=1/sfreq)
 
-            if source_units == FIFF.FIFF_UNIT_AM:
-                x_scaled = stc_x_t0 * 1e9  
-                x_hat_scaled = stc_x_hat_t0 * 1e9  
-                source_units = "nAm"
-            else:
-                raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+            x_scaled = stc_x_t0.copy()
+            x_hat_scaled = stc_x_hat_t0.copy()
+            unit_label = self._format_unit_label(source_units, source_unitmult)
 
             source_estimates = [
                 (x_scaled, 'Ground Truth'),
@@ -388,7 +410,7 @@ class Visualizer:
                     subject=subject,
                     subjects_dir=subjects_dir,
                     spacing='ico4',
-                    title=title,
+                    title=f"{title} ({unit_label})",
                     time_viewer=True,  # Can be True since show=True
                     views=orientations,
                 )
@@ -420,8 +442,10 @@ class Visualizer:
         y_noisy_one_trial: np.ndarray,
         nnz: int,
         ERP_config: dict = None,
-        source_units: str = FIFF.FIFF_UNIT_AM,
-        sensor_units: str = FIFF.FIFF_UNIT_V,
+        source_units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_AM,
+        source_unitmult: Optional[int] = None,
+        sensor_units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_V,
+        sensor_unitmult: Optional[int] = None,
         orientation_type: str = "fixed",
         max_sensors: int = 3,
         plot_sensors_together: bool = False,
@@ -465,28 +489,12 @@ class Visualizer:
         show : bool, optional
             If True, display the plot, by default False.
         """
-        # Use self.sfreq if the passed sfreq is the default placeholder, otherwise use passed sfreq
-        
-        if sensor_units == FIFF.FIFF_UNIT_T:
-            y_clean_scaled = y_clean_one_trial * 1e15  # Convert Tesla to femtoTesla (fT)
-            y_noisy_scaled = y_noisy_one_trial * 1e15  # Convert Tesla to femtoTesla (fT)
-            sensor_units = "fT"
-        elif sensor_units == FIFF.FIFF_UNIT_T_M:
-            y_clean_scaled = y_clean_one_trial * 1e15  # Convert T/m to fT/m
-            y_noisy_scaled = y_noisy_one_trial * 1e15  # Convert T/m to fT/m
-            sensor_units = "fT/m"
-        elif sensor_units == FIFF.FIFF_UNIT_V:
-            y_clean_scaled = y_clean_one_trial * 1e6  # Convert V to μV
-            y_noisy_scaled = y_noisy_one_trial * 1e6  # Convert V to μV
-            sensor_units = "μV"
-        else:
-            raise ValueError(f"Unsupported units for sensor signals: {sensor_units}. Expected FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M, or FIFF.FIFF_UNIT_V.")
+        y_clean_scaled = y_clean_one_trial
+        y_noisy_scaled = y_noisy_one_trial
+        x_scaled = x_one_trial
 
-        if source_units == FIFF.FIFF_UNIT_AM:
-            x_scaled = x_one_trial * 1e9  # Convert A/m to nAm
-            source_units = "nAm"
-        else:
-            raise ValueError(f"Unsupported units for source activity: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+        sensor_units_label = self._format_unit_label(sensor_units, sensor_unitmult)
+        source_units_label = self._format_unit_label(source_units, source_unitmult)
 
         n_times_from_data = y_clean_scaled.shape[1]
         tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_scaled.shape[-1])
@@ -518,7 +526,7 @@ class Visualizer:
 
         ax_sources.axvline(stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
         ax_sources.set_title(f"{nnz} Active Simulated Source Activity")
-        ax_sources.set_ylabel(f"Amplitude ({source_units})")
+        ax_sources.set_ylabel(f"Amplitude ({source_units_label})")
         ax_sources.grid(True)
         ax_sources.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
@@ -532,7 +540,7 @@ class Visualizer:
                 current_shift += shift
             ax_sensors.axvline(stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
             ax_sensors.set_title("Sensor Measurements")
-            ax_sensors.set_ylabel(f"Amplitude ({sensor_units})") 
+            ax_sensors.set_ylabel(f"Amplitude ({sensor_units_label})") 
             ax_sensors.grid(True)
             # Consolidate legend for "Stimulus Onset" if it's plotted multiple times
             handles, labels = ax_sensors.get_legend_handles_labels()
@@ -544,8 +552,8 @@ class Visualizer:
                 ax_sens.plot(times, y_noisy_scaled[idx], label=f"Noisy", linewidth=1)
                 ax_sens.axvline(stim_onset, color='k', linestyle='--', linewidth=1, label='Stimulus Onset')
                 ax_sens.set_title(f"Sensor {idx}")
-                ax_sens.set_ylabel(f"Amplitude ({sensor_units})")
-                ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) 
+                ax_sens.set_ylabel(f"Amplitude ({sensor_units_label})")
+                # ax_sens.set_ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range) 
                 ax_sens.grid(True)
                 handles, labels = ax_sens.get_legend_handles_labels()
                 by_label = dict(zip(labels, handles))
@@ -567,7 +575,8 @@ class Visualizer:
         x_active_indices: np.ndarray,
         x_hat_active_indices: np.ndarray,
         n_sources: int,
-        source_units: str = FIFF.FIFF_UNIT_AM,
+        source_units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_AM,
+        source_unitmult: Optional[int] = None,
         orientation_type: str = "fixed",
         save_path: Optional[str] = None,
         file_name: Optional[str] = None,
@@ -601,13 +610,9 @@ class Visualizer:
         show : bool, optional
             Whether to show the plot, by default True
         """        
-        # convert the data from A to nAm for better readability
-        if source_units == FIFF.FIFF_UNIT_AM:
-            x_active_scaled = x_one_trial_one_time[x_active_indices] * 1e9
-            x_hat_active_scaled = x_hat_one_trial_one_time[x_hat_active_indices] * 1e9
-            source_units = "nAm"
-        else:
-            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")
+        unit_label = self._format_unit_label(source_units, source_unitmult)
+        x_active_scaled = x_one_trial_one_time[x_active_indices]
+        x_hat_active_scaled = x_hat_one_trial_one_time[x_hat_active_indices]
 
         if orientation_type == 'fixed':
             plt.figure(figsize=(12, 6))
@@ -618,7 +623,7 @@ class Visualizer:
             plt.scatter(x_active_indices, x_active_scaled, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
 
             plt.xlabel('Active voxels')
-            plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
+            plt.ylabel(f'Amplitude of averaged sources (across time) and their estimates ({unit_label})')
             plt.title(title or f'Active Sources fixed orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
             plt.legend(title=f'Total Sources: {n_sources}', loc='best')
             plt.grid(True, alpha=0.5)
@@ -661,7 +666,7 @@ class Visualizer:
                 ax.scatter(x_active_indices, x_active_indices, color='red', marker='x', label=f'Non-Zero Ground Truth ({len(x_active_indices)} simulated Sources)')
                 
                 ax.set_xlabel('Index of Active (Non-zero) Sources')
-                ax.set_ylabel(f'Amplitude of averaged sources (across time) and their estimates ({source_units})')
+                ax.set_ylabel(f'Amplitude of averaged sources (across time) and their estimates ({unit_label})')
                 ax.set_title(f'Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps')
 
                 # all_unique_src_indices_on_axis = sorted(list(set(x_active_indices + active_indices)))
@@ -677,9 +682,69 @@ class Visualizer:
 
             fig.text(0.5, 0.04, 'Original Source Index', ha='center', va='center')
             plt.tight_layout(rect=[0, 0.05, 1, 0.96]) 
-            fig.suptitle(f"Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps", fontsize=16)
+        fig.suptitle(f"Active Sources Comparison for free orientation, (Only Non-Zero Sources) of Averaged Activities across Time Steps", fontsize=16)
             
         self._handle_figure_output(fig, file_name or f"active_sources", save_path, show)
+    
+    def plot_reconstructed_active_sources(
+        self,
+        ERP_config: dict,
+        x_hat_trial: np.ndarray,
+        x_active_indices: Sequence[int],
+        units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_AM,
+        unitmult: Optional[int] = None,
+        max_sources: int = 6,
+        save_dir: Optional[str] = None,
+        file_name: Optional[str] = None,
+        show: bool = False,
+    ):
+        """
+        Plot reconstructed source waveforms against ground truth for selected active indices.
+
+        Parameters
+        ----------
+        ERP_config : dict
+            ERP configuration dictionary to derive time axis.
+        x_trial : np.ndarray
+            Ground-truth source activity for a single trial (n_sources, n_times).
+        x_hat_trial : np.ndarray
+            Reconstructed source activity for the same trial.
+        x_active_indices : Sequence[int]
+            Indices of ground-truth active sources to visualize.
+        units : str | int, optional
+            Source unit (FIFF constant or string). Default FIFF.FIFF_UNIT_AM.
+        unitmult : int, optional
+            FIFF multiplier (e.g., FIFF_UNITM_N).
+        max_sources : int, optional
+            Maximum number of sources to display. Default 6.
+        """
+        if x_hat_trial.ndim == 3:
+            x_hat_trial = np.linalg.norm(x_hat_trial, axis=1)
+
+        unit_label = self._format_unit_label(units, unitmult)
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_hat_trial.shape[-1])
+
+        indices = list(x_active_indices[:max_sources]) if len(x_active_indices) > max_sources else list(x_active_indices)
+        if not indices:
+            self.logger.warning("No active indices provided for reconstructed source plot.")
+            return
+
+        n_plots = len(indices)
+        fig, axes = plt.subplots(n_plots, 1, figsize=(12, 3 * n_plots), sharex=True, constrained_layout=True)
+        if n_plots == 1:
+            axes = [axes]
+
+        for ax, src_idx in zip(axes, indices):
+            ax.plot(times, x_hat_trial[src_idx], label=f"Recon Source {src_idx}", color="tab:orange", linewidth=1.2)
+            ax.axvline(stim_onset, linestyle="--", color="gray", linewidth=0.9, label="Stimulus Onset")
+            ax.set_ylabel(f"Amplitude ({unit_label})")
+            ax.set_title(f"Active Source {src_idx}")
+            ax.grid(True, alpha=0.4)
+            ax.legend(loc="upper right", fontsize="small")
+
+        axes[-1].set_xlabel("Time (s)")
+        axes[-1].set_xlim(tmin, tmax)
+        self._handle_figure_output(fig, file_name or "reconstructed_active_sources", save_dir, show)
      
     def plot_ci(
         self,
@@ -688,7 +753,8 @@ class Visualizer:
         x_active_indices: np.array,
         x_hat_active_indices: np.array,
         n_sources: int,
-        source_units: str,
+        source_units: Optional[Union[str, int]],
+        source_unitmult: Optional[int],
         ci_lower: np.array,
         ci_upper: np.array,
         confidence_levels: list,
@@ -699,14 +765,11 @@ class Visualizer:
         show: bool = True,
         figsize: tuple = (12, 6),
     ):
-        if source_units == FIFF.FIFF_UNIT_AM: #TODO: check whether we need to copy()
-            x_scaled = x_one_trial_one_time.copy().flatten() * 1e9
-            x_hat_scaled = x_hat_one_trial_one_time.copy().flatten() * 1e9
-            ci_lower_scaled = ci_lower.copy() * 1e9
-            ci_upper_scaled = ci_upper.copy() * 1e9
-            source_units = "nAm"        
-        else:
-            raise ValueError(f"Unsupported units for source signals: {source_units}. Expected FIFF.FIFF_UNIT_AM.")            
+        unit_label = self._format_unit_label(source_units, source_unitmult)
+        x_scaled = x_one_trial_one_time.copy().flatten()
+        x_hat_scaled = x_hat_one_trial_one_time.copy().flatten()
+        ci_lower_scaled = ci_lower.copy()
+        ci_upper_scaled = ci_upper.copy()
     
         # Create grid of subplots for all confidence levels
         n_levels = len(confidence_levels)
@@ -783,7 +846,7 @@ class Visualizer:
 
         # Shared x/y labels for the whole figure
         fig.supxlabel('Active voxels', fontsize=14)
-        fig.supylabel(f'Amplitude ({source_units})', fontsize=14)
+        fig.supylabel(f'Amplitude ({unit_label})', fontsize=14)
         fig.suptitle('Confidence Intervals for Active Reconstructed Sources', fontsize=18, y=1.05)
         plt.tight_layout(rect=[0, 0.05, 1, 0.96])        
         
@@ -1003,8 +1066,10 @@ class Visualizer:
         nnz: int = 1,
         ERP_config: dict = None,
         sample_idx: int = 0,
-        source_units: str = FIFF.FIFF_UNIT_AM,
-        sensor_units: str = FIFF.FIFF_UNIT_V,
+        source_units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_AM,
+        source_unitmult: Optional[int] = None,
+        sensor_units: Optional[Union[str, int]] = FIFF.FIFF_UNIT_V,
+        sensor_unitmult: Optional[int] = None,
         confidence_levels: np.ndarray = None,
         nominal_coverages: np.ndarray = None,
         empirical_coverages: np.ndarray = None,
@@ -1127,6 +1192,7 @@ class Visualizer:
             x_trials=x_trials,
             x_active_indices=x_active_indices_trials,
             units=source_units,
+            unitmult=source_unitmult,
             trial_idx=None,
             title="Source Trials (All)",
             save_dir="data_simulation",
@@ -1140,6 +1206,7 @@ class Visualizer:
             y_trials=y_noisy_trials,
             channels="all",  # or "all"
             units=sensor_units,
+            unitmult=sensor_unitmult,
             mode="stack",
             title="Sensor Signals (All Trials stacked)",
             save_dir="data_simulation",
@@ -1153,6 +1220,7 @@ class Visualizer:
             y_trials=y_noisy_trials,
             # channels=[0, 10],  # or "all"
             units=sensor_units,
+            unitmult=sensor_unitmult,
             mode="concatenate",
             title="Sensor Signals (All trials concatenated)",
             save_dir="data_simulation",
@@ -1166,6 +1234,7 @@ class Visualizer:
             y_trials=y_clean_trials,
             # channels=[0, 10],  # or "all"
             units=sensor_units,
+            unitmult=sensor_unitmult,
             mode="concatenate",
             title="Sensor Signals (All trials concatenated)",
             save_dir="data_simulation",
@@ -1179,6 +1248,7 @@ class Visualizer:
             x_hat_one_trial=x_hat_one_trial,
             orientations=['lateral', 'medial', 'dorsal', 'ventral'],
             source_units=source_units,
+            source_unitmult=source_unitmult,
             sample_idx=sample_idx,
             subject=subject,
             subjects_dir=subjects_dir,
@@ -1196,7 +1266,9 @@ class Visualizer:
             nnz=nnz,
             ERP_config=ERP_config,
             source_units=source_units,
+            source_unitmult=source_unitmult,
             sensor_units=sensor_units,
+            sensor_unitmult=sensor_unitmult,
             orientation_type=orientation_type,
             max_sensors=3,
             plot_sensors_together=False,
@@ -1204,6 +1276,17 @@ class Visualizer:
             save_path='data_simulation',
             show=False
         )        
+
+        self.plot_reconstructed_active_sources(
+            ERP_config=ERP_config,
+            x_hat_trial=x_hat_one_trial,
+            x_active_indices=x_active_indices_one_trial,
+            units=source_units,
+            unitmult=source_unitmult,
+            save_dir="data_simulation",
+            file_name="reconstructed_active_sources",
+            show=False,
+        )
         
         # =========================
         # 2. Plot uncertainty analysis figures
@@ -1216,6 +1299,7 @@ class Visualizer:
             x_hat_active_indices=x_hat_active_indices_one_trial,
             n_sources=n_sources,
             source_units=source_units,
+            source_unitmult=source_unitmult,
             orientation_type= orientation_type,
             save_path="uncertainty_analysis",
             file_name="active_sources",
@@ -1229,6 +1313,7 @@ class Visualizer:
             x_hat_active_indices=x_hat_active_indices_one_trial,
             n_sources=n_sources,
             source_units=source_units,
+            source_unitmult=source_unitmult,
             ci_lower=ci_lower,
             ci_upper=ci_upper,
             confidence_levels=confidence_levels,
@@ -1248,6 +1333,7 @@ class Visualizer:
             x_hat_active_indices=x_hat_active_indices_one_trial,
             n_sources=n_sources,
             source_units=source_units,
+            source_unitmult=source_unitmult,
             ci_lower=ci_lower,
             ci_upper=ci_upper,
             confidence_levels=confidence_levels,
@@ -1317,7 +1403,7 @@ class Visualizer:
 #         ERP_config=ERP_config,
 #         logger=logger
 #     )
-#     print(f"Default units for source signals: {source_simulator.source_units}")
+#     print(f"Default units for source signals: {source_simulator.units}")
 
 #     x_trials, active_indices_trials = source_simulator.simulate(
 #         orientation_type=orientation_type,
@@ -1326,7 +1412,7 @@ class Visualizer:
 #         n_trials=n_trials,
 #         global_seed=global_seed,
 #     )
-#     # source_simulator.source_units = "Am"  # Set units for source signals
+#     # source_simulator.units = "Am"  # Set units for source signals
 #     trial_idx = 0
 
 #     viz = Visualizer(base_save_path="testViz", logger=logger)
@@ -1336,7 +1422,7 @@ class Visualizer:
 #         ERP_config=ERP_config,
 #         x=x_trials,
 #         active_indices=active_indices_trials,
-#         units=source_simulator.source_units,
+#         units=source_simulator.units,
 #         trial_idx=trial_idx,
 #         title=f"Source Activity - Trial {trial_idx+1}",
 #         save_dir="data_simulation",
@@ -1349,7 +1435,7 @@ class Visualizer:
 #         ERP_config=ERP_config,
 #         x=x_trials,
 #         active_indices=active_indices_trials,
-#         units=source_simulator.source_units,
+#         units=source_simulator.units,
 #         trial_idx=None,
 #         title="Source Activity - All Trials",
 #         save_dir="data_simulation",
@@ -1361,7 +1447,7 @@ class Visualizer:
 #     sensor_simulator = SensorSimulator(
 #         logger=logger,
 #     )
-#     print(f"Default units for sensor signals: {sensor_simulator.sensor_units}")
+#     print(f"Default units for sensor signals: {sensor_simulator.units}")
 
 #     n_sensors = 10
 #     L = np.random.randn(n_sensors, n_sources)
@@ -1374,7 +1460,7 @@ class Visualizer:
 #         alpha_SNR=0.5,
 #         n_trials=n_trials,
 #     )
-#     # sensor_simulator.sensor_units = "T"
+#     # sensor_simulator.units = "T"
 
 
 #     # Plot sensors (single trial) with selected channels: y_clean
@@ -1383,7 +1469,7 @@ class Visualizer:
 #         y_trials=y_clean,
 #         trial_idx=trial_idx,
 #         # channels=[0, 1],  # or "all"
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         mode="single",
 #         title=f"Sensor Trial {trial_idx+1}",
 #         save_dir="data_simulation",
@@ -1397,7 +1483,7 @@ class Visualizer:
 #         y_trials=y_clean,
 #         mode="stack",
 #         channels=[2, 3],
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         save_dir="data_simulation",
 #         title="Sensor Signals (All Trials)",
 #         file_name="sensor_all_trials_clean",
@@ -1410,7 +1496,7 @@ class Visualizer:
 #         y_trials=y_clean,
 #         mode="concatenate",
 #         channels=[0, 2, 3],  # or "all"
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         title="Sensor Signals (Concatenated)",
 #         save_dir="data_simulation",
 #         file_name="sensor_concatenated_clean",
@@ -1423,7 +1509,7 @@ class Visualizer:
 #         y_trials= y_noisy,
 #         trial_idx=trial_idx,
 #         channels=[0, 1],  # or "all"
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         mode="single",
 #         title=f"Sensor Trial {trial_idx+1}",
 #         save_dir="data_simulation",
@@ -1437,7 +1523,7 @@ class Visualizer:
 #         y_trials=y_noisy,
 #         mode="stack",
 #         channels="all",  # or "all"
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         title="Sensor Signals (All Trials)",
 #         save_dir="data_simulation",
 #         file_name="sensor_all_trials_noisy",
@@ -1450,7 +1536,7 @@ class Visualizer:
 #         y_trials=y_noisy,
 #         mode="concatenate",
 #         channels=[0, 2],  # or "all"
-#         units=sensor_simulator.sensor_units,
+#         units=sensor_simulator.units,
 #         title="Sensor Signals (Concatenated)",
 #         save_dir="data_simulation",
 #         file_name="sensor_concatenated_noisy",
