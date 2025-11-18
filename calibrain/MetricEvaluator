@@ -1,0 +1,275 @@
+# ============================================================================
+# METRIC EVALUATOR CLASS
+# ============================================================================
+
+class MetricEvaluator:
+    def __init__(self, uncertainty_estimator, logger: logging.Logger = None):
+        """
+        Evaluation metrics that builds upon an existing UncertaintyEstimator.
+        
+        Parameters:
+        -----------
+        uncertainty_estimator : UncertaintyEstimator
+            Instance of your existing UncertaintyEstimator class
+        """
+        self.uncertainty_estimator = uncertainty_estimator
+        self.nominal_coverages = uncertainty_estimator.nominal_coverages
+        self.logger = logger or logging.getLogger(__name__)
+
+    # ============================================================================
+    # CORE CALIBRATION METRICS (4 metrics as given in our article)
+    # ============================================================================
+    
+    def average_absolute_deviation(self, empirical_coverages: np.ndarray) -> float:
+        """
+        Average Absolute Deviation (AAD)
+        
+        AAD = (1/K) * Σ_{i=1}^{K} |ĉ_i - c_i|
+        
+        Measures the average magnitude of deviation between empirical and nominal coverage.
+        Lower values indicate better overall calibration.
+        """
+        K = len(self.nominal_coverages)
+        absolute_deviations = np.abs(empirical_coverages - self.nominal_coverages)
+        return np.sum(absolute_deviations) / K
+
+    def average_signed_deviation(self, empirical_coverages: np.ndarray) -> float:
+        """
+        Average Signed Deviation (ASD)
+        
+        ASD = (1/K) * Σ_{i=1}^{K} (ĉ_i - c_i)
+        
+        Captures directional bias in calibration.
+        - Positive values: systematic underconfidence (intervals are too wide)
+        - Negative values: systematic overconfidence (intervals are too narrow)
+        """
+        K = len(self.nominal_coverages)
+        signed_deviations = empirical_coverages - self.nominal_coverages
+        return np.sum(signed_deviations) / K
+
+    def maximal_deviation(self, empirical_coverages: np.ndarray) -> float:
+        """
+        Maximal Deviation (MD)
+        
+        MD = max_i(ĉ_i - c_i)
+        
+        Represents the largest observed deviation due to underconfidence.
+        Identifies the most conservative confidence level.
+        """
+        deviations = empirical_coverages - self.nominal_coverages
+        return np.max(deviations)
+
+    def negated_minimal_deviation(self, empirical_coverages: np.ndarray) -> float:
+        """
+        Negated Minimal Deviation (NMD)
+        
+        NMD = -min_i(ĉ_i - c_i)
+        
+        Represents the largest observed deviation due to overconfidence.
+        Identifies the most overconfident confidence level.
+        """
+        deviations = empirical_coverages - self.nominal_coverages
+        return -np.min(deviations)
+
+    def compute_all_calibration_metrics(self, empirical_coverages: np.ndarray) -> dict:
+        """
+        Compute all four core calibration metrics at once.
+        
+        Returns:
+        --------
+        dict with keys: 'AAD', 'ASD', 'MD', 'NMD'
+        """
+        return {
+            'AAD': self.average_absolute_deviation(empirical_coverages),
+            'ASD': self.average_signed_deviation(empirical_coverages),
+            'MD': self.maximal_deviation(empirical_coverages),
+            'NMD': self.negated_minimal_deviation(empirical_coverages)
+        }
+
+    # ============================================================================
+    # UNCERTAINTY ESTIMATION METRIC
+    # ============================================================================
+    
+    def mean_posterior_std(self, posterior_std: np.ndarray) -> float:
+        """
+        Calculate the mean posterior standard deviation across all sources.
+        
+        This provides a single-number summary of the overall uncertainty level.
+        Lower values indicate more confident estimates on average.
+        """
+        return np.mean(posterior_std.flatten())
+
+    # ============================================================================
+    # SOURCE LOCALIZATION METRIC (Earth Mover's Distance)
+    # ============================================================================
+    
+    def EMD(self, x: np.ndarray, x_hat: np.ndarray, 
+                            orientation_type: str, subject: str, 
+                            fwd_path: str) -> float:
+        
+        # Compute Earth Mover's Distance (EMD) between true and estimated source activations.
+        
+        # EMD measures the minimum "work" required to transform one spatial distribution 
+        # into another, considering both amplitude and spatial proximity.
+        
+        # Parameters:
+        # -----------
+        # x : np.ndarray
+        #     Ground truth source activations
+        # x_hat : np.ndarray  
+        #     Estimated source activations
+        # orientation_type : str
+        #     'fixed' or 'free' for orientation modeling
+        # subject : str
+        #     Subject ID for forward model
+        # fwd_path : str
+        #     Path to forward solution files
+            
+        # Returns:
+        # --------
+        # float
+        #     Earth Mover's Distance between normalized source distributions
+        
+        # Extract source amplitudes based on orientation type
+        if orientation_type == "fixed":
+            temp_true = np.linalg.norm(x, axis=1)
+            a_mask = temp_true != 0
+            a = temp_true[a_mask]
+
+            temp_est = np.linalg.norm(x_hat, axis=1)
+            b_mask = temp_est != 0
+            b = temp_est[b_mask]
+            
+        elif orientation_type == "free":
+            temp_true = np.linalg.norm(x, axis=2)
+            temp_true = np.linalg.norm(temp_true, axis=1)
+            a_mask = temp_true != 0
+            a = temp_true[a_mask]
+
+            temp_est = np.linalg.norm(x_hat, axis=2)
+            temp_est = np.linalg.norm(temp_est, axis=1)
+            b_mask = temp_est != 0
+            b = temp_est[b_mask]
+        else:
+            raise ValueError(f"Unknown orientation_type: {orientation_type}")
+
+        # Handle edge cases
+        if len(a) == 0 or len(b) == 0:
+            self.logger.warning("No active sources found for EMD computation")
+            return np.inf
+
+        # Load forward solution and extract source locations
+        fwd = read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+        fwd = convert_forward_solution(fwd, force_fixed=True)
+        src = fwd["src"]
+
+        # Create sparse source time courses
+        stc_a = _make_sparse_stc(a[:, None], a_mask, fwd, tmin=1, tstep=1)
+        stc_b = _make_sparse_stc(b[:, None], b_mask, fwd, tmin=1, tstep=1)
+
+        # Extract source coordinates
+        rr_a = np.r_[src[0]["rr"][stc_a.lh_vertno], src[1]["rr"][stc_a.rh_vertno]]
+        rr_b = np.r_[src[0]["rr"][stc_b.lh_vertno], src[1]["rr"][stc_b.rh_vertno]]
+        
+        # Compute distance matrix between source locations
+        M = cdist(rr_a, rr_b, metric="euclidean")
+
+        # Normalize amplitudes to form probability distributions
+        a_norm = a / a.sum()
+        b_norm = b / b.sum()
+
+        # Compute Earth Mover's Distance
+        return emd2(a_norm, b_norm, M)
+    
+
+    # ============================================================================
+    # COMPREHENSIVE EVALUATION
+    # ============================================================================
+    
+    def comprehensive_evaluation(self, x_true: np.ndarray, x_hat: np.ndarray, 
+                               posterior_std: np.ndarray, orientation_type: str = None,
+                               subject: str = None, fwd_path: str = None) -> dict:
+        """
+        Perform comprehensive uncertainty estimation, calibration and localization evaluation.
+        
+        Computes:
+        1. Calibration curve for visualisation of calibration performance (using existing UncertaintyEstimator)
+        2. All 4 calibration metrics for calibration performance
+        3. Mean posterior uncertainty for uncertainty performance
+        4. Earth Mover's Distance for localization performance
+        
+        Parameters:
+        -----------
+        x_true : np.ndarray
+            Ground truth source activations
+        x_hat : np.ndarray
+            Estimated source activations  
+        posterior_std : np.ndarray
+            Posterior standard deviation estimates
+        orientation_type : str, optional
+            For EMD computation
+        subject : str, optional  
+            For EMD computation
+        fwd_path : str, optional
+            For EMD computation
+            
+        Returns:
+        --------
+        dict
+            Comprehensive evaluation results
+        """
+        results = {}
+        
+        # 1. Compute calibration curve using existing UncertaintyEstimator
+        nominal_coverages, empirical_coverages = self.uncertainty_estimator.get_calibration_curve(
+            x_true, x_hat, posterior_std
+        )
+        results['calibration_curve'] = {
+            'nominal_coverages': nominal_coverages,
+            'empirical_coverages': empirical_coverages
+        }
+        
+        # 2. Compute calibration metrics
+        calibration_metrics = self.compute_all_calibration_metrics(empirical_coverages)
+        results['calibration_metrics'] = calibration_metrics
+        
+        # 3. Compute mean posterior uncertainty
+        results['mean_posterior_std'] = self.mean_posterior_std(posterior_std)
+        
+        # 4. Compute EMD if localization parameters provided
+        if all([orientation_type, subject, fwd_path]):
+            results['earth_movers_distance'] = self.EMD(
+            x_true, x_hat, orientation_type, subject, fwd_path
+            )
+            results['earth_movers_distance'] = None  # Commented out for now
+            self.logger.info("EMD computation is currently commented out")
+        else:
+            self.logger.info("EMD not computed: missing localization parameters")
+            results['earth_movers_distance'] = None
+            
+        return results
+
+    def print_evaluation_summary(self, results: dict):
+        """Print a formatted summary of evaluation results."""
+        print("\n" + "="*60)
+        print("PERFORMANCE EVALUATION SUMMARY")
+        print("="*60)
+        
+        # Calibration metrics
+        cal_metrics = results['calibration_metrics']
+        print("\n--- CALIBRATION METRICS ---")
+        print(f"Average Absolute Deviation (AAD): {cal_metrics['AAD']:.4f}")
+        print(f"Average Signed Deviation (ASD):  {cal_metrics['ASD']:.4f}")
+        print(f"Maximal Deviation (MD):          {cal_metrics['MD']:.4f}")
+        print(f"Negated Minimal Deviation (NMD): {cal_metrics['NMD']:.4f}")
+        
+        # Uncertainty metric
+        print(f"\n--- UNCERTAINTY ESTIMATION ---")
+        print(f"Mean Posterior Std: {results['mean_posterior_std']:.4f}")
+        
+        # Localization metric (if computed)
+        if results['earth_movers_distance'] is not None:
+            print(f"\n--- SOURCE LOCALIZATION ---")
+            print(f"Earth Mover's Distance: {results['earth_movers_distance']:.4f}")
+        
+        print("="*60)
