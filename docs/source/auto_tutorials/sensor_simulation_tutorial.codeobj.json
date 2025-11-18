@@ -375,7 +375,7 @@
    "name": "SensorSimulator"
   }
  ],
- "demo_sensor_simulator.sensor_units": [
+ "demo_sensor_simulator.units": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -979,7 +979,7 @@
    "name": "SensorSimulator"
   }
  ],
- "sensor_simulator.sensor_units": [
+ "sensor_simulator.units": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -1059,7 +1059,7 @@
    "name": "SourceSimulator.simulate"
   }
  ],
- "source_simulator.source_units": [
+ "source_simulator.units": [
   {
    "is_class": false,
    "is_explicit": false,

@@ -629,7 +629,7 @@
    "name": "SourceSimulator.simulate"
   }
  ],
- "simulator_fast.source_units": [
+ "simulator_fast.units": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -693,7 +693,7 @@
    "name": "SourceSimulator.simulate"
   }
  ],
- "simulator_slow.source_units": [
+ "simulator_slow.units": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -766,7 +766,7 @@
    "name": "SourceSimulator.simulate"
   }
  ],
- "source_simulator.source_units": [
+ "source_simulator.units": [
   {
    "is_class": false,
    "is_explicit": false,
