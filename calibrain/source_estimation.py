@@ -1339,8 +1339,8 @@ class TemporalCVSolver(BaseCVSolver):
                 )
             scores.append(np.mean(temporal_cv_scores))
         scores = np.asarray(scores)
-        best_idx = int(np.argmax(scores))
-        # best_idx = int(np.argmin(scores))
+        # best_idx = int(np.argmax(scores))
+        best_idx = int(np.argmin(scores))
         self.noise_var = self.noise_variances[best_idx]
 
 
