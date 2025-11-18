@@ -50,7 +50,11 @@ def main():
         "sfreq": 250,
         "fmin": 1,
         "fmax": 5,
-        "amplitude": 12.0,
+        "amplitude_distribution": {
+            "median": 20.0,   # nAm
+            "sigma": 0.2,
+            "clip": (2.5, 50.0),
+        },
         "random_erp_timing": True,
         "erp_min_length": None,
     }
@@ -60,7 +64,7 @@ def main():
         logger=logger
     )
 
-    leadfield_dir = get_data_path()
+    leadfield_dir = get_data_path() / "leadfield"
     leadfield_builder = LeadfieldBuilder(
         leadfield_dir=leadfield_dir,
         logger=logger,
@@ -70,6 +74,7 @@ def main():
         logger=logger,
     )
 
+    # nominal coverage levels   
     confidence_levels = np.append(np.arange(0.1, 1.0, 0.1), 0.99)  # [0.1, 0.2, ..., 0.9, 0.99]
     
     uncertainty_estimator = UncertaintyEstimator(
@@ -84,26 +89,26 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [5],
+        "nnz": [3, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.99],
-        "sensor_white_noise_var": [1.0],
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.8, 0.99],
+        "sensor_white_noise_var": [1.0 * 0.001],
     }
     
     # EEG data parameters
-    # data_param_grid_eeg = {
-    #     "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-    #     "nnz": [1, 10, 50],
-    #     "orientation_type": ["fixed"], # "fixed", "free"
-    #     "alpha_SNR": [0.0, 0.5, 0.99],
-    #     "sensor_white_noise_var": [1.0],
-    # }
+    data_param_grid_eeg = {
+        "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
+        "nnz": [3, 10],
+        "orientation_type": ["fixed"], # "fixed", "free"
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.8, 0.99],
+        "sensor_white_noise_var": [1.0 * 0.001],
+    }
     
     # =================================================================
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle"], # "baseline", 
+        "noise_type": ["oracle", "baseline"], 
         # add noise parameters here if needed
     }
     
@@ -158,27 +163,27 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
-        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
         # (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
-        (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),
+        # (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),
         
 
         # ================ EEG experiments ================
         # ---------------- eLORETA ----------------
-        # (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
+        (eloreta, eloreta_params, data_param_grid_eeg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_eeg, CV_noise_params),
         # ---------------- BMN ----------------
-        # (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
+        (BMN, BMN_params, data_param_grid_eeg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_eeg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_eeg, basic_noise_params),
