@@ -148,7 +148,8 @@ class Benchmark:
             solver_name = getattr(self.solver, "__name__", str(self.solver))
             orientation_type = data_params.get("orientation_type")
             n_orient = 3 if orientation_type == "free" else 1
-            solver_params['fwd_path'] = get_data_path() / f"{data_params['subject']}-fwd.fif"
+            # TODO: handle this properly
+            solver_params['fwd_path'] = get_data_path() / 'fwd'# / f"{data_params['subject']}-fwd.fif"
             
             self.logger.info(f"[Run {run_id}/{len(param_combinations)}] Seed: {seed}")
             self.logger.info(f"Solver: {solver_name} | Params: {solver_params}")
@@ -193,8 +194,18 @@ class Benchmark:
                     orientation_type=orientation_type,
                     retrieve_mode="load"
                 )
-                n_sensors, n_sources = L.shape
+                n_sensors, n_sources = L.shape if orientation_type == "fixed" else L.shape[:2]
+                sensor_kind = self.leadfield_builder.sensor_kind
+                sensor_coil_type = self.leadfield_builder.coil_type
                 sensor_units = self.leadfield_builder.sensor_units
+                sensor_unitmult = self.leadfield_builder.sensor_unitmult
+                
+                self.sensor_simulator.set_sensor_metadata(
+                    kind=sensor_kind,
+                    coil_type=sensor_coil_type,
+                    units=sensor_units,
+                    unitmult=sensor_unitmult,
+                )
 
                 # -------------------------------------------------------------
                 # 5. Simulate source and sensor data
@@ -207,7 +218,8 @@ class Benchmark:
                     n_trials=n_trials,
                     global_seed=global_source_seeds,
                 )
-                source_units = self.source_simulator.source_units
+                source_units = self.source_simulator.units
+                source_unitmult = self.source_simulator.unitmult
                 
                 # -------------------------------------------------------------
                 # 6. Simulate sensor and sensor data
@@ -223,8 +235,7 @@ class Benchmark:
                         n_trials=n_trials,
                         global_seed=global_noise_seeds,
                 )
-                self.sensor_simulator.sensor_units = sensor_units  # Set units based on leadfield
-
+                    
                 # -------------------------------------------------------------
                 # 7. Slice the first trial for processing
                 # -------------------------------------------------------------
@@ -240,6 +251,7 @@ class Benchmark:
                 tmin = self.source_simulator.ERP_config['tmin']
                 stim_onset = self.source_simulator.ERP_config['stim_onset']
                 sfreq = self.source_simulator.ERP_config['sfreq']
+                
                 pre_stimulus_onset = int((stim_onset - tmin) * sfreq)
                 if pre_stimulus_onset <= 0:
                     self.logger.warning(
@@ -272,7 +284,7 @@ class Benchmark:
                     raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
 
                 if noise_type in ('spatial_cv', 'temporal_cv'):
-                    grid_factors = np.logspace(-2, 2, 10)
+                    grid_factors = np.logspace(-2, 2, 20)
                     alphas = baseline_noise_var * grid_factors
                     noise_variances = np.unique(alphas).tolist()
                     if not noise_variances:
@@ -356,7 +368,7 @@ class Benchmark:
                 n_times = x_one_trial.shape[1]
                 posterior_var_avg_time = posterior_var / n_times
                     
-                # Compute confidence intervals
+                # Compute credible intervals
                 ci_lower_active, ci_upper_active, counts_within_ci_active, empirical_coverages_pre_cal = \
                     self.uncertainty_estimator.get_credible_intervals_data(
                         x=x_one_trial_avg_time,
@@ -383,7 +395,7 @@ class Benchmark:
                     orientation_type=orientation_type,
                     nnz=data_params.get("nnz"),
                     subject=data_params.get("subject"),
-                    fwd_path=self.leadfield_builder.leadfield_dir,
+                    fwd_path=solver_params['fwd_path'],
                 )
 
                 try:
@@ -435,12 +447,14 @@ class Benchmark:
                     n_sources=n_sources,
                     subject=data_params.get("subject"),
                     subjects_dir=mne.datasets.sample.data_path() / 'subjects', #TODO: include MEG anatomical data
-                    fwd_path=self.leadfield_builder.leadfield_dir,
+                    fwd_path=solver_params['fwd_path'],
                     nnz=data_params.get("nnz"),
                     ERP_config=self.ERP_config,
                     sample_idx=200,
                     source_units=source_units,
+                    source_unitmult=source_unitmult,
                     sensor_units=sensor_units,
+                    sensor_unitmult=sensor_unitmult,
                     confidence_levels=self.uncertainty_estimator.confidence_levels,
                     nominal_coverages=self.uncertainty_estimator.nominal_coverages,
                     empirical_coverages=empirical_coverages_pre_cal,
