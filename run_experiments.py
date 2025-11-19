@@ -87,9 +87,9 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [3, 10],
+        "nnz": [3, 8],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.8, 0.99],
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
     }
     
@@ -98,7 +98,7 @@ def main():
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
         "nnz": [3, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.8, 0.99],
+        "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
     }
     
@@ -110,12 +110,12 @@ def main():
         # add noise parameters here if needed
     }
     
-    default_alphas_grid = np.logspace(0, -2, 20)[1:]
+    default_alphas_grid = np.logspace(0, -2, 10)[1:]
     CV_noise_params = {
-        "noise_type": ["spatial_cv", "temporal_cv"],
+        "noise_type": ["temporal_cv"],
         'default_alphas_grid': [default_alphas_grid], # will be set within the benchmark loop based on baseline noise variance
         'cv': [2],
-        'n_jobs': [10],
+        'n_jobs': [1],
         # add noise parameters here if needed
     }
 
@@ -132,7 +132,7 @@ def main():
     }
 
     BMN_params = {
-        "max_iter": [1000],
+        "max_iter": [500],
         'normalization': [True]
     }
         
@@ -208,8 +208,7 @@ def main():
     ]
 
     metric_evaluator = MetricEvaluator(
-        confidence_levels=nominal_coverages,
-        nominal_coverages= 1 - nominal_coverages,
+        nominal_coverages= nominal_coverages,
         metrics=metrics,
         logger=logger
     )
@@ -240,7 +239,9 @@ def main():
     # this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
     
     results_df = pd.concat(df)
-    results_df.sort_values(by=['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'],inplace=True, ascending=True)
+    sort_cols = [c for c in ['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'] if c in results_df.columns]
+    if sort_cols:
+        results_df.sort_values(by=sort_cols, inplace=True, ascending=True)
     desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var', 'avg_posterior_mean', 'std_posterior_mean', 'avg_posterior_variance', 'std_posterior_variance']
     
     cols = [c for c in desired_order if c in results_df.columns] + \
