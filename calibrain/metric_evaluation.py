@@ -26,6 +26,16 @@ class MetricEvaluator:
         self.metrics = metrics if metrics is not None else []
         self.logger = logger
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['logger'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if self.logger is None:
+            self.logger = logging.getLogger(self.__class__.__name__)
+
     # Calibration curve metrics
     def mean_calibration_error(self, empirical_coverages, **kwargs):
         """Calculate the area under the curve (AUC) deviation, which measures the average calibration error.
