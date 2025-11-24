@@ -80,7 +80,17 @@ class SourceSimulator:
         self.kind: int = FIFF.FIFFV_DIPOLE_WAVE # Dipole time curve. Encoded into "1000"
         self.units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
         self.unitmult: int = FIFF.FIFF_UNITM_N # (Nano = 1e-9)
-        
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['logger'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if self.logger is None:
+            self.logger = logging.getLogger(self.__class__.__name__)
+
 
     def _sample_source_amplitude(self, rng: np.random.RandomState) -> float:
         """

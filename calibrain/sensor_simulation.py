@@ -48,6 +48,16 @@ class SensorSimulator:
         self.unitmult: int = FIFF.FIFF_UNITM_F
         self.coil_type: Optional[int] = None
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['logger'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if self.logger is None:
+            self.logger = logging.getLogger(self.__class__.__name__)
+
     def set_sensor_metadata(
         self,
         *,

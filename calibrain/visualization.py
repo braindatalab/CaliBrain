@@ -37,6 +37,11 @@ class Visualizer:
     }
 
     def _format_unit_label(self, units: Optional[Union[int, str]], unitmult: Optional[int]) -> str:
+        if isinstance(units, np.ndarray):
+            try:
+                units = units.item()
+            except Exception:
+                units = None
         if isinstance(units, str):
             return units
         if units is None:
