@@ -17,17 +17,19 @@ The script shows how to:
 """
 
 import os
+os.environ.setdefault("MPLBACKEND", "Agg")
 import datetime
 import logging
 import numpy as np
 import pandas as pd
-from pathlib import Path
+import mne
 
 from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN, sflex_gamma_lambda_map
 from calibrain.utils import get_data_path
 
 def main():
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    start_time = datetime.datetime.now()
+    timestamp = start_time.strftime("%Y%m%d_%H%M%S")
     os.makedirs("results/benchmark_results", exist_ok=True)
     os.makedirs("results/logs", exist_ok=True)
     log_file = f"results/logs/benchmark_log_{timestamp}.log"
@@ -40,6 +42,7 @@ def main():
             logging.StreamHandler()                   # Also print to console
         ]
     )
+    mne.set_log_level('WARNING')
     logger = logging.getLogger(__name__)
 
     # n_trials = 4
@@ -214,6 +217,8 @@ def main():
     )
 
     nruns = 1
+    benchmark_n_jobs = 8
+    logger.info(f"Benchmark parallel workers: n_jobs={benchmark_n_jobs}")
     df = []
     for solver, solver_param_grid, data_param_grid, noise_param_grid in estimators:
         benchmark = Benchmark(
@@ -228,9 +233,9 @@ def main():
             uncertainty_estimator=uncertainty_estimator,
             metric_evaluator=metric_evaluator,
             random_state=42,
-            logger=logger
+            logger=logger,
         )
-        results_df = benchmark.run(nruns=nruns)
+        results_df = benchmark.run(nruns=nruns, n_jobs=benchmark_n_jobs)
         df.append(results_df)
 
     # this_result['avg_posterior_variance'] = np.mean(posterior_var)
@@ -250,6 +255,8 @@ def main():
     results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
     print(results_df.head())
+    elapsed = datetime.datetime.now() - start_time
+    logger.info("Benchmark completed in %s", elapsed)
 
 if __name__ == "__main__":
     main()
