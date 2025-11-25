@@ -325,7 +325,7 @@ class Benchmark:
         solver_name = getattr(self.solver, "__name__", str(self.solver))
         orientation_type = data_params.get("orientation_type")
         n_orient = 3 if orientation_type == "free" else 1
-        solver_params['fwd_path'] = get_data_path() / 'fwd'
+        solver_params['fwd_path'] = get_data_path() / 'fwd' / data_params['subject']
 
         # Format human-friendly, 1-based progress counters and avoid division-by-zero
         nruns_local = max(1, int(nruns))
