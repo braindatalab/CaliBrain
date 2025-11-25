@@ -42,7 +42,8 @@ def main():
             logging.StreamHandler()                   # Also print to console
         ]
     )
-    mne.set_log_level('WARNING')
+    mne.set_log_level('ERROR')
+    logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
     # n_trials = 4
@@ -89,17 +90,20 @@ def main():
     # ==================================================================
     # MEG data parameters
     data_param_grid_meg = {
-        "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
-        "nnz": [3, 8],
+        "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+        #"subject": ["CC120166"],
+        # "nnz": [1, 5, 10],
+        "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.8],
+        "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
+        #"alpha_SNR": [ 0.7],
         "sensor_white_noise_var": [1.0 * 0.001],
     }
     
     # EEG data parameters
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [3, 10],
+        "nnz": [1, 5, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
@@ -109,7 +113,7 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle", "baseline"], 
+        "noise_type": ["oracle", 'baseline'], 
         # add noise parameters here if needed
     }
     
@@ -164,13 +168,13 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
@@ -219,7 +223,7 @@ def main():
         logger=logger,
     )
 
-    nruns = 10
+    nruns = 20
     benchmark_n_jobs = 1
     logger.info(
         "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",

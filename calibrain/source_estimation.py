@@ -231,7 +231,7 @@ def _gamma_map_opt(
 
         breaking = err < tol or n_active == 0
         if len(init_gamma) != last_size or breaking:
-            logger.info(
+            logger.debug(
                 "Iteration: %d\t active set size: %d\t convergence: "
                 "%0.3e" % (itno, len(init_gamma), err)
             )
@@ -241,13 +241,13 @@ def _gamma_map_opt(
             break
 
     if itno < maxit - 1:
-        logger.info(
+        logger.debug(
             "Iteration: %d\t active set size: %d\t convergence: "
             "%0.3e" % (itno, len(init_gamma), err)
         )
         logger.info("\nConvergence reached !\n")
     else:
-        logger.info(
+        logger.debug(
             "Iteration: %d\t active set size: %d\t convergence: "
             "%0.3e" % (itno, len(init_gamma), err)
         )
@@ -345,7 +345,7 @@ def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter
         Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
         whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
     """
-
+    fwd_path = f"{fwd_path}-fwd.fif"
     fwd = mne.read_forward_solution(fwd_path, verbose="error")
 
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
@@ -935,7 +935,7 @@ def compute_W(L, n_orient=1, beta=1e-6):
     
     return W
 
-def BMN_bayesian_opt(y, L, alpha, maxit=10000, tol=1e-6, init_gamma=None, verbose=True):
+def BMN_bayesian_opt(y, L, alpha, maxit=10000, tol=1e-6, init_gamma=None, logger=None, verbose=True):
     """
     BMN optimization using Bayesian evidence maximization for common source variance.
     """
@@ -995,7 +995,7 @@ def BMN_bayesian_opt(y, L, alpha, maxit=10000, tol=1e-6, init_gamma=None, verbos
         # Convergence check
         err = np.abs(gamma - gamma_old) / (gamma_old + eps)
         if verbose:
-            print(f"Iteration {itno}: gamma = {gamma:.6e}, error = {err:.3e}")
+            logger.debug(f"Iteration {itno}: gamma = {gamma:.6e}, error = {err:.3e}")
         if err < tol:
             break
 
@@ -1080,7 +1080,7 @@ def BMN(L, y, noise_var, n_orient=1, max_iter=1000, tol=1e-15, init_gamma=None, 
     # Use alpha = 1.0 for whitened data
     x_hat_normal, posterior_cov_normal, gamma = BMN_bayesian_opt(
          y_white, L_white, alpha=1.0, maxit=max_iter, tol=tol,
-         init_gamma=init_gamma, verbose=verbose
+         init_gamma=init_gamma, logger=kwargs['logger'], verbose=verbose
     )
 
     # Transform back to original source space
@@ -1690,7 +1690,7 @@ def _gamma_lambda_opt(
         breaking = both_converged or n_active == 0
         if len(current_gamma) != last_size or (verbose and (breaking or itno % 10 == 0)):
             convergence_status = "BOTH" if both_converged else f"gamma:{err_gamma:.3e}, lambda:{err_lambda:.3e}"
-            print(f"Iteration: {itno}\t active set size: {len(current_gamma)}\t convergence: {convergence_status}")
+            logger.debug(f"Iteration: {itno}\t active set size: {len(current_gamma)}\t convergence: {convergence_status}")
             last_size = len(current_gamma)
 
         if breaking:
@@ -1698,10 +1698,10 @@ def _gamma_lambda_opt(
 
     if itno < maxit - 1:
         if verbose:
-            print(f"Convergence reached at iteration {itno}!")
+            logger.debug(f"Convergence reached at iteration {itno}!")
     else:
         if verbose:
-            print(f"Convergence NOT reached after {maxit} iterations!")
+            logger.debug(f"Convergence NOT reached after {maxit} iterations!")
         warnings.warn("Convergence NOT reached!")
 
     # Undo normalization for sources
@@ -1897,7 +1897,7 @@ def sflex_gamma_lambda_map(L, y, fwd_path, sigma=0.01, n_orient=1, init_gamma=No
     posterior_cov : array
         Posterior covariance of active sources
     """
-
+    fwd_path = f"{fwd_path}-fwd.fif"
     fwd = mne.read_forward_solution(fwd_path, verbose="error")
 
     if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:

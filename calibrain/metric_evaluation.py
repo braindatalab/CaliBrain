@@ -259,7 +259,7 @@ class MetricEvaluator:
             return np.inf
 
         # Load forward solution and extract source locations
-        fwd = read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+        fwd = read_forward_solution(f"{fwd_path}-fwd.fif")
         fwd = convert_forward_solution(fwd, force_fixed=True)
         src = fwd["src"]
 
@@ -326,7 +326,7 @@ class MetricEvaluator:
 
     def _get_active_nnz(self, x, x_hat, orientation_type, subject, fwd_path, nnz):
         "adapted from BSI-ZOO"
-        fwd = read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+        fwd = read_forward_solution(f"{fwd_path}-fwd.fif")
 
         if orientation_type == "fixed":
             fwd = convert_forward_solution(fwd, force_fixed=True)
