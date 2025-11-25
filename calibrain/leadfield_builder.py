@@ -496,7 +496,7 @@ class LeadfieldBuilder:
             load_path = Path(fname)
             if load_path.exists():
                 try:
-                    self.logger.info(f"Loading leadfield matrix from file: {load_path}")
+                    self.logger.debug(f"Loading leadfield matrix from file: {load_path}")
                     with np.load(load_path) as data:
                         if "leadfield" not in data:
                             raise ValueError(f"Invalid .npz file: 'leadfield' key not found in {load_path}")
@@ -663,7 +663,7 @@ class LeadfieldBuilder:
                         f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
                     )
 
-                self.logger.info(f"Loading leadfield matrix from file: {leadfield_path}")
+                self.logger.debug(f"Loading leadfield matrix from file: {leadfield_path}")
                 with np.load(leadfield_path) as data:
                     if "leadfield" not in data and "lead_field" not in data:
                         raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
@@ -676,7 +676,7 @@ class LeadfieldBuilder:
                         f"Loaded leadfield matrix dimension mismatch for orientation '{orientation_type}': "
                         f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
                     )
-                self.logger.info(f"Leadfield loaded with shape {leadfield.shape}")
+                self.logger.debug(f"Leadfield loaded with shape {leadfield.shape}")
 
 
 
@@ -687,7 +687,7 @@ class LeadfieldBuilder:
         elif retrieve_mode == "simulate":
             if not config:
                 raise ValueError("Path to the configuration file (config) must be provided when retrieve_mode='simulate'.")
-            self.logger.info(f"Simulating leadfield matrix using LeadfieldBuilder with config: {config}")
+            self.logger.debug(f"Simulating leadfield matrix using LeadfieldBuilder with config: {config}")
 
             try:
                 config = load_config(Path(config))
@@ -760,7 +760,7 @@ class LeadfieldBuilder:
             coil_type=metadata.coil_type,
         )
 
-        self.logger.info(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
+        self.logger.debug(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
 
         if return_metadata:
             return metadata

@@ -381,7 +381,7 @@ class Visualizer:
         
         if not show:
             # Skip 3D visualization entirely for headless mode
-            self.logger.info("Skipping 3D brain visualization (show=False)")
+            self.logger.debug("Skipping 3D brain visualization (show=False)")
             return
         
         # Only do 3D plotting when show=True
