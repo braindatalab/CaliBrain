@@ -371,7 +371,6 @@ class Visualizer:
         source_unitmult: Optional[int],
         sample_idx,
         subject,
-        subjects_dir,
         fwd_path,
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
@@ -413,7 +412,7 @@ class Visualizer:
                 brain = stc.plot(
                     hemi="both",
                     subject=subject,
-                    subjects_dir=subjects_dir,
+                    subjects_dir=mne.datasets.sample.data_path() / 'subjects',
                     spacing='ico4',
                     title=f"{title} ({unit_label})",
                     time_viewer=True,  # Can be True since show=True
@@ -1114,7 +1113,6 @@ class Visualizer:
         trial_idx: int = 0,
         n_sources: int = 1,
         subject: str = None,
-        subjects_dir: str = None,
         fwd_path: str = None,
         nnz: int = 1,
         ERP_config: dict = None,
@@ -1177,8 +1175,6 @@ class Visualizer:
             Total number of sources, by default 1
         subject : str, optional
             Subject name for brain plots
-        subjects_dir : str, optional
-            FreeSurfer subjects directory
         fwd_path : str, optional
             Forward model path
         nnz : int, optional
@@ -1304,7 +1300,6 @@ class Visualizer:
             source_unitmult=source_unitmult,
             sample_idx=sample_idx,
             subject=subject,
-            subjects_dir=subjects_dir,
             fwd_path=fwd_path,
             save_dir=experiment_dir,
             file_name="brain",
