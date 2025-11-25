@@ -92,7 +92,7 @@ def main():
         "subject": ["CC120166"],# "CC120264", "CC120309", "CC120313"],
         "nnz": [3, 8],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.8],
         "sensor_white_noise_var": [1.0 * 0.001],
     }
     
@@ -193,32 +193,39 @@ def main():
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_eeg, adaptive_noise_params),
     ]
 
-    metrics = [
-        "mean_posterior_std",               # Uncertainty
-        
-        "mean_calibration_error",           # Calibration (auc)
-        "mean_signed_deviation",            # Calibration
-        "mean_absolute_deviation",          # Calibration
-        "max_underconfidence_deviation",    # Calibration
-        "max_overconfidence_deviation",     # Calibration
-        
-        "emd",                              # spatial accuracy
-        "jaccard_error",                    # spatial accuracy
-        "mse",                              # spatial accuracy
-        "euclidean_distance",               # detection performance
-        "f1",                               # detection performance
-        "accuracy",                         # detection performance
-    ]
+    metrics_config = {
+        "evaluation": (
+            "mean_posterior_std",           # Uncertainty summary
+            "emd",                          # Spatial accuracy
+            "jaccard_error",
+            "mse",
+            "euclidean_distance",           # Detection
+            "f1",
+            "accuracy",
+        ),
+        "calibration": (
+            "mean_calibration_error",
+            "mean_signed_deviation",
+            "mean_absolute_deviation",
+            "max_underconfidence_deviation",
+            "max_overconfidence_deviation",
+        ),
+    }
 
     metric_evaluator = MetricEvaluator(
-        nominal_coverages= nominal_coverages,
-        metrics=metrics,
-        logger=logger
+        nominal_coverages=nominal_coverages,
+        evaluation_metrics=metrics_config["evaluation"],
+        calibration_metrics=metrics_config["calibration"],
+        logger=logger,
     )
 
-    nruns = 1
-    benchmark_n_jobs = 8
-    logger.info(f"Benchmark parallel workers: n_jobs={benchmark_n_jobs}")
+    nruns = 10
+    benchmark_n_jobs = 1
+    logger.info(
+        "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",
+        benchmark_n_jobs,
+        nruns,
+    )
     df = []
     for solver, solver_param_grid, data_param_grid, noise_param_grid in estimators:
         benchmark = Benchmark(
@@ -247,7 +254,7 @@ def main():
     sort_cols = [c for c in ['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'] if c in results_df.columns]
     if sort_cols:
         results_df.sort_values(by=sort_cols, inplace=True, ascending=True)
-    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var', 'avg_posterior_mean', 'std_posterior_mean', 'avg_posterior_variance', 'std_posterior_variance']
+    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var']
     
     cols = [c for c in desired_order if c in results_df.columns] + \
            [c for c in results_df.columns if c not in desired_order]

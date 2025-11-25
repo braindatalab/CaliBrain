@@ -1,3 +1,4 @@
+from venv import logger
 import numpy as np
 import pandas as pd
 import logging # Import logging
@@ -9,22 +10,56 @@ from ot import emd2  # Earth Mover's Distance (Wasserstein-2)
 from mne.inverse_sparse.mxne_inverse import _make_sparse_stc
 from sklearn.metrics import jaccard_score, mean_squared_error, f1_score
 
+DEFAULT_CALIBRATION_METRICS = (
+    "mean_calibration_error",
+    "max_underconfidence_deviation",
+    "max_overconfidence_deviation",
+    "mean_absolute_deviation",
+    "mean_signed_deviation",
+)
+
+DEFAULT_EVALUATION_METRICS = (
+    "mean_posterior_std",
+    "emd",
+    "jaccard_error",
+    "mse",
+    "euclidean_distance",
+    "f1",
+    "accuracy",
+)
+
 class MetricEvaluator:
-    def __init__(self, nominal_coverages : np.ndarray = None, metrics : list[str] = None, logger : logging.Logger = None):
+    def __init__(
+        self,
+        nominal_coverages: np.ndarray = None,
+        evaluation_metrics: list[str] | None = None,
+        calibration_metrics: list[str] | tuple[str, ...] | None = None,
+        logger: logging.Logger = None,
+    ):
         """
         Initialize the MetricEvaluator with confidence levels, metrics, and a logger.
+
         Parameters
         ----------
         nominal_coverages : np.ndarray
             Nominal confidence levels (c) - what we expect theoretically.
-        metrics : list[str]
-            List of metric names (method names) to evaluate.
-        logger : logging.Logger
+        evaluation_metrics : list[str], optional
+            List of metric names (method names) to evaluate (non-calibration).
+        calibration_metrics : list[str], optional
+            Names of metrics that should be treated as calibration-specific.
+        logger : logging.Logger, optional
             Logger instance for logging debug and error messages.
         """
         self.nominal_coverages = nominal_coverages
-        self.metrics = metrics if metrics is not None else []
         self.logger = logger
+
+        if evaluation_metrics is None:
+            evaluation_metrics = DEFAULT_EVALUATION_METRICS
+        self.evaluation_metrics = tuple(evaluation_metrics)
+
+        if calibration_metrics is None:
+            calibration_metrics = DEFAULT_CALIBRATION_METRICS
+        self.calibration_metrics = tuple(calibration_metrics)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -35,6 +70,13 @@ class MetricEvaluator:
         self.__dict__.update(state)
         if self.logger is None:
             self.logger = logging.getLogger(self.__class__.__name__)
+        if not hasattr(self, "evaluation_metrics"):
+            legacy = state.get("metrics")
+            if legacy is None:
+                legacy = ()
+            self.evaluation_metrics = tuple(legacy)
+        if not hasattr(self, "calibration_metrics") or self.calibration_metrics is None:
+            self.calibration_metrics = DEFAULT_CALIBRATION_METRICS
 
     # Calibration curve metrics
     def mean_calibration_error(self, empirical_coverages, **kwargs):
@@ -425,11 +467,13 @@ class MetricEvaluator:
         return accuracy_score
 
     # Evaluate metrics and return results as a dictionary (side-effect free)
-    def evaluate_metrics(self, **kwargs) -> dict:
+    def evaluate_metrics(self, which: str = "evaluation", **kwargs) -> dict:
         """Evaluate configured metrics and return a dict mapping metric names to values.
 
         Parameters
         ----------
+        which : {"evaluation", "calibration", "all"}
+            Which set of metrics to evaluate.
         kwargs : dict
             Keyword arguments passed to metric methods (e.g., empirical_coverages, cov, x, x_hat, orientation_type, subject, fwd_path, nnz).
 
@@ -438,29 +482,36 @@ class MetricEvaluator:
         dict
             Dictionary mapping metric names (or metric_name_error) to computed results.
         """
-        logger = self.logger or logging.getLogger(__name__)
         results = {}
 
-        if not self.metrics:  # Handles if self.metrics is an empty list
-            logger.info("No metrics to evaluate (self.metrics is empty).")
+        groups = {
+            "evaluation": self.evaluation_metrics,
+            "calibration": self.calibration_metrics,
+            "all": self.evaluation_metrics + self.calibration_metrics,
+        }
+        which = (which or "all").lower()
+        metric_names = groups.get(which)
+
+        if not metric_names:
+            self.logger.warning("Unknown metric selection '%s'.", which)
             return results
 
-        for metric_name_str in self.metrics:
+        for metric_name_str in metric_names:
             try:
                 if hasattr(self, metric_name_str):
                     method = getattr(self, metric_name_str)
 
                     if callable(method):
-                        logger.debug(f"Calling metric method: {metric_name_str}")
+                        self.logger.debug(f"Calling metric method: {metric_name_str}")
                         result = method(**kwargs)
                         results[metric_name_str] = result
                     else:
-                        logger.error(
+                        self.logger.error(
                             f"Attribute '{metric_name_str}' found in {type(self).__name__} but it is not callable. Skipping."
                         )
                         results[f"{metric_name_str}_error"] = "Attribute not callable"
                 else:
-                    logger.error(
+                    self.logger.error(
                         f"Metric method '{metric_name_str}' not found in {type(self).__name__}. Skipping."
                     )
                     results[f"{metric_name_str}_error"] = "Method not found"

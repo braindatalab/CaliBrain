@@ -111,24 +111,32 @@ def main():
         (eloreta, eloreta_params, data_param_grid_eeg),
     ]
 
-    metrics = [
-        "mean_posterior_std",               # Uncertainty
-        "mean_calibration_error",           # Calibration (auc)
-        "max_underconfidence_deviation",    # Calibration
-        "max_overconfidence_deviation",     # Calibration
-        "mean_absolute_deviation",          # Calibration
-        "mean_signed_deviation",            # Calibration
-        "emd",                              # spatial accuracy
-        "jaccard_error",                    # spatial accuracy
-        "mse",                              # spatial accuracy
-        "euclidean_distance",               # detection performance
-        "f1",                               # detection performance
-        "accuracy",                         # detection performance
-    ]
+    metrics_config = {
+        "evaluation": [
+            "mean_posterior_std",
+            "emd",
+            "jaccard_error",
+            "mse",
+            "euclidean_distance",
+            "f1",
+            "accuracy",
+        ],
+        "calibration": [
+            "mean_calibration_error",
+            "max_underconfidence_deviation",
+            "max_overconfidence_deviation",
+            "mean_absolute_deviation",
+            "mean_signed_deviation",
+        ],
+    }
+
+    evaluation_metrics = metrics_config.get("evaluation", [])
+    calibration_metrics = metrics_config.get("calibration", [])
 
     metric_evaluator = MetricEvaluator(
         confidence_levels=confidence_levels,
-        metrics=metrics,
+        metrics=evaluation_metrics,
+        calibration_metrics=calibration_metrics,
         logger=logger
     )
 
