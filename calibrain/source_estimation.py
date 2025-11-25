@@ -257,6 +257,8 @@ def _gamma_map_opt(
     n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
     x_active = n_const * init_gamma[:, None] * A
 
+
+
     # Compute the posterior convariance matrix as in eq. (2.10) in Hashemi, Ali. "Advances in hierarchical Bayesian learning with applications to neuroimaging." (2023).
     # pos_cov =  np.diag(init_gamma) - init_gamma[:, np.newaxis] * G_CMinvG * init_gamma
     posterior_cov = np.diag(init_gamma) - init_gamma[:, np.newaxis] * G.T @ CMinv @ G * init_gamma 
