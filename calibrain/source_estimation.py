@@ -1136,7 +1136,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         Returns:
         - self: The fitted estimator.
         """
-        self.logger.info("Fitting the solver...")
+        self.logger.debug("Fitting the solver...")
         self.L_ = L
         self.y_ = y
         
@@ -1158,7 +1158,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
             raise ValueError("The estimator must be fitted with `fit(L, y)` before calling `_get_coef()`.")
         
         # Apply the solver
-        self.logger.info(f"Estimating sources using {self.solver.__name__}...")
+        self.logger.debug(f"Estimating sources using {self.solver.__name__}...")
         result = self.solver(
             L=self.L_,
             y=y,
@@ -1306,7 +1306,7 @@ class SpatialCVSolver(BaseCVSolver):
             n_jobs=self.n_jobs,
             error_score="raise",
         )
-        self.logger.info("Running spatial cross-validation...")
+        self.logger.debug("Running spatial cross-validation...")
         gs.fit(self.L_, y)
         self.grid_search_ = gs
         self.noise_var = gs.best_estimator_.noise_var
