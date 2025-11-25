@@ -253,14 +253,20 @@ def _gamma_map_opt(
         )
         warnings.warn("\nConvergence NOT reached !\n")
 
-    # undo normalization and compute final posterior mean
+    # undo normalization and compute final posterior mean and posterior covariance
     n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
     x_active = n_const * init_gamma[:, None] * A
+
+
 
     # Compute the posterior convariance matrix as in eq. (2.10) in Hashemi, Ali. "Advances in hierarchical Bayesian learning with applications to neuroimaging." (2023).
     # pos_cov =  np.diag(init_gamma) - init_gamma[:, np.newaxis] * G_CMinvG * init_gamma
     posterior_cov = np.diag(init_gamma) - init_gamma[:, np.newaxis] * G.T @ CMinv @ G * init_gamma 
-    # A similar approach can be implmented (as Large_gamma is interpreted as adiagonal matrix with small_gammas:
+
+    # Undo normalization for posterior covariance (similar to x_orig = n_const * x_norm)
+    posterior_cov = (n_const ** 2) * posterior_cov
+    
+    # A similar approach can be implemented (as Large_gamma is interpreted as a diagonal matrix with small_gammas:
     # posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)
     
     return x_active, active_indices, posterior_cov, gammas_full
