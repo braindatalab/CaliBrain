@@ -428,9 +428,9 @@ class SourceSimulator:
         active_indices_all_trials = np.array(active_indices_all_trials)
         
         # Log the shapes of the results
-        self.logger.info(f"Completed simulating source time courses for {n_trials} trials.")
-        self.logger.info(f"Shape of source time courses of all trials {n_trials} trials: {x_all_trials.shape}")
-        self.logger.info(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
+        self.logger.debug(f"Completed simulating source time courses for {n_trials} trials.")
+        self.logger.debug(f"Shape of source time courses of all trials {n_trials} trials: {x_all_trials.shape}")
+        self.logger.debug(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
 
         # Print active indices for all trials, each trial on a new line
         # self.logger.info("Active indices for all trials:")

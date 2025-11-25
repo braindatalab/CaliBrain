@@ -242,11 +242,11 @@ class SensorSimulator:
         noise_all_trials = np.array(noise_all_trials) # (n_trials, n_channels, n_times)
         noise_eta_all_trials = np.array(noise_eta_all_trials) # (n_trials,)
 
-        self.logger.info(f"Noise addition complete.")
-        self.logger.info(f"Shape of clean sensor data for all trials: {y_clean_all_trials.shape}")
-        self.logger.info(f"Shape of noisy sensor data for all trials: {y_noisy_all_trials.shape}")
-        self.logger.info(f"Shape of noise data for all trials: {noise_all_trials.shape}")
-        self.logger.info(f"Shape of noise scaling factors for all trials: {noise_eta_all_trials.shape}")
+        self.logger.debug(f"Noise addition complete.")
+        self.logger.debug(f"Shape of clean sensor data for all trials: {y_clean_all_trials.shape}")
+        self.logger.debug(f"Shape of noisy sensor data for all trials: {y_noisy_all_trials.shape}")
+        self.logger.debug(f"Shape of noise data for all trials: {noise_all_trials.shape}")
+        self.logger.debug(f"Shape of noise scaling factors for all trials: {noise_eta_all_trials.shape}")
 
         # Reshape leadfield matrix for free orientation if needed by downstream estimators.
         if orientation_type == "free":

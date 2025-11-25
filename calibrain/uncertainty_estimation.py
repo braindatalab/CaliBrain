@@ -9,9 +9,6 @@ from itertools import combinations, zip_longest
 import mne
 import logging
 
-from sklearn.isotonic import IsotonicRegression
-from sklearn.model_selection import KFold
-
 
 class UncertaintyEstimator:
     def __init__(self, nominal_coverages: np.ndarray = None, 
@@ -321,7 +318,7 @@ class UncertaintyEstimator:
         posterior_var_flat = posterior_var.flatten()
         
         n_observations = x_true_flat.shape[0]
-        self.logger.info(f"Computing calibration curve for {n_observations} observations")
+        self.logger.debug(f"Computing calibration curve for {n_observations} observations")
         
         # Compute empirical coverage for each nominal coverage level
         empirical_coverages = []
@@ -349,119 +346,6 @@ class UncertaintyEstimator:
             "ci_uppers": np.array(ci_uppers),
             "ci_counts": np.array(ci_counts)
         }
-
-    #  ========= CALIBRATION METHODS =========
-    def calibration_CV(self, x, x_hat, posterior_var, n_folds=5, random_state=42):
-        """
-        Calibrate credible intervals using isotonic regression (IR) with source-wise cross-validation avoiding overfitting
-        
-        Parameters:
-        -----------
-        Computes credible intervals and counts of true values within those intervals.
-
-        Parameters:
-        ----------
-        x : np.ndarray
-            Ground truth source activity.
-            Shape (n_sources, n_times) averaged across time. For averaged time, n_times=1.
-        x_hat : np.ndarray
-            Estimated source activity (posterior mean) averaged across time.
-            Shape (n_sources, n_times). For averaged time, n_times=1.
-        posterior_var : np.ndarray
-            Posterior variance vector of shape (n_sources,).
-        orientation_type : str
-            Orientation type, either 'free' or 'fixed'.
-        n_folds : int
-            Number of cross-validation folds
-        random_state : int
-            Random seed for reproducible splits
-        
-        Returns:
-        --------
-        cal_coverages : ndarray
-            Calibrated coverage probabilities averaged across folds
-        fold_results : list
-            Detailed results for each fold
-        
-        Methodology:
-        ------------
-        1. Split sources, use cross-validation to train/test IR model to avoid overfitting
-        2. For each fold:
-        - Train: Compute empirical coverage on training sources
-        - Train: Fit isotonic regression (empirical → nominal coverage)
-        - Test: Apply calibration to test sources
-        3. Average results across folds
-        
-        Theory
-        ------------
-        Learns the mapping from observed empirical coverage to desired nominal coverage
-        using monotonic regression to preserve probability ordering
-        """
-        n_sources = x_hat.shape[0]
-        
-        # Initialize cross-validation with shuffling and fixed seed
-        kf = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
-        source_idx = np.arange(n_sources)
-        
-        calibrated_coverages = np.zeros(len(self.nominal_coverages))
-        fold_results = []
-        
-        print(f"Running {n_folds}-fold source-wise calibration:")
-        print(f"Splitting {n_sources} sources into training/test sets")
-        
-        for fold, (train_idx, test_idx) in enumerate(kf.split(source_idx)):
-            # Split sources (not time points!)
-            x_train = x[train_idx]
-            x_hat_train = x_hat[train_idx]
-            posterior_var_train = posterior_var[train_idx]
-            
-            x_test = x[test_idx]
-            x_hat_test = x_hat[test_idx]
-            posterior_var_test = posterior_var[test_idx]
-            
-            # Compute empirical coverages for train set
-            train_coverage_dict = self.get_calibration_curve(
-                x_true=x_train,
-                x_hat=x_hat_train,
-                posterior_var=posterior_var_train,
-                )
-            
-            # Compute empirical coverages for test set
-            test_coverage_dict = self.get_calibration_curve(
-                    x_true=x_test,
-                    x_hat=x_hat_test,
-                    posterior_var=posterior_var_test,
-                )
-            
-            # TRAIN: Fit isotonic regression (empirical -> nominal coverage)
-            # Preserves monotonicity: higher confidence -> higher coverage
-            ir_model = IsotonicRegression(out_of_bounds='clip')
-            ir_model.fit(train_coverage_dict['empirical_coverages'], self.nominal_coverages)
-            
-            # TEST: Apply calibration to test sources
-            test_calibrated = ir_model.transform(test_coverage_dict['empirical_coverages'])
-            
-            # Store fold results
-            fold_results.append({
-                'train_empirical': train_coverage_dict['empirical_coverages'],
-                'test_empirical': test_coverage_dict['empirical_coverages'],
-                'calibrated': test_calibrated,
-                'n_train': len(train_idx),
-                'n_test': len(test_idx),
-                'fold': fold
-            })
-            
-            # Accumulate calibrated coverages
-            calibrated_coverages += test_calibrated
-            
-            print(f"  Fold {fold+1}: {len(train_idx)} train, {len(test_idx)} test sources")
-        
-        # Average across all folds
-        calibrated_coverages /= n_folds
-        
-        print("Calibration completed successfully!")
-        return calibrated_coverages, fold_results
-    #  
 
     # ========= DEBUGGING FUNCTIONS =========
     def debug_covariance(self, posterior_cov, full_posterior_cov, step_name):

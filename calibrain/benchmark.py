@@ -17,7 +17,7 @@ from matplotlib.patches import Ellipse
 from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
-from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta
+from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta, UncertaintyCalibrator
 # from calibrain.leadfield_builder import LeadfieldBuilder
 from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
@@ -77,6 +77,62 @@ class Benchmark:
         self.__dict__.update(state)
         if self.logger is None:
             self.logger = logging.getLogger(__name__)
+    
+    def _log_run_progress(
+        self,
+        run_in_config: int,
+        nruns_local: int,
+        config_index: int,
+        num_configs: int,
+        run_id: int,
+        total_runs: int,
+        solver_name: str,
+        noise_type: Optional[str],
+        nnz: Optional[int],
+        alpha_snr: Optional[float],
+        final: bool = False,
+    ) -> None:
+        """Log per-run progress and an optional separator summary when the
+        current run is the final run of the current configuration.
+
+        Parameters mirror the values computed in `_execute_single_run`.
+        """
+        try:
+            # single-line progress message
+            self.logger.info(
+                "[%d/%d | config %d/%d | %d/%d] Estimator: %s | noise_type: %s | nnz: %s | alpha_SNR: %s",
+                run_in_config,
+                nruns_local,
+                config_index,
+                num_configs,
+                run_id,
+                total_runs,
+                solver_name,
+                noise_type,
+                nnz,
+                alpha_snr,
+            )
+
+            if final:
+                # separator and short summary for completed configuration
+                self.logger.info("%s", "=" * 80)
+                self.logger.info(
+                    "Finished %d runs for config %d/%d — Estimator=%s | noise_type=%s | nnz=%s | alpha_SNR=%s",
+                    nruns_local,
+                    config_index,
+                    num_configs,
+                    solver_name,
+                    noise_type,
+                    nnz,
+                    alpha_snr,
+                )
+        except Exception:
+            # tolerate logging errors — do not break benchmarking
+            try:
+                # fallback to basic debug message
+                self.logger.debug("Progress logging failed for run %s", run_id)
+            except Exception:
+                pass
     def create_experiment_directory(self, base_dir, params, desired_order):
         """
         Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.
@@ -125,7 +181,7 @@ class Benchmark:
             self.logger.error(f"Failed to create experiment directory: {experiment_dir}. Error: {e}")
             raise
     
-        self.logger.info(f"Experiment directory created: {experiment_dir}")
+        self.logger.debug(f"Experiment directory created: {experiment_dir}")
         return experiment_dir
 
     def _prepare_run_data(self, data_params: dict, seed: int, n_trials: int) -> dict:
@@ -218,20 +274,30 @@ class Benchmark:
             seeds
         ))
         total_runs = len(param_combinations)
-        self.logger.info(f"Starting benchmark with {total_runs} runs...")
+        # compute number of parameter configurations for logging
+        num_solver = len(ParameterGrid(self.solver_param_grid))
+        num_data = len(ParameterGrid(self.data_param_grid))
+        num_noise = len(ParameterGrid(self.noise_param_grid))
+        num_configs = num_solver * num_data * num_noise
+        self.logger.info(
+            "Starting benchmark with %d experiments (%d nruns x %d configurations)",
+            total_runs,
+            nruns,
+            num_configs,
+        )
         if total_runs == 0:
             return pd.DataFrame()
 
         n_jobs = max(1, int(n_jobs or 1))
         worker_args = [
-            (run_id, total_runs, solver_params, data_params, noise_params, seed, fig_path)
+            (run_id, nruns, total_runs, solver_params, data_params, noise_params, seed, fig_path)
             for run_id, (solver_params, data_params, noise_params, seed) in enumerate(param_combinations, start=1)
         ]
 
         if n_jobs == 1:
             results_list = [self._execute_single_run(*args) for args in worker_args]
         else:
-            self.logger.info(f"Executing benchmark with n_jobs={n_jobs} using joblib Parallel (loky backend)...")
+            self.logger.debug(f"Executing benchmark with n_jobs={n_jobs} using joblib Parallel (loky backend)...")
             parallel = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)
             results_list = parallel(
                 delayed(self._execute_single_run)(*args)
@@ -244,6 +310,7 @@ class Benchmark:
     def _execute_single_run(
         self,
         run_id: int,
+        nruns: int,
         total_runs: int,
         solver_params: dict,
         data_params: dict,
@@ -260,10 +327,35 @@ class Benchmark:
         n_orient = 3 if orientation_type == "free" else 1
         solver_params['fwd_path'] = get_data_path() / 'fwd'
 
-        self.logger.info(f"[Run {run_id}/{total_runs}] Seed: {seed}")
-        self.logger.info(f"Solver: {solver_name} | Params: {solver_params}")
-        self.logger.info(f"Noise Params: {noise_params}")
-        self.logger.info(f"Data Params: {data_params}")
+        # Format human-friendly, 1-based progress counters and avoid division-by-zero
+        nruns_local = max(1, int(nruns))
+        # number of parameter configurations (ceil division)
+        num_configs = max(1, (total_runs + nruns_local - 1) // nruns_local)
+        config_index = (run_id - 1) // nruns_local + 1
+        run_in_config = (run_id - 1) % nruns_local + 1
+
+        # extract noise_type, nnz and alpha_SNR early for logging
+        noise_type = noise_params.get("noise_type")
+        nnz = data_params.get("nnz")
+        alpha_snr = data_params.get("alpha_SNR")
+
+        # delegate logging to helper (keeps formatting in one place)
+        self._log_run_progress(
+            run_in_config=run_in_config,
+            nruns_local=nruns_local,
+            config_index=config_index,
+            num_configs=num_configs,
+            run_id=run_id,
+            total_runs=total_runs,
+            solver_name=solver_name,
+            noise_type=noise_type,
+            nnz=nnz,
+            alpha_snr=alpha_snr,
+            final=False,
+        )
+        self.logger.debug(f"Solver params: {solver_params}")
+        self.logger.debug(f"Noise params: {noise_params}")
+        self.logger.debug(f"Data params: {data_params}")
 
         this_result = {
             'run_id': run_id,
@@ -362,12 +454,12 @@ class Benchmark:
                 )
             else:
                 if noise_type == 'oracle':
-                    self.logger.info("Using oracle noise variance estimate")
+                    self.logger.debug("Using oracle noise variance estimate")
                     noise_var = float((data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2)
                 elif noise_type == 'baseline':
-                    self.logger.info("Using baseline noise variance estimate")
+                    self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var
-                    self.logger.info(
+                    self.logger.debug(
                         f"Baseline noise variance (trial {run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
                     )
                 elif noise_type == 'joint_learning':
@@ -381,7 +473,7 @@ class Benchmark:
                     logger=self.logger
                 )
 
-            self.logger.info(f"Fitting source estimator {self.solver.__name__}")
+            self.logger.debug(f"Fitting source estimator {self.solver.__name__}")
             source_estimator.fit(L, y_noisy_one_trial)
             solver_output = source_estimator.predict(y=y_noisy_one_trial)
 
@@ -403,9 +495,9 @@ class Benchmark:
             this_result['avg_posterior_mean'] = np.mean(x_hat_one_trial)
             this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
 
-            self.logger.info("Estimating uncertainty...")
+            self.logger.debug("Estimating uncertainty...")
             if solver_name == 'gamma_map':
-                self.logger.info("Skipping uncertainty estimation for gamma_map solver.")
+                self.logger.debug("Skipping uncertainty estimation for gamma_map solver.")
                 this_result['active_indices_size'] = (
                     len(x_hat_active_indices_one_trial)
                     if x_hat_active_indices_one_trial is not None
@@ -417,20 +509,21 @@ class Benchmark:
             x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
             n_times = x_one_trial.shape[1]
             posterior_var_avg_time = posterior_var / n_times
+            posterior_std_avg_time = np.sqrt(np.maximum(posterior_var_avg_time, 0.0))
 
-            preCal_coverage_dict = self.uncertainty_estimator.get_calibration_curve(
+            calibrator = UncertaintyCalibrator(
+                uncertainty_estimator=self.uncertainty_estimator,
+                metric_evaluator=self.metric_evaluator,
+                n_folds=5,
+                random_state=self.random_state,
+            )
+            calibration_results = calibrator.calibrate(
                 x_true=x_one_trial_avg_time,
                 x_hat=x_hat_one_trial_avg_time,
-                posterior_var=posterior_var_avg_time
+                posterior_std=posterior_std_avg_time,
             )
-
-            postCal_empirical_coverages, fold_results = self.uncertainty_estimator.calibration_CV(
-                x=x_one_trial_avg_time,
-                x_hat=x_hat_one_trial_avg_time,
-                posterior_var=posterior_var_avg_time,
-                n_folds=5,
-                random_state=42,
-            )
+            pre_calibration = calibration_results['pre_calibration']
+            post_calibration = calibration_results['post_calibration']
 
             metric_kwargs = dict(
                 x=x_one_trial_avg_time,
@@ -444,20 +537,22 @@ class Benchmark:
 
             try:
                 metric_results_pre_cal = self.metric_evaluator.evaluate_metrics(
-                    empirical_coverages=preCal_coverage_dict['empirical_coverages'],
-                    **metric_kwargs
+                    which="evaluation",
+                    empirical_coverages=pre_calibration['empirical_coverages'],
+                    **metric_kwargs,
                 )
                 suffixed_pre = {f"pre_cal_{k}": v for k, v in metric_results_pre_cal.items()}
                 this_result.update(suffixed_pre)
 
                 metric_results_post_cal = self.metric_evaluator.evaluate_metrics(
-                    empirical_coverages=postCal_empirical_coverages,
-                    **metric_kwargs
+                    which="evaluation",
+                    empirical_coverages=post_calibration['empirical_coverages'],
+                    **metric_kwargs,
                 )
                 suffixed_post = {f"post_cal_{k}": v for k, v in metric_results_post_cal.items()}
                 this_result.update(suffixed_post)
 
-                for k in self.metric_evaluator.metrics:
+                for k in self.metric_evaluator.evaluation_metrics:
                     improvement_key = f"improvement_{k}"
                     try:
                         pre = metric_results_pre_cal.get(k)
@@ -472,6 +567,28 @@ class Benchmark:
             except Exception as e:
                 self.logger.error(f"Error while evaluating metrics: {e}", exc_info=True)
                 this_result.update({"metric_evaluation_error": str(e)})
+
+            calibration_metric_names = tuple(
+                getattr(self.metric_evaluator, "calibration_metrics", tuple())
+            )
+            pre_cal_metrics = pre_calibration.get('metrics', {})
+            post_cal_metrics = post_calibration.get('metrics', {})
+            for metric_name in calibration_metric_names:
+                pre_value = pre_cal_metrics.get(metric_name)
+                post_value = post_cal_metrics.get(metric_name)
+                if pre_value is not None:
+                    this_result[f"pre_cal_{metric_name}"] = pre_value
+                if post_value is not None:
+                    this_result[f"post_cal_{metric_name}"] = post_value
+                improvement_key = f"improvement_{metric_name}"
+                if (
+                    pre_value is None
+                    or post_value is None
+                    or (isinstance(pre_value, (int, float, np.floating)) and np.isclose(pre_value, 0.0))
+                ):
+                    this_result[improvement_key] = None
+                else:
+                    this_result[improvement_key] = (pre_value - post_value) / pre_value * 100
 
             viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
             viz.plot_all(
@@ -493,11 +610,11 @@ class Benchmark:
                 source_unitmult=source_unitmult,
                 sensor_units=sensor_units,
                 confidence_levels=self.uncertainty_estimator.nominal_coverages,
-                nominal_coverages=self.uncertainty_estimator.nominal_coverages,
-                empirical_coverages=preCal_coverage_dict['empirical_coverages'],
-                empirical_coverages_post_cal=postCal_empirical_coverages,
-                ci_lower=preCal_coverage_dict.get('ci_lowers'),
-                ci_upper=preCal_coverage_dict.get('ci_uppers'),
+                nominal_coverages=pre_calibration['nominal_coverages'],
+                empirical_coverages=pre_calibration['empirical_coverages'],
+                empirical_coverages_post_cal=post_calibration['empirical_coverages'],
+                ci_lower=pre_calibration.get('ci_lowers'),
+                ci_upper=pre_calibration.get('ci_uppers'),
                 orientation_type=orientation_type,
                 result=this_result,
                 experiment_dir=experiment_dir,
@@ -517,5 +634,25 @@ class Benchmark:
             )
             this_result["error_message"] = str(e)
 
-        self.logger.info(f"Completed run_id {this_result.get('run_id', 'N/A')}")
+        # print a separator when we've finished the last run of a configuration
+        try:
+            if run_in_config == nruns_local:
+                self._log_run_progress(
+                    run_in_config=run_in_config,
+                    nruns_local=nruns_local,
+                    config_index=config_index,
+                    num_configs=num_configs,
+                    run_id=run_id,
+                    total_runs=total_runs,
+                    solver_name=solver_name,
+                    noise_type=noise_type,
+                    nnz=nnz,
+                    alpha_snr=alpha_snr,
+                    final=True,
+                )
+        except Exception:
+            # tolerate logging errors — do not break benchmarking
+            pass
+
+        self.logger.debug(f"Completed run_id {this_result.get('run_id', 'N/A')}")
         return this_result
