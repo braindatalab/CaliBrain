@@ -601,7 +601,6 @@ class Benchmark:
                 trial_idx=trial_idx,
                 n_sources=n_sources,
                 subject=data_params.get("subject"),
-                subjects_dir=mne.datasets.sample.data_path() / 'subjects',
                 fwd_path=solver_params['fwd_path'],
                 nnz=data_params.get("nnz"),
                 ERP_config=self.ERP_config,
