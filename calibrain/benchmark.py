@@ -490,10 +490,6 @@ class Benchmark:
                 posterior_cov=posterior_cov,
                 orientation_type=orientation_type
             )
-            this_result['avg_posterior_variance'] = np.mean(posterior_var)
-            this_result['std_posterior_variance'] = np.std(np.sqrt(posterior_var))
-            this_result['avg_posterior_mean'] = np.mean(x_hat_one_trial)
-            this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
 
             self.logger.debug("Estimating uncertainty...")
             if solver_name == 'gamma_map':
@@ -536,43 +532,21 @@ class Benchmark:
             )
 
             try:
-                metric_results_pre_cal = self.metric_evaluator.evaluate_metrics(
+                evaluation_metrics = self.metric_evaluator.evaluate_metrics(
                     which="evaluation",
                     empirical_coverages=pre_calibration['empirical_coverages'],
                     **metric_kwargs,
                 )
-                suffixed_pre = {f"pre_cal_{k}": v for k, v in metric_results_pre_cal.items()}
-                this_result.update(suffixed_pre)
-
-                metric_results_post_cal = self.metric_evaluator.evaluate_metrics(
-                    which="evaluation",
-                    empirical_coverages=post_calibration['empirical_coverages'],
-                    **metric_kwargs,
-                )
-                suffixed_post = {f"post_cal_{k}": v for k, v in metric_results_post_cal.items()}
-                this_result.update(suffixed_post)
-
-                for k in self.metric_evaluator.evaluation_metrics:
-                    improvement_key = f"improvement_{k}"
-                    try:
-                        pre = metric_results_pre_cal.get(k)
-                        post = metric_results_post_cal.get(k)
-                        if pre is None or post is None:
-                            this_result[improvement_key] = None
-                        else:
-                            this_result[improvement_key] = (pre - post) / pre * 100
-                    except Exception:
-                        this_result[improvement_key] = None
-
+                this_result.update(evaluation_metrics)
             except Exception as e:
-                self.logger.error(f"Error while evaluating metrics: {e}", exc_info=True)
+                self.logger.error(f"Error while evaluating evaluation metrics: {e}", exc_info=True)
                 this_result.update({"metric_evaluation_error": str(e)})
 
             calibration_metric_names = tuple(
                 getattr(self.metric_evaluator, "calibration_metrics", tuple())
             )
-            pre_cal_metrics = pre_calibration.get('metrics', {})
-            post_cal_metrics = post_calibration.get('metrics', {})
+            pre_cal_metrics = pre_calibration.get('calibration_metrics', {})
+            post_cal_metrics = post_calibration.get('calibration_metrics', {})
             for metric_name in calibration_metric_names:
                 pre_value = pre_cal_metrics.get(metric_name)
                 post_value = post_cal_metrics.get(metric_name)
