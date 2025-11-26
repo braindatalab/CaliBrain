@@ -1,5 +1,4 @@
 import numpy as np
-import warnings
 from matplotlib import cm
 
 from sklearn.model_selection import GridSearchCV, check_cv
@@ -251,7 +250,7 @@ def _gamma_map_opt(
             "Iteration: %d\t active set size: %d\t convergence: "
             "%0.3e" % (itno, len(init_gamma), err)
         )
-        warnings.warn("\nConvergence NOT reached !\n")
+        logger.debug("\nConvergence NOT reached !\n")
 
     # undo normalization and compute final posterior mean and posterior covariance
     n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
@@ -649,7 +648,7 @@ def safe_svd(A, full_matrices=False):
     """
     return np.linalg.svd(A, full_matrices=full_matrices)
 
-def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_iter=20):
+def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_iter=20, logger=None):
     """
     Compute the eLORETA kernel and the posterior source covariance.
     
@@ -756,7 +755,7 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
         if delta < eps:
             break
     else:
-        warnings.warn("eLORETA weight fitting did not converge (>= %s)" % eps)
+        logger.debug("eLORETA weight fitting did not converge (>= %s)" % eps)
     del G_R_Gt
     G /= source_std  # undo our biasing
     G_3 = get_G_3(G, n_orient)
@@ -832,7 +831,8 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
         L, 
         lambda2=1.0,
         n_orient=n_orient,
-        whitener=whitener
+        whitener=whitener,
+        logger=logger
     )
     
     # Compute the mean source estimates.
@@ -1702,7 +1702,7 @@ def _gamma_lambda_opt(
     else:
         if verbose:
             logger.debug(f"Convergence NOT reached after {maxit} iterations!")
-        warnings.warn("Convergence NOT reached!")
+        logger.debug("Convergence NOT reached!")
 
     # Undo normalization for sources
     n_const = np.sqrt(M_normalize_constant) / G_normalize_constant

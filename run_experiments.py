@@ -39,9 +39,13 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[
             logging.FileHandler(log_file, mode="w"),  # Overwrite log file each run
-            logging.StreamHandler()                   # Also print to console
         ]
     )
+    os.environ["CALIBRAIN_LOG_FILE"] = log_file
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logging.getLogger().addHandler(console_handler)
     mne.set_log_level('ERROR')
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
@@ -113,7 +117,7 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle", 'baseline'], 
+        "noise_type": ["oracle", "baseline"], 
         # add noise parameters here if needed
     }
     
@@ -139,7 +143,7 @@ def main():
     }
 
     BMN_params = {
-        "max_iter": [500],
+        "max_iter": [1000],
         'normalization': [True]
     }
         
@@ -171,7 +175,7 @@ def main():
         # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
          (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
@@ -223,7 +227,7 @@ def main():
         logger=logger,
     )
 
-    nruns = 20
+    nruns = 1
     benchmark_n_jobs = 1
     logger.info(
         "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",
@@ -249,20 +253,21 @@ def main():
         results_df = benchmark.run(nruns=nruns, n_jobs=benchmark_n_jobs)
         df.append(results_df)
 
-    # this_result['avg_posterior_variance'] = np.mean(posterior_var)
-    # this_result['std_posterior_variance'] = np.std(np.sqrt(posterior_var))
-    # this_result['avg_posterior_mean'] = np.mean(x_hat_one_trial)
-    # this_result['std_posterior_mean'] = np.std(x_hat_one_trial)
-    
     results_df = pd.concat(df)
-    sort_cols = [c for c in ['subject', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma'] if c in results_df.columns]
-    if sort_cols:
-        results_df.sort_values(by=sort_cols, inplace=True, ascending=True)
-    desired_order = ['run_id', 'subject', 'orientation_type', 'nnz','solver', 'noise_type',  'alpha_SNR', 'gamma', 'noise_var']
-    
-    cols = [c for c in desired_order if c in results_df.columns] + \
-           [c for c in results_df.columns if c not in desired_order]
-    results_df = results_df[cols]
+    results_df.sort_values(
+        by=[
+            'run_id', 'subject', 'orientation_type', 'nnz', 
+            'solver', 'noise_type', 'alpha_SNR',
+        ],
+        inplace=True,
+        ascending=True,
+    )
+    desired_cols = [
+        'global_run_id', 'run_id', 'subject', 'orientation_type', 'nnz',
+        'solver', 'noise_type', 'alpha_SNR', 'gamma'
+    ]
+    other_cols = [c for c in results_df.columns if c not in desired_cols]
+    results_df = results_df[[c for c in desired_cols if c in results_df.columns] + other_cols]
     results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
     
     print(results_df.head())

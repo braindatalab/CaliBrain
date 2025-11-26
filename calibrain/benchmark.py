@@ -90,7 +90,6 @@ class Benchmark:
         noise_type: Optional[str],
         nnz: Optional[int],
         alpha_snr: Optional[float],
-        final: bool = False,
     ) -> None:
         """Log per-run progress and an optional separator summary when the
         current run is the final run of the current configuration.
@@ -98,9 +97,8 @@ class Benchmark:
         Parameters mirror the values computed in `_execute_single_run`.
         """
         try:
-            # single-line progress message
             self.logger.info(
-                "[%d/%d | config %d/%d | %d/%d] Estimator: %s | noise_type: %s | nnz: %s | alpha_SNR: %s",
+                "[run: %d/%d | config: %d/%d | total: %d/%d] Estimator: %s | noise_type: %s | nnz: %s | alpha_SNR: %s",
                 run_in_config,
                 nruns_local,
                 config_index,
@@ -112,20 +110,6 @@ class Benchmark:
                 nnz,
                 alpha_snr,
             )
-
-            if final:
-                # separator and short summary for completed configuration
-                self.logger.info("%s", "=" * 80)
-                self.logger.info(
-                    "Finished %d runs for config %d/%d — Estimator=%s | noise_type=%s | nnz=%s | alpha_SNR=%s",
-                    nruns_local,
-                    config_index,
-                    num_configs,
-                    solver_name,
-                    noise_type,
-                    nnz,
-                    alpha_snr,
-                )
         except Exception:
             # tolerate logging errors — do not break benchmarking
             try:
@@ -148,7 +132,7 @@ class Benchmark:
         # Exclude 'cov' and sanitize values for directory names
         sanitized_params_for_path = {
             k: str(v).replace("/", "_").replace("\\", "_").replace(" ", "_")
-            for k, v in params.items() if k not in ("run_id")
+            for k, v in params.items() if k not in ("run_id", "global_run_id")
             # Add other keys to exclude from path if necessary
         }
     
@@ -319,6 +303,29 @@ class Benchmark:
         fig_path: str,
         n_trials: int = 5,
     ) -> dict:
+        # Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
+        try:
+            logging.getLogger("mne").setLevel(logging.ERROR)
+            logging.getLogger("mne.utils").setLevel(logging.ERROR)
+        except Exception:
+            pass
+        # Ensure worker processes emit INFO logs to stdout/file (joblib workers start with default WARNING level)
+        root_logger = logging.getLogger()
+        if not root_logger.handlers:
+            log_handlers = [logging.StreamHandler()]
+            log_file_env = os.environ.get("CALIBRAIN_LOG_FILE")
+            if log_file_env:
+                try:
+                    log_handlers.insert(0, logging.FileHandler(log_file_env, mode="a"))
+                except Exception:
+                    pass
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(asctime)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+                handlers=log_handlers,
+            )
+        root_logger.setLevel(logging.INFO)
         solver_params = dict(solver_params)
         data_params = dict(data_params)
         noise_params = dict(noise_params)
@@ -333,6 +340,7 @@ class Benchmark:
         num_configs = max(1, (total_runs + nruns_local - 1) // nruns_local)
         config_index = (run_id - 1) // nruns_local + 1
         run_in_config = (run_id - 1) % nruns_local + 1
+        config_run_id = run_in_config
 
         # extract noise_type, nnz and alpha_SNR early for logging
         noise_type = noise_params.get("noise_type")
@@ -351,14 +359,14 @@ class Benchmark:
             noise_type=noise_type,
             nnz=nnz,
             alpha_snr=alpha_snr,
-            final=False,
         )
         self.logger.debug(f"Solver params: {solver_params}")
         self.logger.debug(f"Noise params: {noise_params}")
         self.logger.debug(f"Data params: {data_params}")
 
         this_result = {
-            'run_id': run_id,
+            'run_id': config_run_id,
+            'global_run_id': run_id,
             "seed": seed,
             "solver": solver_name,
             'noise_type': noise_params['noise_type'],
@@ -460,7 +468,7 @@ class Benchmark:
                     self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var
                     self.logger.debug(
-                        f"Baseline noise variance (trial {run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
+                        f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
                     )
                 elif noise_type == 'joint_learning':
                     noise_var = None
@@ -602,30 +610,12 @@ class Benchmark:
 
         except Exception as e:
             self.logger.error(
-                f"Error during benchmarking run_id {this_result.get('run_id', 'N/A')}: {e}",
+                f"Error during benchmarking global_run_id {this_result.get('global_run_id', 'N/A')} (config run {this_result.get('run_id', 'N/A')}): {e}",
                 exc_info=True,
             )
             this_result["error_message"] = str(e)
 
-        # print a separator when we've finished the last run of a configuration
-        try:
-            if run_in_config == nruns_local:
-                self._log_run_progress(
-                    run_in_config=run_in_config,
-                    nruns_local=nruns_local,
-                    config_index=config_index,
-                    num_configs=num_configs,
-                    run_id=run_id,
-                    total_runs=total_runs,
-                    solver_name=solver_name,
-                    noise_type=noise_type,
-                    nnz=nnz,
-                    alpha_snr=alpha_snr,
-                    final=True,
-                )
-        except Exception:
-            # tolerate logging errors — do not break benchmarking
-            pass
-
-        self.logger.debug(f"Completed run_id {this_result.get('run_id', 'N/A')}")
+        self.logger.debug(
+            f"Completed global_run_id {this_result.get('global_run_id', 'N/A')} (config run {this_result.get('run_id', 'N/A')})"
+        )
         return this_result
