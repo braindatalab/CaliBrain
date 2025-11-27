@@ -23,6 +23,7 @@ import logging
 import numpy as np
 import pandas as pd
 import mne
+from sklearn.model_selection import ParameterGrid
 
 from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN, sflex_gamma_lambda_map
 from calibrain.utils import get_data_path
@@ -95,12 +96,9 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
-        #"subject": ["CC120166"],
-        # "nnz": [1, 5, 10],
         "nnz": [5],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
-        #"alpha_SNR": [ 0.7],
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
     }
     
@@ -125,7 +123,7 @@ def main():
     CV_noise_params = {
         "noise_type": ["temporal_cv"],
         'default_alphas_grid': [default_alphas_grid], # will be set within the benchmark loop based on baseline noise variance
-        'cv': [2],
+        'cv': [5],
         'n_jobs': [1],
         # add noise parameters here if needed
     }
@@ -173,13 +171,13 @@ def main():
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
         # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
         #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
-        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
+        #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
@@ -227,15 +225,43 @@ def main():
         logger=logger,
     )
 
-    nruns = 1
+    nruns = 2
     benchmark_n_jobs = 1
     logger.info(
         "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",
         benchmark_n_jobs,
         nruns,
     )
-    df = []
+
+    total_experiments = 0
+    config_counts = []
     for solver, solver_param_grid, data_param_grid, noise_param_grid in estimators:
+        num_configs = (
+            len(ParameterGrid(solver_param_grid))
+            * len(ParameterGrid(data_param_grid))
+            * len(ParameterGrid(noise_param_grid))
+        )
+        config_counts.append((solver, solver_param_grid, data_param_grid, noise_param_grid, num_configs))
+        total_experiments += nruns * num_configs
+
+    logger.info(
+        "Total planned experiments across %d estimators: %d",
+        len(estimators),
+        total_experiments,
+    )
+
+    df = []
+    run_offset = 0
+    for solver, solver_param_grid, data_param_grid, noise_param_grid, num_configs in config_counts:
+        total_local_runs = nruns * max(1, num_configs)
+        solver_name = getattr(solver, "__name__", str(solver))
+        logger.info(
+            "Starting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
+            solver_name,
+            total_local_runs,
+            nruns,
+            num_configs,
+        )
         benchmark = Benchmark(
             solver=solver,
             solver_param_grid=solver_param_grid,
@@ -250,8 +276,14 @@ def main():
             random_state=42,
             logger=logger,
         )
-        results_df = benchmark.run(nruns=nruns, n_jobs=benchmark_n_jobs)
+        results_df = benchmark.run(
+            nruns=nruns,
+            n_jobs=benchmark_n_jobs,
+            run_offset=run_offset,
+            global_total_runs=total_experiments,
+        )
         df.append(results_df)
+        run_offset += total_local_runs
 
     results_df = pd.concat(df)
     results_df.sort_values(
