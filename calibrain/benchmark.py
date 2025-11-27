@@ -86,6 +86,8 @@ class Benchmark:
         num_configs: int,
         run_id: int,
         total_runs: int,
+        global_run_id: Optional[int],
+        global_total_runs: Optional[int],
         solver_name: str,
         noise_type: Optional[str],
         nnz: Optional[int],
@@ -98,13 +100,13 @@ class Benchmark:
         """
         try:
             self.logger.info(
-                "[run: %d/%d | config: %d/%d | total: %d/%d] Estimator: %s | noise_type: %s | nnz: %s | alpha_SNR: %s",
+                "[run: %d/%d | config: %d/%d | total: %d/%d] %s | %s | %s NNZ | %s SNR",
                 run_in_config,
                 nruns_local,
                 config_index,
                 num_configs,
-                run_id,
-                total_runs,
+                global_run_id if global_run_id is not None else run_id,
+                global_total_runs if global_total_runs is not None else total_runs,
                 solver_name,
                 noise_type,
                 nnz,
@@ -231,7 +233,14 @@ class Benchmark:
             "source_unitmult": source_unitmult,
         }
 
-    def run(self, nruns: int = 2, fig_path: str = "results/figures", n_jobs: int = 1):
+    def run(
+        self,
+        nruns: int = 2,
+        fig_path: str = "results/figures",
+        n_jobs: int = 1,
+        run_offset: int = 0,
+        global_total_runs: Optional[int] = None,
+    ):
         """
         Run benchmarking by iterating over combinations of solver and data parameters.
 
@@ -243,6 +252,13 @@ class Benchmark:
             Base directory where per-run visualizations will be saved.
         n_jobs : int
             Number of parallel workers to use. ``1`` (default) keeps the sequential behaviour.
+        run_offset : int
+            Number of experiments completed prior to this benchmark call. Used
+            for global progress tracking when multiple estimators are run
+            sequentially.
+        global_total_runs : int, optional
+            Total number of experiments planned across estimators. If provided,
+            the logger also reports this aggregate figure.
 
         Returns
         -------
@@ -263,8 +279,11 @@ class Benchmark:
         num_data = len(ParameterGrid(self.data_param_grid))
         num_noise = len(ParameterGrid(self.noise_param_grid))
         num_configs = num_solver * num_data * num_noise
+        
         self.logger.info(
-            "Starting benchmark with %d experiments (%d nruns x %d configurations)",
+            "%s\nStarting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
+            "-" * 50,
+            getattr(self.solver, "__name__", str(self.solver)),
             total_runs,
             nruns,
             num_configs,
@@ -272,9 +291,20 @@ class Benchmark:
         if total_runs == 0:
             return pd.DataFrame()
 
-        n_jobs = max(1, int(n_jobs or 1))
         worker_args = [
-            (run_id, nruns, total_runs, solver_params, data_params, noise_params, seed, fig_path)
+            (
+                run_id,
+                nruns,
+                total_runs,
+                solver_params,
+                data_params,
+                noise_params,
+                seed,
+                fig_path,
+                self.ERP_config.get("n_trials", 5),
+                run_offset + run_id,
+                global_total_runs,
+            )
             for run_id, (solver_params, data_params, noise_params, seed) in enumerate(param_combinations, start=1)
         ]
 
@@ -288,7 +318,7 @@ class Benchmark:
                 for args in worker_args
             )
 
-        self.logger.info("Benchmarking completed.")
+        self.logger.debug("Benchmarking completed.")
         return pd.DataFrame(results_list)
 
     def _execute_single_run(
@@ -302,6 +332,8 @@ class Benchmark:
         seed: int,
         fig_path: str,
         n_trials: int = 5,
+        global_run_id: Optional[int] = None,
+        global_total_runs: Optional[int] = None,
     ) -> dict:
         # Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
         try:
@@ -348,6 +380,8 @@ class Benchmark:
         alpha_snr = data_params.get("alpha_SNR")
 
         # delegate logging to helper (keeps formatting in one place)
+        if global_run_id is None:
+            global_run_id = run_id
         self._log_run_progress(
             run_in_config=run_in_config,
             nruns_local=nruns_local,
@@ -355,6 +389,8 @@ class Benchmark:
             num_configs=num_configs,
             run_id=run_id,
             total_runs=total_runs,
+            global_run_id=global_run_id,
+            global_total_runs=global_total_runs,
             solver_name=solver_name,
             noise_type=noise_type,
             nnz=nnz,
@@ -366,7 +402,7 @@ class Benchmark:
 
         this_result = {
             'run_id': config_run_id,
-            'global_run_id': run_id,
+            'global_run_id': global_run_id,
             "seed": seed,
             "solver": solver_name,
             'noise_type': noise_params['noise_type'],
@@ -450,6 +486,27 @@ class Benchmark:
                 grid_factors = np.logspace(-2, 2, 20)
                 alphas = baseline_noise_var * grid_factors
                 noise_variances = np.unique(alphas).tolist() or [baseline_noise_var]
+
+                # Visualize the alpha grid relative to the baseline noise variance
+                fig, ax = plt.subplots(figsize=(8, 5))
+                ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
+                ax.axhline(
+                    baseline_noise_var,
+                    color='red',
+                    linestyle='--',
+                    label=f'baseline_noise_var = {baseline_noise_var:.3e}',
+                )
+                ax.set_xscale('log')
+                ax.set_xlabel('grid factor (log scale)')
+                ax.set_ylabel('alpha (noise variance)')
+                ax.set_title('Spatial CV: Alpha grid vs baseline noise variance')
+                ax.legend()
+                ax.grid(True, which="both", ls="--", linewidth=0.5)
+                plt.tight_layout()
+                save_path = os.path.join(experiment_dir, "alphas_vs_baseline.png")
+                fig.savefig(save_path, dpi=150, bbox_inches='tight')
+                plt.close(fig)
+
                 estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver
                 source_estimator = estimator(
                     solver=self.solver,
