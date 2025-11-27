@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from matplotlib import cm
 
@@ -1128,7 +1129,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         self.solver = solver
         self.solver_params = solver_params
         self.noise_var = noise_var
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
         self.n_orient = n_orient
 
     def fit(self, L, y):
@@ -1159,13 +1160,15 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         - x_hat (np.ndarray): Estimated source activity of shape (n_sources, n_times).
         - active_indices (np.ndarray): Indices of active sources.
         - posterior_cov (np.ndarray): Posterior covariance matrix of estimated sources.
-        """
-        if not hasattr(self, "L_"):
-            raise ValueError("The estimator must be fitted with `fit(L, y)` before calling `_get_coef()`.")
-        
+        """        
         # Apply the solver
-        self.logger.debug(f"Estimating sources using {self.solver.__name__}...")
-        result = self.solver(
+        if y is None:
+            if not hasattr(self, "y_"):
+                raise ValueError("No data available to compute source estimates. Fit the estimator or pass y.")
+            y = self.y_
+        solver_name = getattr(self.solver, "__name__", self.solver.__class__.__name__)
+        self.logger.debug(f"Estimating sources using {solver_name}...")
+        return self.solver(
             L=self.L_,
             y=y,
             noise_var=self.noise_var,
@@ -1173,16 +1176,18 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
             logger=self.logger,
             **(self.solver_params or {})
         )
-        return result
     
     def predict(self, y=None):
+        if y is None:
+            if not hasattr(self, "y_"):
+                raise ValueError("Estimator has not been fitted and no data was provided to predict().")
+            y = self.y_
         return self._get_coef(y)
 
 # ==================
 # Cross validation
 # ==================
 
-DEFAULT_ALPHA_GRID = np.logspace(0, -2, 20)[1:]
 
 def _logdet(A):
     """Compute the logdet of a positive semidefinite matrix."""
@@ -1225,28 +1230,14 @@ class SpatialSolver(SourceEstimator):
         y : ndarray
             Sensor data (n_sensors, n_times)
         """
-        # store inputs
-        self.L_ = L # Renamed from X to L to be consistent with SourceEstimator
-        self.y_ = y
-
-        # Call the underlying solver function stored on the parent
-        # SourceEstimator.predict expects the solver to return (x_hat, active_indices, posterior_cov)
-        # Use an empty dict if solver_params is None to avoid mutating
-        # constructor arguments during runtime.
-        self.result_ = self.solver(
-            self.L_,
-            self.y_,
-            self.noise_var,
-            n_orient=self.n_orient,
-            logger=self.logger,
-            **(self.solver_params or {}),
-        )
+        super().fit(L, y)
+        self.coef_ = self._get_coef(self.y_)
 
         return self
 
     def predict(self, L):
         # Predict sensor data from leadfield L and estimated sources x_hat
-        posterior_mean = self.result_.get("posterior_mean")
+        posterior_mean = self.coef_.get("posterior_mean")
         return L @ posterior_mean  # posterior_mean is x_hat
 
     def score(self, L, y):
@@ -1254,38 +1245,38 @@ class SpatialSolver(SourceEstimator):
         y_pred = self.predict(L)
         return -np.mean((y_pred - y) ** 2)
 
-class BaseCVSolver(BaseEstimator, ClassifierMixin):
+class BaseCVSolver(SourceEstimator):
     def __init__(
         self,
         solver,
         solver_params=None,
         n_orient=1,
-        noise_variances=DEFAULT_ALPHA_GRID,
+        noise_variances=None,
         cv=5,
         n_jobs=1,
         logger=None,
     ):
-        # Do not use mutable defaults. Store parameters exactly as passed so
-        # sklearn.clone can reconstruct this object. When calling the
-        # underlying solver, treat None as an empty dict.
-        self.solver = solver
+        super().__init__(
+            solver,
+            solver_params=solver_params,
+            noise_var=None,
+            n_orient=n_orient,
+            logger=logger,
+        )
         self.noise_variances = noise_variances
-        self.solver_params = solver_params
-        self.n_orient = n_orient
         self.cv = cv
         self.n_jobs = n_jobs
-        self.noise_var = None
-        self.logger = logger
 
     def fit(self, L, y):
-        self.L_ = L
-        self.y_ = y
+        return super().fit(L, y)
 
-        return self
-
-    def predict(self, y):
+    def predict(self, y=None):
+        if y is None:
+            if not hasattr(self, "y_"):
+                raise ValueError("Estimator has not been fitted and no data was provided to predict().")
+            y = self.y_
         self._get_noise_var(y)
-        coef = self.solver(
+        return self.solver(
             self.L_,
             y,
             noise_var=self.noise_var,
@@ -1293,7 +1284,6 @@ class BaseCVSolver(BaseEstimator, ClassifierMixin):
             logger=self.logger,
             **(self.solver_params or {}),
         )
-        return coef
 
 class SpatialCVSolver(BaseCVSolver):
     def _get_noise_var(self, y):
@@ -1312,7 +1302,8 @@ class SpatialCVSolver(BaseCVSolver):
             n_jobs=self.n_jobs,
             error_score="raise",
         )
-        self.logger.debug("Running spatial cross-validation...")
+        if self.logger is not None:
+            self.logger.debug("Running spatial cross-validation...")
         gs.fit(self.L_, y)
         self.grid_search_ = gs
         self.noise_var = gs.best_estimator_.noise_var
@@ -1330,8 +1321,9 @@ class TemporalCVSolver(BaseCVSolver):
         
         cv = check_cv(self.cv)
         scores = []
+        sensor_eye = np.eye(self.L_.shape[0])
         for noise_var in self.noise_variances:
-            noise_cov = noise_var * np.eye(self.L_.shape[0]) # TODO: check if this works for all noise types
+            noise_cov = noise_var * sensor_eye  # TODO: check if this works for all noise types
             
             solver = clone(base_solver)
             solver.set_params(noise_var=noise_var)
@@ -1340,7 +1332,7 @@ class TemporalCVSolver(BaseCVSolver):
                 solver.fit(self.L_, y[:, train_idx])
                 y_test = y[:, test_idx]
 
-                posterior_mean = solver.result_.get("posterior_mean")
+                posterior_mean = solver.coef_.get("posterior_mean")
                 X_var = np.mean(posterior_mean ** 2, axis=1)
                 Sigma_Y = noise_cov + ((self.L_ * X_var[None, :]) @ self.L_.T)
 
