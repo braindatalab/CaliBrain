@@ -1,9 +1,285 @@
 #!/usr/bin/env python
+from __future__ import annotations
+
+def plot_metric_violin_box(ax: plt.Axes, df: pd.DataFrame, metric: MetricSpec) -> int:
+    snr_values = np.sort(df[SNR_COLUMN].unique())
+    if metric.has_pre_post:
+        counts_df = df[[metric.pre_column, metric.post_column]].dropna(how="all")
+    else:
+        counts_df = df[[metric.value_column]].dropna()
+    total_samples = int(len(counts_df))
+    if snr_values.size == 0:
+        ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+        return total_samples
+
+    rng = np.random.default_rng(42)
+    width = 0.35
+
+    for idx, snr_value in enumerate(snr_values):
+        snr_mask = df[SNR_COLUMN] == snr_value
+        if metric.has_pre_post:
+            pre_vals = df.loc[snr_mask, metric.pre_column].dropna().to_numpy()
+            post_vals = df.loc[snr_mask, metric.post_column].dropna().to_numpy()
+            x_center = idx + 1
+            pre_pos = x_center - width / 2
+            post_pos = x_center + width / 2
+
+            if pre_vals.size:
+                viol = ax.violinplot(pre_vals, positions=[pre_pos], widths=width * 0.9, showextrema=False)
+                for body in viol["bodies"]:
+                    body.set_facecolor(PRE_COLOR)
+                    body.set_edgecolor(PRE_COLOR)
+                    body.set_alpha(0.35)
+                # Overlay boxplot
+                bp = ax.boxplot(pre_vals, positions=[pre_pos], widths=width * 0.5, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(PRE_COLOR)
+                    patch.set_alpha(0.7)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(PRE_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(PRE_COLOR)
+                for median in bp['medians']:
+                    median.set_color('black')
+            if post_vals.size:
+                viol = ax.violinplot(post_vals, positions=[post_pos], widths=width * 0.9, showextrema=False)
+                for body in viol["bodies"]:
+                    body.set_facecolor(POST_COLOR)
+                    body.set_edgecolor(POST_COLOR)
+                    body.set_alpha(0.35)
+                bp = ax.boxplot(post_vals, positions=[post_pos], widths=width * 0.5, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(POST_COLOR)
+                    patch.set_alpha(0.7)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(POST_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(POST_COLOR)
+                for median in bp['medians']:
+                    median.set_color('black')
+        else:
+            values = df.loc[snr_mask, metric.value_column].dropna().to_numpy()
+            x_center = idx + 1
+            if values.size:
+                viol = ax.violinplot(values, positions=[x_center], widths=width * 0.9, showextrema=False)
+                for body in viol["bodies"]:
+                    body.set_facecolor(PRE_COLOR)
+                    body.set_edgecolor(PRE_COLOR)
+                    body.set_alpha(0.35)
+                bp = ax.boxplot(values, positions=[x_center], widths=width * 0.5, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(PRE_COLOR)
+                    patch.set_alpha(0.7)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(PRE_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(PRE_COLOR)
+                for median in bp['medians']:
+                    median.set_color('black')
+
+    ax.set_xticks(np.arange(1, len(snr_values) + 1))
+    ax.set_xticklabels([f"{snr:g}" for snr in snr_values])
+    return total_samples
+def plot_violin_box_metrics(
+    df: pd.DataFrame,
+    metrics: Iterable[MetricSpec],
+    output_path: Path,
+    show: bool = False,
+    title_context: Optional[str] = None,
+) -> None:
+    # Remove inf and -inf values globally before plotting
+    df = df.replace([np.inf, -np.inf], np.nan)
+    # Filter out metrics that are all-NaN for this solver
+    filtered_metrics = []
+    for metric in metrics:
+        if metric.has_pre_post:
+            col_pre = metric.pre_column
+            col_post = metric.post_column
+            all_nan = df[col_pre].isna().all() and df[col_post].isna().all()
+        else:
+            col_val = metric.value_column
+            all_nan = df[col_val].isna().all()
+        if not all_nan:
+            filtered_metrics.append(metric)
+    metrics = filtered_metrics
+    n_metrics = len(metrics)
+    nrows = 2
+    ncols = int(np.ceil(n_metrics / nrows))
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
+    axes = np.atleast_1d(axes).ravel()
+
+    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
+    seeds_per_subject = None
+    if n_subjects and 'run_id' in df.columns:
+        seeds_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    for idx, metric in enumerate(metrics):
+        ax = axes[idx]
+        sample_count = plot_metric_violin_box(ax, df, metric)
+        title_suffix = f" (n={sample_count})"
+        ax.set_title(f"{metric.label}{title_suffix}")
+        ax.set_xlabel("SNR (alpha_SNR)")
+        ax.set_ylabel(metric.label)
+        ax.grid(True, axis="y", alpha=0.2)
+
+    for idx in range(len(metrics), len(axes)):
+        axes[idx].axis("off")
+
+    if any(metric.has_pre_post for metric in metrics):
+        legend_handles = [
+            Patch(facecolor=PRE_COLOR, edgecolor=PRE_COLOR, alpha=0.35, label="Pre-calibration"),
+            Patch(facecolor=POST_COLOR, edgecolor=POST_COLOR, alpha=0.35, label="Post-calibration"),
+        ]
+        fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
+
+    subtitle = title_context or ""
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}" if n_subjects and seeds_per_subject else ""
+    if extra_info:
+        subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
+    main_title = "Violin+Boxplot of Calibration and Evaluation Metrics by SNR"
+    fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
+    if subtitle:
+        fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.85))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=300)
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_metric_boxplot(ax: plt.Axes, df: pd.DataFrame, metric: MetricSpec) -> int:
+    snr_values = np.sort(df[SNR_COLUMN].unique())
+    if metric.has_pre_post:
+        counts_df = df[[metric.pre_column, metric.post_column]].dropna(how="all")
+    else:
+        counts_df = df[[metric.value_column]].dropna()
+    total_samples = int(len(counts_df))
+    if snr_values.size == 0:
+        ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+        return total_samples
+
+    width = 0.35
+    for idx, snr_value in enumerate(snr_values):
+        snr_mask = df[SNR_COLUMN] == snr_value
+        if metric.has_pre_post:
+            pre_vals = df.loc[snr_mask, metric.pre_column].dropna().to_numpy()
+            post_vals = df.loc[snr_mask, metric.post_column].dropna().to_numpy()
+            x_center = idx + 1
+            pre_pos = x_center - width / 2
+            post_pos = x_center + width / 2
+
+            if pre_vals.size:
+                bp = ax.boxplot(pre_vals, positions=[pre_pos], widths=width * 0.9, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(PRE_COLOR)
+                    patch.set_alpha(0.35)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(PRE_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(PRE_COLOR)
+                # Leave median line as default color for boxplot-only
+            if post_vals.size:
+                bp = ax.boxplot(post_vals, positions=[post_pos], widths=width * 0.9, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(POST_COLOR)
+                    patch.set_alpha(0.35)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(POST_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(POST_COLOR)
+                for median in bp['medians']:
+                    median.set_color('black')
+        else:
+            values = df.loc[snr_mask, metric.value_column].dropna().to_numpy()
+            x_center = idx + 1
+            if values.size:
+                bp = ax.boxplot(values, positions=[x_center], widths=width * 0.9, patch_artist=True)
+                for patch in bp['boxes']:
+                    patch.set_facecolor(PRE_COLOR)
+                    patch.set_alpha(0.35)
+                for whisker in bp['whiskers']:
+                    whisker.set_color(PRE_COLOR)
+                for cap in bp['caps']:
+                    cap.set_color(PRE_COLOR)
+                for median in bp['medians']:
+                    median.set_color('black')
+
+    ax.set_xticks(np.arange(1, len(snr_values) + 1))
+    ax.set_xticklabels([f"{snr:g}" for snr in snr_values])
+    return total_samples
+def plot_boxplot_metrics(
+    df: pd.DataFrame,
+    metrics: Iterable[MetricSpec],
+    output_path: Path,
+    show: bool = False,
+    title_context: Optional[str] = None,
+) -> None:
+    # Remove inf and -inf values globally before plotting
+    df = df.replace([np.inf, -np.inf], np.nan)
+    # Filter out metrics that are all-NaN for this solver
+    filtered_metrics = []
+    for metric in metrics:
+        if metric.has_pre_post:
+            col_pre = metric.pre_column
+            col_post = metric.post_column
+            all_nan = df[col_pre].isna().all() and df[col_post].isna().all()
+        else:
+            col_val = metric.value_column
+            all_nan = df[col_val].isna().all()
+        if not all_nan:
+            filtered_metrics.append(metric)
+    metrics = filtered_metrics
+    n_metrics = len(metrics)
+    nrows = 2
+    ncols = int(np.ceil(n_metrics / nrows))
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
+    axes = np.atleast_1d(axes).ravel()
+
+    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
+    seeds_per_subject = None
+    if n_subjects and 'run_id' in df.columns:
+        seeds_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    for idx, metric in enumerate(metrics):
+        ax = axes[idx]
+        sample_count = plot_metric_boxplot(ax, df, metric)
+        title_suffix = f" (n={sample_count})"
+        ax.set_title(f"{metric.label}{title_suffix}")
+        ax.set_xlabel("SNR (alpha_SNR)")
+        ax.set_ylabel(metric.label)
+        ax.grid(True, axis="y", alpha=0.2)
+
+    for idx in range(len(metrics), len(axes)):
+        axes[idx].axis("off")
+
+    if any(metric.has_pre_post for metric in metrics):
+        legend_handles = [
+            Patch(facecolor=PRE_COLOR, edgecolor=PRE_COLOR, alpha=0.35, label="Pre-calibration"),
+            Patch(facecolor=POST_COLOR, edgecolor=POST_COLOR, alpha=0.35, label="Post-calibration"),
+        ]
+        fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
+
+    subtitle = title_context or ""
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}" if n_subjects and seeds_per_subject else ""
+    if extra_info:
+        subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
+    main_title = "Boxplot of Calibration and Evaluation Metrics by SNR"
+    fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
+    if subtitle:
+        fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.85))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=300)
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
 """
 Generate violin and summary calibration plots from benchmark CSV results using
 a shared configuration.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -481,8 +757,10 @@ def run_summary_plot(
 def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path]:
     context_str = csv_path.stem.replace("benchmark_results_", "")
     violin_output_path = figures_root / f"violin_metrics_{context_str}.png"
+    boxplot_output_path = figures_root / f"boxplot_metrics_{context_str}.png"
     summary_output_path = figures_root / f"summary_metrics_{context_str}.png"
-    return violin_output_path, summary_output_path
+    violin_box_output_path = figures_root / f"violinbox_metrics_{context_str}.png"
+    return violin_output_path, boxplot_output_path, violin_box_output_path, summary_output_path
 
 
 def main() -> None:
@@ -504,11 +782,19 @@ def main() -> None:
     # -------------------------------------------------------------------------------
 
     subset, context = load_filtered_dataframe(path_to_csv, solver_name, filter_dict, extra_filters)
-    violin_output_path, summary_output_path = _derive_output_paths(path_to_csv, figures_root)
+    violin_output_path, boxplot_output_path, violin_box_output_path, summary_output_path = _derive_output_paths(path_to_csv, figures_root)
 
     if violin_output_path is not None:
         plot_violin_metrics(subset, METRICS, output_path=violin_output_path, show=show_violin, title_context=context)
         print(f"Saved violin figure to {violin_output_path}")
+
+    if boxplot_output_path is not None:
+        plot_boxplot_metrics(subset, METRICS, output_path=boxplot_output_path, show=show_violin, title_context=context)
+        print(f"Saved boxplot figure to {boxplot_output_path}")
+
+    if violin_box_output_path is not None:
+        plot_violin_box_metrics(subset, METRICS, output_path=violin_box_output_path, show=show_violin, title_context=context)
+        print(f"Saved violin+boxplot figure to {violin_box_output_path}")
 
     if summary_output_path is not None:
         plot_summary_metrics(subset, METRICS, output_path=summary_output_path, show=show_summary, title_context=context)
