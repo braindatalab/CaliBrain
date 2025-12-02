@@ -50,13 +50,15 @@ METRICS: List[MetricSpec] = [
     # MetricSpec("euclidean_distance", "Euclidean Distance", "evaluation"),
     # MetricSpec("f1", "F1 Score", "evaluation"),
     # MetricSpec("accuracy", "Accuracy", "evaluation"),
-    MetricSpec("mean_calibration_error", "Mean Calibration Error", "calibration"),
+    # MetricSpec("mean_calibration_error", "Mean Calibration Error", "calibration"),
     MetricSpec("mean_signed_deviation", "Mean Signed Deviation", "calibration"),
     MetricSpec("mean_absolute_deviation", "Mean Absolute Deviation", "calibration"),
     MetricSpec("max_underconfidence_deviation", "Max Underconfidence Deviation", "calibration"),
     MetricSpec("max_overconfidence_deviation", "Max Overconfidence Deviation", "calibration"),
+    
     MetricSpec("mean_posterior_std", "Mean Posterior Std", "evaluation"),
     MetricSpec("emd", "Earth Mover's Distance", "evaluation"),
+    MetricSpec("gamma", "Gamma Norm", "evaluation"),
 ]
 
 PRE_COLOR = "#1f77b4"
@@ -224,9 +226,9 @@ def plot_violin_metrics(
 ) -> None:
     metrics = list(metrics)
     n_metrics = len(metrics)
-    ncols = 2
-    nrows = max(1, int(np.ceil(n_metrics / ncols)))
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(14, 4 * nrows), sharex=False)
+    nrows = 2
+    ncols = int(np.ceil(n_metrics / nrows))
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
     axes = np.atleast_1d(axes).ravel()
 
     for idx, metric in enumerate(metrics):
@@ -298,10 +300,11 @@ def plot_summary_metrics(
 ) -> None:
     metrics = list(metrics)
     n_metrics = len(metrics)
-    ncols = 2
-    nrows = max(1, (n_metrics + ncols - 1) // ncols)
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(14, 4 * nrows), sharex=True)
+    nrows = 2
+    ncols = int(np.ceil(n_metrics / nrows))
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=True)
     axes = np.atleast_1d(axes).ravel()
+
 
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
@@ -312,6 +315,8 @@ def plot_summary_metrics(
             continue
 
         x_values = summary["snr"].to_numpy()
+
+        title_label = f"{metric.label} (mean ± std)"
 
         if metric.has_pre_post:
             ax.errorbar(
@@ -349,15 +354,12 @@ def plot_summary_metrics(
             )
             _fill_confidence_band(ax, x_values, summary["value_mean"], summary["value_std"], PRE_COLOR)
 
-        ax.set_title(metric.label)
+        ax.set_title(title_label)
         ax.set_xlabel("SNR (alpha_SNR)")
         ax.set_ylabel(metric.label)
         ax.grid(True, alpha=0.25)
         if idx == 0:
-            if metric.has_pre_post:
-                ax.legend()
-            else:
-                ax.legend()
+            ax.legend()
 
     for idx in range(len(metrics), len(axes)):
         axes[idx].axis("off")
@@ -428,16 +430,17 @@ def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path
 
 def main() -> None:
     # --- User-configurable section -------------------------------------------------
-    path_to_csv = Path("results/benchmark_results/benchmark_results_20251125_205739.csv")
-    solver_name: Optional[str] = "eloreta"
-    figures_root = Path("results/benchmark_results/figures")
+    filename = 'benchmark_results_20251128_185913_sflex_spatialCV'
+    path_to_csv = Path("results/benchmark_results/") / f"{filename}.csv"
+    solver_name: Optional[str] = "sflex_gamma_map"
+    figures_root = Path("results/benchmark_results/") / filename
     show_violin = False
     show_summary = False
 
     filter_dict: Dict[str, object] = {
         "nnz": 5,
         "orientation_type": "fixed",
-        "noise_type": "oracle",
+        "noise_type": "spatial_cv",
         "subject": None,
     }
     extra_filters: List[str] = []
