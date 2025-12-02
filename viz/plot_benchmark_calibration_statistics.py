@@ -231,10 +231,14 @@ def plot_violin_metrics(
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
     axes = np.atleast_1d(axes).ravel()
 
+    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
+    runs_per_subject = None
+    if n_subjects and 'run_id' in df.columns:
+        runs_per_subject = df.groupby('subject')['run_id'].nunique().mean()
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
         sample_count = plot_metric_violin(ax, df, metric)
-        title_suffix = f" (n={sample_count})" if sample_count else " (n=0)"
+        title_suffix = f" (n={sample_count})"
         ax.set_title(f"{metric.label}{title_suffix}")
         ax.set_xlabel("SNR (alpha_SNR)")
         ax.set_ylabel(metric.label)
@@ -248,11 +252,18 @@ def plot_violin_metrics(
             Patch(facecolor=PRE_COLOR, edgecolor=PRE_COLOR, alpha=0.35, label="Pre-calibration"),
             Patch(facecolor=POST_COLOR, edgecolor=POST_COLOR, alpha=0.35, label="Post-calibration"),
         ]
-        fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.94))
+        fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
 
     subtitle = title_context or ""
-    fig.suptitle(f"Calibration metric distributions per SNR\n{subtitle}".strip(), fontsize=16, y=0.995)
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Runs/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    if extra_info:
+        subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
+    # Improved title
+    main_title = "Distribution of Calibration and Evaluation Metrics by SNR"
+    fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
+    if subtitle:
+        fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.85))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300)
@@ -306,6 +317,10 @@ def plot_summary_metrics(
     axes = np.atleast_1d(axes).ravel()
 
 
+    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
+    runs_per_subject = None
+    if n_subjects and 'run_id' in df.columns:
+        runs_per_subject = df.groupby('subject')['run_id'].nunique().mean()
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
         summary = summarize_metric(df, metric)
@@ -358,15 +373,29 @@ def plot_summary_metrics(
         ax.set_xlabel("SNR (alpha_SNR)")
         ax.set_ylabel(metric.label)
         ax.grid(True, alpha=0.25)
-        if idx == 0:
-            ax.legend()
+
+    # Shared legend outside all subplots if any metric has pre/post
+    if any(metric.has_pre_post for metric in metrics):
+        from matplotlib.patches import Patch
+        legend_handles = [
+            Patch(facecolor=PRE_COLOR, edgecolor=PRE_COLOR, alpha=0.35, label="Pre-calibration"),
+            Patch(facecolor=POST_COLOR, edgecolor=POST_COLOR, alpha=0.35, label="Post-calibration"),
+        ]
+        fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.87), ncol=2, fontsize=16)
 
     for idx in range(len(metrics), len(axes)):
         axes[idx].axis("off")
 
     subtitle = title_context or ""
-    fig.suptitle(f"Calibration metrics per SNR\n{subtitle}".strip(), fontsize=16)
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Runs/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    if extra_info:
+        subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
+    # Improved title
+    main_title = "Summary of Calibration and Evaluation Metrics by SNR (mean ± std)"
+    fig.suptitle(main_title, fontsize=18, fontweight="bold")
+    if subtitle:
+        fig.text(0.5, 0.93, subtitle.strip(), ha="center", va="top", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.85))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300)
@@ -422,9 +451,9 @@ def run_summary_plot(
 
 
 def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path]:
-    timestamp_folder = figures_root / csv_path.stem
-    violin_output_path = timestamp_folder / "benchmark_violin_statistics.png"
-    summary_output_path = timestamp_folder / "benchmark_statistics.png"
+    context_str = csv_path.stem.replace("benchmark_results_", "")
+    violin_output_path = figures_root / f"violin_metrics_{context_str}.png"
+    summary_output_path = figures_root / f"summary_metrics_{context_str}.png"
     return violin_output_path, summary_output_path
 
 
