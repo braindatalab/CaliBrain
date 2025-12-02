@@ -224,7 +224,21 @@ def plot_violin_metrics(
     show: bool = False,
     title_context: Optional[str] = None,
 ) -> None:
-    metrics = list(metrics)
+    # Remove inf and -inf values globally before plotting
+    df = df.replace([np.inf, -np.inf], np.nan)
+    # Filter out metrics that are all-NaN for this solver
+    filtered_metrics = []
+    for metric in metrics:
+        if metric.has_pre_post:
+            col_pre = metric.pre_column
+            col_post = metric.post_column
+            all_nan = df[col_pre].isna().all() and df[col_post].isna().all()
+        else:
+            col_val = metric.value_column
+            all_nan = df[col_val].isna().all()
+        if not all_nan:
+            filtered_metrics.append(metric)
+    metrics = filtered_metrics
     n_metrics = len(metrics)
     nrows = 2
     ncols = int(np.ceil(n_metrics / nrows))
@@ -255,14 +269,14 @@ def plot_violin_metrics(
         fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Runs/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
     # Improved title
     main_title = "Distribution of Calibration and Evaluation Metrics by SNR"
     fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
     if subtitle:
-        fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
+        fig.text(0.5, 0.94, subtitle.strip(), ha="center", va="top", fontsize=14)
     fig.tight_layout(rect=(0, 0, 1, 0.85))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -309,7 +323,21 @@ def plot_summary_metrics(
     show: bool = False,
     title_context: Optional[str] = None,
 ) -> None:
-    metrics = list(metrics)
+    # Remove inf and -inf values globally before plotting
+    df = df.replace([np.inf, -np.inf], np.nan)
+    # Filter out metrics that are all-NaN for this solver
+    filtered_metrics = []
+    for metric in metrics:
+        if metric.has_pre_post:
+            col_pre = metric.pre_column
+            col_post = metric.post_column
+            all_nan = df[col_pre].isna().all() and df[col_post].isna().all()
+        else:
+            col_val = metric.value_column
+            all_nan = df[col_val].isna().all()
+        if not all_nan:
+            filtered_metrics.append(metric)
+    metrics = filtered_metrics
     n_metrics = len(metrics)
     nrows = 2
     ncols = int(np.ceil(n_metrics / nrows))
@@ -387,7 +415,7 @@ def plot_summary_metrics(
         axes[idx].axis("off")
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Runs/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
     # Improved title
