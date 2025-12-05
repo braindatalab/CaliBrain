@@ -51,16 +51,17 @@ def gamma_map(
     
     # Create the whitening matrix from the noise covariance:
     # Typically computed as the inverse of the square root of the covariance.
-    whitener = linalg.inv(linalg.sqrtm(noise_cov))
+    # whitener = linalg.inv(linalg.sqrtm(noise_cov))
     
     # Whiten both the sensor data and the lead-field matrix.
-    y = whitener @ y
-    L = whitener @ L
+    # y = whitener @ y
+    # L = whitener @ L
     
     x_hat_, active_indices, posterior_cov, gammas_full = _gamma_map_opt(
         y,
         L,
-        sigma_squared=1.0,
+        # sigma_squared=1.0,
+        sigma_squared=noise_var,
         tol=tol,
         maxit=max_iter,
         init_gamma=init_gamma,
