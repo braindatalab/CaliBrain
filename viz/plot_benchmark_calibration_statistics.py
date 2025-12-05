@@ -765,7 +765,7 @@ def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path
 
 def main() -> None:
     # --- User-configurable section -------------------------------------------------
-    filename = 'benchmark_results_20251128_185913_sflex_spatialCV'
+    filename = 'benchmark_results_20251202_004042_sflex_oracle_noWhitening'
     path_to_csv = Path("results/benchmark_results/") / f"{filename}.csv"
     solver_name: Optional[str] = "sflex_gamma_map"
     figures_root = Path("results/benchmark_results/") / filename
@@ -775,7 +775,7 @@ def main() -> None:
     filter_dict: Dict[str, object] = {
         "nnz": 5,
         "orientation_type": "fixed",
-        "noise_type": "spatial_cv",
+        "noise_type": "oracle",
         "subject": None,
     }
     extra_filters: List[str] = []
