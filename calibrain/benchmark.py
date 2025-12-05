@@ -488,24 +488,24 @@ class Benchmark:
                 noise_variances = np.unique(alphas).tolist() or [baseline_noise_var]
 
                 # Visualize the alpha grid relative to the baseline noise variance
-                fig, ax = plt.subplots(figsize=(8, 5))
-                ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
-                ax.axhline(
-                    baseline_noise_var,
-                    color='red',
-                    linestyle='--',
-                    label=f'baseline_noise_var = {baseline_noise_var:.3e}',
-                )
-                ax.set_xscale('log')
-                ax.set_xlabel('grid factor (log scale)')
-                ax.set_ylabel('alpha (noise variance)')
-                ax.set_title('Spatial CV: Alpha grid vs baseline noise variance')
-                ax.legend()
-                ax.grid(True, which="both", ls="--", linewidth=0.5)
-                plt.tight_layout()
-                save_path = os.path.join(experiment_dir, "alphas_vs_baseline.png")
-                fig.savefig(save_path, dpi=150, bbox_inches='tight')
-                plt.close(fig)
+                # fig, ax = plt.subplots(figsize=(8, 5))
+                # ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
+                # ax.axhline(
+                #     baseline_noise_var,
+                #     color='red',
+                #     linestyle='--',
+                #     label=f'baseline_noise_var = {baseline_noise_var:.3e}',
+                # )
+                # ax.set_xscale('log')
+                # ax.set_xlabel('grid factor (log scale)')
+                # ax.set_ylabel('alpha (noise variance)')
+                # ax.set_title('Spatial CV: Alpha grid vs baseline noise variance')
+                # ax.legend()
+                # ax.grid(True, which="both", ls="--", linewidth=0.5)
+                # plt.tight_layout()
+                # save_path = os.path.join(experiment_dir, "alphas_vs_baseline.png")
+                # fig.savefig(save_path, dpi=150, bbox_inches='tight')
+                # plt.close(fig)
 
                 estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver
                 source_estimator = estimator(
@@ -629,34 +629,34 @@ class Benchmark:
                 else:
                     this_result[improvement_key] = (pre_value - post_value) / pre_value * 100
 
-            viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
-            viz.plot_all(
-                x_trials=x_trials,
-                x_active_indices_trials=x_active_indices_trials,
-                x_hat_one_trial=x_hat_one_trial,
-                x_hat_active_indices_one_trial=x_hat_active_indices_one_trial,
-                y_clean_trials=y_clean_trials,
-                y_noisy_trials=y_noisy_trials,
-                trial_idx=trial_idx,
-                n_sources=n_sources,
-                subject=data_params.get("subject"),
-                fwd_path=solver_params['fwd_path'],
-                nnz=data_params.get("nnz"),
-                ERP_config=self.ERP_config,
-                sample_idx=200,
-                source_units=source_units,
-                source_unitmult=source_unitmult,
-                sensor_units=sensor_units,
-                confidence_levels=self.uncertainty_estimator.nominal_coverages,
-                nominal_coverages=pre_calibration['nominal_coverages'],
-                empirical_coverages=pre_calibration['empirical_coverages'],
-                empirical_coverages_post_cal=post_calibration['empirical_coverages'],
-                ci_lower=pre_calibration.get('ci_lowers'),
-                ci_upper=pre_calibration.get('ci_uppers'),
-                orientation_type=orientation_type,
-                result=this_result,
-                experiment_dir=experiment_dir,
-            )
+            # viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
+            # viz.plot_all(
+            #     x_trials=x_trials,
+            #     x_active_indices_trials=x_active_indices_trials,
+            #     x_hat_one_trial=x_hat_one_trial,
+            #     x_hat_active_indices_one_trial=x_hat_active_indices_one_trial,
+            #     y_clean_trials=y_clean_trials,
+            #     y_noisy_trials=y_noisy_trials,
+            #     trial_idx=trial_idx,
+            #     n_sources=n_sources,
+            #     subject=data_params.get("subject"),
+            #     fwd_path=solver_params['fwd_path'],
+            #     nnz=data_params.get("nnz"),
+            #     ERP_config=self.ERP_config,
+            #     sample_idx=200,
+            #     source_units=source_units,
+            #     source_unitmult=source_unitmult,
+            #     sensor_units=sensor_units,
+            #     confidence_levels=self.uncertainty_estimator.nominal_coverages,
+            #     nominal_coverages=pre_calibration['nominal_coverages'],
+            #     empirical_coverages=pre_calibration['empirical_coverages'],
+            #     empirical_coverages_post_cal=post_calibration['empirical_coverages'],
+            #     ci_lower=pre_calibration.get('ci_lowers'),
+            #     ci_upper=pre_calibration.get('ci_uppers'),
+            #     orientation_type=orientation_type,
+            #     result=this_result,
+            #     experiment_dir=experiment_dir,
+            # )
 
             active_indices_size = (
                 len(x_hat_active_indices_one_trial)

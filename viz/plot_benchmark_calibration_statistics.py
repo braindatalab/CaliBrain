@@ -50,13 +50,14 @@ METRICS: List[MetricSpec] = [
     # MetricSpec("euclidean_distance", "Euclidean Distance", "evaluation"),
     # MetricSpec("f1", "F1 Score", "evaluation"),
     # MetricSpec("accuracy", "Accuracy", "evaluation"),
-    MetricSpec("mean_calibration_error", "Mean Calibration Error", "calibration"),
+    # MetricSpec("mean_calibration_error", "Mean Calibration Error", "calibration"),
     MetricSpec("mean_signed_deviation", "Mean Signed Deviation", "calibration"),
     MetricSpec("mean_absolute_deviation", "Mean Absolute Deviation", "calibration"),
     MetricSpec("max_underconfidence_deviation", "Max Underconfidence Deviation", "calibration"),
     MetricSpec("max_overconfidence_deviation", "Max Overconfidence Deviation", "calibration"),
     MetricSpec("mean_posterior_std", "Mean Posterior Std", "evaluation"),
     MetricSpec("emd", "Earth Mover's Distance", "evaluation"),
+    
 ]
 
 PRE_COLOR = "#1f77b4"
@@ -428,8 +429,8 @@ def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path
 
 def main() -> None:
     # --- User-configurable section -------------------------------------------------
-    path_to_csv = Path("results/benchmark_results/benchmark_results_20251125_205739.csv")
-    solver_name: Optional[str] = "eloreta"
+    path_to_csv = Path("results/benchmark_results/benchmark_results_20251128_153324.csv")
+    solver_name: Optional[str] = "sflex_gamma_map"
     figures_root = Path("results/benchmark_results/figures")
     show_violin = False
     show_summary = False

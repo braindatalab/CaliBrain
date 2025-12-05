@@ -115,16 +115,16 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle", "baseline"], 
+        "noise_type": ["oracle"], 
         # add noise parameters here if needed
     }
     
     default_alphas_grid = np.logspace(0, -2, 10)[1:]
     CV_noise_params = {
-        "noise_type": ["temporal_cv"],
+        "noise_type": ["spatial_cv"],
         'default_alphas_grid': [default_alphas_grid], # will be set within the benchmark loop based on baseline noise variance
         'cv': [5],
-        'n_jobs': [1],
+        'n_jobs': [5],
         # add noise parameters here if needed
     }
 
@@ -163,7 +163,7 @@ def main():
     
     gamma_map_params = {
         'init_gamma': [0.1],
-        'max_iter': [1000],
+        'max_iter': [500],
         'tol': [1e-15]
     }
     
@@ -171,12 +171,12 @@ def main():
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
         # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
-        (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
-        (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-        #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+        # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
@@ -225,7 +225,7 @@ def main():
         logger=logger,
     )
 
-    nruns = 2
+    nruns = 25
     benchmark_n_jobs = 1
     logger.info(
         "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",
