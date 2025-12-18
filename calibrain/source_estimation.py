@@ -15,6 +15,7 @@ from mne.io.constants import FIFF
 from numpy.linalg import inv
 from scipy.linalg import sqrtm
 from calibrain.utils import get_data_path
+from scipy.sparse import block_diag
 
 # ===================
 # GAMMA-MAP Functions
