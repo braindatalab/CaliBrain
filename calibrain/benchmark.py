@@ -487,6 +487,7 @@ class Benchmark:
                 alphas = baseline_noise_var * grid_factors
                 noise_variances = np.unique(alphas).tolist() or [baseline_noise_var]
 
+                # TODO: remove temporary plotting code
                 # Visualize the alpha grid relative to the baseline noise variance
                 fig, ax = plt.subplots(figsize=(8, 5))
                 ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
@@ -547,6 +548,15 @@ class Benchmark:
             posterior_cov = solver_output.get("posterior_cov")
             noise_var = solver_output.get("noise_var")
             gamma = solver_output.get("gamma")
+            
+            # TODO: remove temporary plotting code
+            if noise_type == 'joint_learning':
+                plot_error_curves(
+                    err_gamma=solver_output["err_gamma_hist"],
+                    err_lambda=solver_output["err_lambda_hist"],
+                    title="Gamma/Lambda errors (joint learning)",
+                    save_path=os.path.join(experiment_dir, "gamma_lambda_errors.png"),
+                )               
 
             this_result['gamma'] = gamma
             this_result["noise_var"] = noise_var
@@ -676,3 +686,62 @@ class Benchmark:
             f"Completed global_run_id {this_result.get('global_run_id', 'N/A')} (config run {this_result.get('run_id', 'N/A')})"
         )
         return this_result
+
+# TODO: move plotting functions to Visualizer class
+def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_path=None):
+    """
+    Plot err_gamma and err_lambda vs iteration.
+
+    Parameters
+    ----------
+    err_gamma : sequence of float
+        Relative gamma errors per iteration.
+    err_lambda : sequence of float
+        Relative lambda errors per iteration.
+    title : str
+        Plot title.
+    """
+    iters = np.arange(len(err_gamma))
+    plt.figure()
+    plt.semilogy(iters, err_gamma, label="err_gamma")
+    plt.semilogy(iters, err_lambda, label="err_lambda")
+    plt.xlabel("Iteration")
+    plt.ylabel("Relative error")
+    plt.title(title)
+    plt.grid(True, which="both", linestyle="--", alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.close()
+
+
+def plot_error_curves_comparison(err_gamma_1, err_lambda_1,
+                                err_gamma_2, err_lambda_2,
+                                labels=("Method 1", "Method 2")):
+    """
+    Compare error curves of two methods (e.g. with sFLEX and without sFLEX).
+
+    Parameters
+    ----------
+    err_gamma_1, err_lambda_1 : sequence of float
+        Errors for method 1.
+    err_gamma_2, err_lambda_2 : sequence of float
+        Errors for method 2.
+    labels : tuple of str
+        Labels for the two methods.
+    """
+    iters1 = np.arange(len(err_gamma_1))
+    iters2 = np.arange(len(err_gamma_2))
+
+    plt.figure()
+    plt.semilogy(iters1, err_gamma_1, label=f"{labels[0]}: err_gamma")
+    plt.semilogy(iters1, err_lambda_1, label=f"{labels[0]}: err_lambda")
+    plt.semilogy(iters2, err_gamma_2, label=f"{labels[1]}: err_gamma", linestyle="--")
+    plt.semilogy(iters2, err_lambda_2, label=f"{labels[1]}: err_lambda", linestyle="--")
+    plt.xlabel("Iteration")
+    plt.ylabel("Relative error")
+    plt.title("Gamma/Lambda Error Comparison")
+    plt.grid(True, which="both", linestyle="--", alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
