@@ -117,7 +117,7 @@ class LeadfieldBuilder:
     ) -> None:
         """Assign sensor metadata, coercing numpy scalars to ints."""
         if kind is not None:
-            self.sensor_kind = int(kind)
+            self.sensor_kind = int(kind) # 1 for FIFFV_MEG_CH, 2 for FIFFV_EEG_CH
         if unit is not None:
             self.sensor_units = int(unit)
         if unit_mul is not None:
@@ -142,11 +142,15 @@ class LeadfieldBuilder:
 
         if sensor_units in (FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M):
             target_mul = FIFF.FIFF_UNITM_F  # femto
-            scale = 1e6  # 1e15 (T->fT) * 1e-9 (nAm -> Am)
+             # Convert data from T / (Am) to fT / (nAm):
+            # 1 T = 1e15 fT and 1 Am = 1e9 nAm, so the combined scaling factor is 1e6
+            scale = 10 ** (-FIFF.FIFF_UNITM_F + FIFF.FIFF_UNITM_N)
         elif sensor_units == FIFF.FIFF_UNIT_V:
-            target_mul = FIFF.FIFF_UNITM_MU  # micro
-            scale = 1e-3  # 1e6 (V->µV) * 1e-9 (nAm -> Am)
+            target_mul = FIFF.FIFF_UNITM_MU  # micro (10^-6)
 
+            # Convert from V / (nAm) to µV / (Am):
+            # 1 V = 1e6 µV and 1 nAm = 1e-9 Am -> combined scale = 1e-3
+            scale = 10 ** (-FIFF.FIFF_UNITM_MU + FIFF.FIFF_UNITM_N)
         if target_mul is None or scale is None:
             return leadfield
 
@@ -175,15 +179,6 @@ class LeadfieldBuilder:
         coil_type = first.get("coil_type")
         self._set_sensor_metadata(
             kind=kind, unit=unit, unit_mul=unit_mul, coil_type=coil_type
-        )
-
-    def _load_sensor_metadata_from_npz(self, data) -> LeadfieldData:
-        """Load stored sensor metadata from a saved npz leadfield."""
-        return LeadfieldData(
-            sensor_kind=data.get("sensor_kind"),
-            sensor_units=data.get("sensor_units", data.get("units")),
-            sensor_unitmult=data.get("sensor_unitmult"),
-            coil_type=data.get("coil_type"),
         )
 
     def handle_source_space(self) -> mne.SourceSpaces:
@@ -667,8 +662,16 @@ class LeadfieldBuilder:
                 with np.load(leadfield_path) as data:
                     if "leadfield" not in data and "lead_field" not in data:
                         raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
+                    
                     leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
-                    metadata = self._load_sensor_metadata_from_npz(data)
+                    
+                    metadata = LeadfieldData(
+                        sensor_kind=data.get("sensor_kind"),
+                        sensor_units=data.get("sensor_units", data.get("units")),
+                        sensor_unitmult=data.get("sensor_unitmult"),
+                        coil_type=data.get("coil_type"),
+                    )
+                    
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)
 
                 if leadfield.ndim != expected_dimensions:

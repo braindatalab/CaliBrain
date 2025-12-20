@@ -23,6 +23,10 @@ from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
 from calibrain import SpatialCVSolver, TemporalCVSolver
 
+# Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
+logging.getLogger("mne").setLevel(logging.ERROR)
+logging.getLogger("mne.utils").setLevel(logging.ERROR)
+
 class Benchmark:
     def __init__(self, solver : callable, solver_param_grid : dict, data_param_grid : dict, noise_param_grid : dict, ERP_config : dict, source_simulator : SourceSimulator, leadfield_builder : LeadfieldBuilder, sensor_simulator : SensorSimulator, uncertainty_estimator : UncertaintyEstimator, metric_evaluator : MetricEvaluator, random_state=42, logger=None):
         """
@@ -119,7 +123,8 @@ class Benchmark:
                 self.logger.debug("Progress logging failed for run %s", run_id)
             except Exception:
                 pass
-    def create_experiment_directory(self, base_dir, params, desired_order):
+            
+    def _create_experiment_directory(self, base_dir, params, desired_order):
         """
         Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.
     
@@ -233,94 +238,6 @@ class Benchmark:
             "source_unitmult": source_unitmult,
         }
 
-    def run(
-        self,
-        nruns: int = 2,
-        fig_path: str = "results/figures",
-        n_jobs: int = 1,
-        run_offset: int = 0,
-        global_total_runs: Optional[int] = None,
-    ):
-        """
-        Run benchmarking by iterating over combinations of solver and data parameters.
-
-        Parameters
-        ----------
-        nruns : int
-            Number of seeds to evaluate for each parameter combination.
-        fig_path : str
-            Base directory where per-run visualizations will be saved.
-        n_jobs : int
-            Number of parallel workers to use. ``1`` (default) keeps the sequential behaviour.
-        run_offset : int
-            Number of experiments completed prior to this benchmark call. Used
-            for global progress tracking when multiple estimators are run
-            sequentially.
-        global_total_runs : int, optional
-            Total number of experiments planned across estimators. If provided,
-            the logger also reports this aggregate figure.
-
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame containing the results for each parameter combination.
-        """
-        rng = check_random_state(self.random_state)
-        seeds = rng.randint(low=0, high=2 ** 32, size=nruns)
-        param_combinations = list(product(
-            ParameterGrid(self.solver_param_grid),
-            ParameterGrid(self.data_param_grid),
-            ParameterGrid(self.noise_param_grid),
-            seeds
-        ))
-        total_runs = len(param_combinations)
-        # compute number of parameter configurations for logging
-        num_solver = len(ParameterGrid(self.solver_param_grid))
-        num_data = len(ParameterGrid(self.data_param_grid))
-        num_noise = len(ParameterGrid(self.noise_param_grid))
-        num_configs = num_solver * num_data * num_noise
-        
-        self.logger.info(
-            "%s\nStarting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
-            "-" * 50,
-            getattr(self.solver, "__name__", str(self.solver)),
-            total_runs,
-            nruns,
-            num_configs,
-        )
-        if total_runs == 0:
-            return pd.DataFrame()
-
-        worker_args = [
-            (
-                run_id,
-                nruns,
-                total_runs,
-                solver_params,
-                data_params,
-                noise_params,
-                seed,
-                fig_path,
-                self.ERP_config.get("n_trials", 5),
-                run_offset + run_id,
-                global_total_runs,
-            )
-            for run_id, (solver_params, data_params, noise_params, seed) in enumerate(param_combinations, start=1)
-        ]
-
-        if n_jobs == 1:
-            results_list = [self._execute_single_run(*args) for args in worker_args]
-        else:
-            self.logger.debug(f"Executing benchmark with n_jobs={n_jobs} using joblib Parallel (loky backend)...")
-            parallel = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)
-            results_list = parallel(
-                delayed(self._execute_single_run)(*args)
-                for args in worker_args
-            )
-
-        self.logger.debug("Benchmarking completed.")
-        return pd.DataFrame(results_list)
-
     def _execute_single_run(
         self,
         run_id: int,
@@ -335,12 +252,6 @@ class Benchmark:
         global_run_id: Optional[int] = None,
         global_total_runs: Optional[int] = None,
     ) -> dict:
-        # Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
-        try:
-            logging.getLogger("mne").setLevel(logging.ERROR)
-            logging.getLogger("mne.utils").setLevel(logging.ERROR)
-        except Exception:
-            pass
         # Ensure worker processes emit INFO logs to stdout/file (joblib workers start with default WARNING level)
         root_logger = logging.getLogger()
         if not root_logger.handlers:
@@ -363,7 +274,7 @@ class Benchmark:
         noise_params = dict(noise_params)
         solver_name = getattr(self.solver, "__name__", str(self.solver))
         orientation_type = data_params.get("orientation_type")
-        n_orient = 3 if orientation_type == "free" else 1
+        n_orient = 1 if orientation_type == "fixed" else 3
         solver_params['fwd_path'] = get_data_path() / 'fwd' / data_params['subject']
 
         # Format human-friendly, 1-based progress counters and avoid division-by-zero
@@ -411,7 +322,7 @@ class Benchmark:
         }
 
         try:
-            experiment_dir = self.create_experiment_directory(
+            experiment_dir = self._create_experiment_directory(
                 base_dir=fig_path,
                 params=this_result,
                 desired_order=[
@@ -687,6 +598,97 @@ class Benchmark:
         )
         return this_result
 
+    def run(
+        self,
+        nruns: int = 2,
+        fig_path: str = "results/figures",
+        n_jobs: int = 1,
+        run_offset: int = 0,
+        global_total_runs: Optional[int] = None,
+    ):
+        """
+        Run benchmarking by iterating over combinations of solver and data parameters.
+
+        Parameters
+        ----------
+        nruns : int
+            Number of seeds to evaluate for each parameter combination.
+        fig_path : str
+            Base directory where per-run visualizations will be saved.
+        n_jobs : int
+            Number of parallel workers to use. ``1`` (default) keeps the sequential behaviour.
+        run_offset : int
+            Number of experiments completed prior to this benchmark call. Used
+            for global progress tracking when multiple estimators are run
+            sequentially.
+        global_total_runs : int, optional
+            Total number of experiments planned across estimators. If provided,
+            the logger also reports this aggregate figure.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the results for each parameter combination.
+        """
+        rng = check_random_state(self.random_state)
+        seeds = rng.randint(low=0, high=2 ** 32, size=nruns)
+        param_combinations = list(product(
+            ParameterGrid(self.solver_param_grid),
+            ParameterGrid(self.data_param_grid),
+            ParameterGrid(self.noise_param_grid),
+            seeds
+        ))
+        total_runs = len(param_combinations)
+        
+        # compute number of parameter configurations for logging
+        num_solver = len(ParameterGrid(self.solver_param_grid))
+        num_data = len(ParameterGrid(self.data_param_grid))
+        num_noise = len(ParameterGrid(self.noise_param_grid))
+        num_configs = num_solver * num_data * num_noise
+        
+        self.logger.info(
+            "%s\nStarting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
+            "-" * 50,
+            getattr(self.solver, "__name__", str(self.solver)),
+            total_runs,
+            nruns,
+            num_configs,
+        )
+        if total_runs == 0:
+            return pd.DataFrame()
+
+        worker_args = [
+            (
+                run_id,
+                nruns,
+                total_runs,
+                solver_params,
+                data_params,
+                noise_params,
+                seed,
+                fig_path,
+                self.ERP_config.get("n_trials", 5),
+                run_offset + run_id,
+                global_total_runs,
+            )
+            for run_id, (solver_params, data_params, noise_params, seed) in enumerate(param_combinations, start=1)
+        ]
+
+        if n_jobs == 1:
+            # sequential execution
+            results_list = [self._execute_single_run(*args) for args in worker_args]
+        else:
+            # parallel execution
+            self.logger.debug(f"Running benchmark in parallel with n_jobs={n_jobs}")
+            parallel = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)
+            results_list = parallel(
+                delayed(self._execute_single_run)(*args)
+                for args in worker_args
+            )
+
+        self.logger.debug("Benchmarking completed.")
+        return pd.DataFrame(results_list)
+
 # TODO: move plotting functions to Visualizer class
 def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_path=None):
     """
@@ -714,7 +716,6 @@ def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_p
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
         plt.close()
-
 
 def plot_error_curves_comparison(err_gamma_1, err_lambda_1,
                                 err_gamma_2, err_lambda_2,
