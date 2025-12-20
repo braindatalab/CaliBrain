@@ -68,7 +68,7 @@ class SensorSimulator:
     ) -> None:
         """Update sensor metadata (FIFF kind/unit/multiplier) atomically."""
         if kind is not None:
-            self.kind = kind
+            self.kind = kind # 1 for FIFFV_MEG_CH, 2 for FIFFV_EEG_CH
         if units is not None:
             self.units = units
         if unitmult is not None:
