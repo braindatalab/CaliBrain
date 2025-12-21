@@ -175,7 +175,7 @@ class Benchmark:
         self.logger.debug(f"Experiment directory created: {experiment_dir}")
         return experiment_dir
 
-    def _prepare_run_data(self, data_params: dict, seed: int, n_trials: int) -> dict:
+    def _prepare_run_data(self, data_params: dict, seed: int) -> dict:
         data_params = dict(data_params)
         orientation_type = data_params.get("orientation_type")
         leadfield_data = self.leadfield_builder.get_leadfield(
@@ -197,28 +197,25 @@ class Benchmark:
             unitmult=leadfield_data.sensor_unitmult,
         )
 
-        global_source_rng = np.random.RandomState(seed)
-        global_source_seeds = global_source_rng.randint(0, 2 ** 32 - 1, n_trials)
-        x_trials, x_active_indices_trials = self.source_simulator.simulate(
+        source_seed = seed
+        sensor_seed = (seed * 26544) % (2**32)
+
+        x, x_active_indices = self.source_simulator.simulate(
             orientation_type=orientation_type,
             n_sources=n_sources,
             nnz=data_params['nnz'],
-            n_trials=n_trials,
-            global_seed=global_source_seeds,
+            seed=source_seed,
         )
         source_units = self.source_simulator.units
         source_unitmult = self.source_simulator.unitmult
 
-        global_noise_rng = np.random.RandomState(seed + 123456)
-        global_noise_seeds = global_noise_rng.randint(0, 2 ** 32 - 1, size=n_trials)
-        y_clean_trials, y_noisy_trials, noise_trials, noise_eta_trials = self.sensor_simulator.simulate(
-            x_trials=x_trials,
+        y_clean, y_noisy, noise, noise_eta = self.sensor_simulator.simulate(
+            x=x,
             L=L,
             orientation_type=orientation_type,
             alpha_SNR=data_params['alpha_SNR'],
             sensor_white_noise_var=data_params['sensor_white_noise_var'],
-            n_trials=n_trials,
-            global_seed=global_noise_seeds,
+            seed=sensor_seed,
         )
 
         return {
@@ -229,11 +226,11 @@ class Benchmark:
                 "units": leadfield_data.sensor_units,
                 "unitmult": leadfield_data.sensor_unitmult,
             },
-            "x_trials": x_trials,
-            "x_active_indices_trials": x_active_indices_trials,
-            "y_clean_trials": y_clean_trials,
-            "y_noisy_trials": y_noisy_trials,
-            "noise_eta_trials": noise_eta_trials,
+            "x": x,
+            "x_active_indices": x_active_indices,
+            "y_clean": y_clean,
+            "y_noisy": y_noisy,
+            "noise_eta": noise_eta,
             "source_units": source_units,
             "source_unitmult": source_unitmult,
         }
@@ -248,7 +245,6 @@ class Benchmark:
         noise_params: dict,
         seed: int,
         fig_path: str,
-        n_trials: int = 5,
         global_run_id: Optional[int] = None,
         global_total_runs: Optional[int] = None,
     ) -> dict:
@@ -330,7 +326,7 @@ class Benchmark:
                 ]
             )
 
-            prepared_data = self._prepare_run_data(data_params, seed, n_trials)
+            prepared_data = self._prepare_run_data(data_params, seed)
             L = prepared_data["leadfield"]
             sensor_meta = prepared_data["sensor_metadata"]
             sensor_kind = sensor_meta.get("kind")
@@ -349,19 +345,13 @@ class Benchmark:
             else:
                 n_sensors, n_sources = L.shape[:2]
 
-            x_trials = prepared_data["x_trials"]
-            x_active_indices_trials = prepared_data["x_active_indices_trials"]
-            y_clean_trials = prepared_data["y_clean_trials"]
-            y_noisy_trials = prepared_data["y_noisy_trials"]
-            noise_eta_trials = prepared_data["noise_eta_trials"]
+            x = prepared_data["x"]
+            x_active_indices = prepared_data["x_active_indices"]
+            y_clean = prepared_data["y_clean"]
+            y_noisy = prepared_data["y_noisy"]
+            noise_eta = prepared_data["noise_eta"]
             source_units = prepared_data["source_units"]
             source_unitmult = prepared_data["source_unitmult"]
-
-            trial_idx = 0
-            x_one_trial = x_trials[trial_idx]
-            x_active_indices_one_trial = x_active_indices_trials[trial_idx]
-            y_noisy_one_trial = y_noisy_trials[trial_idx]
-            noise_eta_one_trial = noise_eta_trials[trial_idx]
 
             tmin = self.source_simulator.ERP_config['tmin']
             stim_onset = self.source_simulator.ERP_config['stim_onset']
@@ -371,9 +361,9 @@ class Benchmark:
                 self.logger.warning(
                     "Computed pre_stimulus_onset <= 0; using full trial for baseline estimation"
                 )
-                y_pre = y_noisy_one_trial
+                y_pre = y_noisy
             else:
-                y_pre = y_noisy_one_trial[:, :pre_stimulus_onset]
+                y_pre = y_noisy[:, :pre_stimulus_onset]
 
             try:
                 baseline_noise_var = float(np.mean(np.std(y_pre, axis=1) ** 2))
@@ -432,12 +422,12 @@ class Benchmark:
             else:
                 if noise_type == 'oracle':
                     self.logger.debug("Using oracle noise variance estimate")
-                    noise_var = float((data_params['sensor_white_noise_var'] * noise_eta_one_trial) ** 2)
+                    noise_var = float((data_params['sensor_white_noise_var'] * noise_eta) ** 2)
                 elif noise_type == 'baseline':
                     self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var
                     self.logger.debug(
-                        f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta_one_trial:.3e}"
+                        f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta:.3e}"
                     )
                 elif noise_type == 'joint_learning':
                     noise_var = None
@@ -451,11 +441,11 @@ class Benchmark:
                 )
 
             self.logger.debug(f"Fitting source estimator {self.solver.__name__}")
-            source_estimator.fit(L, y_noisy_one_trial)
-            solver_output = source_estimator.predict(y=y_noisy_one_trial)
+            source_estimator.fit(L, y_noisy)
+            solver_output = source_estimator.predict(y=y_noisy)
 
-            x_hat_one_trial = solver_output.get("posterior_mean")
-            x_hat_active_indices_one_trial = solver_output.get("active_indices")
+            x_hat = solver_output.get("posterior_mean")
+            x_hat_active_indices = solver_output.get("active_indices")
             posterior_cov = solver_output.get("posterior_cov")
             noise_var = solver_output.get("noise_var")
             gamma = solver_output.get("gamma")
@@ -481,15 +471,15 @@ class Benchmark:
             if solver_name == 'gamma_map':
                 self.logger.debug("Skipping uncertainty estimation for gamma_map solver.")
                 this_result['active_indices_size'] = (
-                    len(x_hat_active_indices_one_trial)
-                    if x_hat_active_indices_one_trial is not None
+                    len(x_hat_active_indices)
+                    if x_hat_active_indices is not None
                     else 0
                 )
                 return this_result
 
-            x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
-            x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
-            n_times = x_one_trial.shape[1]
+            x_avg_time = np.mean(x, axis=1, keepdims=True)
+            x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
+            n_times = x.shape[1]
             posterior_var_avg_time = posterior_var / n_times
             posterior_std_avg_time = np.sqrt(np.maximum(posterior_var_avg_time, 0.0))
 
@@ -500,16 +490,16 @@ class Benchmark:
                 random_state=self.random_state,
             )
             calibration_results = calibrator.calibrate(
-                x_true=x_one_trial_avg_time,
-                x_hat=x_hat_one_trial_avg_time,
+                x_true=x_avg_time,
+                x_hat=x_hat_avg_time,
                 posterior_std=posterior_std_avg_time,
             )
             pre_calibration = calibration_results['pre_calibration']
             post_calibration = calibration_results['post_calibration']
 
             metric_kwargs = dict(
-                x=x_one_trial_avg_time,
-                x_hat=x_hat_one_trial_avg_time,
+                x=x_avg_time,
+                x_hat=x_hat_avg_time,
                 posterior_var=posterior_var_avg_time,
                 orientation_type=orientation_type,
                 nnz=data_params.get("nnz"),
@@ -552,13 +542,12 @@ class Benchmark:
 
             viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
             viz.plot_all(
-                x_trials=x_trials,
-                x_active_indices_trials=x_active_indices_trials,
-                x_hat_one_trial=x_hat_one_trial,
-                x_hat_active_indices_one_trial=x_hat_active_indices_one_trial,
-                y_clean_trials=y_clean_trials,
-                y_noisy_trials=y_noisy_trials,
-                trial_idx=trial_idx,
+                x=x,
+                x_active_indices=x_active_indices,
+                x_hat=x_hat,
+                x_hat_active_indices=x_hat_active_indices,
+                y_clean=y_clean,
+                y_noisy=y_noisy,
                 n_sources=n_sources,
                 subject=data_params.get("subject"),
                 fwd_path=solver_params['fwd_path'],
@@ -568,6 +557,7 @@ class Benchmark:
                 source_units=source_units,
                 source_unitmult=source_unitmult,
                 sensor_units=sensor_units,
+                sensor_unitmult=sensor_unitmult,
                 confidence_levels=self.uncertainty_estimator.nominal_coverages,
                 nominal_coverages=pre_calibration['nominal_coverages'],
                 empirical_coverages=pre_calibration['empirical_coverages'],
@@ -580,8 +570,8 @@ class Benchmark:
             )
 
             active_indices_size = (
-                len(x_hat_active_indices_one_trial)
-                if x_hat_active_indices_one_trial is not None
+                len(x_hat_active_indices)
+                if x_hat_active_indices is not None
                 else 0
             )
             this_result['active_indices_size'] = active_indices_size
@@ -631,20 +621,34 @@ class Benchmark:
             DataFrame containing the results for each parameter combination.
         """
         rng = check_random_state(self.random_state)
-        seeds = rng.randint(low=0, high=2 ** 32, size=nruns)
-        param_combinations = list(product(
+        
+        # First, create all parameter combinations (without seeds)
+        param_grids = list(product(
             ParameterGrid(self.solver_param_grid),
             ParameterGrid(self.data_param_grid),
             ParameterGrid(self.noise_param_grid),
-            seeds
         ))
-        total_runs = len(param_combinations)
         
-        # compute number of parameter configurations for logging
-        num_solver = len(ParameterGrid(self.solver_param_grid))
-        num_data = len(ParameterGrid(self.data_param_grid))
-        num_noise = len(ParameterGrid(self.noise_param_grid))
-        num_configs = num_solver * num_data * num_noise
+        # Calculate total number of runs
+        num_configs = len(param_grids)
+        total_runs = num_configs * nruns
+        
+        # Generate unique seeds for EVERY experiment (not just nruns seeds)
+        # This ensures each parameter combination gets different random data
+        all_seeds = rng.randint(low=0, high=2 ** 32, size=total_runs)
+        
+        # Create parameter combinations with unique seeds
+        param_combinations = []
+        seed_idx = 0
+        for solver_params, data_params, noise_params in param_grids:
+            for _ in range(nruns):
+                param_combinations.append((
+                    solver_params, 
+                    data_params, 
+                    noise_params, 
+                    all_seeds[seed_idx]
+                ))
+                seed_idx += 1
         
         self.logger.info(
             "%s\nStarting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
@@ -667,7 +671,6 @@ class Benchmark:
                 noise_params,
                 seed,
                 fig_path,
-                self.ERP_config.get("n_trials", 5),
                 run_offset + run_id,
                 global_total_runs,
             )

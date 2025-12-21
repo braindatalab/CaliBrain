@@ -138,20 +138,20 @@ class LeadfieldBuilder:
             return leadfield
 
         target_mul = None
-        scale = None
+        scaler = None
 
         if sensor_units in (FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M):
             target_mul = FIFF.FIFF_UNITM_F  # femto
              # Convert data from T / (Am) to fT / (nAm):
             # 1 T = 1e15 fT and 1 Am = 1e9 nAm, so the combined scaling factor is 1e6
-            scale = 10 ** (-FIFF.FIFF_UNITM_F + FIFF.FIFF_UNITM_N)
+            scaler = 10 ** (-FIFF.FIFF_UNITM_F + FIFF.FIFF_UNITM_N)
         elif sensor_units == FIFF.FIFF_UNIT_V:
             target_mul = FIFF.FIFF_UNITM_MU  # micro (10^-6)
 
             # Convert from V / (nAm) to µV / (Am):
-            # 1 V = 1e6 µV and 1 nAm = 1e-9 Am -> combined scale = 1e-3
-            scale = 10 ** (-FIFF.FIFF_UNITM_MU + FIFF.FIFF_UNITM_N)
-        if target_mul is None or scale is None:
+            # 1 V = 1e6 µV and 1 nAm = 1e-9 Am -> combined scaler = 1e-3
+            scaler = 10 ** (-FIFF.FIFF_UNITM_MU + FIFF.FIFF_UNITM_N)
+        if target_mul is None or scaler is None:
             return leadfield
 
         if sensor_unitmult == target_mul:
@@ -160,7 +160,7 @@ class LeadfieldBuilder:
         if sensor_unitmult not in (None, FIFF.FIFF_UNITM_NONE):
             return leadfield
 
-        leadfield = leadfield * scale
+        leadfield = leadfield * scaler
         if metadata is not None:
             metadata.sensor_unitmult = target_mul
         else:

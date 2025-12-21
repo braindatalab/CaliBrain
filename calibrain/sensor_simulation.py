@@ -169,25 +169,25 @@ class SensorSimulator:
 
     def simulate(
         self,
-        x_trials: List[np.ndarray],
+        x: np.ndarray,
         L: np.ndarray,
         orientation_type: str = "fixed",
         alpha_SNR: float = 0.5,
         sensor_white_noise_var: float = 1.0,
-        n_trials: int = 1,
-        global_seed: int = 42,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        seed: int = 42,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         """
-        Simulate sensor trials by projecting source data to sensor space and adding noise to the clean sensor data.
+        Simulate sensor data by projecting source data to sensor space and adding noise.
         
         Parameters
         ----------
-        x_trials : List[np.ndarray]
-            List of source time courses for each trial. Each element should be an array of shape (n_sources, n_times) for fixed orientation or (n_sources, 3, n_times) for free orientation.
+        x : np.ndarray
+            Source time courses. Shape (n_sources, n_times) for fixed orientation 
+            or (n_sources, 3, n_times) for free orientation.
         L : np.ndarray
             Leadfield matrix (µV / nAm for EEG or fT / nAm for MEG).
             - 'fixed': Shape (n_sensors, n_sources).
-            - 'free': Shape (n_sensors, 3, n_sources).
+            - 'free': Shape (n_sensors, 3, n_sources, 3).
         orientation_type : str
             Orientation type of the sources ('fixed' or 'free').
         alpha_SNR : float
@@ -196,61 +196,40 @@ class SensorSimulator:
             - 1.0 means no noise, only signal.
         sensor_white_noise_var : float
             Standard deviation of the noise to be added.
-        n_trials : int
-            Number of trials to simulate. Default is 1.
-        global_seed : int
-            Global seed for random number generation to ensure reproducibility across trials.
+        seed : int
+            Seed for random number generation to ensure reproducibility.
             
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-            - y_clean_all_trials : np.ndarray
-                Clean sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - y_noisy_all_trials : np.ndarray
-                Noisy sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - noise_all_trials : np.ndarray
-                Noise added to the clean sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - noise_eta_all_trials : np.ndarray
-                Noise scaling factors for each trial. Shape: (n_trials,).
+        Tuple[np.ndarray, np.ndarray, np.ndarray, float]
+            - y_clean : np.ndarray
+                Clean sensor data. Shape: (n_sensors, n_times).
+            - y_noisy : np.ndarray
+                Noisy sensor data. Shape: (n_sensors, n_times).
+            - noise : np.ndarray
+                Noise added to the clean sensor data. Shape: (n_sensors, n_times).
+            - noise_eta : float
+                Noise scaling factor.
         """
-        noise_rng = np.random.RandomState(global_seed + 123456)
-        noise_seeds = noise_rng.randint(0, 2**32 - 1, size=n_trials)
+        self.logger.debug(f"Simulating sensor data with seed {seed}")
 
-        y_clean_all_trials, y_noisy_all_trials = [], []
-        noise_all_trials, noise_eta_all_trials = [], []
-        
-        for i in range(n_trials):
-            x_trial = x_trials[i]  # Source time courses for this trial
-            noise_seed = noise_seeds[i]
+        # Generate clean sensor data by projecting sources to sensors
+        y_clean = self._project_sources_to_sensors(x=x, L=L, orientation_type=orientation_type)
 
-            self.logger.debug(f"[Trial {i+1}/{n_trials}] Adding noise with seed {noise_seed}")
+        # Add noise to the clean sensor data
+        y_noisy, noise, noise_eta = self._add_noise(
+            y_clean, alpha_SNR, sensor_white_noise_var, seed
+        )
 
-            # Generate source time courses for this trial
-            y_clean = self._project_sources_to_sensors(x=x_trial, L=L, orientation_type='fixed')
-
-            # Add noise to the clean sensor data for this trial
-            y_noisy, noise, noise_scaling_factor_eta = self._add_noise(y_clean, alpha_SNR, sensor_white_noise_var, noise_seed)
-
-            y_clean_all_trials.append(y_clean)
-            y_noisy_all_trials.append(y_noisy)
-            noise_all_trials.append(noise)
-            noise_eta_all_trials.append(noise_scaling_factor_eta)
-            
-        y_clean_all_trials = np.array(y_clean_all_trials) # (n_trials, n_channels, n_times)
-        x_trials = np.array(x_trials) # (n_trials, n_sources, [n_orient,] n_times)
-        y_noisy_all_trials = np.array(y_noisy_all_trials) # (n_trials, n_channels, n_times)
-        noise_all_trials = np.array(noise_all_trials) # (n_trials, n_channels, n_times)
-        noise_eta_all_trials = np.array(noise_eta_all_trials) # (n_trials,)
-
-        self.logger.debug(f"Noise addition complete.")
-        self.logger.debug(f"Shape of clean sensor data for all trials: {y_clean_all_trials.shape}")
-        self.logger.debug(f"Shape of noisy sensor data for all trials: {y_noisy_all_trials.shape}")
-        self.logger.debug(f"Shape of noise data for all trials: {noise_all_trials.shape}")
-        self.logger.debug(f"Shape of noise scaling factors for all trials: {noise_eta_all_trials.shape}")
+        self.logger.debug(f"Sensor simulation complete.")
+        self.logger.debug(f"Shape of clean sensor data: {y_clean.shape}")
+        self.logger.debug(f"Shape of noisy sensor data: {y_noisy.shape}")
+        self.logger.debug(f"Shape of noise: {noise.shape}")
+        self.logger.debug(f"Noise scaling factor (eta): {noise_eta}")
 
         # Reshape leadfield matrix for free orientation if needed by downstream estimators.
         if orientation_type == "free":
             self.logger.info("Reshaping free orientation leadfield from (sensors, sources, 3) to (sensors, sources*3)")
             L = L.reshape(L.shape[0], -1)
             
-        return y_clean_all_trials, y_noisy_all_trials, noise_all_trials, noise_eta_all_trials
+        return y_clean, y_noisy, noise, noise_eta

@@ -66,9 +66,9 @@ class SourceSimulator:
             "fmin": 1,
             "fmax": 5,
             "amplitude_distribution": {
-                "median": 10.0,   # nAm
-                "sigma": 0.35,
-                "clip": (2.5, 50.0),
+                "median": 20.0, # peak dipole moment (nAm)
+                "sigma": 0.2, # std of the underlying normal distribution
+                "clip": (2.5, 50.0),  # (min, max) bounds in nAm for peak absolute amplitude clipping
             },
             "random_erp_timing": True,
             "erp_min_length": None,
@@ -91,20 +91,19 @@ class SourceSimulator:
         if self.logger is None:
             self.logger = logging.getLogger(self.__class__.__name__)
 
-
     def _sample_source_amplitude(self, rng: np.random.RandomState) -> float:
         """
         Sample a dipole moment amplitude (in nAm) from the configured distribution.
         """
-        base_amplitude = 10.0
+        base_amplitude = 20.0
         dist_cfg = self.ERP_config.get("amplitude_distribution")
         if not dist_cfg:
             return max(base_amplitude, 0.0)
 
         clip_bounds = dist_cfg.get("clip")
         median = float(dist_cfg.get("median", base_amplitude))
-        sigma = float(dist_cfg.get("sigma", 0.35))
-        safe_median = max(median, 1e-6)
+        sigma = float(dist_cfg.get("sigma", 0.2))
+        safe_median = max(median, 1)
         mu = np.log(safe_median)
         amplitude = rng.lognormal(mean=mu, sigma=sigma)
 
@@ -276,17 +275,18 @@ class SourceSimulator:
         
         return waveform
 
-    def _simulate_source_time_courses(
+    def simulate(
         self,
         orientation_type: str = "fixed",
         n_sources: int = 100,
         nnz: int = 5,
-        trial_seed: int = 256,
+        seed: int = 42,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Generate simulated source time courses for a single trial.
+        Simulated source time courses for a single trial.
 
         This method creates ERP-like signals for a subset of active sources, determined by `nnz`. For each active source, an ERP waveform is generated using a bandpass-filtered noise segment, optionally randomized in onset and duration, and scaled by an amplitude sampled from the log-normal distribution. The ERP waveform is placed at the appropriate time index based on `stim_onset`.
+        
 
         Parameters
         ----------
@@ -295,25 +295,24 @@ class SourceSimulator:
         n_sources : int
             Total number of sources to simulate. Default is 100.
         nnz : int
-            Number of non-zero (active) sources in the trial. Must be less than or equal to `n_sources`. Default is 5.
-        trial_seed : int
-            Seed for the random number generator to ensure reproducibility of the source activity. Default is 256.
+            Number of non-zero (active) sources. Must be less than or equal to `n_sources`. Default is 5.
+        seed : int
+            Seed for the random number generator to ensure reproducibility. Default is 42.
 
         Returns
         -------
-        x : np.ndarray
-            Simulated source activity array.
-            - Shape (n_sources, n_times) for "fixed" orientation.
-            - Shape (n_sources, n_orient, n_times) for "free" orientation.
-        active_indices : np.ndarray
-            Indices of the sources that were activated in this trial.
-            
-        Notes
-        -------
-        - For "fixed" orientation, each active source has a single time course.
-        - For "free" orientation, each active source has three orientation components, with random orientation coefficients.
+        Tuple[np.ndarray, np.ndarray]
+            - x : np.ndarray
+                Simulated source time courses.
+                Shape depends on source orientation: 
+                - fixed: (n_sources, n_times)
+                - free:  (n_sources, 3, n_times)
+            - active_indices : np.ndarray
+                Array of shape (nnz,) containing indices of active sources.
         """
-        trial_rng = np.random.RandomState(trial_seed)
+        self.logger.debug(f"Simulating source time courses with seed {seed}")
+        
+        rng = np.random.RandomState(seed)
         
         tmin = self.ERP_config['tmin']
         tmax = self.ERP_config['tmax']
@@ -324,11 +323,11 @@ class SourceSimulator:
         
         if orientation_type == "fixed":
             # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+            active_indices = rng.choice(n_sources, size=nnz, replace=False)
             x = np.zeros((n_sources, n_times))
             for i, src_idx in enumerate(active_indices):
                 # Generate ERP signal with specified onset
-                source_seed = trial_rng.randint(low=0, high=2**32 -1) # Derive a new seed for this source
+                source_seed = rng.randint(low=0, high=2**32 -1) # Derive a new seed for this source
                 
                 self.logger.debug(f"Generating ERP for source index {src_idx} with seed {source_seed}")
                         
@@ -339,14 +338,14 @@ class SourceSimulator:
             # TODO: +++ THIS IS A TEMPORARY FIX. A NEW APPROACH IS NEEDED TO HANDLE +++
             n_orient = 3 # TODO: Make this configurable
             # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+            active_indices = rng.choice(n_sources, size=nnz, replace=False)
             x = np.zeros((n_sources, n_orient, n_times))
             for i, src_idx in enumerate(active_indices):
-                source_seed = trial_rng.randint(0, 2**32 -1)
+                source_seed = rng.randint(0, 2**32 -1)
                 erp_waveform = self._simulate_erp_waveform(
                     source_seed,
                 )
-                orient_coeffs = trial_rng.randn(n_orient)
+                orient_coeffs = rng.randn(n_orient)
                 norm_orient = np.linalg.norm(orient_coeffs)
                 if norm_orient < 1e-9: # Avoid division by zero
                     orient_coeffs = np.array([1.0, 0.0, 0.0]) # Default orientation
@@ -362,79 +361,10 @@ class SourceSimulator:
         else:
             raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
 
-        self.logger.debug(f"Simulated source time courses with shape: {x.shape}")
-        self.logger.debug(f"Active source indices: {active_indices}")
-        
-        return x, active_indices
-
-    def simulate(
-        self,
-        orientation_type: str = "fixed",
-        n_sources: int = 100,
-        nnz: int = 5,
-        n_trials: int = 1,
-        global_seed: int = 42,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Simulate multiple trials of source time courses.
-
-        This function generates synthetic source activity for `n_trials` trials using 
-        ERP-like signals. Each trial uses a unique random seed derived from the 
-        provided `global_seed` for reproducibility.
-
-        Parameters
-        ----------
-        orientation_type : str
-            Orientation of the sources, either "fixed" or "free". Default is "fixed".
-        n_sources : int
-            Total number of sources to simulate. Default is 100.
-        nnz : int
-            Number of non-zero (active) sources in each trial. Must be less than or equal to `n_sources`. Default is 5.
-        n_trials : int
-            Number of trials to simulate. Default is 1.
-        global_seed : int
-            Seed for the random number generator to ensure reproducibility across trials. Default is 42.
-
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            - x_all_trials : np.ndarray
-                Array of shape (n_trials, ...) containing simulated source time courses.
-                Shape depends on source orientation: 
-                - fixed: (n_trials, n_sources, n_times)
-                - free:  (n_trials, n_sources, 3, n_times)
-            - active_indices_all_trials : np.ndarray
-                Array of shape (n_trials, nnz) containing indices of active sources per trial.
-        """
-        source_rng = np.random.RandomState(global_seed)
-        source_seeds = source_rng.randint(0, 2**32 - 1, size=n_trials)
-
-        x_all_trials = []
-        active_indices_all_trials = []
-
-        for i, seed in enumerate(source_seeds):
-            self.logger.debug(f"Simulating trial {i + 1}/{n_trials} with seed {seed}")
-            x, active_indices = self._simulate_source_time_courses(
-                orientation_type=orientation_type,
-                n_sources=n_sources,
-                nnz=nnz,
-                trial_seed=seed,
-            )
-            x_all_trials.append(x)
-            active_indices_all_trials.append(active_indices)
-
-        # Convert lists to numpy arrays
-        x_all_trials = np.array(x_all_trials)
-        active_indices_all_trials = np.array(active_indices_all_trials)
-        
         # Log the shapes of the results
-        self.logger.debug(f"Completed simulating source time courses for {n_trials} trials.")
-        self.logger.debug(f"Shape of source time courses of all trials {n_trials} trials: {x_all_trials.shape}")
-        self.logger.debug(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
+        self.logger.debug(f"Completed simulating source time courses.")
+        self.logger.debug(f"Shape of source time courses: {x.shape}")
+        self.logger.debug(f"Shape of active indices: {active_indices.shape}")
+        self.logger.debug(f"Active indices: {active_indices}")
 
-        # Print active indices for all trials, each trial on a new line
-        # self.logger.info("Active indices for all trials:")
-        # for i, indices in enumerate(active_indices_all_trials):
-        #     self.logger.info(f"  Trial {i+1}: {indices}")
-
-        return x_all_trials, active_indices_all_trials
+        return x, active_indices
