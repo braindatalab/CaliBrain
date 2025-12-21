@@ -51,7 +51,6 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
-    # n_trials = 4
     ERP_config = {
         "tmin": -0.5,
         "tmax": 0.5,
@@ -60,9 +59,9 @@ def main():
         "fmin": 1,
         "fmax": 5,
         "amplitude_distribution": {
-            "median": 20.0,   # nAm
-            "sigma": 0.2,
-            "clip": (2.5, 50.0),
+            "median": 20.0, # peak dipole moment (nAm)
+            "sigma": 0.2, # std of the underlying normal distribution
+            "clip": (2.5, 50.0),  # (min, max) bounds in nAm for peak absolute amplitude clipping
         },
         "random_erp_timing": True,
         "erp_min_length": None,
@@ -96,7 +95,7 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"], # "CC120264", "CC120309", "CC120313"],
-        "nnz": [5, 10],
+        "nnz": [1, 7],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
@@ -170,16 +169,16 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
         # (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),

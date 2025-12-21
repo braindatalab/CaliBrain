@@ -237,43 +237,36 @@ class_info = inspect_object(demo_sensor_simulator, show_private=False)
 # Let's start with a simple demonstration using random source activity and a 
 # synthetic leadfield matrix to understand the core concepts:
 
-# Create random source time courses (3 sources, 100 time points, 2 trials)
+# Create random source time courses (3 sources, 100 time points)
 n_sources_demo = 3
 n_sensors_demo = 5
 n_times_demo = 100
-n_trials_demo = 2
 
-# Random source activity for two trials: sources × time
+# Random source activity: sources × time
 np.random.seed(16)
-x_demo_trial1 = np.random.randn(n_sources_demo, n_times_demo) # assuming (Am)
-
-np.random.seed(84)  # Different seed for trial 2
-x_demo_trial2 = np.random.randn(n_sources_demo, n_times_demo) # assuming (Am)
-
-x_trials_demo = np.array([x_demo_trial1, x_demo_trial2])
+x_demo = np.random.randn(n_sources_demo, n_times_demo) # assuming (Am)
 
 # Random leadfield matrix: sensors × sources  
 # Scale to get realistic sensor voltages (V) from source currents (Am)
 # For EEG-like measurements: ~1e-6 V/Am (microVolts per Ampere·meter)
 L_demo = np.random.randn(n_sensors_demo, n_sources_demo) * 1e-6  # V/Am 
 
-print(f"  - Source activity shape: {x_trials_demo.shape}") # (trials × sources × time)
+print(f"  - Source activity shape: {x_demo.shape}") # (sources × time)
 print(f"  - Leadfield matrix shape: {L_demo.shape}") # (sensors × sources)
 
 # %%
 # Run the simple sensor simulation:
 
 y_clean_demo, y_noisy_demo, noise_demo, noise_var_demo = demo_sensor_simulator.simulate(
-    x_trials=x_trials_demo,
+    x=x_demo,
     L=L_demo,
     orientation_type="fixed",
     alpha_SNR=0.7,  # 70% signal, 30% noise
-    n_trials=n_trials_demo,
-    global_seed=42
+    seed=42
 )
 
 print(f"\nDemo Results:")
-print(f"  - Clean sensor data shape: {y_clean_demo.shape} (trials × sensors × time)")
+print(f"  - Clean sensor data shape: {y_clean_demo.shape} (sensors × time)")
 print(f"  - Noisy sensor data shape: {y_noisy_demo.shape}")
 
 # %%
@@ -366,17 +359,16 @@ source_simulator = SourceSimulator(ERP_config=erp_config, logger=logger)
 source_params = {
     "orientation_type": "fixed",  # Source orientation type
     "n_sources": n_sources,       # Total number of source locations (fsaverage)
-    "nnz": 5,                     # Number of active sources per trial
-    "n_trials": 3,                # Number of trials to simulate
-    "global_seed": 42             # Seed for reproducibility
+    "nnz": 5,                     # Number of active sources
+    "seed": 42                    # Seed for reproducibility
 }
 
 # Generate source time courses
-x_trials, x_active_indices_trials = source_simulator.simulate(**source_params)
+x, x_active_indices = source_simulator.simulate(**source_params)
 
 print(f"Generated source activity:")
-print(f"  - Shape: {x_trials.shape} (trials x sources x time)")
-print(f"  - Active sources per trial: {[len(indices) for indices in x_active_indices_trials]}")
+print(f"  - Shape: {x.shape} (sources x time)")
+print(f"  - Active sources: {len(x_active_indices)}")
 print(f"  - Source units: {source_simulator.units}")
 
 # %%
@@ -424,81 +416,59 @@ viz = Visualizer(base_save_path=str(save_path), logger=logger)
 # %%
 # Configure sensor simulation parameters
 sensor_simulation_params = {
-    "x_trials": x_trials,                    # Source time courses from Step 1
+    "x": x,                                  # Source time courses from Step 1
     "L": L,                                  # Leadfield matrix from Step 2
     "orientation_type": "fixed",             # Must match source simulation
-    "alpha_SNR": 0.3,                       # Signal-to-noise ratio (30% signal, 70% noise)
-    "n_trials": 3,                          # Number of trials (must match source trials)
-    "global_seed": 42                       # Seed for reproducible noise
+    "alpha_SNR": 0.3,                        # Signal-to-noise ratio (30% signal, 70% noise)
+    "seed": 42                               # Seed for reproducible noise
 }
 
 # Execute sensor simulation
-y_clean_trials, y_noisy_trials, noise_trials, noise_var_trials = sensor_simulator.simulate(
+y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
     **sensor_simulation_params
 )
 
 # %%
 # Let's inspect the sensor simulation results:
 
-print(f"  - Clean sensor data shape: {y_clean_trials.shape} (trials x sensors x time)")
-print(f"  - Noisy sensor data shape: {y_noisy_trials.shape} (trials x sensors x time)")
-print(f"  - Noise data shape: {noise_trials.shape} (trials x sensors x time)")
-print(f"  - Noise variance per trial: {noise_var_trials.shape} (trials x sensors)")
+print(f"  - Clean sensor data shape: {y_clean.shape} (sensors x time)")
+print(f"  - Noisy sensor data shape: {y_noisy.shape} (sensors x time)")
+print(f"  - Noise data shape: {noise.shape} (sensors x time)")
+print(f"  - Noise variance per sensor: {noise_var.shape} (sensors,)")
 
 # %%
-# Plot Sensor Signals for All Trials
+# Plot Sensor Signals
 # ----------------------------------
 #
-# First, let's visualize the clean and noisy sensor signals:
+# Let's visualize the clean and noisy sensor signals:
 
 # %%
-# Plot clean sensor signals (concatenated)
+# Plot clean sensor signals
 viz.plot_sensor_signals(
     ERP_config=erp_config,
-    y_trials=y_clean_trials,                     # Only plot clean signals
-    # trial_idx = 0,
+    y=y_clean,
     # channels=[0, 10],                          # or "all"
     units=sensor_simulator.units,
     unitmult=sensor_simulator.unitmult,
-    mode="concatenate",                          # or "stack"
-    title="Sensor Signals (All trials concatenated)",
+    title="Sensor Signals (Clean)",
     save_dir="data_simulation",
-    file_name="sensor_concatenate_trials_clean",
+    file_name="sensor_signals_clean",
     show=True
 )
 
 # %%
-# Plot sensors (all trials) with selected channels: y_noisy
+# Plot noisy sensor signals with selected channels
 viz.plot_sensor_signals(
     ERP_config=erp_config,
-    y_trials=y_noisy_trials,                    # Only noisy signals
-    # trial_idx = 0,
-    channels="all",                              # or "all"
+    y=y_noisy,
+    channels="all",
     units=sensor_simulator.units,
     unitmult=sensor_simulator.unitmult,
-    mode="stack",                                # or "stack"
-    title="Sensor Signals (All Trials stacked)",
+    title="Sensor Signals (Noisy)",
     save_dir="data_simulation",
-    file_name="sensor_stack_trials_noisy",
+    file_name="sensor_signals_noisy",
     show=True
 )
-
-# %%   
-# Plot noisy sensor signals (concatenated)
-viz.plot_sensor_signals(
-    ERP_config=erp_config,
-    y_trials=y_noisy_trials,
-    # trial_idx = 0,
-    # channels=[0, 10],                           # or "all"
-    units=sensor_simulator.units,
-    unitmult=sensor_simulator.unitmult,
-    mode="concatenate",                           # or "stack"
-    title="Sensor Signals (All trials concatenated)",
-    save_dir="data_simulation",
-    file_name="sensor_concatenate_trials_noisy",
-    show=True
-)
-   
 
 # %%
 # .. note::
@@ -520,12 +490,11 @@ viz.plot_sensor_signals(
 # Configuration for high signal-to-noise ratio,
 
 high_snr_params = {
-    "x_trials": x_trials,
+    "x": x,
     "L": L,
     "orientation_type": "fixed",
     "alpha_SNR": 0.9,                       # 90% signal, 10% noise
-    "n_trials": 3,
-    "global_seed": 100                      # Different seed for variety
+    "seed": 100                             # Different seed for variety
 }
 
 y_clean_high, y_noisy_high, noise_high, noise_var_high = sensor_simulator.simulate(**high_snr_params)
@@ -542,12 +511,11 @@ print(f"  - Noise range: [{noise_high.min():.2e}, {noise_high.max():.2e}]")
 # or challenging recording conditions:
 
 low_snr_params = {
-    "x_trials": x_trials,
+    "x": x,
     "L": L,
     "orientation_type": "fixed",
     "alpha_SNR": 0.1,                       # 10% signal, 90% noise
-    "n_trials": 3,
-    "global_seed": 200                      # Different seed for variety
+    "seed": 200                             # Different seed for variety
 }
 
 y_clean_low, y_noisy_low, noise_low, noise_var_low = sensor_simulator.simulate(**low_snr_params)
@@ -620,26 +588,25 @@ L = leadfield_builder.get_leadfield(
 
 # 2. Simulate source activity  
 source_simulator = SourceSimulator(ERP_config=erp_config)
-x_trials, x_active_indices = source_simulator.simulate(
+x, x_active_indices = source_simulator.simulate(
     orientation_type="fixed",
     n_sources=L.shape[1],  # Match leadfield dimensions
     nnz=5,
-    n_trials=10
+    seed=42
 )
 
 # 3. Simulate sensor measurements
 sensor_simulator = SensorSimulator()
 y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
-    x_trials=x_trials,
+    x=x,
     L=L,
-    alpha_SNR=0.3,
-    n_trials=10
+    alpha_SNR=0.3
 )
 
 # 4. Estimate sources
 source_estimator = SourceEstimator(solver="gamma_map")
-source_estimator.fit(L, y_noisy[0])
-    solver_result = source_estimator.predict(y_noisy[0])
+source_estimator.fit(L, y_noisy)
+    solver_result = source_estimator.predict(y_noisy)
     x_hat = solver_result["posterior_mean"]
     x_hat_indices = solver_result.get("active_indices")
     posterior_cov = solver_result.get("posterior_cov")
@@ -648,7 +615,7 @@ source_estimator.fit(L, y_noisy[0])
 uncertainty_estimator = UncertaintyEstimator()
 ci_lower, ci_upper, _, empirical_coverage = \\
     uncertainty_estimator.get_credible_intervals_data(
-        x=x_trials[0],
+        x=x,
         x_hat=x_hat,
         posterior_cov=posterior_cov,
         orientation_type="fixed"
@@ -657,15 +624,15 @@ ci_lower, ci_upper, _, empirical_coverage = \\
 # 6. Evaluate performance
 metric_evaluator = MetricEvaluator()
 metrics = metric_evaluator.evaluate(
-    x_true=x_trials[0],
+    x_true=x,
     x_hat=x_hat,
-    active_indices_true=x_active_indices[0],
+    active_indices_true=x_active_indices,
     active_indices_hat=x_hat_indices
 )
 
 # 7. Visualize results
 visualizer = Visualizer()
-visualizer.plot_source_comparison(x_trials, x_hat, x_active_indices)
+visualizer.plot_source_comparison(x, x_hat, x_active_indices)
 '''
 
 print(f"\nPipeline Integration Example:")
@@ -673,5 +640,5 @@ print(f"See 'examples/run_experiments.py' and 'calibrain/benchmark.py'")
 print(f"for complete working examples of integrated simulations.")
 
 print(f"\nSensor Simulation Tutorial Complete!")
-print(f"Generated sensor data with shape: {y_noisy_trials.shape}")
+print(f"Generated sensor data with shape: {y_noisy.shape}")
 print(f"Tutorial results saved to: {save_path}")

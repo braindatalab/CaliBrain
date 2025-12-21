@@ -206,19 +206,18 @@ print(f"- Default units: {source_simulator.units}") # -> Am
 #    See https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py for details.
 
 # %%
-# Now let's generate realistic source activity with multiple trials:
+# Now let's generate realistic source activity:
 # 
 # Simulation parameters
 simulation_params = {
     "orientation_type": "fixed",    # Source orientation type
     "n_sources": 50,               # Total number of source locations
-    "nnz": 6,                      # Number of active sources per trial
-    "n_trials": 3,                 # Number of trials to simulate
-    "global_seed": 42              # Seed for reproducibility
+    "nnz": 6,                      # Number of active sources
+    "seed": 42                     # Seed for reproducibility
 }
 
 # Execute the simulation
-x_trials, x_active_indices_trials = source_simulator.simulate(**simulation_params)
+x, x_active_indices = source_simulator.simulate(**simulation_params)
 
 # %%
 # .. Hint::
@@ -229,15 +228,13 @@ x_trials, x_active_indices_trials = source_simulator.simulate(**simulation_param
 #       orientation_type = "fixed"
 #       n_sources = 50
 #       nnz = 6
-#       n_trials = 3
 #       seed = 42
 #       
-#       x_trials, x_active_indices_trials = source_simulator.simulate(
+#       x, x_active_indices = source_simulator.simulate(
 #           orientation_type=orientation_type,
 #           n_sources=n_sources,
 #           nnz=nnz,
-#           n_trials=n_trials,
-#           global_seed=seed
+#           seed=seed
 #       )
 #    
 #    See `**kwargs documentation <https://book.pythontips.com/en/latest/args_and_kwargs.html>`_ for more details on this syntax.
@@ -246,25 +243,18 @@ x_trials, x_active_indices_trials = source_simulator.simulate(**simulation_param
 # Let's inspect the simulation results
 
 print(f"\nSimulation Results:")
-print(f"  - Output shape: {x_trials.shape}")
-print(f"    - {x_trials.shape[0]} trials")
-print(f"    - {x_trials.shape[1]} sources") 
-print(f"    - {x_trials.shape[2]} time points")
-print(f"  - Active indices shape: {x_active_indices_trials.shape}")
-print(f"  - Data range: [{x_trials.min():.2e}, {x_trials.max():.2e}] Am")
-
-print(f"\nActive Sources by Trial:")
-for i, indices in enumerate(x_active_indices_trials):
-    print(f"  Trial {i+1}: sources {[int(idx) for idx in sorted(indices)]}")
+print(f"  - Output shape: {x.shape}")
+print(f"    - {x.shape[0]} sources") 
+print(f"    - {x.shape[1]} time points")
+print(f"  - Active indices: {x_active_indices}")
+print(f"  - Data range: [{x.min():.2e}, {x.max():.2e}] Am")
 
 # Check for non-zero activity only in active sources
-trial_0 = x_trials[0]  # First trial
-active_sources_0 = x_active_indices_trials[0]
-n_nonzero = np.count_nonzero(np.any(trial_0, axis=1))
+n_nonzero = np.count_nonzero(np.any(x, axis=1))
 print(f"\nValidation:")
 print(f"  - Sources with non-zero activity: {n_nonzero}")
-print(f"  - Expected active sources: {len(active_sources_0)}")
-print(f"  - Match: {n_nonzero == len(active_sources_0)}")
+print(f"  - Expected active sources: {len(x_active_indices)}")
+print(f"  - Match: {n_nonzero == len(x_active_indices)}")
 
 # %%
 # Visualization with CaliBrain
@@ -285,37 +275,18 @@ viz = Visualizer(base_save_path=str(save_path), logger=logger)
 #    For an in-depth guide to the :class:`~calibrain.visualization.Visualizer` class and advanced visualization techniques, refer to the :ref:`tut-visualization` tutorial.
 
 # %%
-# **Plot All Trials**
+# **Visualize Source Activity**
 #
-# First, let's visualize source activity across all trials:
+# Let's visualize the simulated source activity:
 
 viz.plot_source_signals(
     ERP_config=source_simulator.ERP_config,
-    x_trials=x_trials,
-    x_active_indices=x_active_indices_trials,
+    x=x,
+    x_active_indices=x_active_indices,
     units=source_simulator.units,
-    trial_idx=None,  # If None, all trials are plotted
-    title="Source Activity - All Trials",
+    title="Source Activity",
     save_dir="source_simulation",
-    file_name="all_trials_overview",
-    show=True
-)
-
-# %%
-# **Plot Single Trial**
-#
-# Now let's examine a single trial in detail:
-
-trial_idx = 0
-viz.plot_source_signals(
-    ERP_config=source_simulator.ERP_config,
-    x_trials=x_trials,
-    x_active_indices=x_active_indices_trials,
-    units=source_simulator.units,
-    trial_idx=trial_idx,
-    title=f"Source Activity - Trial {trial_idx+1}",
-    save_dir="source_simulation", 
-    file_name=f"trial_{trial_idx+1}",
+    file_name="source_signals",
     show=True
 )
 
@@ -384,22 +355,21 @@ comparison_params = {
     "orientation_type": "fixed",
     "n_sources": 20,
     "nnz": 3,
-    "n_trials": 1,
-    "global_seed": 42
+    "seed": 42
 }
 
 # Generate fast ERPs
 x_fast, x_fast_indices = simulator_fast.simulate(**comparison_params)
 
 # Generate slow ERPs (use different seed for variety)
-comparison_params["global_seed"] = 84
+comparison_params["seed"] = 84
 x_slow, x_slow_indices = simulator_slow.simulate(**comparison_params)
 
 print(f"\nComparison Results:")
-print(f"  Fast ERPs shape: {x_fast.shape}") # (n_trials, n_sources, n_timepoints)
-print(f"  Slow ERPs shape: {x_slow.shape}") # (n_trials, n_sources, n_timepoints)
-print(f"  Fast ERP active sources: {x_fast_indices[0]}")
-print(f"  Slow ERP active sources: {x_slow_indices[0]}")
+print(f"  Fast ERPs shape: {x_fast.shape}") # (n_sources, n_timepoints)
+print(f"  Slow ERPs shape: {x_slow.shape}") # (n_sources, n_timepoints)
+print(f"  Fast ERP active sources: {x_fast_indices}")
+print(f"  Slow ERP active sources: {x_slow_indices}")
 
 # %%
 # 
@@ -409,7 +379,7 @@ print(f"  Slow ERP active sources: {x_slow_indices[0]}")
 
 viz.plot_source_signals(
     ERP_config=simulator_fast.ERP_config,
-    x_trials=x_fast,
+    x=x_fast,
     x_active_indices=x_fast_indices,
     units=simulator_fast.units,
     title="High-Frequency Fast ERPs (8-30 Hz)",
@@ -423,7 +393,7 @@ viz.plot_source_signals(
 
 viz.plot_source_signals(
     ERP_config=simulator_slow.ERP_config,
-    x_trials=x_slow,
+    x=x_slow,
     x_active_indices=x_slow_indices,
     units=simulator_slow.units,
     title="Low-Frequency Slow ERPs (0.5-3 Hz)",
@@ -461,26 +431,25 @@ L = leadfield_builder.get_leadfield(
 
 # 2. Simulate source activity  
 source_simulator = SourceSimulator(ERP_config=erp_config)
-x_trials, x_active_indices = source_simulator.simulate(
+x, x_active_indices = source_simulator.simulate(
     orientation_type="fixed",
     n_sources=L.shape[1],  # Match leadfield dimensions
     nnz=5,
-    n_trials=10
+    seed=42
 )
 
 # 3. Simulate sensor measurements
 sensor_simulator = SensorSimulator()
 y_clean, y_noisy, noise, noise_var = sensor_simulator.simulate(
-    x_trials=x_trials,
+    x=x,
     L=L,
-    alpha_SNR=0.1,
-    n_trials=10
+    alpha_SNR=0.1
 )
 
 # 4. Estimate sources
 source_estimator = SourceEstimator(solver="gamma_map")
-source_estimator.fit(L, y_noisy[0])
-    solver_result = source_estimator.predict(y_noisy[0])
+source_estimator.fit(L, y_noisy)
+    solver_result = source_estimator.predict(y_noisy)
     x_hat = solver_result["posterior_mean"]
     x_hat_indices = solver_result.get("active_indices")
     posterior_cov = solver_result.get("posterior_cov")
@@ -489,7 +458,7 @@ source_estimator.fit(L, y_noisy[0])
 uncertainty_estimator = UncertaintyEstimator()
 ci_lower, ci_upper, _, empirical_coverage = \\
     uncertainty_estimator.get_credible_intervals_data(
-        x=x_trials[0],
+        x=x,
         x_hat=x_hat,
         posterior_cov=posterior_cov,
         orientation_type="fixed"
@@ -498,13 +467,13 @@ ci_lower, ci_upper, _, empirical_coverage = \\
 # 6. Evaluate performance
 metric_evaluator = MetricEvaluator()
 metrics = metric_evaluator.evaluate(
-    x_true=x_trials[0],
+    x_true=x,
     x_hat=x_hat,
-    active_indices_true=x_active_indices[0],
+    active_indices_true=x_active_indices,
     active_indices_hat=x_hat_indices
 )
 
 # 7. Visualize results
 visualizer = Visualizer()
-visualizer.plot_source_comparison(x_trials, x_hat, x_active_indices)
+visualizer.plot_source_comparison(x, x_hat, x_active_indices)
 '''
