@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 import mne
 import os
+import numpy as np
 
 
 def load_config(config_file: str, logger=None) -> dict:
@@ -127,3 +128,28 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     data_path.mkdir(parents=True, exist_ok=True)
     
     return data_path
+
+
+def restrict_fwd_to_sources(
+    fwd,
+    n_keep=1284,
+    hemi="lh",
+    seed=None,
+):
+    hemi_idx = 0 if hemi == "lh" else 1
+    hemi_vertices = fwd["src"][hemi_idx]["vertno"]
+    if n_keep > len(hemi_vertices):
+        raise ValueError(f"Only {len(hemi_vertices)} sources in {hemi}")
+
+    rng = np.random.default_rng(seed)
+    sel = np.sort(rng.choice(len(hemi_vertices), size=n_keep, replace=False))
+    selected_vertices = hemi_vertices[sel]
+
+    # Build a SourceEstimate whose vertex lists already encode the subset we keep.
+    vertices = [np.array([], dtype=int), np.array([], dtype=int)]
+    vertices[hemi_idx] = selected_vertices
+    data = np.ones((len(selected_vertices), 1))
+
+    stc = mne.SourceEstimate(data, vertices=vertices, tmin=0.0, tstep=1.0)
+    
+    return mne.forward.restrict_forward_to_stc(fwd, stc, on_missing="raise")
