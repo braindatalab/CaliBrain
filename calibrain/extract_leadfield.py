@@ -19,13 +19,16 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         Type of channels to filter in the forward solution. Options are 'meg' for magnetometers, 'grad' for gradiometers, or 'eeg' for EEG channels.
     orientation_type : str, optional
         Orientation type of the leadfield. Options are 'fixed' or 'free'. Default is 'fixed'.
+    save_path : str
+        Path to save the extracted leadfield .npz file.   
     """
     fwd_path = f"{fwd_datapath}/{subject}-fwd.fif"
     print(f"Loading forward solution from {fwd_path}")
     
     fwd = mne.read_forward_solution(fwd_path, verbose='error')
-    print(f"\nNumber of channels before filtering: {len(fwd['info']['chs'])}")
-
+    print(f"Number of sources: {fwd['nsource']}")
+    print(f"Number of channels: {len(fwd['info']['chs'])}")
+            
     if orientation_type == 'fixed':        
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
             print("Forward solution orientation is already fixed")
@@ -57,8 +60,6 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         
     else:
         raise ValueError(f"Unknown channel type: {coil_name}")
-
-    print(f"Selecting {coil_name} channels with unit code {FIFF.FIFF_UNIT_T if coil_name == 'meg' else FIFF.FIFF_UNIT_T_M}")
 
     # slice all channels with unit equal to 112 (FIFF_UNIT_T)
     fwd = fwd.pick_channels(mag_channels)
@@ -136,8 +137,13 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     np.savez(save_path, **leadfield_data)
     print(f"Leadfield saved to {save_path}")
 
-fwd_datapath = get_data_path() / 'fwd'
-save_path = get_data_path() / 'leadfield'
+# full sources in fwd
+# fwd_datapath = get_data_path() / 'fwd'
+# save_path = get_data_path() / 'leadfield' 
+
+# reduced sources in fwd
+fwd_datapath = get_data_path() / 'rh1284_fwd'
+save_path = get_data_path() / 'rh1284_leadfield' 
 
 subjects_map = {
     'eeg': ['fsaverage'],

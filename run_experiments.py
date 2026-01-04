@@ -72,7 +72,8 @@ def main():
         logger=logger
     )
 
-    leadfield_dir = get_data_path() / "leadfield"
+    # leadfield_dir = get_data_path() / "leadfield"
+    leadfield_dir = get_data_path() / "rh1284_leadfield"
     leadfield_builder = LeadfieldBuilder(
         leadfield_dir=leadfield_dir,
         logger=logger,
@@ -83,7 +84,8 @@ def main():
     )
 
     # nominal coverage levels   
-    nominal_coverages = np.arange(0.1, 1.1, 0.1)  # [0.1, 0.2, ..., 1.0] # 10 values
+    # nominal_coverages = np.arange(0.1, 1.1, 0.1)  # [0.1, 0.2, ..., 1.0] # 10 values
+    nominal_coverages = np.linspace(0.1, 0.999, num=10)
     uncertainty_estimator = UncertaintyEstimator(
         nominal_coverages=nominal_coverages,
         logger=logger,
@@ -95,7 +97,7 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166"], # "CC120264", "CC120309", "CC120313"],
-        "nnz": [1, 7],
+        "nnz": [7, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
@@ -169,13 +171,13 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-        #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
         # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
@@ -204,7 +206,7 @@ def main():
             "emd",                          # Spatial accuracy
             "jaccard_error",
             "mse",
-            "euclidean_distance",           # Detection
+            # "euclidean_distance",           # raises error for active_set = x / x_hat
             "f1",
             "accuracy",
         ),
