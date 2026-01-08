@@ -1704,7 +1704,7 @@ def gamma_lambda_map(
     tol=1e-15,
     update_mode=2,           # For source updates
     update_mode_noise=2,     # For noise updates
-    verbose=True,
+    verbose=False,
     logger=None,
     **kwargs
 ):
@@ -1804,7 +1804,7 @@ def gamma_lambda_map(
 def sflex_gamma_lambda_map(
     L, y, fwd_path, sigma, init_gamma=None, init_lambda=None, update_mode_noise=2,
     n_orient=1, max_iter=1000, tol=1e-15, update_mode=2,
-    verbose=True, logger=None, threshold_factor=3.0
+    verbose=False, logger=None, threshold_factor=3.0
 ):
     """
     sFLEX + Gamma–Lambda MAP joint learning.

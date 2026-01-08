@@ -51,6 +51,8 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
+    nruns = 25
+    
     ERP_config = {
         "tmin": -0.5,
         "tmax": 0.5,
@@ -96,8 +98,8 @@ def main():
     # ==================================================================
     # MEG data parameters
     data_param_grid_meg = {
-        "subject": ["CC120166"], # "CC120264", "CC120309", "CC120313"],
-        "nnz": [7, 10],
+        "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+        "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
         "sensor_white_noise_var": [1.0 * 0.001],
@@ -116,7 +118,7 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle", "baseline"], 
+        "noise_type": ["oracle"], # "baseline", 
         # add noise parameters here if needed
     }
     
@@ -171,10 +173,10 @@ def main():
     estimators = [
         # ================ MEG experiments ================
         # ---------------- eLORETA ----------------
-        # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
+        (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
          (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
@@ -226,7 +228,6 @@ def main():
         logger=logger,
     )
 
-    nruns = 1
     benchmark_n_jobs = 1
     logger.info(
         "Benchmark parallel workers: n_jobs=%s, experiments per configuration: %s",

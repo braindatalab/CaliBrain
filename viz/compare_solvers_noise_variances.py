@@ -288,14 +288,8 @@ def main():
     # Example usage for new summary figure
     # Paste your CSV file paths here
     CSV_FILES = [
-        'results/benchmark_results/benchmark_results_20251128_160842_eloreta_oracle.csv',
-        'results/benchmark_results/benchmark_results_20251128_161645_eloreta_baseline.csv',
-        'results/benchmark_results/benchmark_results_20251128_162514_eloreta_spatialCV.csv',
-        'results/benchmark_results/benchmark_results_20251128_160915_sflex_oracle.csv',
-        'results/benchmark_results/benchmark_results_20251128_173356_sflex_baseline.csv',
-        'results/benchmark_results/benchmark_results_20251128_185913_sflex_spatialCV.csv',
-        'results/benchmark_results/benchmark_results_20251128_160858_bmn_oracle.csv',
-        'results/benchmark_results/benchmark_results_20251128_185729_bmn_baseline.csv',
+        # 'results/benchmark_results/benchmark_results_20251128_160842_eloreta_oracle.csv',
+        '/Users/orabe/0.braindata/CaliBrain/results/benchmark_results/benchmark_results_20260106_190753.csv',
     ]
     comparison_dir = Path("results/benchmark_results/noise_variance_comparisons")
     comparison_dir.mkdir(parents=True, exist_ok=True)
@@ -307,7 +301,7 @@ def main():
         plot_summary_metrics_by_snr_solver_fixed(
             df,
             output_solver_fixed,
-            nnz=5,
+            nnz=10,
             orientation_type="fixed",
             solver=solver
         )

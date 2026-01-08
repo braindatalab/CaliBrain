@@ -277,7 +277,7 @@ class Visualizer:
             tmin, tmax, stim_onset, sfreq, times = self._get_plot_params(ERP_config, x_one_trial.shape[-1])
 
             # Load forward solution
-            fwd = mne.read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+            fwd = mne.read_forward_solution(f"{'rh1284_' + fwd_path}/{subject}-fwd.fif")
             vertices = [src_hemi['vertno'] for src_hemi in fwd['src']]
             
             # Create source estimates
