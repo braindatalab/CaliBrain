@@ -88,7 +88,7 @@ def plot_violin_box_metrics(
     title_context: Optional[str] = None,
 ) -> None:
     # Remove inf and -inf values globally before plotting
-    df = df.replace([np.inf, -np.inf], np.nan)
+    df = _sanitize_dataframe(df)
     # Filter out metrics that are all-NaN for this solver
     filtered_metrics = []
     for metric in metrics:
@@ -108,17 +108,14 @@ def plot_violin_box_metrics(
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
     axes = np.atleast_1d(axes).ravel()
 
-    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
-    seeds_per_subject = None
-    if n_subjects and 'run_id' in df.columns:
-        seeds_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    n_subjects, seeds_per_subject, subject_seed_sample_count = _compute_subject_seed_stats(df)
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
-        sample_count = plot_metric_violin_box(ax, df, metric)
-        title_suffix = f" (n={sample_count})"
-        ax.set_title(f"{metric.label}{title_suffix}")
-        ax.set_xlabel("SNR (alpha_SNR)")
-        ax.set_ylabel(metric.label)
+        fallback_count = plot_metric_violin_box(ax, df, metric)
+        sample_count = subject_seed_sample_count if subject_seed_sample_count is not None else fallback_count
+        label_suffix = f" (n={sample_count})"
+        ax.set_xlabel("SNR")
+        ax.set_ylabel(f"{metric.label}{label_suffix}")
         ax.grid(True, axis="y", alpha=0.2)
 
     for idx in range(len(metrics), len(axes)):
@@ -132,10 +129,14 @@ def plot_violin_box_metrics(
         fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}" if n_subjects and seeds_per_subject else ""
+    extra_info = (
+        f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}"
+        if n_subjects and seeds_per_subject is not None
+        else ""
+    )
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
-    main_title = "Violin+Boxplot of Calibration and Evaluation Metrics by SNR"
+    main_title = "Calibration and Evaluation Metrics by SNR"
     fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
     if subtitle:
         fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
@@ -216,7 +217,7 @@ def plot_boxplot_metrics(
     title_context: Optional[str] = None,
 ) -> None:
     # Remove inf and -inf values globally before plotting
-    df = df.replace([np.inf, -np.inf], np.nan)
+    df = _sanitize_dataframe(df)
     # Filter out metrics that are all-NaN for this solver
     filtered_metrics = []
     for metric in metrics:
@@ -236,17 +237,14 @@ def plot_boxplot_metrics(
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
     axes = np.atleast_1d(axes).ravel()
 
-    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
-    seeds_per_subject = None
-    if n_subjects and 'run_id' in df.columns:
-        seeds_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    n_subjects, seeds_per_subject, subject_seed_sample_count = _compute_subject_seed_stats(df)
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
-        sample_count = plot_metric_boxplot(ax, df, metric)
-        title_suffix = f" (n={sample_count})"
-        ax.set_title(f"{metric.label}{title_suffix}")
-        ax.set_xlabel("SNR (alpha_SNR)")
-        ax.set_ylabel(metric.label)
+        fallback_count = plot_metric_boxplot(ax, df, metric)
+        sample_count = subject_seed_sample_count if subject_seed_sample_count is not None else fallback_count
+        label_suffix = f" (n={sample_count})"
+        ax.set_xlabel("SNR")
+        ax.set_ylabel(f"{metric.label}{label_suffix}")
         ax.grid(True, axis="y", alpha=0.2)
 
     for idx in range(len(metrics), len(axes)):
@@ -260,10 +258,14 @@ def plot_boxplot_metrics(
         fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}" if n_subjects and seeds_per_subject else ""
+    extra_info = (
+        f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}"
+        if n_subjects and seeds_per_subject is not None
+        else ""
+    )
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
-    main_title = "Boxplot of Calibration and Evaluation Metrics by SNR"
+    main_title = "Calibration and Evaluation Metrics by SNR"
     fig.suptitle(main_title, fontsize=18, fontweight="bold", y=0.995)
     if subtitle:
         fig.text(0.5, 0.96, subtitle.strip(), ha="center", va="top", fontsize=14)
@@ -289,6 +291,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch
+
+pd.set_option("future.no_silent_downcasting", True)
 
 SNR_COLUMN = "alpha_SNR"
 
@@ -339,6 +343,35 @@ METRICS: List[MetricSpec] = [
 
 PRE_COLOR = "#1f77b4"
 POST_COLOR = "#d62728"
+
+
+def _compute_subject_seed_stats(df: pd.DataFrame) -> Tuple[Optional[int], Optional[float], Optional[int]]:
+    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
+    seeds_per_subject: Optional[float] = None
+    sample_count: Optional[int] = None
+    if n_subjects and 'run_id' in df.columns:
+        seeds_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+        if seeds_per_subject is not None and not pd.isna(seeds_per_subject):
+            sample_count = int(round(n_subjects * seeds_per_subject))
+    return n_subjects, seeds_per_subject, sample_count
+
+
+def _count_metric_samples(df: pd.DataFrame, metric: MetricSpec) -> int:
+    if metric.has_pre_post:
+        counts_df = df[[metric.pre_column, metric.post_column]].dropna(how="all")
+    else:
+        counts_df = df[[metric.value_column]].dropna()
+    return int(len(counts_df))
+
+
+def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Replace +/- inf with NaN and keep object dtypes consistent."""
+    cleaned = df.replace([np.inf, -np.inf], np.nan)
+    try:
+        cleaned = cleaned.infer_objects(copy=False)
+    except AttributeError:
+        pass
+    return cleaned
 
 
 def _coerce_value(value: str):
@@ -501,7 +534,7 @@ def plot_violin_metrics(
     title_context: Optional[str] = None,
 ) -> None:
     # Remove inf and -inf values globally before plotting
-    df = df.replace([np.inf, -np.inf], np.nan)
+    df = _sanitize_dataframe(df)
     # Filter out metrics that are all-NaN for this solver
     filtered_metrics = []
     for metric in metrics:
@@ -521,17 +554,14 @@ def plot_violin_metrics(
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(7 * ncols, 4 * nrows), sharex=False)
     axes = np.atleast_1d(axes).ravel()
 
-    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
-    runs_per_subject = None
-    if n_subjects and 'run_id' in df.columns:
-        runs_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    n_subjects, seeds_per_subject, subject_seed_sample_count = _compute_subject_seed_stats(df)
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
-        sample_count = plot_metric_violin(ax, df, metric)
-        title_suffix = f" (n={sample_count})"
-        ax.set_title(f"{metric.label}{title_suffix}")
-        ax.set_xlabel("SNR (alpha_SNR)")
-        ax.set_ylabel(metric.label)
+        fallback_count = plot_metric_violin(ax, df, metric)
+        sample_count = subject_seed_sample_count if subject_seed_sample_count is not None else fallback_count
+        label_suffix = f" (n={sample_count})"
+        ax.set_xlabel("SNR")
+        ax.set_ylabel(f"{metric.label}{label_suffix}")
         ax.grid(True, axis="y", alpha=0.2)
 
     for idx in range(len(metrics), len(axes)):
@@ -545,7 +575,11 @@ def plot_violin_metrics(
         fig.legend(handles=legend_handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.89), fontsize=16)
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    extra_info = (
+        f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}"
+        if n_subjects and seeds_per_subject is not None
+        else ""
+    )
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
     # Improved title
@@ -600,7 +634,7 @@ def plot_summary_metrics(
     title_context: Optional[str] = None,
 ) -> None:
     # Remove inf and -inf values globally before plotting
-    df = df.replace([np.inf, -np.inf], np.nan)
+    df = _sanitize_dataframe(df)
     # Filter out metrics that are all-NaN for this solver
     filtered_metrics = []
     for metric in metrics:
@@ -621,21 +655,19 @@ def plot_summary_metrics(
     axes = np.atleast_1d(axes).ravel()
 
 
-    n_subjects = df['subject'].nunique() if 'subject' in df.columns else None
-    runs_per_subject = None
-    if n_subjects and 'run_id' in df.columns:
-        runs_per_subject = df.groupby('subject')['run_id'].nunique().mean()
+    n_subjects, seeds_per_subject, subject_seed_sample_count = _compute_subject_seed_stats(df)
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
+        fallback_count = _count_metric_samples(df, metric)
+        sample_count = subject_seed_sample_count if subject_seed_sample_count is not None else fallback_count
         summary = summarize_metric(df, metric)
         if summary.empty:
             ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
-            ax.set_title(metric.label)
+            ax.set_xlabel("SNR")
+            ax.set_ylabel(f"{metric.label} (n={sample_count})")
             continue
 
         x_values = summary["snr"].to_numpy()
-
-        title_label = f"{metric.label} (mean ± std)"
 
         if metric.has_pre_post:
             ax.errorbar(
@@ -673,9 +705,8 @@ def plot_summary_metrics(
             )
             _fill_confidence_band(ax, x_values, summary["value_mean"], summary["value_std"], PRE_COLOR)
 
-        ax.set_title(title_label)
-        ax.set_xlabel("SNR (alpha_SNR)")
-        ax.set_ylabel(metric.label)
+        ax.set_xlabel("SNR")
+        ax.set_ylabel(f"{metric.label} (n={sample_count})")
         ax.grid(True, alpha=0.25)
 
     # Shared legend outside all subplots if any metric has pre/post
@@ -691,11 +722,15 @@ def plot_summary_metrics(
         axes[idx].axis("off")
 
     subtitle = title_context or ""
-    extra_info = f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {runs_per_subject:.1f}" if n_subjects and runs_per_subject else ""
+    extra_info = (
+        f"Subjects: {n_subjects if n_subjects is not None else 'N/A'}, Seeds/Subject: {seeds_per_subject:.1f}"
+        if n_subjects and seeds_per_subject is not None
+        else ""
+    )
     if extra_info:
         subtitle = f"{subtitle}\n{extra_info}" if subtitle else extra_info
     # Improved title
-    main_title = "Summary of Calibration and Evaluation Metrics by SNR (mean ± std)"
+    main_title = "Calibration and Evaluation Metrics by SNR (mean ± std)"
     fig.suptitle(main_title, fontsize=18, fontweight="bold")
     if subtitle:
         fig.text(0.5, 0.93, subtitle.strip(), ha="center", va="top", fontsize=14)
@@ -765,17 +800,17 @@ def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path
 
 def main() -> None:
     # --- User-configurable section -------------------------------------------------
-    filename = 'benchmark_results_20251202_004042_sflex_oracle_noWhitening'
+    filename = 'benchmark_results_20260106_190753'
     path_to_csv = Path("results/benchmark_results/") / f"{filename}.csv"
-    solver_name: Optional[str] = "sflex_gamma_map"
+    solver_name: Optional[str] = "BMN"
     figures_root = Path("results/benchmark_results/") / filename
     show_violin = False
     show_summary = False
 
     filter_dict: Dict[str, object] = {
-        "nnz": 5,
+        "nnz": 10,
         "orientation_type": "fixed",
-        "noise_type": "oracle",
+        "noise_type": "baseline",
         "subject": None,
     }
     extra_filters: List[str] = []
