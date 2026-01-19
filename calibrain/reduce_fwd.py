@@ -4,11 +4,10 @@ import numpy as np
 import os
 from pathlib import Path
 
-hemi = "rh"
-n_keep = 1284
+n_keep_per_hemi = 642
 
 fwd_datapath = get_data_path() / 'fwd'
-save_path = Path(get_data_path() / f'{hemi}{n_keep}_fwd')
+save_path = Path(get_data_path() / f'{2*n_keep_per_hemi}src_fwd')
 os.makedirs(save_path, exist_ok=True)
 
 subjects_map = {
@@ -29,8 +28,7 @@ for coil_name, subjects in subjects_map.items():
         
         fwd_subset = restrict_fwd_to_sources(
             fwd,
-            n_keep=n_keep,
-            hemi=hemi,
+            n_keep=n_keep_per_hemi,
             seed=42,
         )
         print(f"Number of sources after reduction: {fwd_subset['nsource']}")

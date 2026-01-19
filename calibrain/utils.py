@@ -133,23 +133,41 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
 def restrict_fwd_to_sources(
     fwd,
     n_keep=1284,
-    hemi="lh",
     seed=None,
 ):
-    hemi_idx = 0 if hemi == "lh" else 1
-    hemi_vertices = fwd["src"][hemi_idx]["vertno"]
-    if n_keep > len(hemi_vertices):
-        raise ValueError(f"Only {len(hemi_vertices)} sources in {hemi}")
+    """
+    Randomly reduce a forward solution to a subset of sources on both hemispheres.
 
-    rng = np.random.default_rng(seed)
-    sel = np.sort(rng.choice(len(hemi_vertices), size=n_keep, replace=False))
-    selected_vertices = hemi_vertices[sel]
+    Parameters
+    ----------
+    fwd : mne.Forward
+        Forward solution to restrict.
+    n_keep : int
+        Number of sources to keep per hemisphere.
+    seed : int | None
+        Random seed for selecting vertices.
+    """
 
-    # Build a SourceEstimate whose vertex lists already encode the subset we keep.
+    if not isinstance(n_keep, int):
+        raise TypeError("n_keep must be an integer.")
+    if n_keep <= 0:
+        raise ValueError("n_keep must be positive.")
+
     vertices = [np.array([], dtype=int), np.array([], dtype=int)]
-    vertices[hemi_idx] = selected_vertices
-    data = np.ones((len(selected_vertices), 1))
+    rng = np.random.default_rng(seed)
+    data_segments = []
 
+    for hemi_idx in (0, 1):
+        hemi_vertices = fwd["src"][hemi_idx]["vertno"]
+        if n_keep > len(hemi_vertices):
+            hemi = "lh" if hemi_idx == 0 else "rh"
+            raise ValueError(f"Only {len(hemi_vertices)} sources in {hemi}")
+
+        sel = np.sort(rng.choice(len(hemi_vertices), size=n_keep, replace=False))
+        vertices[hemi_idx] = hemi_vertices[sel]
+        data_segments.append(np.ones((n_keep, 1)))
+
+    data = np.vstack(data_segments)
     stc = mne.SourceEstimate(data, vertices=vertices, tmin=0.0, tstep=1.0)
-    
+
     return mne.forward.restrict_forward_to_stc(fwd, stc, on_missing="raise")
