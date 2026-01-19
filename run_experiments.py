@@ -51,7 +51,7 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
-    nruns = 25
+    nruns = 2
     
     ERP_config = {
         "tmin": -0.5,
@@ -75,7 +75,7 @@ def main():
     )
 
     # leadfield_dir = get_data_path() / "leadfield"
-    leadfield_dir = get_data_path() / "rh1284_leadfield"
+    leadfield_dir = get_data_path() / "1284src_leadfield"
     leadfield_builder = LeadfieldBuilder(
         leadfield_dir=leadfield_dir,
         logger=logger,

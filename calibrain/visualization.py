@@ -277,7 +277,7 @@ class Visualizer:
             tmin, tmax, stim_onset, sfreq, times = self._get_plot_params(ERP_config, x_one_trial.shape[-1])
 
             # Load forward solution
-            fwd = mne.read_forward_solution(f"{'rh1284_' + fwd_path}/{subject}-fwd.fif")
+            fwd = mne.read_forward_solution(f"{'1284src_' + fwd_path}/{subject}-fwd.fif")
             vertices = [src_hemi['vertno'] for src_hemi in fwd['src']]
             
             # Create source estimates
@@ -659,8 +659,10 @@ class Visualizer:
     
         # Create grid of subplots for all confidence levels
         n_levels = len(confidence_levels)
-        n_cols = min(4, n_levels)
-        n_rows = int(np.ceil(n_levels / n_cols))
+        if n_levels == 0:
+            raise ValueError("confidence_levels must contain at least one entry.")
+        n_rows = 2 if n_levels > 1 else 1
+        n_cols = int(np.ceil(n_levels / n_rows))
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0], figsize[1]), squeeze=False, sharex=True, sharey=sharey)
         axes = axes.flatten()
         

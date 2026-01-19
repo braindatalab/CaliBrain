@@ -142,8 +142,8 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
 # save_path = get_data_path() / 'leadfield' 
 
 # reduced sources in fwd
-fwd_datapath = get_data_path() / 'rh1284_fwd'
-save_path = get_data_path() / 'rh1284_leadfield' 
+fwd_datapath = get_data_path() / '1284src_fwd'
+save_path = get_data_path() / '1284src_leadfield' 
 
 subjects_map = {
     'eeg': ['fsaverage'],
