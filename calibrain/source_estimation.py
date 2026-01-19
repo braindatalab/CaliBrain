@@ -279,28 +279,39 @@ def _gamma_map_opt(
 
 def compute_B(src_coords, sigma, threshold_factor=3.0):
     """
-    For a sparse basis field expansion we are using radial basis functions;
-    spherical Gaussian basis on R^3 (see formula (6) in [1]).
-    B[i,j] = (2πσ^2)^(-3/2) * exp(-||X[i]-X[j]||^2 / (2σ^2)),
-    truncated to radius r = threshold_factor * sigma for sparsity.
+    Compute sFLEX basis matrix B using truncated RBF weights.
 
-    [1] Haufe et al., NIPS 2008.
+    Parameters
+    ----------
+    src_coords : ndarray, shape (N,3)
+        Source coordinates.
+    sigma : float
+        RBF width.
+    threshold_factor : float
+        Truncation radius multiplier.
+
+    Returns
+    -------
+    B : scipy.sparse.csr_matrix, shape (N,N)
+        Sparse basis matrix.
     """
     src_coords = np.asarray(src_coords, float)
-    N, D = src_coords.shape                     # D should be 3 (x,y,z per location)
-    assert D == 3, "src_coords must have shape (N,3) with 3D coordinates."
+    N, D = src_coords.shape
+    if D != 3:
+        raise ValueError("src_coords must have shape (N,3).")
 
-    dist2 = squareform(pdist(src_coords, 'sqeuclidean'))   # pairwise squared Euclidean distances (N×N)
-    r2 = (threshold_factor * sigma) ** 2          # squared cutoff radius
-    mask = dist2 <= r2                            # keep only neighbors within r
-    rows, cols = np.nonzero(mask)                 # COO indices for kept pairs
+    dist2 = squareform(pdist(src_coords, 'sqeuclidean'))
+    r2 = (threshold_factor * sigma) ** 2
+    mask = dist2 <= r2
+    rows, cols = np.nonzero(mask)
 
-    pref = (2.0 * np.pi * sigma**2) ** (-1.5)     # (2πσ²)^(-3/2) — 3D normalization factor
-    weights = pref * np.exp(-dist2[rows, cols] / (2.0 * sigma**2))  # Gaussian weights
+    pref = (2.0 * np.pi * sigma**2) ** (-1.5)
+    weights = pref * np.exp(-dist2[rows, cols] / (2.0 * sigma**2))
 
-    B = coo_matrix((weights, (rows, cols)), shape=(N, N))  # build sparse matrix from triplets
-    B = (B + B.T) * 0.5                                 # symmetrize without doubling off-diagonals
-    return B.tocsr()                                     # CSR for fast algebra later
+    B = coo_matrix((weights, (rows, cols)), shape=(N, N))
+    B = (B + B.T) * 0.5
+    return B.tocsr()
+
 
 
 def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
@@ -1367,57 +1378,65 @@ def _lambda_opt(
     current_lambda, CMinv, update_mode_noise
 ):
     """
-    Update noise variance (lambda) using EM (expectation maximization) or CB (convex bounding) update rules.
+    Update noise variance lambda (NORMALIZED scale) using EM or Convex Bounding.
 
-    Parameters
-    ----------
-    M : array, shape (n_sensors, n_times)
-        Normalized sensor data matrix.
-    G : array, shape (n_sensors, n_active_sources)
-        Normalized forward operator (only active columns).
-    x_hat_full : array, shape (n_sources, n_times)
-        Source estimates for all sources (0 for inactive).
-    posterior_cov_active : array, shape (n_active, n_active)
-        Posterior covariance of active sources (normalized frame).
-    active_indices : array of int, shape (n_active,)
-        Indices of current active sources.
-    current_lambda : array, shape (n_sensors,)
-        Current noise variance estimates (normalized frame).
-    CMinv : array, shape (n_sensors, n_sensors)
-        Inverse sensor covariance Σ_y^{-1} (normalized frame).
-    update_mode_noise : {1, 2}
-        1 → EM update, 2 → Convex Bounding update.
+    Parameters (all NORMALIZED scale)
+    Note: Ka = len(active_indices)
+    --------------------------------
+    M : ndarray, shape (M,T)
+        Normalized sensor data.
+    G : ndarray, shape (M,Ka)
+        Active leadfield (columns for active sources).
+    x_hat_full : ndarray, shape (N,T)
+        Full posterior mean in coefficient space (zeros for inactive).
+    posterior_cov_active : ndarray, shape (Ka,Ka)
+        Posterior covariance on active set.
+    active_indices : ndarray, shape (Ka,)
+        Active indices into full source set.
+    current_lambda : ndarray, shape (M,)
+        Current lambda (normalized).
+    CMinv : ndarray, shape (M,M)
+        Inverse sensor covariance.
+    update_mode_noise : int
+        1 = EM update, 2 = Convex Bounding update rule.
 
     Returns
     -------
-    lambda_new : array, shape (n_sensors,)
-        Updated noise variance estimates (normalized frame, positive).
+    lambda_new : ndarray, shape (M,)
+        Updated lambda (normalized).
     """
     n_sensors = M.shape[0]
+    n_sources = x_hat_full.shape[0]
+    n_active = len(active_indices)
     lambda_new = np.zeros(n_sensors)
 
     # Full forward operator (with zeros at inactive columns)
-    G_full = np.zeros((G.shape[0], x_hat_full.shape[0]))
+    G_full = np.zeros((n_sensors, n_sources))
+
+    # Ensure G has exactly n_active columns
+    if G.shape[1] != n_active:
+        if G.shape[1] > n_active:
+            G = G[:, :n_active]
+        elif G.shape[1] < n_active:
+            G_padded = np.zeros((n_sensors, n_active))
+            G_padded[:, :G.shape[1]] = G
+            G = G_padded
+
     G_full[:, active_indices] = G
 
-    # Full posterior covariance (zeros for inactive sources)
-    posterior_cov_full = np.zeros((x_hat_full.shape[0], x_hat_full.shape[0]))
+    # Full posterior covariance (zeros for inactive)
+    posterior_cov_full = np.zeros((n_sources, n_sources))
     idx_active = np.ix_(active_indices, active_indices)
     posterior_cov_full[idx_active] = posterior_cov_active
 
     if update_mode_noise == 1:
-        # EM update:
-        # λ_m = (1/T) Σ_t [ (y_m(t) - [L x_hat(t)]_m)^2 + [L Σ_x L^T]_mm ]
         for m in range(n_sensors):
             residual = M[m] - np.dot(G_full[m], x_hat_full)
             residual_term = np.mean(residual ** 2)
-            L_m = G_full[m]
-            cov_term = np.dot(L_m, np.dot(posterior_cov_full, L_m))
+            cov_term = np.dot(G_full[m], np.dot(posterior_cov_full, G_full[m]))
             lambda_new[m] = residual_term + cov_term
 
     elif update_mode_noise == 2:
-        # Convex Bounding update:
-        # λ_m = sqrt( [ (1/T) Σ_t (y_m(t) - [L x_hat(t)]_m)^2 ] / [ (Σ_y^{-1})_{mm} ] )
         for m in range(n_sensors):
             residual = M[m] - np.dot(G_full[m], x_hat_full)
             numerator = np.mean(residual ** 2)
@@ -1429,183 +1448,201 @@ def _lambda_opt(
     else:
         raise ValueError("Noise update mode must be 1 (EM) or 2 (Convex Bounding)")
 
-    # keep strictly positive
     lambda_new = np.maximum(lambda_new, 1e-16)
     return lambda_new
 
-def _gamma_lambda_opt(
+def _gamma_map_opt_with_lambda(
     M,
     G,
-    init_gamma=None,
-    init_lambda=None,
+    sigma_squared,           # ORIGINAL scale fallback (only used if init_lambda is None AND learn_lambda=False)
     maxit=1000,
     tol=1e-6,
     update_mode=2,
-    update_mode_noise=2,
     group_size=1,
-    verbose=None,
-    logger=None,
+    init_gamma=None,
+    init_lambda=None,        # ORIGINAL scale init (or None)
+    learn_lambda=True,
+    update_mode_noise=2,
+    track_history=True,
+    verbose=False,
 ):
     """
-    Hierarchical Bayes (gamma-MAP) with joint source and noise learning.
+    Core Gamma-MAP optimizer with optional alternating lambda updates.
 
     Parameters
     ----------
-    M : array, shape (n_sensors, n_times)
-        Sensor data matrix. Will be normalized internally.
-    G : array, shape (n_sensors, n_sources)
-        Lead field matrix. Will be normalized internally.
-    init_gamma : array | float | tuple | None
-        Initial source variance estimates.
-    init_lambda : array | float | tuple | None
-        Initial noise variance estimates.
+    M : ndarray, shape (M,T)
+        Sensor data (original scale).
+    G : ndarray, shape (M,N)
+        Leadfield (original scale).
+    sigma_squared : float or ndarray, shape (M,)
+        Used ONLY when learn_lambda=False and init_lambda is None (fixed-lambda fallback).
     maxit : int
-        Maximum number of iterations.
+        Maximum iterations.
     tol : float
-        Convergence tolerance on max(err_gamma, err_lambda).
-    update_mode : {1, 2, 3}
-        Gamma update mode (MacKay / Convex Bounding / EM).
-    update_mode_noise : {1, 2}
-        Noise update mode (EM / Convex Bounding).
+        Tolerance on gamma relative change (stopping criterion).
+    update_mode : {1,2,3}
+        Gamma update rule variant.
     group_size : int
-        Number of sources sharing the same gamma (for orientation constraints).
-    verbose : bool | None
-        If True, prints each iteration info.
-    logger : object | None
-        Optional logger (currently unused).
+        Grouping size (1 fixed ori, 3 free ori grouping).
+    init_gamma : None or ndarray, shape (N,)
+        If None -> ones(N).
+    init_lambda : None or scalar or ndarray, shape (M,)
+        Original-scale initialization.
+        If None:
+          - learn_lambda=True  -> ones(M)
+          - learn_lambda=False -> derived from sigma_squared/noise_var
+    learn_lambda : bool
+        True: alternate gamma/lambda updates. False: keep lambda fixed.
+    update_mode_noise : {1,2}
+        Lambda update rule variant.
+    track_history : bool
+        If True, returns n_active_hist and err_hist.
+    verbose : bool
+        Print progress every ~50 iters.
 
     Returns
     -------
-    x_active : array, shape (n_active, n_times)
-        Posterior mean of active sources (original units).
-    active_indices : array, shape (n_active,)
-        Indices of active sources.
-    posterior_cov : array, shape (n_active, n_active)
-        Posterior covariance (original units).
-    lambdas : array, shape (n_sensors,)
-        Noise variances per sensor (original units).
-    lambda_scalar : float
-        Average noise variance.
-    err_gamma_hist : list of float
-        Relative gamma errors per iteration.
-    err_lambda_hist : list of float
-        Relative lambda errors per iteration.
-    gammas_full : array, shape (n_sources,)
-        Final gamma values for all sources (normalized parameterization).
-    gamma_norm : float
-        Euclidean norm of gammas_full.
+    x_active : ndarray, shape (Ka,T)
+        Posterior mean for active sources (ORIGINAL scale).
+    active_indices : ndarray, shape (Ka,)
+        Active indices.
+    posterior_cov_active : ndarray, shape (Ka,Ka)
+        Posterior covariance for active set (ORIGINAL scale).
+    gammas_full : ndarray, shape (N,)
+        Full gamma vector (inactive entries are 0).
+    lambda_final : ndarray, shape (M,)
+        Full lambda vector (ORIGINAL scale).
+    hist : dict
+        If track_history:
+          - n_active_hist : list[int]
+          - err_hist      : list[float]
+        else empty dict.
     """
-    G = G.copy()
-    M = M.copy()
+    G = np.asarray(G, dtype=float).copy()
+    M = np.asarray(M, dtype=float).copy()
+    if M.ndim == 1:
+        M = M[:, None]
 
     n_sources = G.shape[1]
     n_sensors, n_times = M.shape
-
     eps = np.finfo(float).eps
 
-    # Normalization (not whitening, because noise covariance is unknown and learned)
-    M_normalize_constant = np.linalg.norm(np.dot(M, M.T), ord="fro")
-    if M_normalize_constant > 0:
-        M /= np.sqrt(M_normalize_constant)
-        if init_lambda is not None:
-            init_lambda = init_lambda / M_normalize_constant
+    # -------------------------
+    # Normalization
+    # -------------------------
+    M_normalize_constant = np.linalg.norm(M @ M.T, ord="fro")
+    M /= (np.sqrt(M_normalize_constant) + eps)
 
     G_normalize_constant = np.linalg.norm(G, ord=np.inf)
-    if G_normalize_constant > 0:
-        G /= G_normalize_constant
+    G /= (G_normalize_constant + eps)
 
     if n_sources % group_size != 0:
-        raise ValueError("Number of sources has to be evenly dividable by the group size")
+        raise ValueError("Number of sources has to be evenly dividable by group_size")
 
-    # Initialize gamma
+    # -------------------------
+    # Init gamma: None -> ones
+    # -------------------------
+    
     if init_gamma is None:
-        current_gamma = np.ones(n_sources, dtype=np.float64)
-    elif np.isscalar(init_gamma):
-        current_gamma = np.full(n_sources, init_gamma, dtype=np.float64)
-    elif len(init_gamma) == 2 and isinstance(init_gamma, tuple):
-        current_gamma = np.linspace(init_gamma[0], init_gamma[1], num=n_sources)
+        gammas_full_old = np.ones(n_sources, dtype=np.float64)
+    elif isinstance(init_gamma, (float, np.float64, int, np.int64)):
+        gammas_full_old = np.full((n_sources,), init_gamma, dtype=np.float64)
     else:
-        current_gamma = init_gamma.copy()
+        gammas_full_old = np.asarray(init_gamma, dtype=np.float64).copy()
+        if gammas_full_old.size != n_sources:
+            raise ValueError("init_gamma must have length equal to number of sources (G.shape[1]).")
 
-    # Initialize lambda (noise variance)
+    # -------------------------
+    # Init lambda (requested rule + baseline fallback)
+    # -------------------------
     if init_lambda is None:
-        current_lambda = np.ones(n_sensors, dtype=np.float64)
-    elif np.isscalar(init_lambda):
-        current_lambda = np.full(n_sensors, init_lambda, dtype=np.float64)
-    elif len(init_lambda) == 2 and isinstance(init_lambda, tuple):
-        current_lambda = np.linspace(init_lambda[0], init_lambda[1], num=n_sensors)
+        if not learn_lambda:
+            # fixed-lambda baseline uses sigma_squared/noise_var as fixed lambda
+            if np.isscalar(sigma_squared):
+                lambda_orig = np.full(n_sensors, float(sigma_squared), dtype=np.float64)
+            else:
+                lambda_orig = np.asarray(sigma_squared, dtype=np.float64).copy()
+        else:
+            # adaptive mode default init is ones(M)
+            lambda_orig = np.ones(n_sensors, dtype=np.float64)
     else:
-        current_lambda = init_lambda.copy()
+        if np.isscalar(init_lambda):
+            lambda_orig = np.full(n_sensors, float(init_lambda), dtype=np.float64)
+        else:
+            lambda_orig = np.asarray(init_lambda, dtype=np.float64).copy()
 
-    n_active = n_sources
+    if lambda_orig.size != n_sensors:
+        raise ValueError("init_lambda (or sigma_squared vector) must have length n_sensors (G.shape[0]).")
+
+    # ORIGINAL -> NORMALIZED
+    current_lambda = lambda_orig / (M_normalize_constant + eps)
+
+    # -------------------------
+    # History (NO mean tracking)
+    # -------------------------
+    hist = {}
+    if track_history:
+        hist["n_active_hist"] = []
+        hist["err_hist"] = []
+
+    denom_fun = np.sqrt if update_mode == 2 else (lambda x: x)
+
     active_indices = np.arange(n_sources)
-    gammas_full_old = current_gamma.copy()
-    lambda_old = current_lambda.copy()
+    gammas_active_new = None
+    posterior_cov_active = None
+    CMinv = None
+    A = None
+    G_CMinvG = None
 
-    # select denominator function for updates
-    if update_mode == 2:
-        denom_fun = np.sqrt
-    else:
-        def denom_fun(x):
-            return x
+    for itno in range(int(maxit)):
+        gammas_active = gammas_full_old[active_indices]
+        gammas_active[np.isnan(gammas_active)] = 0.0
 
-    # history for plotting
-    err_gamma_hist = []
-    err_lambda_hist = []
+        # prune
+        keep = np.abs(gammas_active) > eps
+        active_indices = active_indices[keep]
+        gammas_active = gammas_active[keep]
 
-    for itno in range(maxit):
-        current_gamma = np.nan_to_num(current_gamma, nan=0.0, posinf=0.0, neginf=0.0)
+        if active_indices.size == 0:
+            break
 
-        # Prune inactive sources (gamma near zero)
-        gidx = np.abs(current_gamma) > eps
-        active_indices = active_indices[gidx]
-        current_gamma = current_gamma[gidx]
+        G_active = G[:, active_indices]
 
-        # Update only active gamma & forward matrix
-        if n_active > len(active_indices):
-            n_active = active_indices.size
-            G = G[:, gidx]
-
-        # Build sensor covariance with current lambda
-        CM = np.dot(G * current_gamma[np.newaxis, :], G.T)
+        # CM = G diag(gamma) G^T + diag(lambda)
+        CM = (G_active * gammas_active[None, :]) @ G_active.T
         np.fill_diagonal(CM, CM.diagonal() + current_lambda)
 
-        # Invert sensor covariance
+        # invert
         try:
             U, S, _ = linalg.svd(CM, full_matrices=False)
+            CMinv = (U / (S[None, :] + eps)) @ U.T
         except linalg.LinAlgError:
             CMinv = linalg.pinv(CM)
-        else:
-            S = S[np.newaxis, :]
-            CMinv = np.dot(U / (S + eps), U.T)
 
-        CMinvG = np.dot(CMinv, G)
-        A = np.dot(CMinvG.T, M)
-        G_CMinvG = np.dot(G.T, CMinvG)
+        CMinvG = CMinv @ G_active
+        A = CMinvG.T @ M  # (Ka,T)
 
-        # SOURCE UPDATE (GAMMA UPDATE)
+        # gamma update
         if update_mode == 1:
-            # MacKay update
-            numer = current_gamma ** 2 * np.mean((A * A.conj()).real, axis=1)
-            denom = current_gamma * np.sum(G * CMinvG, axis=0)
+            numer = gammas_active ** 2 * np.mean((A * A.conj()).real, axis=1)
+            denom = gammas_active * np.sum(G_active * CMinvG, axis=0)
         elif update_mode == 2:
-            # Convex bounding update
-            numer = current_gamma * np.sqrt(np.mean((A * A.conj()).real, axis=1))
-            denom = np.sum(G * CMinvG, axis=0)
+            numer = gammas_active * np.sqrt(np.mean((A * A.conj()).real, axis=1))
+            denom = np.sum(G_active * CMinvG, axis=0)
         elif update_mode == 3:
-            # EM update
             denom = None
-            numer = current_gamma ** 2 * np.mean((A * A.conj()).real, axis=1) + current_gamma * (
-                1 - current_gamma * np.sum(G * CMinvG, axis=0)
+            numer = gammas_active ** 2 * np.mean((A * A.conj()).real, axis=1) + gammas_active * (
+                1 - gammas_active * np.sum(G_active * CMinvG, axis=0)
             )
         else:
             raise ValueError("Invalid value for update_mode")
 
         if group_size == 1:
             if denom is None:
-                current_gamma = numer
+                gammas_active_new = numer
             else:
-                current_gamma = numer / np.maximum(denom_fun(denom), eps)
+                gammas_active_new = numer / np.maximum(denom_fun(denom), np.finfo(float).eps)
         else:
             numer_comb = np.sum(numer.reshape(-1, group_size), axis=1)
             if denom is None:
@@ -1613,252 +1650,210 @@ def _gamma_lambda_opt(
             else:
                 denom_comb = np.sum(denom.reshape(-1, group_size), axis=1)
                 gammas_comb = numer_comb / denom_fun(denom_comb)
-            current_gamma = np.repeat(gammas_comb / group_size, group_size)
+            gammas_active_new = np.repeat(gammas_comb / group_size, group_size)
 
-        # Ensure gamma is non-negative
-        current_gamma = np.maximum(current_gamma, 0)
+        gammas_active_new = np.maximum(gammas_active_new, 0.0)
 
-        # Source estimates (normalized frame) for noise update
-        x_active_current = current_gamma[:, None] * A
-
-        # Full source estimate
-        x_hat_full = np.zeros((n_sources, n_times))
-        x_hat_full[active_indices] = x_active_current
-
-        # Posterior covariance of active sources (normalized frame)
-        posterior_cov_active = np.diag(current_gamma) - current_gamma[:, np.newaxis] * G_CMinvG * current_gamma
-
-        # NOISE VARIANCE UPDATE (LAMBDA UPDATE)
-        current_lambda = _lambda_opt(
-            M, G, x_hat_full, posterior_cov_active, active_indices,
-            current_lambda, CMinv, update_mode_noise
+        # posterior cov (normalized)
+        G_CMinvG = G_active.T @ CMinvG
+        posterior_cov_active = (
+            np.diag(gammas_active_new)
+            - gammas_active_new[:, None] * G_CMinvG * gammas_active_new
         )
 
-        # Convergence errors
-        gammas_full = np.zeros(n_sources, dtype=np.float64)
-        gammas_full[active_indices] = current_gamma
+        # x_hat_full (normalized) for lambda update
+        x_hat_full = np.zeros((n_sources, n_times))
+        x_hat_full[active_indices] = gammas_active_new[:, None] * A
 
-        err_gamma = np.sum(np.abs(gammas_full - gammas_full_old)) / np.sum(np.abs(gammas_full_old) + eps)
-        err_lambda = np.sum(np.abs(current_lambda - lambda_old)) / np.sum(np.abs(lambda_old) + eps)
-        joint_err = max(err_gamma, err_lambda) # use MAX(.,.) instead of AND operand
-
-        err_gamma_hist.append(err_gamma)
-        err_lambda_hist.append(err_lambda)
-
-        gammas_full_old = gammas_full.copy()
-        lambda_old = current_lambda.copy()
-
-        if verbose:
-            print(
-                f"Iteration: {itno}\t"
-                f"active set size: {len(current_gamma)}\t"
-                f"err_gamma:{err_gamma:.3e}\t"
-                f"err_lambda:{err_lambda:.3e}"
+        # lambda update (only if learn_lambda=True)
+        if learn_lambda:
+            current_lambda = _lambda_opt(
+                M=M,
+                G=G_active,
+                x_hat_full=x_hat_full,
+                posterior_cov_active=posterior_cov_active,
+                active_indices=active_indices,
+                current_lambda=current_lambda,
+                CMinv=CMinv,
+                update_mode_noise=update_mode_noise,
             )
 
-        breaking = (joint_err < tol) or (n_active == 0)
-        if breaking:
+        # full gamma
+        gammas_full = np.zeros(n_sources, dtype=np.float64)
+        gammas_full[active_indices] = gammas_active_new
+
+        # convergence (gamma only)
+        err = np.sum(np.abs(gammas_full - gammas_full_old)) / (np.sum(np.abs(gammas_full_old)) + eps)
+        gammas_full_old = gammas_full
+
+        if track_history:
+            hist["n_active_hist"].append(int(active_indices.size))
+            hist["err_hist"].append(float(err))
+
+        if verbose and (itno % 50 == 0 or err < tol):
+            print(
+                f"iter={itno:5d} | n_active={active_indices.size:4d} | err={err:.3e} "
+                f"| mean(lambda)={np.mean(current_lambda)*M_normalize_constant:.3e}"
+            )
+
+        if err < tol or active_indices.size == 0:
             break
 
-    if itno < maxit - 1:
-        if verbose:
-            print(f"Convergence reached at iteration {itno}!")
-    else:
-        if verbose:
-            print(f"Convergence NOT reached after {maxit} iterations!")
-        if logger is not None:
-            logger.warning("Convergence NOT reached!")
-        else:
-            import warnings
-            warnings.warn("Convergence NOT reached!")
+    # all pruned
+    if gammas_active_new is None or active_indices.size == 0:
+        x_active = np.zeros((0, n_times))
+        posterior_cov_out = np.zeros((0, 0))
+        gammas_full = np.zeros(n_sources, dtype=np.float64)
+        lambda_final = current_lambda * M_normalize_constant
+        return x_active, active_indices, posterior_cov_out, gammas_full, lambda_final, hist
 
-    # Undo normalization for sources
-    n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
-    x_active = n_const * current_gamma[:, None] * A
+    # undo normalization (ORIGINAL scale)
+    n_const = np.sqrt(M_normalize_constant) / (G_normalize_constant + eps)
+    x_active = n_const * gammas_active_new[:, None] * A
 
-    # Undo normalization for noise variances
-    lambdas = current_lambda * M_normalize_constant
+    posterior_cov_out = (
+        np.diag(gammas_active_new)
+        - gammas_active_new[:, None] * G_CMinvG * gammas_active_new
+    )
+    posterior_cov_out = (n_const ** 2) * posterior_cov_out
 
-    # Scalar noise variance
-    lambda_scalar = np.mean(lambdas)
+    lambda_final = current_lambda * M_normalize_constant
 
-    # Posterior covariance in normalized frame
-    posterior_cov = np.diag(current_gamma) - current_gamma[:, np.newaxis] * G_CMinvG * current_gamma
-
-    # Undo normalization for posterior covariance (x_orig = n_const * x_norm)
-    posterior_cov = (n_const ** 2) * posterior_cov
-
-    # Final gamma vector (normalized parameterization) and its norm
-    gamma_norm = np.linalg.norm(gammas_full)
-
-    return x_active, active_indices, posterior_cov, lambdas, lambda_scalar, \
-           err_gamma_hist, err_lambda_hist, gammas_full, gamma_norm
+    return x_active, active_indices, posterior_cov_out, gammas_full, lambda_final, hist
 
 def gamma_lambda_map(
     L,
     y,
+    noise_var,
     init_gamma=None,
     init_lambda=None,
     n_orient=1,
     max_iter=1000,
     tol=1e-15,
-    update_mode=2,           # For source updates
-    update_mode_noise=2,     # For noise updates
+    update_mode=2,
+    learn_lambda=True,
+    update_mode_noise=2,
+    track_history=True,
     verbose=False,
-    logger=None,
-    **kwargs
 ):
     """
-    Gamma-Lambda MAP algorithm for joint source and noise learning in M/EEG.
+    Non-sFLEX gamma–lambda estimator.
 
     Parameters
     ----------
-    L : array, shape (n_sensors, n_sources)
-        Lead field matrix.
-    y : array, shape (n_sensors, n_times) or (n_sensors,)
-        Sensor measurements.
-    init_gamma : float | tuple | array | None
-        Initial source variances.
-    init_lambda : float | tuple | array | None
-        Initial noise variances.
-    n_orient : int
-        1 for fixed orientation, 3 for free orientation (used for grouping).
-    max_iter : int
-        Maximum number of iterations.
-    tol : float
-        Convergence tolerance for max(err_gamma, err_lambda).
-    update_mode : {1, 2, 3}
-        Gamma update mode.
-    update_mode_noise : {1, 2}
-        Noise update mode.
-    verbose : bool
-        If True, prints each iteration.
-    logger : object | None
-        Optional logger (currently unused).
+    L : ndarray, shape (M,N)
+        Leadfield.
+    y : ndarray, shape (M,T)
+        Sensor data.
+    noise_var : float or ndarray, shape (M,)
+        Used ONLY if learn_lambda=False and init_lambda is None (fixed-lambda fallback).
+    init_gamma : None or ndarray, shape (N,)
+        None -> ones(N).
+    init_lambda : None or scalar or ndarray, shape (M,)
+        Original-scale lambda init.
+        None -> ones(M) if learn_lambda=True
+        None -> derived from noise_var if learn_lambda=False
+    learn_lambda : bool
+        Joint learning (True) or fixed lambda (False).
+    track_history : bool
+        If True, returns n_active_hist and err_hist.
 
     Returns
     -------
-    x_hat : array
-        Posterior mean of sources (full set, including zeros for inactive).
-    active_indices : array
-        Indices of active sources.
-    posterior_cov : array
-        Posterior covariance of active sources.
-    lambdas : array
-        Learned noise variances per sensor.
-    lambda_scalar : float
-        Average noise variance.
-    err_gamma_hist : list of float
-        Relative gamma errors per iteration.
-    err_lambda_hist : list of float
-        Relative lambda errors per iteration.
-    gammas_full : array, shape (n_sources,)
-        Final gamma values for all sources.
-    gamma_norm : float
-        Euclidean norm of gammas_full.
+    out : dict with keys
+      - x_active : (Ka,T)
+      - posterior_cov_active : (Ka,Ka)
+      - active_indices : (Ka,)
+      - gammas_full : (N,)
+      - lambda_final : (M,)
+      - lambda_mean : float  (homoscedastic estimate = mean(lambda_final))
+      - (optional) n_active_hist, err_hist
     """
-    # Ensure y is 2D (sensors x time)
+    y = np.asarray(y, dtype=float)
     if y.ndim == 1:
-        y = y[:, np.newaxis]
+        y = y[:, None]
+    L = np.asarray(L, dtype=float)
 
-    # Initialize gamma
-    if init_gamma is None:
-        init_gamma = np.ones(L.shape[1], dtype=np.float64)
-    elif isinstance(init_gamma, (float, np.float64, int, np.int64)):
-        init_gamma = np.full((L.shape[1],), init_gamma, dtype=np.float64)
-    elif len(init_gamma) == 2 and isinstance(init_gamma, tuple):
-        init_gamma = np.linspace(init_gamma[0], init_gamma[1], num=L.shape[1])
-    else:
-        raise ValueError(
-            "init_gamma should be a float, a tuple of two floats, "
-            "or an array of floats."
-        )
+    x_active, active_idx, cov_active, gammas_full, lambda_final, hist = _gamma_map_opt_with_lambda(
+        M=y,
+        G=L,
+        sigma_squared=noise_var,
+        maxit=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        group_size=n_orient,
+        init_gamma=init_gamma,
+        init_lambda=init_lambda,
+        learn_lambda=learn_lambda,
+        update_mode_noise=update_mode_noise,
+        track_history=track_history,
+        verbose=verbose,
+    )
 
-    # Run joint gamma–lambda optimisation
-    x_hat_, active_indices, posterior_cov, lambdas, lambda_scalar, \
-        err_gamma_hist, err_lambda_hist, gammas_full, gamma_norm = _gamma_lambda_opt(
-            M=y,
-            G=L,
-            init_gamma=init_gamma,
-            init_lambda=init_lambda,
-            update_mode_noise=update_mode_noise,
-            maxit=max_iter,
-            tol=tol,
-            update_mode=update_mode,
-            group_size=n_orient,
-            verbose=verbose,
-            logger=logger,
-        )
-
-    # Build full source estimate (including zeros for inactive sources)
-    x_hat = np.zeros((L.shape[1], y.shape[1]))
-    x_hat[active_indices] = x_hat_
-
-    # Handle orientation dimension for free orientation case
-    if n_orient > 1:
-        x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
-
-    return x_hat, active_indices, posterior_cov, lambdas, lambda_scalar, \
-           err_gamma_hist, err_lambda_hist, gammas_full, gamma_norm
+    out = {
+        "x_active": x_active,
+        "active_indices": active_idx,
+        "posterior_cov_active": cov_active,
+        "gammas_full": gammas_full,
+        "lambda_final": lambda_final,
+        "lambda_mean": float(np.mean(lambda_final)),
+    }
+    if track_history:
+        out.update(hist)
+    return out
 
 def sflex_gamma_lambda_map(
-    L, y, fwd_path, sigma, init_gamma=None, init_lambda=None, update_mode_noise=2,
-    n_orient=1, max_iter=1000, tol=1e-15, update_mode=2,
-    verbose=False, logger=None, threshold_factor=3.0
+    L,
+    y,
+    fwd_path,
+    noise_var,
+    sigma=0.001,
+    init_gamma=None,
+    init_lambda=None,
+    update_mode_noise=2,
+    n_orient=1,
+    max_iter=10000,
+    tol=1e-15,
+    update_mode=2,
+    learn_lambda=True,
+    threshold_factor=3.0,
+    track_history=True,
+    logger=None,
+    verbose=False,
 ):
     """
-    sFLEX + Gamma–Lambda MAP joint learning.
+    sFLEX + gamma_lambda_map.
+
+    Notes
+    -----
+    - Builds pseudo leadfield: G = L @ B (fixed ori) or G = L @ (I3 ⊗ B) (free ori)
+    - Runs gamma–lambda in coefficient space.
+    - Maps posterior mean/cov back to source space.
 
     Parameters
     ----------
-    L : array, shape (n_sensors, n_sources)
-        Lead field matrix.
-    y : array
+    L : ndarray, shape (M,N_sub)
+        Leadfield for subset of sources.
+    y : ndarray, shape (M,T)
         Sensor data.
     fwd_path : str
-        Path to the forward solution file (FIF format)
-    sigma : float
-        Gaussian basis width.
-    init_gamma : array | float | tuple | None
-        Initial gamma values.
-    init_lambda : array | float | tuple | None
-        Initial noise values.
-    update_mode_noise : {1, 2}
-        Noise update mode.
-    n_orient : {1, 3}
-        Number of orientations.
-    max_iter : int
-        Maximum iterations.
-    tol : float
-        Convergence tolerance.
-    update_mode : {1, 2, 3}
-        Gamma update mode.
-    verbose : bool
-        Print iterations if True.
-    logger : object | None
-        Optional logger.
-    threshold_factor : float
-        Basis sparsity radius factor.
+        MNE forward solution path (for source coordinates).
+    sigma, threshold_factor : float
+        sFLEX basis params.
+    noise_var : float or ndarray, shape (M,)
+        Used ONLY if learn_lambda=False and init_lambda is None.
+    init_gamma, init_lambda, learn_lambda : see gamma_lambda_map.
 
     Returns
     -------
-    Dictionary with:
-    - x_hat : array
-        Estimated source activity.
-    - posterior_cov : array
-        Posterior covariance of estimates.
-    - lambdas : array
-        Learned noise variances.
-    - lambda_scalar : float
-        Average noise variance.
-    - err_gamma_hist : list of float
-        Relative gamma errors per iteration.
-    - err_lambda_hist : list of float
-        Relative lambda errors per iteration.
-    - gammas_full : array
-        Final gamma values for all sources.
-    - gamma_norm : float
-        Euclidean norm of gammas_full.
+    out : dict with keys
+      - posterior_mean_full : (N_sub,T) or (N_sub,3,T)
+      - posterior_cov_full  : (N_sub,N_sub) or (3N_sub,3N_sub)
+      - active_indices      : active indices in coefficient space
+      - gammas_full         : full gamma vector in coefficient space
+      - lambda_final        : (M,) sensor-space lambda (original scale)
+      - lambda_mean         : float
+      - (optional) n_active_hist, err_hist
     """
     fwd_path = f"{fwd_path}-fwd.fif"
     fwd = mne.read_forward_solution(fwd_path, verbose="error")
@@ -1867,64 +1862,69 @@ def sflex_gamma_lambda_map(
         fwd = mne.convert_forward_solution(fwd, force_fixed=True)
         
     # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
-    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters    
-    
-    # Compute basis matrix (you have already B)
-    B = compute_B(src_coords, sigma, threshold_factor) #sigma =0.01
+    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters   
+
+    B = compute_B(src_coords, sigma, threshold_factor)
     N = src_coords.shape[0]
 
-    # Handle orientation type
     if n_orient == 1:
-        # Fixed-orientation
-        assert L.shape[1] == N, f"L has {L.shape[1]} cols, expected N={N}."
-        G = L @ B  # (M × N)
+        G = L @ B
         group_size = 1
+        B_big = None
     elif n_orient == 3:
-        # Free-orientation (efficient block-wise)
-        assert L.shape[1] == 3 * N, f"L has {L.shape[1]} cols, expected 3N={3*N}."
-        G_blocks = []
-        for orient in range(3):
-            L_block = L[:, orient * N : (orient + 1) * N]
-            G_block = L_block @ B
-            G_blocks.append(G_block)
-        G = np.hstack(G_blocks)  # (M, 3N)
+        I3 = identity(3, format='csr')
+        B_big = kron(I3, B, format='csr')
+        G = L @ B_big
         group_size = 3
     else:
-        raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
+        raise ValueError("n_orient must be 1 or 3.")
 
-    # Run Gamma–Lambda MAP on pseudo lead field G
-    c_hat, active_indices, posterior_cov, lambdas, lambda_scalar, \
-        err_gamma_hist, err_lambda_hist, gammas_full, gamma_norm = gamma_lambda_map(
-            L=G, y=y, init_gamma=init_gamma, init_lambda=init_lambda,
-            update_mode_noise=update_mode_noise,
-            n_orient=group_size, max_iter=max_iter, tol=tol,
-            update_mode=update_mode,
-            verbose=verbose, logger=logger,
-        )
+    res = gamma_lambda_map(
+        L=G,
+        y=y,
+        noise_var=noise_var,
+        init_gamma=init_gamma,
+        init_lambda=init_lambda,
+        n_orient=group_size,
+        max_iter=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        learn_lambda=learn_lambda,
+        update_mode_noise=update_mode_noise,
+        track_history=track_history,
+        verbose=verbose,
+    )
 
-    # Reconstruct sources from basis coefficients
+    active_idx = res["active_indices"]
+    c_active = res["x_active"]  # (Ka,T)
+
+    # FULL coefficient mean
+    c_full = np.zeros((G.shape[1], y.shape[1]))
+    c_full[active_idx] = c_active
+
+    # Map back to source space
     if n_orient == 1:
-        # Fixed-orientation
-        x_hat = B @ c_hat  # (N, T)
+        posterior_mean_full = (B @ c_full)  # (N,T)
+        posterior_cov_full = B[:, active_idx] @ res["posterior_cov_active"] @ B[:, active_idx].T  # (N,N)
     else:
-        # Free-orientation
-        x_hat_blocks = []
-        for orient in range(3):
-            c_block = c_hat[orient * N : (orient + 1) * N, :]
-            x_block = B @ c_block
-            x_hat_blocks.append(x_block)
-        x_hat = np.stack(x_hat_blocks, axis=1)  # (N, 3, T)
+        posterior_mean_full = (B_big @ c_full)  # (3N,T)
+        posterior_cov_full = B_big[:, active_idx] @ res["posterior_cov_active"] @ B_big[:, active_idx].T  # (3N,3N)
+        posterior_mean_full = posterior_mean_full.reshape(N, 3, -1)
 
-    # return x_hat, posterior_cov, lambdas, lambda_scalar, \
-        #    err_gamma_hist, err_lambda_hist, gammas_full, gamma_norm
-    return {
-        "posterior_mean": x_hat,
-        "posterior_cov": posterior_cov,
-        "noise_var": lambda_scalar,
-        "active_indices": active_indices,
-        "lambdas": lambdas,
+    # Final gamma vector (normalized parameterization) and its norm
+    gamma_norm = np.linalg.norm(res["gammas_full"])
+    
+    out = {
+        "posterior_mean": posterior_mean_full,
+        "posterior_cov": posterior_cov_full,
+        "active_indices": active_idx,
         "gamma": gamma_norm,
-        "gammas_full": gammas_full,
-        "err_gamma_hist": err_gamma_hist,
-        "err_lambda_hist": err_lambda_hist,
+        "gammas_full": res["gammas_full"],
+        "lambdas": res["lambda_final"],
+        "lambda_mean": res["lambda_mean"],
     }
+    if track_history:
+        out["n_active_hist"] = res.get("n_active_hist", [])
+        out["err_gamma_hist"] = res.get("err_hist", [])
+    return out
+

@@ -390,24 +390,7 @@ class Benchmark:
 
                 # TODO: remove temporary plotting code
                 # Visualize the alpha grid relative to the baseline noise variance
-                fig, ax = plt.subplots(figsize=(8, 5))
-                ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
-                ax.axhline(
-                    baseline_noise_var,
-                    color='red',
-                    linestyle='--',
-                    label=f'baseline_noise_var = {baseline_noise_var:.3e}',
-                )
-                ax.set_xscale('log')
-                ax.set_xlabel('grid factor (log scale)')
-                ax.set_ylabel('alpha (noise variance)')
-                ax.set_title('Spatial CV: Alpha grid vs baseline noise variance')
-                ax.legend()
-                ax.grid(True, which="both", ls="--", linewidth=0.5)
-                plt.tight_layout()
-                save_path = os.path.join(experiment_dir, "alphas_vs_baseline.png")
-                fig.savefig(save_path, dpi=150, bbox_inches='tight')
-                plt.close(fig)
+                plot_alphas_cv(alphas, grid_factors, baseline_noise_var, experiment_dir)
 
                 estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver
                 source_estimator = estimator(
@@ -430,6 +413,8 @@ class Benchmark:
                         f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta:.3e}"
                     )
                 elif noise_type == 'joint_learning':
+                    # TODO: temporarily set to baseline noise var until joint learning is fully integrated
+                    # noise_var = baseline_noise_var
                     noise_var = None
 
                 source_estimator = SourceEstimator(
@@ -454,8 +439,8 @@ class Benchmark:
             if noise_type == 'joint_learning':
                 plot_error_curves(
                     err_gamma=solver_output["err_gamma_hist"],
-                    err_lambda=solver_output["err_lambda_hist"],
-                    title="Gamma/Lambda errors (joint learning)",
+                    # err_lambda=solver_output["err_lambda_hist"],
+                    title="Gamma errors (joint learning)",
                     save_path=os.path.join(experiment_dir, "gamma_lambda_errors.png"),
                 )               
 
@@ -693,7 +678,7 @@ class Benchmark:
         return pd.DataFrame(results_list)
 
 # TODO: move plotting functions to Visualizer class
-def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_path=None):
+def plot_error_curves(err_gamma, title="Gamma/Lambda errors", save_path=None):
     """
     Plot err_gamma and err_lambda vs iteration.
 
@@ -709,7 +694,7 @@ def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_p
     iters = np.arange(len(err_gamma))
     plt.figure()
     plt.semilogy(iters, err_gamma, label="err_gamma")
-    plt.semilogy(iters, err_lambda, label="err_lambda")
+    # plt.semilogy(iters, err_lambda, label="err_lambda")
     plt.xlabel("Iteration")
     plt.ylabel("Relative error")
     plt.title(title)
@@ -720,6 +705,7 @@ def plot_error_curves(err_gamma, err_lambda, title="Gamma/Lambda errors", save_p
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
         plt.close()
 
+# TODO: remove temporary plotting code
 def plot_error_curves_comparison(err_gamma_1, err_lambda_1,
                                 err_gamma_2, err_lambda_2,
                                 labels=("Method 1", "Method 2")):
@@ -749,3 +735,24 @@ def plot_error_curves_comparison(err_gamma_1, err_lambda_1,
     plt.grid(True, which="both", linestyle="--", alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    
+# TODO: remove temporary plotting code    
+def plot_alphas_cv(alphas, grid_factors, baseline_noise_var, experiment_dir):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(grid_factors, alphas, marker='o', linestyle='-', label=f'alphas (n={len(alphas)})')
+    ax.axhline(
+        baseline_noise_var,
+        color='red',
+        linestyle='--',
+        label=f'baseline_noise_var = {baseline_noise_var:.3e}',
+    )
+    ax.set_xscale('log')
+    ax.set_xlabel('grid factor (log scale)')
+    ax.set_ylabel('alpha (noise variance)')
+    ax.set_title('Spatial CV: Alpha grid vs baseline noise variance')
+    ax.legend()
+    ax.grid(True, which="both", ls="--", linewidth=0.5)
+    plt.tight_layout()
+    save_path = os.path.join(experiment_dir, "alphas_vs_baseline.png")
+    fig.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
