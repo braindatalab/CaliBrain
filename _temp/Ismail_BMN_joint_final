@@ -124,7 +124,7 @@ def update_common_lambda_convex(
 # =============================================================================
 # BMN optimization with optional adaptive noise learning
 # =============================================================================
-def BMN_bayesian_opt(
+def BMN_bayesian_opt_joint(
     y: np.ndarray,
     L: np.ndarray,
     noise_var: Optional[float] = None,
