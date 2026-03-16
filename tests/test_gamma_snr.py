@@ -75,7 +75,7 @@ class TestGammaSNRCombined(unittest.TestCase):
 
     # --- SFlex Gamma Lambda Map tests ---
     def test_gamma_decreases_with_increased_snr_sflex_gamma_lambda_map_joint_learning(self):
-        self.assert_gamma_decreases_with_increased_snr('sflex_gamma_lambda_map', 'joint_learning')
+        self.assert_gamma_decreases_with_increased_snr('sflex_gamma_lambda_map', 'adaptive_joint_learning')
 
 
     # --- General tests ---
