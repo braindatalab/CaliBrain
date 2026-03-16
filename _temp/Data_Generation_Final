@@ -78,9 +78,9 @@ class SourceSimulator:
             "fmin": 1,
             "fmax": 5,
             "amplitude_distribution": {
-                "median": 20.0,  # peak dipole moment (nAm)
-                "sigma": 0.2,
-                "clip": (2.5, 50.0),
+                "median": 20.0, # peak dipole moment (nAm)
+                "sigma": 0.2, # std of the underlying normal distribution
+                "clip": (2.5, 50.0),  # (min, max) bounds in nAm for peak absolute amplitude clipping
             },
             "random_erp_timing": True,
             "erp_min_length": None,
@@ -88,10 +88,10 @@ class SourceSimulator:
 
         self.logger = logger if logger else logging.getLogger(__name__)
 
-        # These metadata fields can be useful if you later serialize into MNE-like structures.
-        self.kind: int = FIFF.FIFFV_DIPOLE_WAVE
-        self.units: str = FIFF.FIFF_UNIT_AM
-        self.unitmult: int = FIFF.FIFF_UNITM_N  # nano (1e-9)
+        # Default units for ERP simulation
+        self.kind: int = FIFF.FIFFV_DIPOLE_WAVE # Dipole time curve. Encoded into "1000"
+        self.units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
+        self.unitmult: int = FIFF.FIFF_UNITM_N # (Nano = 1e-9)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -417,6 +417,24 @@ class SensorSimulator:
         if self.logger is None:
             self.logger = logging.getLogger(self.__class__.__name__)
 
+    def set_sensor_metadata(
+        self,
+        *,
+        kind: Optional[int] = None,
+        units: Optional[int] = None,
+        unitmult: Optional[int] = None,
+        coil_type: Optional[int] = None,
+    ) -> None:
+        """Update sensor metadata (FIFF kind/unit/multiplier) atomically."""
+        if kind is not None:
+            self.kind = kind # 1 for FIFFV_MEG_CH, 2 for FIFFV_EEG_CH
+        if units is not None:
+            self.units = units
+        if unitmult is not None:
+            self.unitmult = unitmult
+        if coil_type is not None:
+            self.coil_type = coil_type
+    
     def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray) -> np.ndarray:
         """
         Project source activity into sensor space using the leadfield.
