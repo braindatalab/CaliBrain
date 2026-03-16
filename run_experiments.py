@@ -102,7 +102,7 @@ def main():
         "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
-        "sensor_white_noise_var": [1.0 * 0.001],
+        "sensor_white_noise_std": [1.0 * 0.001],
     }
     
     # EEG data parameters
@@ -111,7 +111,7 @@ def main():
         "nnz": [1, 5, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
-        "sensor_white_noise_var": [1.0 * 0.001],
+        "sensor_white_noise_std": [1.0 * 0.001],
     }
     
     # =================================================================
