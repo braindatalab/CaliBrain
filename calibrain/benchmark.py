@@ -372,7 +372,7 @@ class Benchmark:
                 baseline_noise_var = 1.0
 
             allowed_noise_types = {
-                "joint_learning",
+                "adaptive_joint_learning",
                 "oracle",
                 "baseline",
                 "spatial_cv",
@@ -411,8 +411,8 @@ class Benchmark:
                     self.logger.debug(
                         f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta:.3e}"
                     )
-                elif noise_type == 'joint_learning':
-                    # TODO: temporarily set to baseline noise var until joint learning is fully integrated
+                elif noise_type == 'adaptive_joint_learning':
+                    # TODO: temporarily set to baseline noise var until adaptive joint learning is fully integrated
                     # noise_var = baseline_noise_var
                     noise_var = None
 
@@ -443,7 +443,7 @@ class Benchmark:
                 posterior_cov = np.linalg.norm(posterior_cov, axis=(2,3))
                             
             # TODO: remove temporary plotting code
-            if noise_type == 'joint_learning':
+            if noise_type == 'adaptive_joint_learning':
                 plot_error_curves(
                     err_gamma=solver_output["err_gamma_hist"],
                     # err_lambda=solver_output["err_lambda_hist"],
@@ -503,7 +503,7 @@ class Benchmark:
                 x=x_avg_time,
                 x_hat=x_hat_avg_time,
                 posterior_var=posterior_var_avg_time,
-                orientation_type="fixed", # TODO: remove
+                orientation_type="fixed", # TODO: remove hardcoding
                 nnz=data_params.get("nnz"),
                 subject=data_params.get("subject"),
                 fwd_path=solver_params['fwd_path'],

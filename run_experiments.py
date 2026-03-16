@@ -25,7 +25,7 @@ import pandas as pd
 import mne
 from sklearn.model_selection import ParameterGrid
 
-from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN, sflex_gamma_lambda_map
+from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, sflex_gamma_map, gamma_map, eloreta, BMN, sflex_gamma_lambda_map, BMN_joint
 from calibrain.utils import get_data_path
 
 def main():
@@ -51,7 +51,7 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
-    nruns = 1
+    nruns = 10
     
     ERP_config = {
         "tmin": -0.5,
@@ -98,19 +98,19 @@ def main():
     # ==================================================================
     # MEG data parameters
     data_param_grid_meg = {
-        "subject": ["CC120166"], # "CC120264", "CC120309", "CC120313"],
-        "nnz": [10],
+        "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+        "nnz": [1, 3, 5, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
         "sensor_white_noise_std": [1.0 * 0.001],
     }
     
     # EEG data parameters
     data_param_grid_eeg = {
         "subject": ["fsaverage"], # "caliBrain_fsaverage", "fsaverage",
-        "nnz": [1, 5, 10],
+        "nnz": [1, 3, 5, 10, 100],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
+        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
         "sensor_white_noise_std": [1.0 * 0.001],
     }
     
@@ -132,7 +132,7 @@ def main():
     }
 
     adaptive_noise_params = {
-        "noise_type": ["joint_learning"], # for sflex_gamma_lambda_map
+        "noise_type": ["adaptive_joint_learning"], # for sflex_gamma_lambda_map
         # add noise parameters here if needed
     }
 
@@ -143,6 +143,12 @@ def main():
         # No specific hyperparameters to tune for eLORETA
     }
 
+    gamma_map_params = {
+        'init_gamma': [0.1],
+        'max_iter': [500],
+        'tol': [1e-15]
+    }
+    
     BMN_params = {
         "max_iter": [1000],
         'normalization': [True]
@@ -163,11 +169,9 @@ def main():
         # fwd_path to each subject will be set within the benchmark loop (when instantiating SourceEstimator) after selecting the subject
     }
     
-    gamma_map_params = {
-        'init_gamma': [0.1],
-        'max_iter': [500],
-        'tol': [1e-15]
-    }
+    BMN_joint_params = {
+        'learn_noise': [True],
+    }  
     
     estimators = [
         # ================ MEG experiments ================
@@ -175,13 +179,13 @@ def main():
         # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+        (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
+        (BMN_joint, BMN_joint_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
-        #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
+         (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
-        # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
         # (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),

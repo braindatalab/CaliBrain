@@ -16,7 +16,7 @@ from numpy.linalg import inv
 from scipy.linalg import sqrtm
 from calibrain.utils import get_data_path
 from scipy.sparse import block_diag
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 # ===================
 # GAMMA-MAP Functions
@@ -1356,16 +1356,17 @@ def BMN_joint(
     L: np.ndarray,
     y: np.ndarray,
     noise_var: Optional[float] = None,
+    init_gamma: Optional[float] = None,
+    init_lambda: Optional[float] = None,
     n_orient: int = 1,
     max_iter: int = 1000,
     tol: float = 1e-6,
-    init_gamma: Optional[float] = None,
-    init_lambda: Optional[float] = None,
     learn_noise: bool = False,
-    verbose: bool = False,
     normalization: bool = False,
     track_history: bool = True,
     logger: Optional[logging.Logger] = None,
+    verbose: bool = False,
+    **kwargs,
 ) -> Dict[str, Any]:
     """
     BMN estimate with optional sLORETA normalization and optional adaptive
@@ -1448,7 +1449,7 @@ def BMN_joint(
         W = np.eye(L.shape[1])
         L_normal = L
 
-    x_hat_normal, posterior_cov_normal, gamma, lambda_var, hist = BMN_bayesian_opt(
+    x_hat_normal, posterior_cov_normal, gamma, lambda_var, hist = BMN_bayesian_opt_joint(
         y=y,
         L=L_normal,
         noise_var=noise_var,
