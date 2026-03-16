@@ -146,7 +146,7 @@ class Benchmark:
         # Desired order of parameters for the directory structure
         # This list defines the specific order.
         if desired_order is None:
-            desired_order = ["solver", "alpha_SNR", "noise_type", "orientation_type", "nnz",  "sensor_white_noise_var", "subject", "seed"]
+            desired_order = ["solver", "noise_type", "orientation_type", "alpha_SNR", "subject", "nnz", "seed"]
         
         path_components = []
         
@@ -212,9 +212,8 @@ class Benchmark:
         y_clean, y_noisy, noise, noise_eta = self.sensor_simulator.simulate(
             x=x,
             L=L,
-            orientation_type=orientation_type,
             alpha_SNR=data_params['alpha_SNR'],
-            sensor_white_noise_var=data_params['sensor_white_noise_var'],
+            sensor_white_noise_std=data_params['sensor_white_noise_std'],
             seed=sensor_seed,
         )
 
@@ -322,7 +321,7 @@ class Benchmark:
                 base_dir=fig_path,
                 params=this_result,
                 desired_order=[
-                    "solver", "noise_type", "alpha_SNR", "orientation_type", "nnz", "sensor_white_noise_var", "subject", "seed"
+                    "orientation_type", "solver", "noise_type", "nnz", "subject", "alpha_SNR", "seed"
                 ]
             )
 
@@ -405,7 +404,7 @@ class Benchmark:
             else:
                 if noise_type == 'oracle':
                     self.logger.debug("Using oracle noise variance estimate")
-                    noise_var = float((data_params['sensor_white_noise_var'] * noise_eta) ** 2)
+                    noise_var = float((data_params['sensor_white_noise_std'] * noise_eta) ** 2)
                 elif noise_type == 'baseline':
                     self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var
@@ -435,6 +434,14 @@ class Benchmark:
             noise_var = solver_output.get("noise_var")
             gamma = solver_output.get("gamma")
             
+            # TODO: this is a temporary workaround to allow calibration of free orientation solvers using only the norm of the source estimates and their uncertainty.
+            # for free orientation, reshape posterior covariance from (3N, 3N) to (N, N, 3, 3)
+            if orientation_type == "free":
+                posterior_cov = posterior_cov.reshape(n_sources, 3, n_sources, 3)
+                # reorder axes -> (N, N, 3, 3)
+                posterior_cov = posterior_cov.transpose(0, 2, 1, 3)
+                posterior_cov = np.linalg.norm(posterior_cov, axis=(2,3))
+                            
             # TODO: remove temporary plotting code
             if noise_type == 'joint_learning':
                 plot_error_curves(
@@ -462,12 +469,22 @@ class Benchmark:
                 )
                 return this_result
 
-            x_avg_time = np.mean(x, axis=1, keepdims=True)
-            x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
-            n_times = x.shape[1]
+            x_avg_time = np.mean(x, axis=-1, keepdims=True)
+            x_hat_avg_time = np.mean(x_hat, axis=-1, keepdims=True)
+            n_times = x.shape[-1]
             posterior_var_avg_time = posterior_var / n_times
             posterior_std_avg_time = np.sqrt(np.maximum(posterior_var_avg_time, 0.0))
-
+            
+            # TODO: this is a temporary workaround to allow calibration of free orientation solvers using only the norm of the source estimates and their uncertainty.
+            # for free orientation, reshape posterior covariance from (3N, 3N) to (N, N, 3, 3)
+            if orientation_type == "free":
+                x_avg_time=np.linalg.norm(x_avg_time, axis=1, keepdims=False)
+                x_hat_avg_time=np.linalg.norm(x_hat_avg_time, axis=1, keepdims=False)
+                x = np.linalg.norm(x, axis=1, keepdims=False)
+                x_hat = np.linalg.norm(x_hat, axis=1, keepdims=False)
+                x_hat_active_indices = x_hat_active_indices[:x_hat_avg_time.shape[0]]
+                
+                
             calibrator = UncertaintyCalibrator(
                 uncertainty_estimator=self.uncertainty_estimator,
                 metric_evaluator=self.metric_evaluator,
@@ -486,7 +503,7 @@ class Benchmark:
                 x=x_avg_time,
                 x_hat=x_hat_avg_time,
                 posterior_var=posterior_var_avg_time,
-                orientation_type=orientation_type,
+                orientation_type="fixed", # TODO: remove
                 nnz=data_params.get("nnz"),
                 subject=data_params.get("subject"),
                 fwd_path=solver_params['fwd_path'],
@@ -549,7 +566,7 @@ class Benchmark:
                 empirical_coverages_post_cal=post_calibration['empirical_coverages'],
                 ci_lower=pre_calibration.get('ci_lowers'),
                 ci_upper=pre_calibration.get('ci_uppers'),
-                orientation_type=orientation_type,
+                orientation_type="fixed", # TODO: remove
                 result=this_result,
                 experiment_dir=experiment_dir,
             )

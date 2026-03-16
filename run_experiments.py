@@ -51,7 +51,7 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
-    nruns = 2
+    nruns = 1
     
     ERP_config = {
         "tmin": -0.5,
@@ -101,8 +101,8 @@ def main():
         "subject": ["CC120166"], # "CC120264", "CC120309", "CC120313"],
         "nnz": [10],
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.99],
-        "sensor_white_noise_var": [1.0 * 0.001],
+        "alpha_SNR": [0.1, 0.3, 0.5],
+        "sensor_white_noise_std": [1.0 * 0.001],
     }
     
     # EEG data parameters
@@ -111,7 +111,7 @@ def main():
         "nnz": [1, 5, 10],
         "orientation_type": ["fixed"], # "fixed", "free"
         "alpha_SNR": [0.1, 0.4, 0.7, 0.99],
-        "sensor_white_noise_var": [1.0 * 0.001],
+        "sensor_white_noise_std": [1.0 * 0.001],
     }
     
     # =================================================================
@@ -175,13 +175,13 @@ def main():
         # (eloreta, eloreta_params, data_param_grid_meg, basic_noise_params),
         # (eloreta, eloreta_params, data_param_grid_meg, CV_noise_params),
         # ---------------- BMN ----------------
-        #  (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
+         (BMN, BMN_params, data_param_grid_meg, basic_noise_params),
         # (BMN, BMN_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-MAP ----------------
         #  (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (sflex_gamma_map, sflex_gamma_map_params, data_param_grid_meg, CV_noise_params),
         # ---------------- sFLEX-Gamma-Lambda-MAP ----------------
-        (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
+        # (sflex_gamma_lambda_map, sflex_gamma_lambda_map_params, data_param_grid_meg, adaptive_noise_params),
         # ---------------- Gamma-MAP ----------------
         # (gamma_map, gamma_map_params, data_param_grid_meg, basic_noise_params),
         # (gamma_map, gamma_map_params, data_param_grid_meg, CV_noise_params),
