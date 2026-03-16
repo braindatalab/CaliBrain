@@ -197,10 +197,6 @@ class UncertaintyCalibrator:
         if verbose:
             print("=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION + CV) ===")
 
-        x_true = np.asarray(x_true)
-        x_hat = np.asarray(x_hat)
-        posterior_std = np.asarray(posterior_std)
-
         # Make sure we always have 2D (n_sources, n_times)
         if x_true.ndim == 1:
             x_true = x_true[:, np.newaxis]
@@ -210,7 +206,7 @@ class UncertaintyCalibrator:
             posterior_std = posterior_std[:, np.newaxis]
 
         posterior_var = np.square(posterior_std)
-        n_sources, n_times = x_hat.shape
+        n_sources, n_times = x_hat.shape[0], x_hat.shape[-1]
         K_levels = len(self.nominal_coverages)
         if verbose:
             print(f"  n_sources = {n_sources}, n_times = {n_times}")
