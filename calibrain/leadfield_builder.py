@@ -167,6 +167,25 @@ class LeadfieldBuilder:
             self.sensor_unitmult = target_mul
         return leadfield
 
+    def _reshape_free_orientation(self, leadfield: np.ndarray) -> np.ndarray:
+        """Convert (n_sensors, 3 * n_sources) → (n_sensors, n_sources, 3)."""
+        if leadfield.ndim != 2:
+            return leadfield
+        n_sensors, n_components = leadfield.shape
+        if n_components % 3 != 0:
+            raise ValueError(
+                f"Free-orientation leadfield has shape {leadfield.shape}; "
+                "the second dimension must be divisible by 3."
+            )
+        n_sources = n_components // 3
+        reshaped = leadfield.reshape(n_sensors, n_sources, 3)
+        self.logger.debug(
+            "Converted free-orientation leadfield from shape %s to %s",
+            leadfield.shape,
+            reshaped.shape,
+        )
+        return reshaped
+
     def _store_sensor_metadata_from_info(self, info: Optional[mne.Info]) -> None:
         """Capture sensor metadata (kind/unit/unit_mul) from an info object."""
         if info is None or "chs" not in info or not info["chs"]:
@@ -673,6 +692,8 @@ class LeadfieldBuilder:
                     )
                     
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)
+                    if orientation_type == "free":
+                        leadfield = self._reshape_free_orientation(leadfield)
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
@@ -703,6 +724,9 @@ class LeadfieldBuilder:
                     sensor_kind=L_simulator.sensor_kind,
                     coil_type=L_simulator.coil_type,
                 )
+
+                if orientation_type == "free":
+                    leadfield = self._reshape_free_orientation(leadfield)
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
