@@ -1144,19 +1144,55 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         self.logger = logger or logging.getLogger(__name__)
         self.n_orient = n_orient
 
+    def _format_leadfield(self, L):
+        """
+        Ensure the leadfield matches the solver expectation of (n_sensors, n_sources * n_orient).
+
+        Parameters
+        ----------
+        L : np.ndarray
+            Leadfield array with shape (n_sensors, n_sources) for fixed-orientation
+            or (n_sensors, n_sources, n_orient) for free-orientation setups.
+
+        Returns
+        -------
+        np.ndarray
+            A 2-D leadfield with shape (n_sensors, n_sources * n_orient).
+        """
+        if L.ndim == 2:
+            return L
+        if L.ndim == 3:
+            n_sensors, n_sources, n_vec = L.shape
+            if self.n_orient not in (None, n_vec):
+                self.logger.debug(
+                    "Updating n_orient from %s to %s based on leadfield shape.",
+                    self.n_orient,
+                    n_vec,
+                )
+                self.n_orient = n_vec
+            if n_vec not in (1, 3):
+                self.logger.warning(
+                    "Leadfield last dimension is %s; expected orientation components "
+                    "of size 1 or 3.",
+                    n_vec,
+                )
+            return L.reshape(n_sensors, n_sources * n_vec)
+        raise ValueError(f"Leadfield must be 2-D or 3-D, got shape {L.shape}")
+
     def fit(self, L, y):
         """
         Fit the inverse solver to the data.
 
         Parameters:
-        - L (np.ndarray): Leadfield matrix of shape (n_sensors, n_sources).
+        - L (np.ndarray): Leadfield matrix of shape (n_sensors, n_sources)
+          for fixed orientation or (n_sensors, n_sources, n_orient) for free orientation.
         - y (np.ndarray): Observed EEG/MEG signals of shape (n_sensors, n_times).
 
         Returns:
         - self: The fitted estimator.
         """
         self.logger.debug("Fitting the solver...")
-        self.L_ = L
+        self.L_ = self._format_leadfield(L)
         self.y_ = y
         
         return self
@@ -1927,4 +1963,3 @@ def sflex_gamma_lambda_map(
         out["n_active_hist"] = res.get("n_active_hist", [])
         out["err_gamma_hist"] = res.get("err_hist", [])
     return out
-
