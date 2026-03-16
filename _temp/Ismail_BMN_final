@@ -208,6 +208,7 @@ def BMN(
     verbose: bool = False,
     normalization: bool = False,
     logger: Optional[logging.Logger] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
     """
     BMN estimate with optional sLORETA normalization.
@@ -296,11 +297,12 @@ def BMN(
     posterior_cov = W @ posterior_cov_normal @ W.T
     posterior_cov = _symmetrize(posterior_cov)
 
+    active_indices = np.arange(posterior_cov.shape[0])
     out = {
         "posterior_mean": x_hat,
         "posterior_cov": posterior_cov,
         "noise_var": float(noise_var),
-        "active_indices": np.arange(posterior_cov.shape[0]),
+        "active_indices": active_indices,
         "gamma": float(gamma),
     }
 
