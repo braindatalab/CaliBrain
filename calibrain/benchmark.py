@@ -22,6 +22,7 @@ from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, Uncerta
 from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
 from calibrain import SpatialCVSolver, TemporalCVSolver
+from calibrain.calibration_storage import save_calibration_record
 
 # Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
 logging.getLogger("mne").setLevel(logging.ERROR)
@@ -174,6 +175,91 @@ class Benchmark:
     
         self.logger.debug(f"Experiment directory created: {experiment_dir}")
         return experiment_dir
+
+    def _build_calibration_metadata(
+        self,
+        *,
+        solver_name: str,
+        solver_params: dict,
+        data_params: dict,
+        noise_params: dict,
+        seed: int,
+        experiment_dir: str | Path,
+        config_run_id: int,
+        global_run_id: int,
+        config_index: int,
+        run_in_config: int,
+        nruns_local: int,
+    ) -> dict:
+        timestamp = datetime.datetime.utcnow().isoformat()
+        return {
+            "config_run_id": config_run_id,
+            "global_run_id": global_run_id,
+            "config_index": config_index,
+            "run_in_config": run_in_config,
+            "nruns_per_config": nruns_local,
+            "seed": seed,
+            "timestamp_utc": timestamp,
+            "solver": solver_name,
+            "solver_params": dict(solver_params),
+            "data_params": dict(data_params),
+            "noise_params": dict(noise_params),
+            "noise_type": noise_params.get("noise_type"),
+            "subject": data_params.get("subject"),
+            "nnz": data_params.get("nnz"),
+            "alpha_SNR": data_params.get("alpha_SNR"),
+            "orientation_type": data_params.get("orientation_type"),
+            "experiment_dir": Path(experiment_dir).as_posix(),
+        }
+
+    def _persist_calibration_results(
+        self,
+        *,
+        experiment_dir: str | Path,
+        record_dir: str | Path,
+        solver_name: str,
+        solver_params: dict,
+        data_params: dict,
+        noise_params: dict,
+        seed: int,
+        config_run_id: int,
+        global_run_id: int,
+        config_index: int,
+        run_in_config: int,
+        nruns_local: int,
+        pre_calibration: dict,
+        post_calibration: dict,
+    ) -> Optional[Path]:
+        record_dir = Path(record_dir)
+        record_name = f"calibration_run-{global_run_id:05d}"
+        metadata = self._build_calibration_metadata(
+            solver_name=solver_name,
+            solver_params=solver_params,
+            data_params=data_params,
+            noise_params=noise_params,
+            seed=seed,
+            experiment_dir=experiment_dir,
+            config_run_id=config_run_id,
+            global_run_id=global_run_id,
+            config_index=config_index,
+            run_in_config=run_in_config,
+            nruns_local=nruns_local,
+        )
+        try:
+            return save_calibration_record(
+                output_dir=record_dir,
+                record_name=record_name,
+                metadata=metadata,
+                pre_calibration=pre_calibration,
+                post_calibration=post_calibration,
+            )
+        except Exception as exc:
+            self.logger.warning(
+                "Failed to store calibration record for global_run_id %s: %s",
+                global_run_id,
+                exc,
+            )
+            return None
 
     def _prepare_run_data(self, data_params: dict, seed: int) -> dict:
         data_params = dict(data_params)
@@ -498,6 +584,25 @@ class Benchmark:
             )
             pre_calibration = calibration_results['pre_calibration']
             post_calibration = calibration_results['post_calibration']
+            calibration_record_dir = Path("results") / "calibration_records"
+            record_path = self._persist_calibration_results(
+                experiment_dir=experiment_dir,
+                record_dir=calibration_record_dir,
+                solver_name=solver_name,
+                solver_params=solver_params,
+                data_params=data_params,
+                noise_params=noise_params,
+                seed=seed,
+                config_run_id=config_run_id,
+                global_run_id=global_run_id,
+                config_index=config_index,
+                run_in_config=run_in_config,
+                nruns_local=nruns_local,
+                pre_calibration=pre_calibration,
+                post_calibration=post_calibration,
+            )
+            if record_path is not None:
+                this_result["calibration_record"] = record_path.as_posix()
 
             metric_kwargs = dict(
                 x=x_avg_time,
