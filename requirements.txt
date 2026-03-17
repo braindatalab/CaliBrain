@@ -9,7 +9,7 @@ pyvistaqt # for plotting 3D brain surfaces
 ipywidgets # for interactive widgets in 3D brain surface plotting
 PyQt5 # for creating the GUI
 scipy
-
+seaborn
 # sphinx>=4.0.0,<6.0.0
 # docutils>=0.16,<0.18
 

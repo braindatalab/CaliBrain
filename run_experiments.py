@@ -51,7 +51,7 @@ def main():
     logging.getLogger('mne').setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
 
-    nruns = 10
+    nruns = 25
     
     ERP_config = {
         "tmin": -0.5,
@@ -99,9 +99,9 @@ def main():
     # MEG data parameters
     data_param_grid_meg = {
         "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
-        "nnz": [1, 3, 5, 10, 100],
+        "nnz": [1, 3, 5, 10, 100], # [5], #
         "orientation_type": ["fixed"], # "fixed", "free"
-        "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
+        "alpha_SNR": [0.5], # [0.1, 0.3, 0.5, 0.7, 0.9], 
         "sensor_white_noise_std": [1.0 * 0.001],
     }
     
@@ -118,13 +118,13 @@ def main():
     # Define noise parameter grids
     # =================================================================
     basic_noise_params = {
-        "noise_type": ["oracle"], # "baseline", 
+        "noise_type": ["oracle", "baseline"], 
         # add noise parameters here if needed
     }
     
     default_alphas_grid = np.logspace(0, -2, 10)[1:]
     CV_noise_params = {
-        "noise_type": ["temporal_cv"],
+        "noise_type": ["spatial_cv"],
         'default_alphas_grid': [default_alphas_grid], # will be set within the benchmark loop based on baseline noise variance
         'cv': [5],
         'n_jobs': [1],
@@ -209,14 +209,14 @@ def main():
         "evaluation": (
             "mean_posterior_std",           # Uncertainty summary
             "emd",                          # Spatial accuracy
-            "jaccard_error",
-            "mse",
+            # "jaccard_error",
+            # "mse",
             # "euclidean_distance",           # raises error for active_set = x / x_hat
-            "f1",
-            "accuracy",
+            # "f1",
+            # "accuracy",
         ),
         "calibration": (
-            "mean_calibration_error",
+            # "mean_calibration_error",
             "mean_signed_deviation",
             "mean_absolute_deviation",
             "max_underconfidence_deviation",

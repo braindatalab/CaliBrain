@@ -800,19 +800,19 @@ def _derive_output_paths(csv_path: Path, figures_root: Path) -> Tuple[Path, Path
 
 def main() -> None:
     # --- User-configurable section -------------------------------------------------
-    filename = 'benchmark_results_20260106_190753'
+    filename = 'benchmark_results_20260306_172109'
     path_to_csv = Path("results/benchmark_results/") / f"{filename}.csv"
-    solver_name: Optional[str] = "BMN"
-    figures_root = Path("results/benchmark_results/") / filename
+    solver_name: Optional[str] = "sflex_gamma_map"
     show_violin = False
     show_summary = False
 
     filter_dict: Dict[str, object] = {
-        "nnz": 10,
+        "nnz": 20,
         "orientation_type": "fixed",
         "noise_type": "baseline",
         "subject": None,
     }
+    figures_root = Path("results/benchmark_results/") / filename / f"{solver_name}__NNZ={filter_dict['nnz']}_baseline"
     extra_filters: List[str] = []
     # -------------------------------------------------------------------------------
 

@@ -26,6 +26,78 @@ class Visualizer:
         self.base_save_path = Path(base_save_path)
         self.logger = logger or logging.getLogger(__name__)
 
+    def plot_pointwise_coverage_map(self, x, ci_lower, ci_upper, nominal_coverages,
+                                    file_name='pointwise_coverage_map', 
+                                    save_path=None, show=False):
+        """
+        Plot spatial maps showing point-wise coverage for different confidence levels.
+        
+        Parameters:
+        - x (ndarray): True source activity, shape (n_sources,) or (n_sources, n_times)
+        - ci_lower (ndarray): Lower confidence bounds, shape (n_coverages, n_sources)
+        - ci_upper (ndarray): Upper confidence bounds, shape (n_coverages, n_sources)
+        - nominal_coverages (ndarray): Nominal coverage levels
+        """
+        # Ensure x is 1D (average over time if needed)
+        if x.ndim > 1:
+            x_avg = np.mean(x, axis=1)
+        else:
+            x_avg = x
+        
+        # Compute coverage for each confidence level
+        n_levels = len(nominal_coverages)
+        coverage_maps = []
+        
+        for i in range(n_levels):
+            ci_l = ci_lower[i]  # (n_sources,)
+            ci_u = ci_upper[i]  # (n_sources,)
+            
+            # Check if true value is within interval (1 = covered, 0 = not covered)
+            covered = ((x_avg >= ci_l) & (x_avg <= ci_u)).astype(float)
+            coverage_maps.append(covered)
+        
+        # Create subplot grid
+        n_cols = min(3, n_levels)
+        n_rows = int(np.ceil(n_levels / n_cols))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4*n_rows))
+        
+        if n_levels == 1:
+            axes = np.array([axes])
+        axes = axes.flatten()
+        
+        for i, (coverage, conf_level) in enumerate(zip(coverage_maps, nominal_coverages)):
+            ax = axes[i]
+            
+            # Compute empirical coverage
+            empirical_coverage = np.mean(coverage)
+            n_covered = np.sum(coverage)
+            n_not_covered = np.sum(1 - coverage)
+            
+            # Create bar plot
+            bars = ax.bar(['Covered', 'Not Covered'], 
+                         [n_covered, n_not_covered],
+                         color=['green', 'red'], alpha=0.7, edgecolor='black')
+            
+            ax.set_ylabel('Number of Sources')
+            ax.set_title(f'Nominal: {conf_level:.2f} | Empirical: {empirical_coverage:.2f}')
+            ax.grid(True, alpha=0.3, axis='y')
+            
+            # Add percentage text on bars
+            total = len(coverage)
+            for j, count in enumerate([n_covered, n_not_covered]):
+                pct = count / total * 100 if total > 0 else 0
+                height = bars[j].get_height()
+                ax.text(bars[j].get_x() + bars[j].get_width()/2., height,
+                       f'{pct:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Hide unused subplots
+        for i in range(n_levels, len(axes)):
+            axes[i].axis('off')
+        
+        fig.suptitle('Point-wise Coverage Analysis', fontsize=16, y=0.995)
+        plt.tight_layout()
+        self._handle_figure_output(fig, file_name, save_path, show)
+
     def _format_unit_label(self, units: Optional[Union[int, str]], unitmult: Optional[int]) -> str:
         if isinstance(units, np.ndarray):
             try:
@@ -740,20 +812,90 @@ class Visualizer:
         
         self._handle_figure_output(fig, file_name, save_path, show)
 
-    def plot_calibration(self, nominal_coverage, pre_empirical_coverage, post_empirical_coverage, file_name='calibration_curve', save_path=None, show=False):
+    def _summarize_calibration_curves(self, values, weights: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray], int]:
+        arr = np.asarray(values, dtype=float)
+        if arr.ndim == 1:
+            return arr, None, 1
+        if arr.ndim != 2:
+            raise ValueError("Calibration curves must be 1D or 2D (runs x levels).")
+        n_runs = arr.shape[0]
+        weight_arr = None
+        if weights is not None:
+            weight_arr = np.asarray(weights, dtype=float)
+            if weight_arr.shape[0] != n_runs:
+                raise ValueError("Weight vector must match the number of runs.")
+            weight_arr = np.clip(weight_arr, 0.0, None)
+            if not np.any(weight_arr):
+                weight_arr = None
+        if weight_arr is None:
+            mean = arr.mean(axis=0)
+            std = arr.std(axis=0)
+        else:
+            norm = float(np.sum(weight_arr))
+            normalized = weight_arr[:, None] / norm
+            mean = np.sum(arr * normalized, axis=0)
+            variance = np.sum(normalized * (arr - mean) ** 2, axis=0)
+            std = np.sqrt(np.maximum(variance, 0.0))
+        return mean, std, n_runs
+
+    def plot_calibration(
+        self,
+        nominal_coverage,
+        pre_empirical_coverage,
+        post_empirical_coverage,
+        pre_weights=None,
+        post_weights=None,
+        file_name='calibration_curve',
+        save_path=None,
+        show=False,
+    ):
         """
-        Plot calibration curves and errors
+        Plot calibration curves and errors. Accepts either a single curve or stacked
+        curves (runs x levels). When multiple curves are provided, the mean and
+        standard deviation across runs are displayed; optional weights can be used
+        to compute weighted statistics.
         
         Parameters:
         - nominal_coverage (ndarray): Array of nominal coverage levels (confidence levels).
-        - pre_empirical_coverage (ndarray): Empirical coverage before calibration.
-        - post_empirical_coverage (ndarray): Empirical coverage after calibration.
+        - pre_empirical_coverage (ndarray | ndarray runs x levels): Empirical coverage before calibration.
+        - post_empirical_coverage (ndarray | ndarray runs x levels): Empirical coverage after calibration.
+        - pre_weights (array-like, optional): Sample weights for the pre-calibration curves.
+        - post_weights (array-like, optional): Sample weights for the post-calibration curves.
         """
+        nominal_arr = np.asarray(nominal_coverage, dtype=float)
+        pre_mean, pre_std, pre_count = self._summarize_calibration_curves(
+            pre_empirical_coverage,
+            None if pre_weights is None else np.asarray(pre_weights, dtype=float),
+        )
+        post_mean, post_std, post_count = self._summarize_calibration_curves(
+            post_empirical_coverage,
+            None if post_weights is None else np.asarray(post_weights, dtype=float),
+        )
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
         
         # Plot 1: Calibration curves
-        ax1.plot(nominal_coverage, pre_empirical_coverage, 'bo-', label='Pre-calibration', linewidth=2, markersize=6)
-        ax1.plot(nominal_coverage, post_empirical_coverage, 'ro-', label='Post-calibration', linewidth=2, markersize=6)
+        pre_label = 'Pre-calibration' if pre_count == 1 else f'Pre-calibration (n={pre_count})'
+        post_label = 'Post-calibration' if post_count == 1 else f'Post-calibration (n={post_count})'
+        ax1.plot(nominal_arr, pre_mean, 'bo-', label=pre_label, linewidth=2, markersize=6)
+        ax1.plot(nominal_arr, post_mean, 'ro-', label=post_label, linewidth=2, markersize=6)
+        if pre_std is not None:
+            ax1.fill_between(
+                nominal_arr,
+                np.clip(pre_mean - pre_std, 0.0, 1.0),
+                np.clip(pre_mean + pre_std, 0.0, 1.0),
+                color='blue',
+                alpha=0.15,
+                label='Pre ±1 std',
+            )
+        if post_std is not None:
+            ax1.fill_between(
+                nominal_arr,
+                np.clip(post_mean - post_std, 0.0, 1.0),
+                np.clip(post_mean + post_std, 0.0, 1.0),
+                color='red',
+                alpha=0.15,
+                label='Post ±1 std',
+            )
         ax1.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
         
         ax1.set_xlabel('Nominal Confidence Level')
@@ -764,8 +906,8 @@ class Visualizer:
         ax1.set_aspect('equal')
         
         # Plot 2: Calibration errors
-        pre_errors = np.abs(pre_empirical_coverage - nominal_coverage)
-        post_errors = np.abs(post_empirical_coverage - nominal_coverage)
+        pre_errors = np.abs(pre_mean - nominal_arr)
+        post_errors = np.abs(post_mean - nominal_arr)
         
         x_pos = np.arange(len(nominal_coverage))
         width = 0.35
@@ -777,7 +919,7 @@ class Visualizer:
         ax2.set_ylabel('Absolute Error')
         ax2.set_title('Calibration Errors')
         ax2.set_xticks(x_pos)
-        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_coverage])
+        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_arr])
         ax2.legend()
         ax2.grid(True, alpha=0.3)
         
@@ -1252,7 +1394,7 @@ class Visualizer:
             show=False,
             figsize=(18, 13)
         )
-        
+        # old
         # plot calibration curve - active sources
         # self.plot_calibration_curve(
         #     confidence_levels=confidence_levels,
@@ -1262,6 +1404,7 @@ class Visualizer:
         #     save_path='uncertainty_analysis',
         #     show=False,
         # )
+             
         self.plot_calibration(
             nominal_coverage=nominal_coverages,
             pre_empirical_coverage=empirical_coverages,
@@ -1270,7 +1413,8 @@ class Visualizer:
             save_path='uncertainty_analysis',
             show=False,
         )
-        
+
+        # old
         # self.plot_pre_post_calibration_curves(
         #     confidence_levels=confidence_levels,
         #     nominal_coverages=nominal_coverages,
@@ -1280,6 +1424,18 @@ class Visualizer:
         #     save_path='uncertainty_analysis',
         #     show=False,
         # )
+        
+        # Plot point-wise coverage maps
+        if ci_lower is not None and ci_upper is not None:
+            self.plot_pointwise_coverage_map(
+                x=x_avg_time,
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+                nominal_coverages=nominal_coverages,
+                file_name='pointwise_coverage_map',
+                save_path='uncertainty_analysis',
+                show=False
+            )
 
 
 
