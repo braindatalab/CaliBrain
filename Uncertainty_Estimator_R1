@@ -1,4 +1,82 @@
 # =============================================================================
+# UncertaintyEstimator
+#
+# Supports:
+#   1) Fixed orientation (EEG or MEG):
+#        - pointwise 1D credible interval membership
+#        - aggregated-mean 1D credible interval membership
+#
+#   2) Free EEG:
+#        - pointwise 3D credible ellipsoid membership
+#        - aggregated-mean 3D credible ellipsoid membership
+#
+#   3) Free MEG (reduced rank-2 model):
+#        - pointwise 2D credible ellipse membership in reduced coordinates
+#        - aggregated-mean 2D credible ellipse membership in reduced coordinates
+#
+# Key modeling convention
+# -----------------------
+# - posterior mean varies over time
+# - posterior covariance is static over time
+# - aggregated mean uses covariance scaled by 1 / T
+#
+# Important MEG convention
+# ------------------------
+# In the current pipeline, the reduced MEG basis should come from the
+# leadfield extractor:
+#
+#     V_tan = lf_free_meg["Q_basis"]    # shape (N, 3, 2)
+#
+# This avoids basis-sign / coordinate mismatches between:
+#   - the reduced leadfield used by BMN / BMN_joint
+#   - the truth projection used in uncertainty evaluation
+#
+# A fallback SVD reduction from an original free leadfield (M, 3N) is kept
+# only as an optional helper, not as the recommended primary path.
+# =============================================================================
+
+import logging
+from typing import Optional, Dict, Any, Tuple
+
+import numpy as np
+from scipy.stats import norm, chi2
+
+
+# =============================================================================
+# Shared coordinate helper
+# =============================================================================
+def lift_reduced_sources_to_3d(a_red: np.ndarray, Q_basis: np.ndarray) -> np.ndarray:
+    """
+    Lift reduced coordinates back to the retained local 3D source basis.
+
+    Parameters
+    ----------
+    a_red : (N, k, T)
+        Reduced source coefficients, typically with k=2 for free_meg.
+    Q_basis : (N, 3, k)
+        Per-source basis mapping reduced coordinates into the local 3D basis.
+
+    Returns
+    -------
+    x_3d : (N, 3, T)
+        Lifted coefficients in the local 3D source basis.
+    """
+    a_red = np.asarray(a_red, dtype=float)
+    Q_basis = np.asarray(Q_basis, dtype=float)
+
+    if a_red.ndim != 3:
+        raise ValueError(f"Expected a_red with shape (N, k, T). Got {a_red.shape}")
+    if Q_basis.ndim != 3:
+        raise ValueError(f"Expected Q_basis with shape (N, 3, k). Got {Q_basis.shape}")
+    if a_red.shape[0] != Q_basis.shape[0]:
+        raise ValueError("Mismatch in number of sources between a_red and Q_basis")
+    if a_red.shape[1] != Q_basis.shape[2]:
+        raise ValueError("Mismatch in reduced dimension k between a_red and Q_basis")
+
+    return np.einsum("nok,nkt->not", Q_basis, a_red)
+
+
+# =============================================================================
 # Uncertainty estimator
 # =============================================================================
 class UncertaintyEstimator:
