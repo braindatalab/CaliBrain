@@ -84,6 +84,39 @@ Please see the [Usage Guide](docs/source/usage.rst).
 
 ---
 
+## Experiment-Level Calibration Workflow
+
+To recalibrate uncertainty estimates using whole experiments instead of per-source cross-validation:
+
+1. **Pick a workflow-specific entry point**  
+   - `python calibrain/workflows/benchmarking.py --config configs/benchmark_default.py`  
+   - `python calibrain/workflows/aggregation.py --config configs/aggregate_default.py`  
+   - `python calibrain/workflows/calibration.py --config configs/calibration_default.py`
+
+2. **Edit the Python configs**  
+   Each config file defines a `CONFIG` dictionary describing the inputs for its workflow (solver grids, metadata filters, dataset paths, etc.). Copy or modify the `.py` files under `configs/` to capture different experiment setups; you can add comments or share common structures inside the module.
+
+3. **Typical sequence**
+   - Run the benchmarking module to generate simulations (each run stores a single `posterior_summary_*.h5` file containing arrays + metadata).
+   - Adjust the aggregation config module (e.g., `configs/aggregate_default.py`) to define metadata filters, then run the aggregation module to produce `_train.npz` / `_test.npz`.
+   - Update the calibration config module (e.g., `configs/calibration_default.py`) with the aggregated dataset paths and run the calibration module to get isotonic calibration metrics/plots.
+
+### Metadata keys available for filtering
+
+- `solver`
+- `noise_type`
+- `subject`
+- `orientation_type`
+- `nnz`
+- `alpha_SNR`
+- `seed`
+- `run_id` / `global_run_id`
+- `nruns`
+
+Combine these to form arbitrary splits (e.g., leave-one-subject-out, different noise regimes, etc.) before running the new post-calibration pipeline.
+
+---
+
 ## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](docs/source/contributing.rst).
