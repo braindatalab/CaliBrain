@@ -1,6 +1,8 @@
 import datetime
+import json
 import os
 import logging
+import h5py
 from typing import Optional
 from pathlib import Path
 import numpy as np
@@ -29,7 +31,24 @@ logging.getLogger("mne").setLevel(logging.ERROR)
 logging.getLogger("mne.utils").setLevel(logging.ERROR)
 
 class Benchmark:
-    def __init__(self, solver : callable, solver_param_grid : dict, data_param_grid : dict, noise_param_grid : dict, ERP_config : dict, source_simulator : SourceSimulator, leadfield_builder : LeadfieldBuilder, sensor_simulator : SensorSimulator, uncertainty_estimator : UncertaintyEstimator, metric_evaluator : MetricEvaluator, random_state=42, logger=None):
+    def __init__(
+        self,
+        solver: callable,
+        solver_param_grid: dict,
+        data_param_grid: dict,
+        noise_param_grid: dict,
+        ERP_config: dict,
+        source_simulator: SourceSimulator,
+        leadfield_builder: LeadfieldBuilder,
+        sensor_simulator: SensorSimulator,
+        uncertainty_estimator: UncertaintyEstimator,
+        metric_evaluator: MetricEvaluator,
+        perform_calibration: bool = False,
+        save_posterior_stats: bool = True,
+        posterior_dir: str | Path | None = None,
+        random_state=42,
+        logger=None,
+    ):
         """
         Initialize the Benchmark class.
 
@@ -55,6 +74,15 @@ class Benchmark:
             Instance of UncertaintyEstimator for uncertainty estimation.
         metric_evaluator : MetricEvaluator
             Instance of MetricEvaluator for evaluating metrics.
+        perform_calibration : bool, optional
+            If True, run uncertainty calibration, evaluation metrics, and
+            visualization inside the benchmarking loop. Defaults to False so
+            calibration/evaluation can be deferred to a post-processing step.
+        save_posterior_stats : bool, optional
+            If True, persist per-run posterior summaries for later aggregation.
+        posterior_dir : str or Path, optional
+            Directory where posterior summary files should be stored. Defaults
+            to the per-run experiment directory when omitted.
         random_state : int, optional
             Random seed for reproducibility.
         logger : logging.Logger, optional
@@ -70,6 +98,11 @@ class Benchmark:
         self.sensor_simulator = sensor_simulator
         self.uncertainty_estimator = uncertainty_estimator
         self.metric_evaluator = metric_evaluator
+        self.perform_calibration = perform_calibration
+        self.save_posterior_stats = save_posterior_stats
+        self.posterior_dir = Path(posterior_dir) if posterior_dir else None
+        if self.posterior_dir is not None:
+            self.posterior_dir.mkdir(parents=True, exist_ok=True)
         self.random_state = random_state
         self.logger = logger if logger else logging.getLogger(__name__)
 
@@ -185,7 +218,6 @@ class Benchmark:
         noise_params: dict,
         seed: int,
         experiment_dir: str | Path,
-        config_run_id: int,
         global_run_id: int,
         config_index: int,
         run_in_config: int,
@@ -193,7 +225,6 @@ class Benchmark:
     ) -> dict:
         timestamp = datetime.datetime.utcnow().isoformat()
         return {
-            "config_run_id": config_run_id,
             "global_run_id": global_run_id,
             "config_index": config_index,
             "run_in_config": run_in_config,
@@ -222,7 +253,6 @@ class Benchmark:
         data_params: dict,
         noise_params: dict,
         seed: int,
-        config_run_id: int,
         global_run_id: int,
         config_index: int,
         run_in_config: int,
@@ -239,7 +269,6 @@ class Benchmark:
             noise_params=noise_params,
             seed=seed,
             experiment_dir=experiment_dir,
-            config_run_id=config_run_id,
             global_run_id=global_run_id,
             config_index=config_index,
             run_in_config=run_in_config,
@@ -258,6 +287,56 @@ class Benchmark:
                 "Failed to store calibration record for global_run_id %s: %s",
                 global_run_id,
                 exc,
+            )
+            return None
+
+    @staticmethod
+    def _sanitize_metadata(metadata: dict | None) -> dict:
+        if not metadata:
+            return {}
+
+        def _convert(value):
+            if isinstance(value, (np.generic,)):
+                return value.item()
+            if isinstance(value, Path):
+                return value.as_posix()
+            if isinstance(value, dict):
+                return {k: _convert(v) for k, v in value.items()}
+            if isinstance(value, (list, tuple)):
+                return [_convert(v) for v in value]
+            return value
+
+        return {k: _convert(v) for k, v in metadata.items()}
+
+    def _persist_posterior_summary(
+        self,
+        *,
+        experiment_dir: str | Path,
+        x_true_avg: np.ndarray,
+        x_hat_avg: np.ndarray,
+        posterior_std_avg: np.ndarray,
+        metadata: dict | None = None,
+        posterior_dir: str | Path | None = None,
+        filename: str | None = None,
+    ) -> Optional[Path]:
+        base_dir = Path(posterior_dir) if posterior_dir else Path(experiment_dir)
+        base_dir.mkdir(parents=True, exist_ok=True)
+        summary_filename = filename or "posterior_summary.h5"
+        summary_path = base_dir / summary_filename
+        try:
+            with h5py.File(summary_path, "w") as handle:
+                handle.create_dataset("x_true", data=x_true_avg, compression="gzip")
+                handle.create_dataset("x_hat", data=x_hat_avg, compression="gzip")
+                handle.create_dataset(
+                    "posterior_std", data=posterior_std_avg, compression="gzip"
+                )
+                safe_metadata = self._sanitize_metadata(metadata)
+                if safe_metadata:
+                    handle.attrs["metadata_json"] = json.dumps(safe_metadata)
+            return summary_path
+        except Exception as exc:
+            self.logger.warning(
+                "Failed to store posterior summary at %s: %s", summary_path, exc
             )
             return None
 
@@ -364,7 +443,6 @@ class Benchmark:
         num_configs = max(1, (total_runs + nruns_local - 1) // nruns_local)
         config_index = (run_id - 1) // nruns_local + 1
         run_in_config = (run_id - 1) % nruns_local + 1
-        config_run_id = run_in_config
 
         # extract noise_type, nnz and alpha_SNR early for logging
         noise_type = noise_params.get("noise_type")
@@ -393,7 +471,7 @@ class Benchmark:
         self.logger.debug(f"Data params: {data_params}")
 
         this_result = {
-            'run_id': config_run_id,
+            'run_id': run_in_config,
             'global_run_id': global_run_id,
             "seed": seed,
             "solver": solver_name,
@@ -495,7 +573,7 @@ class Benchmark:
                     self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var
                     self.logger.debug(
-                        f"Baseline noise variance (global run {run_id}, config run {config_run_id}): {noise_var:.3e}, eta: {noise_eta:.3e}"
+                        f"Baseline noise variance (global run {run_id}, config run {run_in_config}): {noise_var:.3e}, eta: {noise_eta:.3e}"
                     )
                 elif noise_type == 'adaptive_joint_learning':
                     # TODO: temporarily set to baseline noise var until adaptive joint learning is fully integrated
@@ -569,13 +647,52 @@ class Benchmark:
                 x = np.linalg.norm(x, axis=1, keepdims=False)
                 x_hat = np.linalg.norm(x_hat, axis=1, keepdims=False)
                 x_hat_active_indices = x_hat_active_indices[:x_hat_avg_time.shape[0]]
-                
-                
+
+            active_indices_size = (
+                len(x_hat_active_indices)
+                if x_hat_active_indices is not None
+                else 0
+            )
+            this_result['active_indices_size'] = active_indices_size
+
+            summary_path = None
+            if self.save_posterior_stats:
+                posterior_base = self.posterior_dir if self.posterior_dir is not None else Path(experiment_dir)
+                summary_filename = f"posterior_summary_run{global_run_id:08d}_seed{seed}.h5"
+                summary_metadata = {
+                    "global_run_id": global_run_id,
+                    "run_id": run_in_config,
+                    "nruns": nruns,
+                    "solver": solver_name,
+                    "noise_type": noise_params.get("noise_type"),
+                    "subject": data_params.get("subject"),
+                    "orientation_type": orientation_type,
+                    "nnz": data_params.get("nnz"),
+                    "alpha_SNR": data_params.get("alpha_SNR"),
+                    "seed": seed,
+                    "experiment_dir": Path(experiment_dir).as_posix(),
+                    "posterior_dir": Path(posterior_base).as_posix(),
+                    "posterior_filename": summary_filename,
+                }
+                summary_path = self._persist_posterior_summary(
+                    experiment_dir=experiment_dir,
+                    x_true_avg=x_avg_time,
+                    x_hat_avg=x_hat_avg_time,
+                    posterior_std_avg=posterior_std_avg_time,
+                    metadata=summary_metadata,
+                    posterior_dir=posterior_base,
+                    filename=summary_filename,
+                )
+                if summary_path is not None:
+                    this_result["posterior_summary"] = summary_path.as_posix()
+
+            if not self.perform_calibration:
+                this_result["calibration_deferred"] = True
+                return this_result
+
             calibrator = UncertaintyCalibrator(
                 uncertainty_estimator=self.uncertainty_estimator,
                 metric_evaluator=self.metric_evaluator,
-                n_folds=5,
-                random_state=self.random_state,
             )
             calibration_results = calibrator.calibrate(
                 x_true=x_avg_time,
@@ -593,7 +710,6 @@ class Benchmark:
                 data_params=data_params,
                 noise_params=noise_params,
                 seed=seed,
-                config_run_id=config_run_id,
                 global_run_id=global_run_id,
                 config_index=config_index,
                 run_in_config=run_in_config,
@@ -675,13 +791,6 @@ class Benchmark:
                 result=this_result,
                 experiment_dir=experiment_dir,
             )
-
-            active_indices_size = (
-                len(x_hat_active_indices)
-                if x_hat_active_indices is not None
-                else 0
-            )
-            this_result['active_indices_size'] = active_indices_size
 
         except Exception as e:
             self.logger.error(

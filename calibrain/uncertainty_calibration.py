@@ -1,12 +1,13 @@
+from typing import Optional
+
 from sklearn.isotonic import IsotonicRegression
-from sklearn.model_selection import KFold
 import numpy as np
 from scipy.stats import norm
 from calibrain import UncertaintyEstimator
 from calibrain import MetricEvaluator
 
 # ============================================================================
-# UNCERTAINTY CALIBRATOR (NOMINAL RE-CALIBRATION + CV)
+# UNCERTAINTY CALIBRATOR (NOMINAL RE-CALIBRATION)
 # ============================================================================
 
 class UncertaintyCalibrator:
@@ -22,7 +23,8 @@ class UncertaintyCalibrator:
         empirical coverage for any nominal coverage level c.
       - MetricEvaluator.evaluate_metrics(which="calibration") to summarize
         AAD, ASD, etc. using the configured calibration metrics.
-      - Source-wise K-fold cross-validation to avoid overfitting.
+      - Experiment-level train/test splits provided by the caller to avoid
+        overfitting entire sources.
 
     Conceptual model
     ----------------
@@ -30,9 +32,9 @@ class UncertaintyCalibrator:
 
         g(c) = empirical coverage when building CIs with nominal coverage c.
 
-    On the training sources in each fold, we learn g(c) via isotonic regression,
-    then we numerically invert this curve to obtain a re-calibrated nominal
-    coverage c_cal(c) ≈ g^{-1}(c). On the test sources we then build intervals
+    On the training experiments we learn g(c) via isotonic regression, then we
+    numerically invert this curve to obtain a re-calibrated nominal coverage
+    c_cal(c) ≈ g^{-1}(c). On a held-out evaluation split we build intervals
     using c_cal(c) and measure empirical coverage again.
 
     The final goal is that after recalibration the empirical coverage is
@@ -42,9 +44,7 @@ class UncertaintyCalibrator:
 
     def __init__(self,
                  uncertainty_estimator: UncertaintyEstimator,
-                 metric_evaluator: MetricEvaluator,
-                 n_folds: int = 5,
-                 random_state: int = 42):
+                 metric_evaluator: MetricEvaluator):
         """
         Parameters
         ----------
@@ -52,15 +52,9 @@ class UncertaintyCalibrator:
             Your existing UncertaintyEstimator instance.
         metric_evaluator : MetricEvaluator
             Your existing MetricEvaluator instance.
-        n_folds : int
-            Number of cross-validation folds (source-wise).
-        random_state : int
-            Random seed for reproducible KFold splits.
         """
         self.uncertainty_estimator = uncertainty_estimator
         self.metric_evaluator = metric_evaluator
-        self.n_folds = n_folds
-        self.random_state = random_state
 
         # Nominal coverage grid c (what we want in the end)
         self.nominal_coverages = uncertainty_estimator.nominal_coverages
@@ -163,11 +157,50 @@ class UncertaintyCalibrator:
     # ----------------------------------------------------------------------
     # Main calibration routine
     # ----------------------------------------------------------------------
+    def _prepare_dataset(self,
+                         *,
+                         x_true: np.ndarray,
+                         x_hat: np.ndarray,
+                         posterior_std: np.ndarray) -> dict:
+        """Ensure arrays are numpy ndarrays with consistent 2D shapes."""
+        if x_true is None or x_hat is None or posterior_std is None:
+            raise ValueError("x_true, x_hat and posterior_std must be provided.")
+
+        x_true = np.asarray(x_true)
+        x_hat = np.asarray(x_hat)
+        posterior_std = np.asarray(posterior_std)
+
+        if x_true.ndim == 1:
+            x_true = x_true[:, np.newaxis]
+        if x_hat.ndim == 1:
+            x_hat = x_hat[:, np.newaxis]
+        if posterior_std.ndim == 1:
+            posterior_std = posterior_std[:, np.newaxis]
+
+        posterior_var = np.square(posterior_std)
+
+        if x_true.shape != x_hat.shape or x_true.shape != posterior_std.shape:
+            raise ValueError(
+                "x_true, x_hat, and posterior_std must have the same shape after reshaping."
+            )
+
+        return {
+            "x_true": x_true,
+            "x_hat": x_hat,
+            "posterior_std": posterior_std,
+            "posterior_var": posterior_var,
+            "n_sources": x_true.shape[0],
+            "n_times": x_true.shape[-1],
+        }
+
     def calibrate(
         self,
-        x_true: np.ndarray,
-        x_hat: np.ndarray,
-        posterior_std: np.ndarray,
+        x_true: Optional[np.ndarray] = None,
+        x_hat: Optional[np.ndarray] = None,
+        posterior_std: Optional[np.ndarray] = None,
+        *,
+        train_data: Optional[dict] = None,
+        test_data: Optional[dict] = None,
         verbose: bool = False,
     ) -> dict:
         """
@@ -175,13 +208,22 @@ class UncertaintyCalibrator:
 
         Parameters
         ----------
-        x_true : np.ndarray
-            Ground-truth sources with shape (n_sources, n_times) or (n_sources,).
-        x_hat : np.ndarray
-            Posterior mean estimates with the same shape as ``x_true``.
-        posterior_std : np.ndarray
-            Posterior standard deviation (same shape as ``x_true``) used to
-            build nominal credible intervals.
+        x_true : np.ndarray, optional
+            Ground-truth sources used both for training and evaluation when
+            ``train_data`` is not supplied. Shape (n_sources, n_times) or
+            (n_sources,).
+        x_hat : np.ndarray, optional
+            Posterior mean estimates paired with ``x_true``.
+        posterior_std : np.ndarray, optional
+            Posterior standard deviation paired with ``x_true``.
+        train_data : dict, optional
+            Dictionary containing ``x_true``, ``x_hat``, and ``posterior_std``
+            arrays for the training experiments. When provided, the positional
+            arguments are ignored for training.
+        test_data : dict, optional
+            Dictionary containing ``x_true``, ``x_hat``, and ``posterior_std``
+            arrays for the evaluation experiments. If omitted, the training
+            data is also used for evaluation.
         verbose : bool, optional
             If True, print progress information.
 
@@ -191,155 +233,110 @@ class UncertaintyCalibrator:
             Dictionary containing:
                 - ``pre_calibration`` and ``post_calibration`` metadata
                   (nominal coverages, empirical coverages, metrics, CI bounds).
-                - ``fold_results`` with per-fold diagnostics.
+                - ``train_empirical_coverages`` for diagnosing how the
+                  calibration map behaves on the training split.
                 - ``calibration_metric_names`` listing the metrics evaluated.
         """
         if verbose:
-            print("=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION + CV) ===")
+            print("=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION) ===")
 
-        # Make sure we always have 2D (n_sources, n_times)
-        if x_true.ndim == 1:
-            x_true = x_true[:, np.newaxis]
-        if x_hat.ndim == 1:
-            x_hat = x_hat[:, np.newaxis]
-        if posterior_std.ndim == 1:
-            posterior_std = posterior_std[:, np.newaxis]
+        if train_data is None:
+            train_data = {
+                "x_true": x_true,
+                "x_hat": x_hat,
+                "posterior_std": posterior_std,
+            }
 
-        posterior_var = np.square(posterior_std)
-        n_sources, n_times = x_hat.shape[0], x_hat.shape[-1]
-        K_levels = len(self.nominal_coverages)
+        train = self._prepare_dataset(**train_data)
+        eval_payload = test_data or train_data
+        eval_data = self._prepare_dataset(**eval_payload)
+
         if verbose:
-            print(f"  n_sources = {n_sources}, n_times = {n_times}")
-            print(f"  n_levels  = {K_levels}, n_folds = {self.n_folds}\n")
+            print(f"  train sources = {train['n_sources']}, train times = {train['n_times']}")
+            print(f"  eval sources  = {eval_data['n_sources']}, eval times  = {eval_data['n_times']}\n")
 
         # ------------------------------------------------------------------
-        # 1) Global pre-calibration baseline (using all sources & times)
+        # 1) Pre-calibration baseline on evaluation split
         # ------------------------------------------------------------------
-        pre_curve = self.uncertainty_estimator.get_calibration_curve(
-            x_true=x_true,
-            x_hat=x_hat,
-            posterior_var=posterior_var,
+        pre_curve_eval = self.uncertainty_estimator.get_calibration_curve(
+            x_true=eval_data['x_true'],
+            x_hat=eval_data['x_hat'],
+            posterior_var=eval_data['posterior_var'],
         )
-        empirical_before_global = pre_curve['empirical_coverages']
+        empirical_before_eval = pre_curve_eval['empirical_coverages']
         calibration_metrics_before = self.metric_evaluator.evaluate_metrics(
             which="calibration",
-            empirical_coverages=empirical_before_global,
+            empirical_coverages=empirical_before_eval,
         )
 
         # ------------------------------------------------------------------
-        # 2) Source-wise K-fold CV: learn nominal recalibration
+        # 2) Learn isotonic mapping on training experiments
         # ------------------------------------------------------------------
-        kf = KFold(
-            n_splits=self.n_folds,
-            shuffle=True,
-            random_state=self.random_state,
+        empirical_train = self._empirical_curve_for_levels(
+            x_true=train['x_true'],
+            x_hat=train['x_hat'],
+            posterior_var=train['posterior_var'],
+            coverages=self.nominal_coverages,
         )
-        idx = np.arange(n_sources)
 
-        empirical_before_folds = np.zeros((self.n_folds, K_levels))
-        empirical_after_folds = np.zeros((self.n_folds, K_levels))
-        c_recal_folds = np.zeros((self.n_folds, K_levels))
-
-        fold_results = []
-
-        if verbose:
-            print("  Running K-fold source-wise calibration:")
-        for fold, (train_idx, test_idx) in enumerate(kf.split(idx)):
-            if verbose:
-                print(f"    Fold {fold+1}: {len(train_idx)} train, {len(test_idx)} test")
-
-            x_true_train = x_true[train_idx]
-            x_hat_train = x_hat[train_idx]
-            var_train = posterior_var[train_idx]
-
-            x_true_test = x_true[test_idx]
-            x_hat_test = x_hat[test_idx]
-            var_test = posterior_var[test_idx]
-
-            # 2.1 Forward calibration curve on training sources: g(c) = empirical(c)
-            empirical_train = self._empirical_curve_for_levels(
-                x_true=x_true_train,
-                x_hat=x_hat_train,
-                posterior_var=var_train,
-                coverages=self.nominal_coverages,
-            )
-
-            iso = IsotonicRegression(increasing=True, out_of_bounds="clip")
-            iso.fit(self.nominal_coverages, empirical_train)  # g: nominal -> empirical
-
-            # 2.2 Invert g to obtain recalibrated nominal coverages
-            c_recal = self._invert_isotonic(iso, self.nominal_coverages)
-
-            # 2.3 Test empirical coverage BEFORE calibration on test sources
-            empirical_test_before = self._empirical_curve_for_levels(
-                x_true=x_true_test,
-                x_hat=x_hat_test,
-                posterior_var=var_test,
-                coverages=self.nominal_coverages,  # original nominal
-            )
-
-            # 2.4 Test empirical coverage AFTER calibration (using c_recal)
-            empirical_test_after = self._empirical_curve_for_levels(
-                x_true=x_true_test,
-                x_hat=x_hat_test,
-                posterior_var=var_test,
-                coverages=c_recal,  # recalibrated nominal used internally
-            )
-
-            empirical_before_folds[fold] = empirical_test_before
-            empirical_after_folds[fold] = empirical_test_after
-            c_recal_folds[fold] = c_recal
-
-            fold_results.append({
-                'fold': fold,
-                'train_empirical': empirical_train,
-                'c_recalibrated': c_recal,
-                'test_empirical_before': empirical_test_before,
-                'test_empirical_after': empirical_test_after,
-                'n_train': len(train_idx),
-                'n_test': len(test_idx),
-            })
+        iso = IsotonicRegression(increasing=True, out_of_bounds="clip")
+        iso.fit(self.nominal_coverages, empirical_train)
+        c_recalibrated = self._invert_isotonic(iso, self.nominal_coverages)
 
         # ------------------------------------------------------------------
-        # 3) Aggregate across folds
+        # 3) Evaluate after calibration on evaluation split
         # ------------------------------------------------------------------
-        empirical_after = empirical_after_folds.mean(axis=0)
-        c_recal_final = c_recal_folds.mean(axis=0)
+        empirical_after_eval = self._empirical_curve_for_levels(
+            x_true=eval_data['x_true'],
+            x_hat=eval_data['x_hat'],
+            posterior_var=eval_data['posterior_var'],
+            coverages=c_recalibrated,
+        )
 
-        # Metrics after calibration (relative to original nominal c)
         calibration_metrics_after = self.metric_evaluator.evaluate_metrics(
             which="calibration",
-            empirical_coverages=empirical_after,
+            empirical_coverages=empirical_after_eval,
         )
 
         # ------------------------------------------------------------------
-        # 4) Final global mapping nominal -> recalibrated nominal
+        # 4) Final mapping nominal -> recalibrated nominal
         # ------------------------------------------------------------------
         self.calibration_model = IsotonicRegression(
-            increasing=True, out_of_bounds="clip"
+            increasing=True,
+            out_of_bounds="clip",
         )
-        self.calibration_model.fit(self.nominal_coverages, c_recal_final)
+        self.calibration_model.fit(self.nominal_coverages, c_recalibrated)
         self.is_calibrated = True
 
+        split_metadata = {
+            'train_n_sources': train['n_sources'],
+            'train_n_times': train['n_times'],
+            'eval_n_sources': eval_data['n_sources'],
+            'eval_n_times': eval_data['n_times'],
+            'uses_separate_eval_split': test_data is not None,
+        }
+
         pre_results = {
-            'nominal_coverages': pre_curve['nominal_coverages'],
-            'empirical_coverages': empirical_before_global,
+            'nominal_coverages': pre_curve_eval['nominal_coverages'],
+            'empirical_coverages': empirical_before_eval,
             'calibration_metrics': calibration_metrics_before,
-            'ci_lowers': pre_curve.get('ci_lowers'),
-            'ci_uppers': pre_curve.get('ci_uppers'),
-            'ci_counts': pre_curve.get('ci_counts'),
+            'ci_lowers': pre_curve_eval.get('ci_lowers'),
+            'ci_uppers': pre_curve_eval.get('ci_uppers'),
+            'ci_counts': pre_curve_eval.get('ci_counts'),
+            'split_metadata': split_metadata,
         }
         post_results = {
             'nominal_coverages': self.nominal_coverages,
-            'empirical_coverages': empirical_after,
+            'empirical_coverages': empirical_after_eval,
             'calibration_metrics': calibration_metrics_after,
-            'recalibrated_nominal_coverages': c_recal_final,
+            'recalibrated_nominal_coverages': c_recalibrated,
+            'split_metadata': split_metadata,
         }
 
         results = {
             'pre_calibration': pre_results,
             'post_calibration': post_results,
-            'fold_results': fold_results,
+            'train_empirical_coverages': empirical_train,
             'calibration_metric_names': tuple(
                 getattr(self.metric_evaluator, "calibration_metrics", tuple())
             ),

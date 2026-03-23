@@ -2,6 +2,7 @@ numpy
 pandas
 scikit-learn
 mne
+h5py
 POT
 nibabel
 pyyaml
