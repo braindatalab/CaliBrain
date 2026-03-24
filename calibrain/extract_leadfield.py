@@ -29,7 +29,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     print(f"Number of sources: {fwd['nsource']}")
     print(f"Number of channels: {len(fwd['info']['chs'])}")
             
-    if orientation_type == 'fixed':        
+    if orientation_type == 'fixed':        # EEG, MEG
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
             print("Forward solution orientation is already fixed")
         elif fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:
@@ -37,13 +37,16 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
             fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=True)
             assert fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI, "Failed to convert to fixed orientation"
     
-    elif orientation_type == 'free':
+    elif orientation_type == 'free' and coil_name == 'eeg':
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:
             print("Forward solution orientation is already free")
         elif fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
             print("Forward solution orientation is fixed, converting to free orientation")
             fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
             assert fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI, "Failed to convert to free orientation"
+    
+    elif orientation_type == 'free' and coil_name in ['mag', 'grad']:
+        raise ValueError("Free orientation is not supported for MEG data.")
     
     # Filter channels by type
     if coil_name == 'mag':
@@ -106,7 +109,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
             
     # update working directory info to fwd['info']
     with fwd["info"]._unlock():
-        fwd["info"]["working_dir"] = str(fwd_datapath) #TODO: use environment variable
+        fwd["info"]["working_dir"] = str(fwd_datapath)
     
     print(f"Number of channels after picking: {len(fwd['info']['chs'])}")
 
