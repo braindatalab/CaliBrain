@@ -47,9 +47,10 @@ class SensorSimulator:
       - y: (n_sensors, n_times)              [sensor_unit]
 
     Free orientation:
-      - x: (n_sources, 3, n_times)           [nAm]  (3 components of dipole moment)
-      - L: (n_sensors, n_sources, 3)         [sensor_unit / nAm]
+      - x: (n_sources, K, n_times)           [nAm]  (3 components of dipole moment)
+      - L: (n_sensors, n_sources, K)         [sensor_unit / nAm]
       - y: (n_sensors, n_times)              [sensor_unit]
+      with K = 2 for MEG (tangential components) and K = 3 for EEG (full 3D).
 
     Units
     -----
@@ -112,14 +113,15 @@ class SensorSimulator:
         x : np.ndarray
             Source activity.
             - fixed: (n_sources, n_times)
-            - free : (n_sources, 3, n_times)
-
+            - free : (n_sources, K, n_times)
+            with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
             Typically measured in nAm for dipole moments.
 
         L : np.ndarray
             Leadfield mapping sources to sensors.
             - fixed: (n_sensors, n_sources)
-            - free : (n_sensors, n_sources, 3)
+            - free : (n_sensors, n_sources, K)
+            with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
 
             Units depend on modality and how L is constructed, e.g.
             - MEG: fT / nAm (or T / nAm with metadata scaling)
@@ -139,23 +141,25 @@ class SensorSimulator:
             y_n(t) = sum_m sum_r L_{n,m,r} * x_{m,r}(t)
             Implemented as: einsum("nmr,mrt->nt", L, x)
         """
-        # ---- FIXED ORIENTATION (unchanged numeric path) ----
-        # Keeps exactly the same behavior as your draft: return L @ x
+        # fixed
         if L.ndim == 2 and x.ndim == 2:
-            return L @ x
-
-        # ---- FREE ORIENTATION (added; does not affect fixed numerics) ----
-        # Expected: L (n_sensors, n_sources, 3), x (n_sources, 3, n_times)
-        if L.ndim == 3 and x.ndim == 3:
-            if L.shape[2] != 3 or x.shape[1] != 3:
-                raise ValueError(
-                    f"Free orientation expects L(...,3) and x(:,3,:); got L{L.shape}, x{x.shape}"
-                )
             if L.shape[1] != x.shape[0]:
                 raise ValueError(
-                    f"Dimension mismatch: L has n_sources={L.shape[1]} but x has n_sources={x.shape[0]}"
+                    f"Dimension mismatch: L has n_sources={L.shape[1]}, x has n_sources={x.shape[0]}"
                 )
-            return np.einsum("nmr,mrt->nt", L, x)
+            return L @ x
+
+        # generic reduced/free (K=2 or K=3)
+        if L.ndim == 3 and x.ndim == 3:
+            if L.shape[1] != x.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch: L has n_sources={L.shape[1]}, x has n_sources={x.shape[0]}"
+                )
+            if L.shape[2] != x.shape[1]:
+                raise ValueError(
+                    f"Reduced dimension mismatch: L has K={L.shape[2]}, x has K={x.shape[1]}"
+                )
+            return np.einsum("mnk,nkt->mt", L, x)
 
         raise ValueError(f"Incompatible shapes for projection: L{L.shape}, x{x.shape}")
 
@@ -216,8 +220,12 @@ class SensorSimulator:
             return y_clean.copy(), eps, 0.0
 
         # Base white Gaussian noise
-        eps = noise_rng.normal(loc=0.0, scale=float(sensor_white_noise_std), size=y_clean.shape)
-
+        eps = noise_rng.normal(
+            loc=0.0,
+            scale=float(sensor_white_noise_std),
+            size=y_clean.shape,
+        )
+        
         # Frobenius norms
         signal_norm = np.linalg.norm(y_clean, ord="fro")
         eps_norm = np.linalg.norm(eps, ord="fro")
@@ -232,11 +240,12 @@ class SensorSimulator:
             eps_scaled = eta * eps
             return eps_scaled.copy(), eps_scaled, float(eta)
 
-        eta = ((1 - alpha_SNR) / alpha_SNR) * (signal_norm / eps_norm)
+        eta = ((1.0 - alpha_SNR) / alpha_SNR) * (signal_norm / eps_norm)
         eps_scaled = eta * eps
         y_noisy = y_clean + eps_scaled
 
         return y_noisy, eps_scaled, float(eta)
+
 
     def simulate(
         self,
@@ -254,11 +263,13 @@ class SensorSimulator:
         x : np.ndarray
             Source activity:
               - fixed: (n_sources, n_times)
-              - free : (n_sources, 3, n_times)
+              - free : (n_sources, K, n_times), with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
+              Typically in nAm for dipole moments.
         L : np.ndarray
             Leadfield:
               - fixed: (n_sensors, n_sources)
-              - free : (n_sensors, n_sources, 3)
+              - free : (n_sensors, n_sources, K), with K = 2 for MEG and K = 3 for EEG.
+                Units depend on modality and construction, e.g. fT/nAm for MEG or µV/nAm for EEG.
         alpha_SNR : float
             Noise mixing parameter in [0, 1].
         sensor_white_noise_std : float
@@ -269,9 +280,9 @@ class SensorSimulator:
         Returns
         -------
         y_clean : np.ndarray
-            Noiseless sensor measurements, shape (n_sensors, n_times).
+            Noiseless sensor measurements, shape (n_sensors, n_times). Units depend on L and x, e.g. fT for MEG or µV for EEG.
         y_noisy : np.ndarray
-            Noisy sensor measurements, shape (n_sensors, n_times).
+            Noisy sensor measurements, shape (n_sensors, n_times). Units depend on L and x, e.g. fT for MEG or µV for EEG.
         noise : np.ndarray
             Added noise term (eta * eps), shape (n_sensors, n_times).
         noise_eta : float
