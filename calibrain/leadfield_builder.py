@@ -168,7 +168,7 @@ class LeadfieldBuilder:
         return leadfield
 
     def _reshape_free_orientation(self, leadfield: np.ndarray) -> np.ndarray:
-        """Convert (n_sensors, 3 * n_sources) → (n_sensors, n_sources, 3)."""
+        """Convert (n_sensors, 3 * n_sources) -> (n_sensors, n_sources, 3)."""
         if leadfield.ndim != 2:
             return leadfield
         n_sensors, n_components = leadfield.shape
@@ -656,10 +656,10 @@ class LeadfieldBuilder:
         if retrieve_mode == "load":
             # Define the two specific patterns you were trying to match:
             # Pattern 1: Includes orientation_type in the filename
-            path_option1 = self.leadfield_dir / f"lead_field_{orientation_type}_{subject}.npz"
+            path_option1 = self.leadfield_dir / f"leadfield_{orientation_type}_{subject}.npz"
 
             # Pattern 2: Excludes orientation_type from the filename
-            path_option2 = self.leadfield_dir / f"lead_field_{subject}.npz"
+            path_option2 = self.leadfield_dir / f"leadfield_{subject}.npz"
 
             try:
                 if path_option1.exists():
@@ -679,10 +679,10 @@ class LeadfieldBuilder:
 
                 self.logger.debug(f"Loading leadfield matrix from file: {leadfield_path}")
                 with np.load(leadfield_path) as data:
-                    if "leadfield" not in data and "lead_field" not in data:
-                        raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'lead_field' key.")
+                    if "leadfield" not in data and "leadfield" not in data:
+                        raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'leadfield' key.")
                     
-                    leadfield = data["leadfield"] if "leadfield" in data else data["lead_field"]
+                    leadfield = data["leadfield"] if "leadfield" in data else data["leadfield"]
                     
                     metadata = LeadfieldData(
                         sensor_kind=data.get("sensor_kind"),
@@ -692,8 +692,8 @@ class LeadfieldBuilder:
                     )
                     
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)
-                    if orientation_type == "free":
-                        leadfield = self._reshape_free_orientation(leadfield)
+                    # if orientation_type == "free":
+                    #     leadfield = self._reshape_free_orientation(leadfield)
 
                 if leadfield.ndim != expected_dimensions:
                     raise ValueError(
@@ -701,8 +701,6 @@ class LeadfieldBuilder:
                         f"expected {expected_dimensions} dimensions, but got {leadfield.ndim}."
                     )
                 self.logger.debug(f"Leadfield loaded with shape {leadfield.shape}")
-
-
 
             except (FileNotFoundError, ValueError) as e:
                 self.logger.error(f"Failed to load leadfield matrix: {e}")

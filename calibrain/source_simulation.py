@@ -31,8 +31,21 @@ from calibrain.utils import load_config
 
 
 class SourceSimulator:
-    """Simulates synthetic brain activity data for source-level measurements."""
+    """
+    Simulate synthetic source coefficients for three settings:
 
+    1) fixed orientation (MEG and EEG):
+         s shape = (N, T)
+         One scalar coefficient per source location.
+
+    2) free orientation (EEG):
+         x shape = (N, 3, T)
+         General 3D coefficient process in the retained local 3D source basis.
+
+    3) free orientation (MEG):
+         a shape = (N, 2, T)
+         General reduced 2D coefficient process in the MEG-sensitive local subspace.
+    """
     def __init__(
         self,
         ERP_config: Optional[Dict[str, Any]] = None,
@@ -102,6 +115,12 @@ class SourceSimulator:
         if self.logger is None:
             self.logger = logging.getLogger(self.__class__.__name__)
 
+    def _get_times(self) -> np.ndarray:
+        tmin = self.ERP_config["tmin"]
+        tmax = self.ERP_config["tmax"]
+        sfreq = self.ERP_config["sfreq"]
+        return np.arange(tmin, tmax, 1.0 / sfreq)
+    
     # -------------------------
     # Amplitude sampling (nAm)
     # -------------------------
@@ -164,11 +183,11 @@ class SourceSimulator:
 
         # Draft RNG choice (kept): waveform RNG depends only on source_seed
         rng = np.random.RandomState(int(source_seed))
-
+        
         # Draft default (kept): ensures filter stability + meaningful windowing
         _DEFAULT_MIN_ERP_LEN = 82
 
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
+        times = self._get_times()
         n_times = len(times)
 
         # First sample index at/after stimulus onset
@@ -176,8 +195,10 @@ class SourceSimulator:
         stim_onset_samples = stim_indices[0] if len(stim_indices) > 0 else n_times
 
         waveform = np.zeros(n_times)
-        current_min_erp_len = erp_min_length if erp_min_length is not None else _DEFAULT_MIN_ERP_LEN
-
+        current_min_erp_len = (
+            erp_min_length if erp_min_length is not None else _DEFAULT_MIN_ERP_LEN
+        )
+        
         # Max available duration after stimulus onset
         max_post = n_times - stim_onset_samples
         if max_post < current_min_erp_len:
@@ -200,8 +221,8 @@ class SourceSimulator:
         white = rng.randn(erp_len)
 
         # Butterworth bandpass design
-        low = fmin / (sfreq / 2)
-        high = fmax / (sfreq / 2)
+        low = fmin / (sfreq / 2.0)
+        high = fmax / (sfreq / 2.0)
 
         eps = 1e-9
         low = max(eps, low)
@@ -233,103 +254,93 @@ class SourceSimulator:
             waveform[start_sample:end_sample] = seg
 
         return waveform
-
-    # ---------------------------------------
-    # Source time course simulation per trial
-    # ---------------------------------------
-    def simulate(
+    
+    def _simulate_fixed(
         self,
-        orientation_type: str = "fixed",
-        n_sources: int = 1284,
-        nnz: int = 5,
-        seed: int = 42,
+        n_sources: int,
+        nnz: int,
+        trial_seed: int,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Simulate one trial.
-
-        Parameters
-        ----------
-        orientation_type : {"fixed","free"}
-            - fixed: scalar moment time course per source
-            - free : 3-component moment time course per source
-        n_sources : int
-            Total number of candidate sources.
-        nnz : int
-            Number of active sources (non-zeros).
-        seed : int
-            RNG seed controlling which sources are active and per-source waveform seeds.
-
-        Returns
-        -------
-        x : np.ndarray
-            - fixed: (n_sources, n_times)
-            - free : (n_sources, 3, n_times)
-        active_indices : np.ndarray, shape (nnz,)
-            Indices of active sources.
-        """
         if nnz > n_sources:
             raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
 
-        # Draft trial RNG choice (kept): controls active set + per-source waveform seeds
-        trial_rng = np.random.RandomState(int(seed))
-
-        # Draft seed range choice (kept): do NOT change if benchmark stability matters
+        trial_rng = np.random.RandomState(int(trial_seed))
         seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
 
-        tmin = self.ERP_config["tmin"]
-        tmax = self.ERP_config["tmax"]
-        sfreq = self.ERP_config["sfreq"]
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
-        n_times = len(times)
-
-        # Normalize orientation_type handling (draft already did this)
-        orientation_type = orientation_type.lower().strip()
-
-        # Active sources (draft logic kept)
         active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_times))
+
+        for src_idx in active_indices:
+            source_seed = int(trial_rng.randint(0, seed_high))
+            x[src_idx, :] = self._simulate_erp_waveform(source_seed=source_seed)
+
+        return x, active_indices
+
+    def _simulate_multicomponent(
+        self,
+        n_sources: int,
+        nnz: int,
+        n_comp: int,
+        trial_seed: int,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        if nnz > n_sources:
+            raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
+
+        trial_rng = np.random.RandomState(int(trial_seed))
+        seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
+
+        active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_comp, n_times))
+
+        # deterministic component offsets
+        prime_offset = 104729
+
+        for src_idx in active_indices:
+            base_seed = int(trial_rng.randint(0, seed_high))
+            for k in range(n_comp):
+                comp_seed = int((base_seed + k * prime_offset) % seed_high)
+                x[src_idx, k, :] = self._simulate_erp_waveform(source_seed=comp_seed)
+
+        return x, active_indices
+
+    # -----------------------------
+    # Source time course simulation
+    # -----------------------------
+    
+    def simulate(
+        self,
+        n_sources: int = 1284,
+        nnz: int = 5,
+        orientation_type: str = "fixed",
+        coil_type: str = FIFF.FIFFV_COIL_EEG, # 1 (eeg) default coil type for simulation
+        seed: int = 42,
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
         if orientation_type == "fixed":
-            # ---- FIXED: keep identical numeric path to draft ----
-            x = np.zeros((n_sources, n_times))
-            for src_idx in active_indices:
-                # Per-source waveform seed (draft logic kept)
-                source_seed = int(trial_rng.randint(0, seed_high))
-                x[src_idx, :] = self._simulate_erp_waveform(source_seed=source_seed)
-            return x, active_indices
+            return self._simulate_fixed(
+                n_sources=n_sources,
+                nnz=nnz,
+                trial_seed=int(seed),
+            )
 
-        if orientation_type == "free":
-            # ---- FREE: add without perturbing trial_rng seed stream beyond the source_seed draws ----
-            n_orient = 3
-            x = np.zeros((n_sources, n_orient, n_times))
+        elif orientation_type == "free" and coil_type == FIFF.FIFFV_COIL_EEG: # 1 (eeg)
+            # general 3D coefficient process in the retained local 3D basis
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=3,
+                trial_seed=int(seed),
+            )
 
-            # Important design choice for stability:
-            # - We do NOT draw orientation coefficients from trial_rng (would consume extra RNG draws).
-            # - Instead, we derive a deterministic orientation RNG from each source_seed.
-            #   This keeps per-source waveform seeding behavior consistent and makes free-orient reproducible.
-            prime_offset = 104729  # fixed constant to decorrelate orientation RNG from waveform RNG
+        elif orientation_type == "free" and coil_type in [FIFF.FIFFV_COIL_VV_MAG_T1, FIFF.FIFFV_COIL_VV_PLANAR_T1]: # 3022 (mag), 3012 (grad)
+            # general reduced 2D coefficient process in the MEG-sensitive local subspace
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=2,
+                trial_seed=int(seed),
+            )
 
-            for src_idx in active_indices:
-                source_seed = int(trial_rng.randint(0, seed_high))
-
-                # Scalar ERP waveform already includes amplitude scaling (nAm)
-                erp = self._simulate_erp_waveform(source_seed=source_seed)
-
-                # Random unit orientation vector u in R^3:
-                # v ~ N(0, I_3), u = v / ||v||  (approximately uniform on the sphere)
-                orient_seed = int((source_seed + prime_offset) % seed_high)
-                orient_rng = np.random.RandomState(orient_seed)
-
-                v = orient_rng.randn(n_orient)
-                norm_v = float(np.linalg.norm(v))
-                if norm_v < 1e-12:
-                    u = np.array([1.0, 0.0, 0.0])
-                else:
-                    u = v / norm_v
-
-                # Assign 3-component moment time series: x_i,k(t) = u_k * erp_i(t)
-                for k in range(n_orient):
-                    x[src_idx, k, :] = u[k] * erp
-
-            return x, active_indices
-
-        raise ValueError("orientation_type must be either 'fixed' or 'free'")
+        raise ValueError("orientation_type must be 'fixed' or 'free' with appropriate coil_type for MEG/EEG")

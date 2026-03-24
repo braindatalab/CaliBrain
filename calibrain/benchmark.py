@@ -343,6 +343,7 @@ class Benchmark:
     def _prepare_run_data(self, data_params: dict, seed: int) -> dict:
         data_params = dict(data_params)
         orientation_type = data_params.get("orientation_type")
+        
         leadfield_data = self.leadfield_builder.get_leadfield(
             subject=data_params['subject'],
             orientation_type=orientation_type,
@@ -350,6 +351,7 @@ class Benchmark:
             return_metadata=True,
         )
         L = leadfield_data.leadfield
+        
         if orientation_type == "fixed":
             n_sensors, n_sources = L.shape
         else:
@@ -366,9 +368,10 @@ class Benchmark:
         sensor_seed = (seed * 26544) % (2**32)
 
         x, x_active_indices = self.source_simulator.simulate(
-            orientation_type=orientation_type,
             n_sources=n_sources,
             nnz=data_params['nnz'],
+            orientation_type=orientation_type,
+            coil_type=leadfield_data.coil_type,
             seed=source_seed,
         )
         source_units = self.source_simulator.units
