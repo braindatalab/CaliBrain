@@ -381,7 +381,7 @@ class Benchmark:
             x=x,
             L=L,
             alpha_SNR=data_params['alpha_SNR'],
-            sensor_white_noise_std=data_params['sensor_white_noise_std'],
+            sensor_white_noise_std=data_params['sensor_white_noise_std']**2, #TODO: check if we should use std or var here.
             seed=sensor_seed,
         )
 
