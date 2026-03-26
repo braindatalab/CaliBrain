@@ -25,6 +25,7 @@ class LeadfieldData:
     sensor_units: Optional[int] = None
     sensor_unitmult: Optional[int] = None
     coil_type: Optional[int] = None
+    src_coords: Optional[np.ndarray] = None
 
 class LeadfieldBuilder:
     """
@@ -640,12 +641,10 @@ class LeadfieldBuilder:
             If leadfield_dir does not exist when mode='load'.
         """
         if orientation_type == "fixed":
-            n_orient = 1 
             expected_dimensions = 2 # Fixed orientation leads to 2D leadfield (n_sensors, n_sources)
             expected_suffix = "-fixed.npz"
         elif orientation_type == "free":
             expected_suffix = "-free.npz"
-            n_orient = 3
             expected_dimensions = 3 # Free orientation leads to 3D leadfield (n_sensors, n_sources, 3)
         else:
             raise ValueError(f"Invalid orientation_type '{orientation_type}'. Choose 'fixed' or 'free'.")
@@ -656,25 +655,19 @@ class LeadfieldBuilder:
         if retrieve_mode == "load":
             # Define the two specific patterns you were trying to match:
             # Pattern 1: Includes orientation_type in the filename
-            path_option1 = self.leadfield_dir / f"leadfield_{orientation_type}_{subject}.npz"
-
-            # Pattern 2: Excludes orientation_type from the filename
-            path_option2 = self.leadfield_dir / f"leadfield_{subject}.npz"
-
+            leadfield_path = self.leadfield_dir / f"{subject}_{orientation_type}_leadfield.npz"
             try:
-                if path_option1.exists():
-                    leadfield_path = path_option1
-                elif path_option2.exists():
-                    leadfield_path = path_option2
+                if leadfield_path.exists():
+                    leadfield_path = leadfield_path
                 else:
                     self.logger.warning(
                         f"Leadfield file not found for subject '{subject}' with orientation '{orientation_type}' "
                         f"in directory '{self.leadfield_dir}'.\n"
                         f"Checked specific patterns:\n"
-                        f"  - {path_option1}\n"
-                        f"  - {path_option2}")
+                        f"  - {leadfield_path}"
+                    )
                     raise FileNotFoundError(
-                        f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'. "
+                        f"Leadfield file not found for subject '{subject}' in directory '{self.leadfield_dir}'."
                     )
 
                 self.logger.debug(f"Loading leadfield matrix from file: {leadfield_path}")
@@ -689,6 +682,7 @@ class LeadfieldBuilder:
                         sensor_units=data.get("sensor_units", data.get("units")),
                         sensor_unitmult=data.get("sensor_unitmult"),
                         coil_type=data.get("coil_type"),
+                        src_coords=data.get("src_coords")
                     )
                     
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)
@@ -721,6 +715,7 @@ class LeadfieldBuilder:
                     sensor_unitmult=L_simulator.sensor_unitmult,
                     sensor_kind=L_simulator.sensor_kind,
                     coil_type=L_simulator.coil_type,
+                    src_coords=L_simulator.src_coords
                 )
 
                 if orientation_type == "free":
@@ -776,16 +771,17 @@ class LeadfieldBuilder:
             n_sensors, n_sources = leadfield.shape
         elif leadfield.ndim == 3 == expected_dimensions: # Free
             n_sensors, n_sources, _ = leadfield.shape
+        self.logger.debug(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
 
         metadata.leadfield = leadfield
+        metadata.src_coords = metadata.src_coords
+        
         self._set_sensor_metadata(
             kind=metadata.sensor_kind,
             unit=metadata.sensor_units,
             unit_mul=metadata.sensor_unitmult,
             coil_type=metadata.coil_type,
         )
-
-        self.logger.debug(f"Leadfield obtained. Updated n_sensors={n_sensors}, n_sources={n_sources}")
 
         if return_metadata:
             return metadata

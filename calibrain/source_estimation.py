@@ -1,439 +1,497 @@
 import logging
 import numpy as np
+from numpy.linalg import inv
 from matplotlib import cm
-
 from sklearn.model_selection import GridSearchCV, check_cv
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
 from scipy import linalg
 from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import coo_matrix, kron, identity
 from scipy.stats import chi2, norm
+from scipy.linalg import sqrtm
+from scipy.sparse import coo_matrix, csr_matrix, diags, eye, kron, issparse, block_diag, identity
 from functools import partial
 import mne
 from mne.utils import sqrtm_sym, eigh
 from mne.io.constants import FIFF
-from numpy.linalg import inv
-from scipy.linalg import sqrtm
-from calibrain.utils import get_data_path
-from scipy.sparse import block_diag
 from typing import Optional, Dict, Any, Tuple
+
+from calibrain.utils import get_data_path
 
 # ===================
 # GAMMA-MAP Functions
 # ===================
 
-def gamma_map(
-    L,
-    y,
-    noise_var,
-    n_orient=1,
-    max_iter=1000,
-    tol=1e-15,
-    update_mode=2,
-    init_gamma=None,
-    verbose=True,
-    logger=None,
-    **kwargs
-):
-    # # sigma_squared: noise variance = diagonal of the covariance matrix, where all diagonal elements are equal.
-    # if noise_type == "oracle":
-    #     noise_cov = noise_var * np.eye(L.shape[0])
-    
-    # TODO: check whether we still need this
-    if init_gamma is None:
-        init_gamma = np.ones(L.shape[1], dtype=np.float64)
-    elif isinstance(init_gamma, (float, np.float64, int, np.int64)):
-        init_gamma = np.full((L.shape[1],), init_gamma, dtype=np.float64)
-    elif len(init_gamma) == 2 and isinstance(init_gamma, tuple):
-        init_gamma = np.linspace(init_gamma[0], init_gamma[1], num=L.shape[1])
-    else:
-        raise ValueError("init_gamma should be a float, a tuple of two floats, or a list of floats.")
+def _validate_gamma_map_inputs(
+    L: np.ndarray,
+    y: np.ndarray,
+    n_orient: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    L = np.asarray(L, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
 
-    noise_cov = noise_var * np.eye(L.shape[0]) 
-    
-    # Create the whitening matrix from the noise covariance:
-    # Typically computed as the inverse of the square root of the covariance.
-    whitener = linalg.inv(linalg.sqrtm(noise_cov))
-    
-    # Whiten both the sensor data and the lead-field matrix.
-    y = whitener @ y
-    L = whitener @ L
-    
-    x_hat_, active_indices, posterior_cov, gammas_full = _gamma_map_opt(
-        y,
-        L,
-        sigma_squared=1.0,
-        tol=tol,
-        maxit=max_iter,
-        init_gamma=init_gamma,
-        update_mode=update_mode,
-        group_size=n_orient,
-        verbose=verbose,
-        logger=logger,
-    )
-    x_hat = np.zeros((L.shape[1], y.shape[1]))
-    x_hat[active_indices] = x_hat_
+    if y.ndim == 1:
+        y = y[:, np.newaxis]
 
-    if n_orient > 1:
-        x_hat = x_hat.reshape((-1, n_orient, x_hat.shape[1]))
-        
-    
-    # take the norm of the vector gammas_full
-    gammas_norm = np.linalg.norm(gammas_full)
-
-    return {
-        "posterior_mean": x_hat,
-        "posterior_cov": posterior_cov,
-        "noise_var": noise_var,
-        "active_indices": active_indices,
-        "gamma": gammas_norm,
-    }
-
-def _gamma_map_opt(
-    M,
-    G,
-    sigma_squared,
-    maxit=10000,
-    tol=1e-6,
-    update_mode=2,
-    group_size=1,
-    init_gamma=None,
-    verbose=None,
-    logger=None,
-):
-    """Hierarchical Bayes (Gamma-MAP).
-
-    Parameters
-    ----------
-    M : array, shape=(n_sensors, n_times)
-        Observation.
-    G : array, shape=(n_sensors, n_sources)
-        Forward operator.
-    sigma_squared : float
-        Regularization parameter (noise variance).
-    maxit : int
-        Maximum number of iterations.
-    tol : float
-        Tolerance parameter for convergence.
-    group_size : int
-        Number of consecutive sources which use the same gamma.
-    update_mode : int
-        Update mode, 1: MacKay update (default), 3: Modified MacKay update.
-    init_gamma : array, shape=(n_sources,)
-        Initial values for posterior variances (init_gamma). If None, a
-        variance of 1.0 is used.
-    %(verbose)s
-
-    Returns
-    -------
-    X : array, shape=(n_active, n_times)
-        Estimated source time courses.
-    active_indices : array, shape=(n_active,)
-        Indices of active sources.
-    posterior_cov: array, shape=(n_active, n_active)
-        Posterior coveriance matrix of estimated active sources
-    """
-    G = G.copy()
-    M = M.copy()
-
-    n_sources = G.shape[1]
-    n_sensors, n_times = M.shape
-    
-    eps = np.finfo(float).eps
-
-    # apply normalization so the numerical values are sane
-    M_normalize_constant = np.linalg.norm(np.dot(M, M.T), ord="fro")
-    M /= np.sqrt(M_normalize_constant)
-    sigma_squared /= M_normalize_constant
-    G_normalize_constant = np.linalg.norm(G, ord=np.inf)
-    G /= G_normalize_constant
-
-    if n_sources % group_size != 0:
+    if L.ndim != 2:
+        raise ValueError("L must be 2D.")
+    if y.ndim != 2:
+        raise ValueError("y must have shape (M,T) or (M,).")
+    if L.shape[0] != y.shape[0]:
+        raise ValueError("L and y must have the same number of sensor rows.")
+    if n_orient not in (1, 2, 3):
+        raise ValueError("n_orient must be 1, 2, or 3.")
+    if L.shape[1] % n_orient != 0:
         raise ValueError(
-            "Number of sources has to be evenly dividable by the " "group size"
+            f"For n_orient={n_orient}, L must have k*N columns with k={n_orient}."
         )
 
-    n_active = n_sources
-    active_indices = np.arange(n_sources)
+    return L, y
 
-    gammas_full_old = init_gamma.copy()
+def _prepare_init_gamma(
+    n_coeffs: int,
+    n_orient: int,
+    init_gamma=None,
+) -> np.ndarray:
+    n_groups = n_coeffs // n_orient
 
-    if update_mode == 2:
-        denom_fun = np.sqrt
+    if init_gamma is None:
+        gamma0 = np.ones(n_coeffs, dtype=np.float64)
+
+    elif isinstance(init_gamma, (float, np.floating, int, np.integer)):
+        gamma0 = np.full(n_coeffs, float(init_gamma), dtype=np.float64)
+
+    elif isinstance(init_gamma, tuple) and len(init_gamma) == 2:
+        gamma0 = np.linspace(init_gamma[0], init_gamma[1], num=n_coeffs).astype(np.float64)
+
     else:
-        # do nothing
-        def denom_fun(x):
-            return x
+        gamma0 = np.asarray(init_gamma, dtype=np.float64).ravel()
+
+        if gamma0.size == n_groups:
+            gamma0 = np.repeat(gamma0, n_orient)
+        elif gamma0.size != n_coeffs:
+            raise ValueError(
+                f"init_gamma must have length {n_coeffs} or {n_groups}; got {gamma0.size}."
+            )
+
+    gamma0 = np.maximum(gamma0, 0.0)
+
+    if n_orient > 1:
+        gamma_group = gamma0.reshape(n_groups, n_orient).mean(axis=1)
+        gamma0 = np.repeat(gamma_group, n_orient)
+
+    return gamma0
+
+def _gamma_map_opt(
+    M: np.ndarray,
+    G: np.ndarray,
+    sigma_squared: float,
+    *,
+    maxit: int = 300,
+    tol: float = 1e-6,
+    update_mode: int = 2,
+    group_size: int = 1,
+    init_gamma: Optional[np.ndarray] = None,
+    verbose: bool = False,
+    logger: Optional[logging.Logger] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
+    if logger is None:
+        logger = logging.getLogger(__name__)
+
+    G = np.asarray(G, dtype=np.float64).copy()
+    M = np.asarray(M, dtype=np.float64).copy()
+
+    n_coeffs_total = G.shape[1]
+    n_sensors, n_times = M.shape
+    eps = np.finfo(float).eps
+
+    if n_coeffs_total % group_size != 0:
+        raise ValueError("Number of coefficients must be divisible by group_size.")
+
+    if init_gamma is None:
+        gamma = np.ones(n_coeffs_total, dtype=np.float64)
+    else:
+        gamma = np.asarray(init_gamma, dtype=np.float64).copy()
+        if gamma.shape != (n_coeffs_total,):
+            raise ValueError(
+                f"init_gamma must have shape ({n_coeffs_total},), got {gamma.shape}"
+            )
+
+    M_norm_c = np.linalg.norm(M @ M.T, ord="fro")
+    if M_norm_c <= 0:
+        raise ValueError("Degenerate data: M has zero norm.")
+    M /= np.sqrt(M_norm_c)
+    sigma_squared /= M_norm_c
+
+    G_norm_c = np.linalg.norm(G, ord=np.inf)
+    if G_norm_c <= 0:
+        raise ValueError("Degenerate leadfield: G has zero norm.")
+    G /= G_norm_c
+
+    active_indices = np.arange(n_coeffs_total, dtype=int)
+    gammas_full_old = gamma.copy()
+
+    A_last = np.zeros((0, n_times), dtype=np.float64)
+    CMinv_last = np.eye(n_sensors, dtype=np.float64)
+    G_last = np.zeros((n_sensors, 0), dtype=np.float64)
+    gamma_last = np.zeros((0,), dtype=np.float64)
+    active_indices_last = np.zeros((0,), dtype=int)
 
     last_size = -1
+    it_used = 0
+
     for itno in range(maxit):
-        init_gamma[np.isnan(init_gamma)] = 0.0
+        it_used = itno + 1
 
-        gidx = np.abs(init_gamma) > eps
-        active_indices = active_indices[gidx]
-        init_gamma = init_gamma[gidx]
+        gamma = np.nan_to_num(gamma, nan=0.0, posinf=0.0, neginf=0.0)
+        gamma = np.maximum(gamma, 0.0)
 
-        # update only active init_gamma (once set to zero it stays at zero)
-        if n_active > len(active_indices):
-            n_active = active_indices.size
-            G = G[:, gidx]
+        n_groups_active = gamma.size // group_size
+        gamma_group = gamma.reshape(n_groups_active, group_size).mean(axis=1)
+        gmask_group = np.abs(gamma_group) > eps
+        gmask_coeff = np.repeat(gmask_group, group_size)
 
-        CM = np.dot(G * init_gamma[np.newaxis, :], G.T)
+        if not np.all(gmask_coeff):
+            active_indices = active_indices[gmask_coeff]
+            gamma = gamma[gmask_coeff]
+            G = G[:, gmask_coeff]
+
+        if gamma.size == 0:
+            break
+
+        CM = (G * gamma[np.newaxis, :]) @ G.T
         CM.flat[:: n_sensors + 1] += sigma_squared
-        # Invert CM keeping symmetry
+
         U, S, _ = linalg.svd(CM, full_matrices=False)
         S = S[np.newaxis, :]
-        del CM
-        CMinv = np.dot(U / (S + eps), U.T)
-        CMinvG = np.dot(CMinv, G)
-        A = np.dot(CMinvG.T, M)  # mult. w. Diag(gamma) in gamma update
-        # G_CMinvG = G.T @ CMinvG
+        CMinv = (U / (S + eps)) @ U.T
+
+        CMinvG = CMinv @ G
+        A = CMinvG.T @ M
 
         if update_mode == 1:
-            # MacKay fixed point update (10) in [1]
-            numer = init_gamma ** 2 * np.mean((A * A.conj()).real, axis=1)
-            denom = init_gamma * np.sum(G * CMinvG, axis=0)
+            numer = gamma**2 * np.mean((A * A.conj()).real, axis=1)
+            denom = gamma * np.sum(G * CMinvG, axis=0)
         elif update_mode == 2:
-            # modified MacKay fixed point update (11) in [1]
-            numer = init_gamma * np.sqrt(np.mean((A * A.conj()).real, axis=1))
-            denom = np.sum(G * CMinvG, axis=0)  # sqrt is applied below
+            numer = gamma * np.sqrt(np.mean((A * A.conj()).real, axis=1))
+            denom = np.sum(G * CMinvG, axis=0)
         elif update_mode == 3:
-            # Expectation Maximization (EM) update
-            denom = None
-            numer = init_gamma ** 2 * np.mean((A * A.conj()).real, axis=1) + init_gamma * (
-                1 - init_gamma * np.sum(G * CMinvG, axis=0)
+            numer = gamma**2 * np.mean((A * A.conj()).real, axis=1) + gamma * (
+                1.0 - gamma * np.sum(G * CMinvG, axis=0)
             )
+            denom = None
         else:
-            raise ValueError("Invalid value for update_mode")
+            raise ValueError("update_mode must be 1, 2, or 3.")
 
         if group_size == 1:
             if denom is None:
-                init_gamma = numer
+                gamma = numer
+            elif update_mode == 2:
+                gamma = numer / np.sqrt(np.maximum(denom, eps))
             else:
-                init_gamma = numer / np.maximum(denom_fun(denom), np.finfo("float").eps)
+                gamma = numer / np.maximum(denom, eps)
         else:
-            numer_comb = np.sum(numer.reshape(-1, group_size), axis=1)
+            numer_group = np.sum(numer.reshape(-1, group_size), axis=1)
+
             if denom is None:
-                gammas_comb = numer_comb
+                gamma_group_new = numer_group
             else:
-                denom_comb = np.sum(denom.reshape(-1, group_size), axis=1)
-                gammas_comb = numer_comb / denom_fun(denom_comb)
+                denom_group = np.sum(denom.reshape(-1, group_size), axis=1)
+                if update_mode == 2:
+                    gamma_group_new = numer_group / np.sqrt(np.maximum(denom_group, eps))
+                else:
+                    gamma_group_new = numer_group / np.maximum(denom_group, eps)
 
-            init_gamma = np.repeat(gammas_comb / group_size, group_size)
+            gamma = np.repeat(gamma_group_new / group_size, group_size)
 
-        # compute convergence criterion
-        gammas_full = np.zeros(n_sources, dtype=np.float64)
-        gammas_full[active_indices] = init_gamma
+        gamma = np.maximum(gamma, 0.0)
+
+        gammas_full = np.zeros(n_coeffs_total, dtype=np.float64)
+        gammas_full[active_indices] = gamma
 
         err = np.sum(np.abs(gammas_full - gammas_full_old)) / np.sum(
-            np.abs(gammas_full_old)
+            np.abs(gammas_full_old) + eps
         )
+        gammas_full_old = gammas_full.copy()
 
-        gammas_full_old = gammas_full
+        A_last = A.copy()
+        CMinv_last = CMinv.copy()
+        G_last = G.copy()
+        gamma_last = gamma.copy()
+        active_indices_last = active_indices.copy()
 
-        breaking = err < tol or n_active == 0
-        if len(init_gamma) != last_size or breaking:
-            logger.debug(
-                "Iteration: %d\t active set size: %d\t convergence: "
-                "%0.3e" % (itno, len(init_gamma), err)
-            )
-            last_size = len(init_gamma)
+        breaking = (err < tol) or (gamma.size == 0)
+
+        if (gamma.size != last_size) or breaking:
+            if verbose:
+                logger.debug(f"it={itno:4d} active={gamma.size:4d} err={err:0.3e}")
+            last_size = gamma.size
 
         if breaking:
             break
 
-    if itno < maxit - 1:
-        logger.debug(
-            "Iteration: %d\t active set size: %d\t convergence: "
-            "%0.3e" % (itno, len(init_gamma), err)
-        )
-        logger.info("\nConvergence reached !\n")
-    else:
-        logger.debug(
-            "Iteration: %d\t active set size: %d\t convergence: "
-            "%0.3e" % (itno, len(init_gamma), err)
-        )
-        logger.debug("\nConvergence NOT reached !\n")
+    if active_indices_last.size == 0:
+        x_active = np.zeros((0, n_times), dtype=np.float64)
+        posterior_cov_active = np.zeros((0, 0), dtype=np.float64)
+        gammas_full = np.zeros(n_coeffs_total, dtype=np.float64)
+        return x_active, active_indices_last, posterior_cov_active, gammas_full, it_used
 
-    # undo normalization and compute final posterior mean and posterior covariance
-    n_const = np.sqrt(M_normalize_constant) / G_normalize_constant
-    x_active = n_const * init_gamma[:, None] * A
+    n_const = np.sqrt(M_norm_c) / G_norm_c
+    x_active = n_const * gamma_last[:, None] * A_last
 
+    posterior_cov_active = (
+        np.diag(gamma_last) - gamma_last[:, None] * (G_last.T @ CMinv_last @ G_last) * gamma_last
+    )
+    posterior_cov_active = (n_const**2) * _symmetrize(posterior_cov_active)
 
+    gammas_full = np.zeros(n_coeffs_total, dtype=np.float64)
+    gammas_full[active_indices_last] = gamma_last
 
-    # Compute the posterior convariance matrix as in eq. (2.10) in Hashemi, Ali. "Advances in hierarchical Bayesian learning with applications to neuroimaging." (2023).
-    # pos_cov =  np.diag(init_gamma) - init_gamma[:, np.newaxis] * G_CMinvG * init_gamma
-    posterior_cov = np.diag(init_gamma) - init_gamma[:, np.newaxis] * G.T @ CMinv @ G * init_gamma 
+    return x_active, active_indices_last, posterior_cov_active, gammas_full, it_used
 
-    # Undo normalization for posterior covariance (similar to x_orig = n_const * x_norm)
-    posterior_cov = (n_const ** 2) * posterior_cov
-    
-    # A similar approach can be implemented (as Large_gamma is interpreted as a diagonal matrix with small_gammas:
-    # posterior_cov = np.diag(init_gamma) - np.diag(init_gamma) @ G.T @ CMinv @ G @ np.diag(init_gamma)
-    
-    return x_active, active_indices, posterior_cov, gammas_full
+def gamma_map(
+    L: np.ndarray,
+    y: np.ndarray,
+    noise_var: float,
+    n_orient: int = 1,
+    max_iter: int = 300,
+    tol: float = 1e-6,
+    update_mode: int = 2,
+    init_gamma=None,
+    verbose: bool = False,
+    logger: Optional[logging.Logger] = None,
+    **kwargs,
+) -> Dict[str, Any]:
+    if logger is None:
+        logger = logging.getLogger(__name__)
 
+    L, y = _validate_gamma_map_inputs(L=L, y=y, n_orient=n_orient)
+
+    noise_var = float(noise_var)
+    if noise_var <= 0:
+        raise ValueError("noise_var must be positive.")
+
+    n_sensors, n_times = y.shape
+    n_coeffs = L.shape[1]
+    n_sources = n_coeffs // n_orient
+
+    gamma0 = _prepare_init_gamma(
+        n_coeffs=n_coeffs,
+        n_orient=n_orient,
+        init_gamma=init_gamma,
+    )
+
+    whitener = (1.0 / np.sqrt(noise_var)) * np.eye(n_sensors, dtype=np.float64)
+    y_w = whitener @ y
+    L_w = whitener @ L
+
+    x_active, active_indices, posterior_cov_active, gammas_full, n_iter = _gamma_map_opt(
+        M=y_w,
+        G=L_w,
+        sigma_squared=1.0,
+        maxit=max_iter,
+        tol=tol,
+        update_mode=update_mode,
+        group_size=n_orient,
+        init_gamma=gamma0,
+        verbose=verbose,
+        logger=logger,
+    )
+
+    x_hat = np.zeros((n_coeffs, n_times), dtype=np.float64)
+    posterior_cov = np.zeros((n_coeffs, n_coeffs), dtype=np.float64)
+
+    if active_indices.size > 0:
+        x_hat[active_indices] = x_active
+        posterior_cov[np.ix_(active_indices, active_indices)] = posterior_cov_active
+
+    posterior_cov = _symmetrize(posterior_cov)
+
+    out = {
+        "posterior_mean": x_hat,
+        "posterior_cov": posterior_cov,
+        "posterior_cov_active": posterior_cov_active,
+        "noise_var": float(noise_var),
+        "gamma": float(np.mean(gammas_full)),
+        "gammas_full": gammas_full,
+        "active_indices": active_indices,
+        "active_source_indices": np.unique(active_indices // n_orient),
+        "coefficient_indices": np.arange(n_coeffs),
+        "source_indices": np.arange(n_sources),
+        "n_orient": int(n_orient),
+        "n_iter": int(n_iter),
+    }
+
+    if n_orient > 1:
+        out["posterior_mean_reshaped"] = x_hat.reshape(n_sources, n_orient, n_times)
+
+    return out
 
 # ==================
 # sFlex Functions
 # ==================
 
-def compute_B(src_coords, sigma, threshold_factor=3.0):
-    """
-    Compute sFLEX basis matrix B using truncated RBF weights.
+# def get_subset_source_rr_from_extract(lf_dict: Dict[str, Any]) -> np.ndarray:
+#     src = lf_dict["fwd"]["src"]
+#     rr_lh = src[0]["rr"][src[0]["vertno"]]
+#     rr_rh = src[1]["rr"][src[1]["vertno"]]
+#     rr_full = np.vstack([rr_lh, rr_rh])
+#     subset_idx = np.asarray(lf_dict["subset_idx"], dtype=int)
+#     return rr_full[subset_idx]
 
-    Parameters
-    ----------
-    src_coords : ndarray, shape (N,3)
-        Source coordinates.
-    sigma : float
-        RBF width.
-    threshold_factor : float
-        Truncation radius multiplier.
-
-    Returns
-    -------
-    B : scipy.sparse.csr_matrix, shape (N,N)
-        Sparse basis matrix.
-    """
-    src_coords = np.asarray(src_coords, float)
-    N, D = src_coords.shape
-    if D != 3:
+def compute_B(
+    sigma: float,
+    threshold_factor: float = 3.0,
+    normalize: Optional[str] = "sym",
+    eps: float = 1e-12,
+    src_coords: np.ndarray = None,
+):
+    
+    if src_coords.ndim != 2 or src_coords.shape[1] != 3:
         raise ValueError("src_coords must have shape (N,3).")
 
-    dist2 = squareform(pdist(src_coords, 'sqeuclidean'))
+    if sigma <= 0:
+        raise ValueError("sigma must be positive.")
+    
+    N = src_coords.shape[0]
+    dist2 = squareform(pdist(src_coords, metric="sqeuclidean"))
     r2 = (threshold_factor * sigma) ** 2
+
     mask = dist2 <= r2
     rows, cols = np.nonzero(mask)
+    weights = np.exp(-dist2[rows, cols] / (2.0 * sigma**2))
 
-    pref = (2.0 * np.pi * sigma**2) ** (-1.5)
-    weights = pref * np.exp(-dist2[rows, cols] / (2.0 * sigma**2))
+    B = coo_matrix((weights, (rows, cols)), shape=(N, N)).tocsr()
+    B = 0.5 * (B + B.T)
 
-    B = coo_matrix((weights, (rows, cols)), shape=(N, N))
-    B = (B + B.T) * 0.5
-    return B.tocsr()
+    if normalize is None:
+        return B
 
+    row_sums = np.asarray(B.sum(axis=1)).ravel()
 
+    if normalize == "row":
+        inv = 1.0 / np.maximum(row_sums, eps)
+        return diags(inv) @ B
 
-def sflex_gamma_map(L, y, noise_var, fwd_path, sigma=0.001, n_orient=1, max_iter=1000, tol=1e-15, update_mode=2, init_gamma=None, verbose=True, logger=None, threshold_factor=3.0, **kwargs):
-    """
-    Unified s-FLEX + γ-MAP implementation for both fixed and free orientation cases.
-    
-    Parameters
-    ----------
-    L : ndarray
-        Lead field matrix.
-    y : ndarray
-        Sensor measurements.
-    sigma : float
-        Gaussian basis width parameter.
-    noise_var : float
-        Noise variance.
-    fwd_path : str or Path
-        Path to the forward solution file.
-    n_orient : int
-        Number of orientations (1 for fixed, 3 for free).
-    max_iter : int
-        Maximum number of iterations.
-    tol : float
-        Convergence tolerance.
-    update_mode : int
-        Gamma update mode.
-    init_gamma : ndarray or None
-        Initial gamma values.
-    verbose : bool
-        Whether to print progress.
-    logger : object
-        Logger object for progress reporting.
-    threshold_factor : float
-        Threshold factor for basis sparsity.
-        
-    Returns
-    -------
-    x_hat : ndarray
-        Estimated source activity.
-    active_indices : ndarray
-        Indices of active sources.
-    posterior_cov : ndarray
-        Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
-        whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
-    """
-    fwd_path = f"{fwd_path}-fwd.fif"
-    fwd = mne.read_forward_solution(fwd_path, verbose="error")
+    if normalize == "sym":
+        inv_sqrt = 1.0 / np.sqrt(np.maximum(row_sums, eps))
+        Dm = diags(inv_sqrt)
+        B = Dm @ B @ Dm
+        B = 0.5 * (B + B.T)
+        return B
 
-    if n_orient == 2 and fwd['source_ori'] == FIFF.FIFFV_MNE_FREE_ORI:
-        fwd = mne.convert_forward_solution(fwd, force_fixed=True)
-        
-    # src_coords = fwd['src'][0]['rr']  # (N, 3) source locations in meters
-    src_coords = fwd['source_rr']  # (N, 3) source coordinates in meters
+    raise ValueError("normalize must be None, 'row', or 'sym'.")
 
-    # Compute basis matrix: same for fixed-/free-orientation
-    B = compute_B(src_coords, sigma, threshold_factor)   # (N, N), sigma = 0.001 -- use small kernel width (in meters)
-    N = src_coords.shape[0]
-
-    # Handle orientation type
-    if n_orient == 1:
-        # Fixed-orientation case
-        assert L.shape[1] == N, f"L has {L.shape[1]} cols, expected N={N} for fixed-orientation."
-        G = L @ B        # (M × N)
-        group_size = 1
-    elif n_orient == 3:
-        # Free-orientation case
-        I3 = identity(3, format='csr')
-        B_big = kron(I3, B, format='csr')    # (3N, 3N) block-diag(B,B,B)
-        G = L @ B_big                        # (M, 3N)
-        group_size = 3
+def _expand_spatial_basis(B, n_sources: int, n_orient: int):
+    if issparse(B):
+        B = B.tocsr()
     else:
-        raise ValueError("n_orient must be 1 (fixed) or 3 (free).")
-  
-    # Run gamma-MAP on G
-    gamma_result = gamma_map(
-        L=G,  # Use pseudo-lead field instead of original L
+        B = np.asarray(B, dtype=np.float64)
+
+    if B.shape != (n_sources, n_sources):
+        raise ValueError(
+            f"B must have shape ({n_sources},{n_sources}); got {B.shape}."
+        )
+
+    if n_orient == 1:
+        return B
+
+    I_k = eye(n_orient, format="csr")
+    if issparse(B):
+        return kron(B, I_k, format="csr")
+    return np.kron(B, np.eye(n_orient, dtype=np.float64))
+
+def _right_multiply_dense_by_sparse(A: np.ndarray, S) -> np.ndarray:
+    out = (S.T @ A.T).T
+    return np.asarray(out, dtype=np.float64)
+
+def gamma_map_sflex(
+    L: np.ndarray,
+    y: np.ndarray,
+    noise_var: float,
+    n_orient: int = 1,
+    max_iter: int = 300,
+    tol: float = 1e-6,
+    update_mode: int = 2,
+    init_gamma=None,
+    sigma: float = 0.01,
+    threshold_factor: float = 3.0,
+    normalize: Optional[str] = "sym",
+    eps: float = 1e-12,
+    verbose: bool = False,
+    logger: Optional[logging.Logger] = None,
+    **kwargs,
+) -> Dict[str, Any]:
+    if logger is None:
+        logger = logging.getLogger(__name__)
+
+    L, y = _validate_gamma_map_inputs(L=L, y=y, n_orient=n_orient)
+
+    n_coeffs = L.shape[1]
+    n_sources = n_coeffs // n_orient
+    n_times = y.shape[1]
+    
+    B = compute_B(
+        sigma=sigma,
+        threshold_factor=threshold_factor,
+        normalize=normalize,
+        eps=eps,
+        src_coords=kwargs.get("src_coords"),
+    )
+
+    B_big = _expand_spatial_basis(B=B, n_sources=n_sources, n_orient=n_orient)
+
+    if issparse(B_big):
+        G = _right_multiply_dense_by_sparse(L, B_big)
+    else:
+        G = L @ B_big
+
+    res_c = gamma_map(
+        L=G,
         y=y,
         noise_var=noise_var,
-        n_orient=group_size,  # Use appropriate group size: 1 (fixed) or 3 (free)
+        n_orient=n_orient,
         max_iter=max_iter,
         tol=tol,
         update_mode=update_mode,
         init_gamma=init_gamma,
         verbose=verbose,
-        logger=logger
+        logger=logger,
     )
-    c_hat = gamma_result["posterior_mean"]
-    active_indices = gamma_result.get("active_indices")
-    posterior_cov = gamma_result.get("posterior_cov")
-    gamma = gamma_result.get("gamma")
-    noise_var_result = gamma_result.get("noise_var", noise_var)
 
-    # Reconstruct sources
-    # NOTE: gamma_map already returns FULL c_hat (zeros at inactive indices).
-    # NOTE: If n_orient==3, c_hat has shape (N, 3, T); flatten for linear ops.
+    c_hat = np.asarray(res_c["posterior_mean"], dtype=np.float64)
+    Sigma_c = np.asarray(res_c["posterior_cov"], dtype=np.float64)
 
-    if n_orient == 3 and c_hat.ndim == 3:  # Free-orientation
-        T = c_hat.shape[-1]
-        c_hat_vec = c_hat.reshape(3 * N, T)             # (3N, T)
-    else:                                  # Fixed-orientation
-        c_hat_vec = c_hat                                # (N, T)
-
-    # posterior mean and covaraince in source space (after B)
-    if n_orient == 1:  # fixed-orientation
-        x_hat = B @ c_hat_vec                            # (N, T)
-        # posterior covariance in source space using ACTIVE block only
-        posterior_cov = B[:, active_indices] @ posterior_cov @ B[:, active_indices].T
+    if issparse(B_big):
+        x_hat = np.asarray(B_big @ c_hat, dtype=np.float64)
+        B_big_dense = B_big.toarray()
     else:
-        x_hat = B_big @ c_hat_vec                        # (3N, T)
-        posterior_cov = B_big[:, active_indices] @ posterior_cov @ B_big[:, active_indices].T
-        # optional reshape back to (N, 3, T)
-        x_hat = x_hat.reshape(N, 3, -1)
+        B_big_dense = np.asarray(B_big, dtype=np.float64)
+        x_hat = B_big_dense @ c_hat
 
-    return {
+    posterior_cov = B_big_dense @ Sigma_c @ B_big_dense.T
+    posterior_cov = _symmetrize(posterior_cov)
+
+    out = {
         "posterior_mean": x_hat,
         "posterior_cov": posterior_cov,
-        "noise_var": noise_var_result,
-        "active_indices": active_indices,
-        "gamma": gamma,
+        "posterior_mean_coeff": c_hat,
+        "posterior_cov_coeff": Sigma_c,
+        "noise_var": float(res_c["noise_var"]),
+        "gamma": float(res_c["gamma"]),
+        "gammas_full": np.asarray(res_c["gammas_full"], dtype=np.float64),
+        "active_indices": np.asarray(res_c["active_indices"], dtype=int),
+        "active_source_indices": np.asarray(res_c["active_source_indices"], dtype=int),
+        "coefficient_indices": np.arange(n_coeffs),
+        "source_indices": np.arange(n_sources),
+        "n_orient": int(n_orient),
+        "n_iter": int(res_c["n_iter"]),
+        "B_spatial": B,
     }
 
+    if n_orient > 1:
+        out["posterior_mean_reshaped"] = x_hat.reshape(n_sources, n_orient, n_times)
+
+    return out
 
 # ===================
 # eLORETA Functions

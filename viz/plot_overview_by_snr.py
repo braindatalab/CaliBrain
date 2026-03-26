@@ -687,7 +687,7 @@ def main():
 
     show = False
     dpi = 600
-    solvers = ["BMN", "BMN_joint", "sflex_gamma_map", "sflex_gamma_lambda_map"]
+    solvers = ["BMN", "BMN_joint", "gamma_map_sflex", "sflex_gamma_lambda_map"]
     noise_types = ["baseline", "oracle", "adaptive_joint_learning"]
     subjects = ["CC120166", "CC120264", "CC120309", "CC120313"]
     orientation_types = ["fixed"]
@@ -706,11 +706,11 @@ def main():
 
     solver_aliases = {
         "BMN_joint": "BMN",
-        "sflex_gamma_lambda_map": "sflex_gamma_map",
+        "sflex_gamma_lambda_map": "gamma_map_sflex",
     }
     solver_display = {
         "BMN": "BMN",
-        "sflex_gamma_map": "sFLEX-Gamma MAP",
+        "gamma_map_sflex": "sFLEX-Gamma MAP",
     }
     df = df.copy()
     df["solver_canonical"] = df["solver"].map(solver_aliases).fillna(df["solver"])

@@ -38,7 +38,7 @@ def compute_B(X, sigma, threshold_factor=3.0):
 
 
 
-def sflex_gamma_map(L, y, X, sigma, noise_var, n_orient=1, max_iter=1000, tol=1e-15,
+def gamma_map_sflex(L, y, X, sigma, noise_var, n_orient=1, max_iter=1000, tol=1e-15,
                     update_mode=2, init_gamma=None, verbose=True, logger=None,
                     threshold_factor=3.0):
     """
@@ -81,7 +81,7 @@ def sflex_gamma_map(L, y, X, sigma, noise_var, n_orient=1, max_iter=1000, tol=1e
         Indices of active sources.
     posterior_cov : ndarray
         Posterior covariance of active sources. In gamma_map it is the active coefficients’ covariance,
-        whereas in sflex_gamma_map it is the source-space covariance obtained by mapping it with B.
+        whereas in gamma_map_sflex it is the source-space covariance obtained by mapping it with B.
     """
     # Compute basis matrix: same for fixed-/free-orientation
     B = compute_B(X, sigma, threshold_factor)   # (N, N), sigma = 0.001 -- use small kernel width (in meters)

@@ -17,7 +17,7 @@ from calibrain import (
     gamma_map,
     BMN,
     BMN_joint,
-    sflex_gamma_map,
+    gamma_map_sflex,
     sflex_gamma_lambda_map,
 )
 from calibrain.utils import get_data_path
@@ -30,7 +30,7 @@ _SOLVER_REGISTRY = {
     "eloreta": eloreta,
     "BMN": BMN,
     "BMN_joint": BMN_joint,
-    "sflex_gamma_map": sflex_gamma_map,
+    "gamma_map_sflex": gamma_map_sflex,
     "sflex_gamma_lambda_map": sflex_gamma_lambda_map,
 }
 

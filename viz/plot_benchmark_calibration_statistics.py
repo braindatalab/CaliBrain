@@ -802,7 +802,7 @@ def main() -> None:
     # --- User-configurable section -------------------------------------------------
     filename = 'benchmark_results_20260306_172109'
     path_to_csv = Path("results/benchmark_results/") / f"{filename}.csv"
-    solver_name: Optional[str] = "sflex_gamma_map"
+    solver_name: Optional[str] = "gamma_map_sflex"
     show_violin = False
     show_summary = False
 

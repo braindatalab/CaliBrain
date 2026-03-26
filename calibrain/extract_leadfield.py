@@ -92,7 +92,6 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     else:
         raise ValueError(f"Unknown channel type: {coil_name}")
 
-    # slice all channels with unit equal to 112 (FIFF_UNIT_T)
     fwd = fwd.pick_channels(mag_channels)
 
     if orientation_type == 'fixed':
@@ -183,6 +182,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         'subject': subject,
         'leadfield': fwd['sol']['data'],
         'source_ori': fwd['source_ori'],
+        'src_coords': fwd['source_rr'],
         'info': fwd['info'],
         'orientation_type': orientation_type,
         'coil_type': coil_type,
@@ -191,7 +191,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         'sensor_unitmult': first_ch.get('unit_mul'),
         'Q_basis': Q_basis,  # (sources, 3, 2) for free MEG, identity (3, 3) for free eeg, None for fixed (MEG and EEG).
     }
-    file_name = f"leadfield_{orientation_type}_{subject}.npz"
+    file_name = f"{subject}_{orientation_type}_leadfield.npz"
     if save_path is None:
         save_path = get_data_path() / 'leadfield' / file_name
     else:

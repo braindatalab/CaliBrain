@@ -33,7 +33,7 @@ def compute_B(X, sigma, threshold_factor=3.0):
     B = (B + B.T) * 0.5                                 # symmetrize without doubling off-diagonals
     return B.tocsr()                                     # CSR for fast algebra 
 
-def sflex_gamma_map(L, y, X, sigma, noise_var, n_orient=1, max_iter=1000, tol=1e-15,
+def gamma_map_sflex(L, y, X, sigma, noise_var, n_orient=1, max_iter=1000, tol=1e-15,
                     update_mode=2, init_gamma=None, verbose=True, logger=None,
                     threshold_factor=3.0):
     """

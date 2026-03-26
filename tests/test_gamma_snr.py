@@ -64,14 +64,14 @@ class TestGammaSNRCombined(unittest.TestCase):
         self.assert_gamma_decreases_with_increased_snr('gamma_map', 'spatial_CV')
 
     # --- SFlex Gamma Map tests ---
-    def test_gamma_decreases_with_increased_snr_sflex_gamma_map_oracle(self):
-        self.assert_gamma_decreases_with_increased_snr('sflex_gamma_map', 'oracle')
+    def test_gamma_decreases_with_increased_snr_gamma_map_sflex_oracle(self):
+        self.assert_gamma_decreases_with_increased_snr('gamma_map_sflex', 'oracle')
         
-    def test_gamma_decreases_with_increased_snr_sflex_gamma_map_baseline(self):
-        self.assert_gamma_decreases_with_increased_snr('sflex_gamma_map', 'baseline')
+    def test_gamma_decreases_with_increased_snr_gamma_map_sflex_baseline(self):
+        self.assert_gamma_decreases_with_increased_snr('gamma_map_sflex', 'baseline')
         
-    def test_gamma_decreases_with_increased_snr_sflex_gamma_map_spatial_CV(self):
-        self.assert_gamma_decreases_with_increased_snr('sflex_gamma_map', 'spatial_CV')
+    def test_gamma_decreases_with_increased_snr_gamma_map_sflex_spatial_CV(self):
+        self.assert_gamma_decreases_with_increased_snr('gamma_map_sflex', 'spatial_CV')
 
     # --- SFlex Gamma Lambda Map tests ---
     def test_gamma_decreases_with_increased_snr_sflex_gamma_lambda_map_joint_learning(self):
