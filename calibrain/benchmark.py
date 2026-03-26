@@ -381,12 +381,13 @@ class Benchmark:
             x=x,
             L=L,
             alpha_SNR=data_params['alpha_SNR'],
-            sensor_white_noise_std=data_params['sensor_white_noise_std']**2, #TODO: check if we should use std or var here.
+            sensor_white_noise_std=data_params['sensor_white_noise_std'],
             seed=sensor_seed,
         )
 
         return {
             "leadfield": L,
+            "src_coords": leadfield_data.src_coords,
             "sensor_metadata": {
                 "kind": leadfield_data.sensor_kind,
                 "coil_type": leadfield_data.coil_type,
@@ -397,6 +398,7 @@ class Benchmark:
             "x_active_indices": x_active_indices,
             "y_clean": y_clean,
             "y_noisy": y_noisy,
+            "noise": noise,
             "noise_eta": noise_eta,
             "source_units": source_units,
             "source_unitmult": source_unitmult,
@@ -494,6 +496,7 @@ class Benchmark:
 
             prepared_data = self._prepare_run_data(data_params, seed)
             L = prepared_data["leadfield"]
+            src_coords = prepared_data["src_coords"]
             sensor_meta = prepared_data["sensor_metadata"]
             sensor_kind = sensor_meta.get("kind")
             sensor_coil_type = sensor_meta.get("coil_type")
@@ -515,6 +518,7 @@ class Benchmark:
             x_active_indices = prepared_data["x_active_indices"]
             y_clean = prepared_data["y_clean"]
             y_noisy = prepared_data["y_noisy"]
+            noise = prepared_data["noise"]
             noise_eta = prepared_data["noise_eta"]
             source_units = prepared_data["source_units"]
             source_unitmult = prepared_data["source_unitmult"]
@@ -545,6 +549,9 @@ class Benchmark:
                 "spatial_cv",
                 "temporal_cv",
             }
+            
+            solver_params['src_coords'] = src_coords
+            
             noise_type = noise_params.get("noise_type")
             if noise_type not in allowed_noise_types:
                 raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
@@ -571,7 +578,10 @@ class Benchmark:
             else:
                 if noise_type == 'oracle':
                     self.logger.debug("Using oracle noise variance estimate")
-                    noise_var = float((data_params['sensor_white_noise_std'] * noise_eta) ** 2)
+                    # DEPRECATED computation of oracle noise var.
+                    # noise_var = float((data_params['sensor_white_noise_std'] * noise_eta) ** 2)
+                    #  NOTE: +++ NEW +++
+                    noise_var = float(np.var(noise))
                 elif noise_type == 'baseline':
                     self.logger.debug("Using baseline noise variance estimate")
                     noise_var = baseline_noise_var

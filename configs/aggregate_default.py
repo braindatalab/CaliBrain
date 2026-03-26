@@ -13,7 +13,7 @@ from typing import Dict
 SUMMARIES_ROOT = "results/posterior_summaries"
 BASE_OUTPUT_DIR = Path("results/calibration_datasets")
 
-RUN_SPLIT_THRESHOLD = 3  # Inclusive: run_id <= threshold is train, > threshold is test.
+RUN_SPLIT_THRESHOLD = 10  # Inclusive: run_id <= threshold is train, > threshold is test.
 
 RUN_FILTERS = {
     "train": lambda rid: rid is not None and 1 <= int(rid) <= RUN_SPLIT_THRESHOLD,
@@ -32,115 +32,115 @@ def _paths(tag: str) -> Dict[str, str]:
 
 # Fixed SNR and NNZ, vary solver/noise combinations.
 CONFIGS = {
-    "BMN_oracle": {
+    "POST_ORACLE_BMN_oracle": {
         "summaries_root": SUMMARIES_ROOT,
-        **_paths("BMN_oracle"),
+        **_paths("POST_ORACLE_BMN_oracle"),
         "train_filter": {
             "alpha_SNR": [0.5],
-            "nnz": [3],
+            "nnz": [5],
             "solver": ["BMN"],
             "noise_type": ["oracle"],
             "run_id": RUN_FILTERS["train"],
         },
         "test_filter": {
             "alpha_SNR": [0.5],
-            "nnz": [3],
+            "nnz": [5],
             "solver": ["BMN"],
             "noise_type": ["oracle"],
             "run_id": RUN_FILTERS["test"],
         },
     },
-    "BMN_baseline": {
-        "summaries_root": SUMMARIES_ROOT,
-        **_paths("BMN_baseline"),
-        "train_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["BMN"],
-            "noise_type": ["baseline"],
-            "run_id": RUN_FILTERS["train"],
-        },
-        "test_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["BMN"],
-            "noise_type": ["baseline"],
-            "run_id": RUN_FILTERS["test"],
-        },
-    },
-    "BMN_joint_adaptive_joint_learning": {
-        "summaries_root": SUMMARIES_ROOT,
-        **_paths("BMN_joint_adaptive_joint_learning"),
-        "train_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["BMN_joint"],
-            "noise_type": ["adaptive_joint_learning"],
-            "run_id": RUN_FILTERS["train"],
-        },
-        "test_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["BMN_joint"],
-            "noise_type": ["adaptive_joint_learning"],
-            "run_id": RUN_FILTERS["test"],
-        },
-    },
-    "sflex_gamma_map_oracle": {
-        "summaries_root": SUMMARIES_ROOT,
-        **_paths("sflex_gamma_map_oracle"),
-        "train_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["sflex_gamma_map"],
-            "noise_type": ["oracle"],
-            "run_id": RUN_FILTERS["train"],
-        },
-        "test_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["sflex_gamma_map"],
-            "noise_type": ["oracle"],
-            "run_id": RUN_FILTERS["test"],
-        },
-    },
-    "sflex_gamma_map_baseline": {
-        "summaries_root": SUMMARIES_ROOT,
-        **_paths("sflex_gamma_map_baseline"),
-        "train_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["sflex_gamma_map"],
-            "noise_type": ["baseline"],
-            "run_id": RUN_FILTERS["train"],
-        },
-        "test_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["sflex_gamma_map"],
-            "noise_type": ["baseline"],
-            "run_id": RUN_FILTERS["test"],
-        },
-    },
-    "sflex_gamma_lambda_map_adaptive_joint_learning": {
-        "summaries_root": SUMMARIES_ROOT,
-        **_paths("sflex_gamma_lambda_map_adaptive_joint_learning"),
-        "train_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [1],
-            "solver": ["sflex_gamma_lambda_map"],
-            "noise_type": ["adaptive_joint_learning"],
-            "run_id": RUN_FILTERS["train"],
-        },
-        "test_filter": {
-            "alpha_SNR": [0.5],
-            "nnz": [3],
-            "solver": ["sflex_gamma_lambda_map"],
-            "noise_type": ["adaptive_joint_learning"],
-            "run_id": RUN_FILTERS["test"],
-        },
-    },
+    # "BMN_baseline": {
+    #     "summaries_root": SUMMARIES_ROOT,
+    #     **_paths("BMN_baseline"),
+    #     "train_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["BMN"],
+    #         "noise_type": ["baseline"],
+    #         "run_id": RUN_FILTERS["train"],
+    #     },
+    #     "test_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["BMN"],
+    #         "noise_type": ["baseline"],
+    #         "run_id": RUN_FILTERS["test"],
+    #     },
+    # },
+    # "BMN_joint_adaptive_joint_learning": {
+    #     "summaries_root": SUMMARIES_ROOT,
+    #     **_paths("BMN_joint_adaptive_joint_learning"),
+    #     "train_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["BMN_joint"],
+    #         "noise_type": ["adaptive_joint_learning"],
+    #         "run_id": RUN_FILTERS["train"],
+    #     },
+    #     "test_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["BMN_joint"],
+    #         "noise_type": ["adaptive_joint_learning"],
+    #         "run_id": RUN_FILTERS["test"],
+    #     },
+    # },
+    # "gamma_map_sflex_oracle": {
+    #     "summaries_root": SUMMARIES_ROOT,
+    #     **_paths("gamma_map_sflex_oracle"),
+    #     "train_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["gamma_map_sflex"],
+    #         "noise_type": ["oracle"],
+    #         "run_id": RUN_FILTERS["train"],
+    #     },
+    #     "test_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["gamma_map_sflex"],
+    #         "noise_type": ["oracle"],
+    #         "run_id": RUN_FILTERS["test"],
+    #     },
+    # },
+    # "gamma_map_sflex_baseline": {
+    #     "summaries_root": SUMMARIES_ROOT,
+    #     **_paths("gamma_map_sflex_baseline"),
+    #     "train_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["gamma_map_sflex"],
+    #         "noise_type": ["baseline"],
+    #         "run_id": RUN_FILTERS["train"],
+    #     },
+    #     "test_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["gamma_map_sflex"],
+    #         "noise_type": ["baseline"],
+    #         "run_id": RUN_FILTERS["test"],
+    #     },
+    # },
+    # "sflex_gamma_lambda_map_adaptive_joint_learning": {
+    #     "summaries_root": SUMMARIES_ROOT,
+    #     **_paths("sflex_gamma_lambda_map_adaptive_joint_learning"),
+    #     "train_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [1],
+    #         "solver": ["sflex_gamma_lambda_map"],
+    #         "noise_type": ["adaptive_joint_learning"],
+    #         "run_id": RUN_FILTERS["train"],
+    #     },
+    #     "test_filter": {
+    #         "alpha_SNR": [0.5],
+    #         "nnz": [3],
+    #         "solver": ["sflex_gamma_lambda_map"],
+    #         "noise_type": ["adaptive_joint_learning"],
+    #         "run_id": RUN_FILTERS["test"],
+    #     },
+    # },
 }
 
 # Pick the desired configuration here
-CONFIG = CONFIGS["sflex_gamma_map_baseline"]
+CONFIG = CONFIGS["POST_ORACLE_BMN_oracle"]
