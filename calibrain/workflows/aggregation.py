@@ -49,7 +49,7 @@ def _write_dataset(
         output_path,
         x_true=dataset["x_true"],
         x_hat=dataset["x_hat"],
-        posterior_std=dataset["posterior_std"],
+        posterior_cov=dataset["posterior_cov"],
     )
     meta_path = output_path.with_suffix(".json")
     meta_payload = {

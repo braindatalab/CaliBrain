@@ -1564,7 +1564,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
             n_sensors, n_sources, n_vec = L.shape
             if self.n_orient not in (None, n_vec):
                 self.logger.debug(
-                    "Updating n_orient from %s to %s based on leadfield shape.",
+                    "Updating n_orient from %s to %s based on leadfield shape. Setting n_orient to %s.",
                     self.n_orient,
                     n_vec,
                 )
