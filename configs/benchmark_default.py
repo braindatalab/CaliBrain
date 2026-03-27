@@ -2,7 +2,7 @@ from copy import deepcopy
 
 
 RUN_PARAMS = {
-    "nruns": 1,
+    "nruns": 2 + 3,
     "benchmark_n_jobs": 1,
     "random_state": 42,
 }
@@ -16,7 +16,6 @@ PATHS = {
 
 UNCERTAINTY = {
     "nominal_coverages": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999],
-    "perform_calibration": False,
     "save_posterior_stats": True,
 }
 
@@ -39,7 +38,7 @@ ERP_CONFIG = {
 COMMON_DATA_GRID = {
     "subject": ["CC120166"], #["CC120166", "CC120264", "CC120309", "CC120313"],
     "nnz": [5], # [5, 10, 100],
-    "orientation_type": ["fixed", "free"],
+    "orientation_type": ["fixed"],
     "alpha_SNR": [0.5],
     "sensor_white_noise_std": [0.001],
 }
@@ -57,18 +56,18 @@ def _estimator(solver: str, solver_params: dict, noise_grid: dict) -> dict:
 
 
 ESTIMATORS = [
-    # _estimator("BMN", {"max_iter": [1000], "normalization": [True]}, BASIC_NOISE),
+    _estimator("BMN", {"max_iter": [1000], "normalization": [True]}, BASIC_NOISE),
     # _estimator("BMN_joint", {
     #     "max_iter": [1000],
     #     "normalization": [True],
     #     "learn_noise":[True]
     #     }, ADAPTIVE_NOISE),
     # _estimator("BMN_joint", {"learn_noise": [True]}, ADAPTIVE_NOISE),
-    _estimator(
-        "gamma_map_sflex",
-        {"init_gamma": [0.1], "sigma": [0.001], "max_iter": [1000]},
-        BASIC_NOISE,
-    ),
+    # _estimator(
+    #     "gamma_map_sflex",
+    #     {"init_gamma": [0.1], "sigma": [0.001], "max_iter": [1000]},
+    #     BASIC_NOISE,
+    # ),
     # _estimator(
     #     "sflex_gamma_lambda_map",
     #     {"sigma": [0.001], "max_iter": [100], "learn_lambda": [True]},

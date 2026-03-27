@@ -13,7 +13,7 @@ from typing import Dict
 SUMMARIES_ROOT = "results/posterior_summaries"
 BASE_OUTPUT_DIR = Path("results/calibration_datasets")
 
-RUN_SPLIT_THRESHOLD = 10  # Inclusive: run_id <= threshold is train, > threshold is test.
+RUN_SPLIT_THRESHOLD = 2  # Inclusive: run_id <= threshold is train, > threshold is test.
 
 RUN_FILTERS = {
     "train": lambda rid: rid is not None and 1 <= int(rid) <= RUN_SPLIT_THRESHOLD,

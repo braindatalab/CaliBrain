@@ -85,7 +85,6 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
     if not estimators_cfg:
         raise ValueError("Benchmark config must define at least one estimator entry.")
 
-    perform_calibration = bool(config.get("perform_calibration", False))
     save_posterior_stats = bool(config.get("save_posterior_stats", True))
 
     results_dir = Path(config.get("results_dir", "results/benchmark_results"))
@@ -134,7 +133,6 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
             sensor_simulator=sensor_simulator,
             uncertainty_estimator=uncertainty_estimator,
             metric_evaluator=metric_evaluator,
-            perform_calibration=perform_calibration,
             save_posterior_stats=save_posterior_stats,
             posterior_dir=posterior_dir,
             random_state=random_state,

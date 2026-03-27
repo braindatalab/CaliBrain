@@ -43,7 +43,6 @@ class Benchmark:
         sensor_simulator: SensorSimulator,
         uncertainty_estimator: UncertaintyEstimator,
         metric_evaluator: MetricEvaluator,
-        perform_calibration: bool = False,
         save_posterior_stats: bool = True,
         posterior_dir: str | Path | None = None,
         random_state=42,
@@ -74,10 +73,6 @@ class Benchmark:
             Instance of UncertaintyEstimator for uncertainty estimation.
         metric_evaluator : MetricEvaluator
             Instance of MetricEvaluator for evaluating metrics.
-        perform_calibration : bool, optional
-            If True, run uncertainty calibration, evaluation metrics, and
-            visualization inside the benchmarking loop. Defaults to False so
-            calibration/evaluation can be deferred to a post-processing step.
         save_posterior_stats : bool, optional
             If True, persist per-run posterior summaries for later aggregation.
         posterior_dir : str or Path, optional
@@ -98,7 +93,6 @@ class Benchmark:
         self.sensor_simulator = sensor_simulator
         self.uncertainty_estimator = uncertainty_estimator
         self.metric_evaluator = metric_evaluator
-        self.perform_calibration = perform_calibration
         self.save_posterior_stats = save_posterior_stats
         self.posterior_dir = Path(posterior_dir) if posterior_dir else None
         if self.posterior_dir is not None:
@@ -314,7 +308,7 @@ class Benchmark:
         experiment_dir: str | Path,
         x_true_avg: np.ndarray,
         x_hat_avg: np.ndarray,
-        posterior_std_avg: np.ndarray,
+        posterior_cov: np.ndarray,
         metadata: dict | None = None,
         posterior_dir: str | Path | None = None,
         filename: str | None = None,
@@ -327,9 +321,7 @@ class Benchmark:
             with h5py.File(summary_path, "w") as handle:
                 handle.create_dataset("x_true", data=x_true_avg, compression="gzip")
                 handle.create_dataset("x_hat", data=x_hat_avg, compression="gzip")
-                handle.create_dataset(
-                    "posterior_std", data=posterior_std_avg, compression="gzip"
-                )
+                handle.create_dataset("posterior_cov", data=posterior_cov, compression="gzip")
                 safe_metadata = self._sanitize_metadata(metadata)
                 if safe_metadata:
                     handle.attrs["metadata_json"] = json.dumps(safe_metadata)
@@ -611,14 +603,6 @@ class Benchmark:
             noise_var = solver_output.get("noise_var")
             gamma = solver_output.get("gamma")
             
-            # TODO: this is a temporary workaround to allow calibration of free orientation solvers using only the norm of the source estimates and their uncertainty.
-            # for free orientation, reshape posterior covariance from (3N, 3N) to (N, N, 3, 3)
-            if orientation_type == "free":
-                posterior_cov = posterior_cov.reshape(n_sources, 3, n_sources, 3)
-                # reorder axes -> (N, N, 3, 3)
-                posterior_cov = posterior_cov.transpose(0, 2, 1, 3)
-                posterior_cov = np.linalg.norm(posterior_cov, axis=(2,3))
-                            
             # TODO: remove temporary plotting code
             if noise_type == 'adaptive_joint_learning':
                 plot_error_curves(
@@ -631,35 +615,25 @@ class Benchmark:
             this_result['gamma'] = gamma
             this_result["noise_var"] = noise_var
 
-            posterior_var = self.uncertainty_estimator.get_posterior_variance(
-                posterior_cov=posterior_cov,
-                orientation_type=orientation_type
-            )
+            # posterior_var = self.uncertainty_estimator.get_posterior_variance(
+            #     posterior_cov=posterior_cov,
+            #     orientation_type=orientation_type
+            # )
 
-            self.logger.debug("Estimating uncertainty...")
-            if solver_name == 'gamma_map':
-                self.logger.debug("Skipping uncertainty estimation for gamma_map solver.")
-                this_result['active_indices_size'] = (
-                    len(x_hat_active_indices)
-                    if x_hat_active_indices is not None
-                    else 0
-                )
-                return this_result
-
-            x_avg_time = np.mean(x, axis=-1, keepdims=True)
-            x_hat_avg_time = np.mean(x_hat, axis=-1, keepdims=True)
-            n_times = x.shape[-1]
-            posterior_var_avg_time = posterior_var / n_times
-            posterior_std_avg_time = np.sqrt(np.maximum(posterior_var_avg_time, 0.0))
+            # x_avg_time = np.mean(x, axis=-1, keepdims=True)
+            # x_hat_avg_time = np.mean(x_hat, axis=-1, keepdims=True)
+            # n_times = x.shape[-1]
+            # posterior_var_avg_time = posterior_var / n_times
+            # posterior_std_avg_time = np.sqrt(np.maximum(posterior_var_avg_time, 0.0))
             
             # TODO: this is a temporary workaround to allow calibration of free orientation solvers using only the norm of the source estimates and their uncertainty.
             # for free orientation, reshape posterior covariance from (3N, 3N) to (N, N, 3, 3)
-            if orientation_type == "free":
-                x_avg_time=np.linalg.norm(x_avg_time, axis=1, keepdims=False)
-                x_hat_avg_time=np.linalg.norm(x_hat_avg_time, axis=1, keepdims=False)
-                x = np.linalg.norm(x, axis=1, keepdims=False)
-                x_hat = np.linalg.norm(x_hat, axis=1, keepdims=False)
-                x_hat_active_indices = x_hat_active_indices[:x_hat_avg_time.shape[0]]
+            # if orientation_type == "free":
+            #     x_avg_time=np.linalg.norm(x_avg_time, axis=1, keepdims=False)
+            #     x_hat_avg_time=np.linalg.norm(x_hat_avg_time, axis=1, keepdims=False)
+            #     x = np.linalg.norm(x, axis=1, keepdims=False)
+            #     x_hat = np.linalg.norm(x_hat, axis=1, keepdims=False)
+            #     x_hat_active_indices = x_hat_active_indices[:x_hat_avg_time.shape[0]]
 
             active_indices_size = (
                 len(x_hat_active_indices)
@@ -689,9 +663,9 @@ class Benchmark:
                 }
                 summary_path = self._persist_posterior_summary(
                     experiment_dir=experiment_dir,
-                    x_true_avg=x_avg_time,
-                    x_hat_avg=x_hat_avg_time,
-                    posterior_std_avg=posterior_std_avg_time,
+                    x_true_avg=x,
+                    x_hat_avg=x_hat,
+                    posterior_cov=posterior_cov,
                     metadata=summary_metadata,
                     posterior_dir=posterior_base,
                     filename=summary_filename,
@@ -699,111 +673,109 @@ class Benchmark:
                 if summary_path is not None:
                     this_result["posterior_summary"] = summary_path.as_posix()
 
-            if not self.perform_calibration:
-                this_result["calibration_deferred"] = True
-                return this_result
+            return this_result
 
-            calibrator = UncertaintyCalibrator(
-                uncertainty_estimator=self.uncertainty_estimator,
-                metric_evaluator=self.metric_evaluator,
-            )
-            calibration_results = calibrator.calibrate(
-                x_true=x_avg_time,
-                x_hat=x_hat_avg_time,
-                posterior_std=posterior_std_avg_time,
-            )
-            pre_calibration = calibration_results['pre_calibration']
-            post_calibration = calibration_results['post_calibration']
-            calibration_record_dir = Path("results") / "calibration_records"
-            record_path = self._persist_calibration_results(
-                experiment_dir=experiment_dir,
-                record_dir=calibration_record_dir,
-                solver_name=solver_name,
-                solver_params=solver_params,
-                data_params=data_params,
-                noise_params=noise_params,
-                seed=seed,
-                global_run_id=global_run_id,
-                config_index=config_index,
-                run_in_config=run_in_config,
-                nruns_local=nruns_local,
-                pre_calibration=pre_calibration,
-                post_calibration=post_calibration,
-            )
-            if record_path is not None:
-                this_result["calibration_record"] = record_path.as_posix()
+            # calibrator = UncertaintyCalibrator(
+            #     uncertainty_estimator=self.uncertainty_estimator,
+            #     metric_evaluator=self.metric_evaluator,
+            # )
+            # calibration_results = calibrator.calibrate(
+            #     x_true=x_avg_time,
+            #     x_hat=x_hat_avg_time,
+            #     posterior_std=posterior_std_avg_time,
+            # )
+            # pre_calibration = calibration_results['pre_calibration']
+            # post_calibration = calibration_results['post_calibration']
+            # calibration_record_dir = Path("results") / "calibration_records"
+            # record_path = self._persist_calibration_results(
+            #     experiment_dir=experiment_dir,
+            #     record_dir=calibration_record_dir,
+            #     solver_name=solver_name,
+            #     solver_params=solver_params,
+            #     data_params=data_params,
+            #     noise_params=noise_params,
+            #     seed=seed,
+            #     global_run_id=global_run_id,
+            #     config_index=config_index,
+            #     run_in_config=run_in_config,
+            #     nruns_local=nruns_local,
+            #     pre_calibration=pre_calibration,
+            #     post_calibration=post_calibration,
+            # )
+            # if record_path is not None:
+            #     this_result["calibration_record"] = record_path.as_posix()
 
-            metric_kwargs = dict(
-                x=x_avg_time,
-                x_hat=x_hat_avg_time,
-                posterior_var=posterior_var_avg_time,
-                orientation_type="fixed", # TODO: remove hardcoding
-                nnz=data_params.get("nnz"),
-                subject=data_params.get("subject"),
-                fwd_path=solver_params['fwd_path'],
-            )
+            # metric_kwargs = dict(
+            #     x=x_avg_time,
+            #     x_hat=x_hat_avg_time,
+            #     posterior_var=posterior_var_avg_time,
+            #     orientation_type="fixed", # TODO: remove hardcoding
+            #     nnz=data_params.get("nnz"),
+            #     subject=data_params.get("subject"),
+            #     fwd_path=solver_params['fwd_path'],
+            # )
 
-            try:
-                evaluation_metrics = self.metric_evaluator.evaluate_metrics(
-                    which="evaluation",
-                    empirical_coverages=pre_calibration['empirical_coverages'],
-                    **metric_kwargs,
-                )
-                this_result.update(evaluation_metrics)
-            except Exception as e:
-                self.logger.error(f"Error while evaluating evaluation metrics: {e}", exc_info=True)
-                this_result.update({"metric_evaluation_error": str(e)})
+            # try:
+            #     evaluation_metrics = self.metric_evaluator.evaluate_metrics(
+            #         which="evaluation",
+            #         empirical_coverages=pre_calibration['empirical_coverages'],
+            #         **metric_kwargs,
+            #     )
+            #     this_result.update(evaluation_metrics)
+            # except Exception as e:
+            #     self.logger.error(f"Error while evaluating evaluation metrics: {e}", exc_info=True)
+            #     this_result.update({"metric_evaluation_error": str(e)})
 
-            calibration_metric_names = tuple(
-                getattr(self.metric_evaluator, "calibration_metrics", tuple())
-            )
-            pre_cal_metrics = pre_calibration.get('calibration_metrics', {})
-            post_cal_metrics = post_calibration.get('calibration_metrics', {})
-            for metric_name in calibration_metric_names:
-                pre_value = pre_cal_metrics.get(metric_name)
-                post_value = post_cal_metrics.get(metric_name)
-                if pre_value is not None:
-                    this_result[f"pre_cal_{metric_name}"] = pre_value
-                if post_value is not None:
-                    this_result[f"post_cal_{metric_name}"] = post_value
-                improvement_key = f"improvement_{metric_name}"
-                if (
-                    pre_value is None
-                    or post_value is None
-                    or (isinstance(pre_value, (int, float, np.floating)) and np.isclose(pre_value, 0.0))
-                ):
-                    this_result[improvement_key] = None
-                else:
-                    this_result[improvement_key] = (pre_value - post_value) / pre_value * 100
+            # calibration_metric_names = tuple(
+            #     getattr(self.metric_evaluator, "calibration_metrics", tuple())
+            # )
+            # pre_cal_metrics = pre_calibration.get('calibration_metrics', {})
+            # post_cal_metrics = post_calibration.get('calibration_metrics', {})
+            # for metric_name in calibration_metric_names:
+            #     pre_value = pre_cal_metrics.get(metric_name)
+            #     post_value = post_cal_metrics.get(metric_name)
+            #     if pre_value is not None:
+            #         this_result[f"pre_cal_{metric_name}"] = pre_value
+            #     if post_value is not None:
+            #         this_result[f"post_cal_{metric_name}"] = post_value
+            #     improvement_key = f"improvement_{metric_name}"
+            #     if (
+            #         pre_value is None
+            #         or post_value is None
+            #         or (isinstance(pre_value, (int, float, np.floating)) and np.isclose(pre_value, 0.0))
+            #     ):
+            #         this_result[improvement_key] = None
+            #     else:
+            #         this_result[improvement_key] = (pre_value - post_value) / pre_value * 100
 
-            viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
-            viz.plot_all(
-                x=x,
-                x_active_indices=x_active_indices,
-                x_hat=x_hat,
-                x_hat_active_indices=x_hat_active_indices,
-                y_clean=y_clean,
-                y_noisy=y_noisy,
-                n_sources=n_sources,
-                subject=data_params.get("subject"),
-                fwd_path=solver_params['fwd_path'],
-                nnz=data_params.get("nnz"),
-                ERP_config=self.ERP_config,
-                sample_idx=200,
-                source_units=source_units,
-                source_unitmult=source_unitmult,
-                sensor_units=sensor_units,
-                sensor_unitmult=sensor_unitmult,
-                confidence_levels=self.uncertainty_estimator.nominal_coverages,
-                nominal_coverages=pre_calibration['nominal_coverages'],
-                empirical_coverages=pre_calibration['empirical_coverages'],
-                empirical_coverages_post_cal=post_calibration['empirical_coverages'],
-                ci_lower=pre_calibration.get('ci_lowers'),
-                ci_upper=pre_calibration.get('ci_uppers'),
-                orientation_type="fixed", # TODO: remove
-                result=this_result,
-                experiment_dir=experiment_dir,
-            )
+            # viz = Visualizer(base_save_path=experiment_dir, logger=self.logger)
+            # viz.plot_all(
+            #     x=x,
+            #     x_active_indices=x_active_indices,
+            #     x_hat=x_hat,
+            #     x_hat_active_indices=x_hat_active_indices,
+            #     y_clean=y_clean,
+            #     y_noisy=y_noisy,
+            #     n_sources=n_sources,
+            #     subject=data_params.get("subject"),
+            #     fwd_path=solver_params['fwd_path'],
+            #     nnz=data_params.get("nnz"),
+            #     ERP_config=self.ERP_config,
+            #     sample_idx=200,
+            #     source_units=source_units,
+            #     source_unitmult=source_unitmult,
+            #     sensor_units=sensor_units,
+            #     sensor_unitmult=sensor_unitmult,
+            #     confidence_levels=self.uncertainty_estimator.nominal_coverages,
+            #     nominal_coverages=pre_calibration['nominal_coverages'],
+            #     empirical_coverages=pre_calibration['empirical_coverages'],
+            #     empirical_coverages_post_cal=post_calibration['empirical_coverages'],
+            #     ci_lower=pre_calibration.get('ci_lowers'),
+            #     ci_upper=pre_calibration.get('ci_uppers'),
+            #     orientation_type="fixed", # TODO: remove
+            #     result=this_result,
+            #     experiment_dir=experiment_dir,
+            # )
 
         except Exception as e:
             self.logger.error(

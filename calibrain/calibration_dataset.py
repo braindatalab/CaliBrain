@@ -28,7 +28,7 @@ def load_posterior_summary(summary: PosteriorSummary) -> dict:
             payload = {
                 "x_true": handle["x_true"][:],
                 "x_hat": handle["x_hat"][:],
-                "posterior_std": handle["posterior_std"][:],
+                "posterior_cov": handle["posterior_cov"][:],
             }
         return payload
 
@@ -37,7 +37,7 @@ def load_posterior_summary(summary: PosteriorSummary) -> dict:
             payload = {
                 "x_true": data["x_true"],
                 "x_hat": data["x_hat"],
-                "posterior_std": data["posterior_std"],
+                "posterior_cov": data["posterior_cov"],
             }
         return payload
 
@@ -57,24 +57,24 @@ def concatenate_summaries(
 
     x_true_blocks: List[np.ndarray] = []
     x_hat_blocks: List[np.ndarray] = []
-    posterior_std_blocks: List[np.ndarray] = []
+    posterior_cov_blocks: List[np.ndarray] = []
     collected_metadata: List[dict | None] = []
 
     for summary in summaries:
         payload = load_posterior_summary(summary)
         x_true_blocks.append(payload["x_true"])
         x_hat_blocks.append(payload["x_hat"])
-        posterior_std_blocks.append(payload["posterior_std"])
+        posterior_cov_blocks.append(payload["posterior_cov"])
         collected_metadata.append(summary.metadata)
 
     x_true = np.concatenate(x_true_blocks, axis=0)
     x_hat = np.concatenate(x_hat_blocks, axis=0)
-    posterior_std = np.concatenate(posterior_std_blocks, axis=0)
+    posterior_cov = np.concatenate(posterior_cov_blocks, axis=0)
 
     return {
         "x_true": x_true,
         "x_hat": x_hat,
-        "posterior_std": posterior_std,
+        "posterior_cov": posterior_cov,
         "metadata": collected_metadata,
         "n_sources": x_true.shape[0],
         "n_times": x_true.shape[-1],

@@ -1,10 +1,12 @@
 # If test_dataset is None, the train file is reused for evaluation.
 
-config_name = "gamma_map_sflex_oracle"
+config_name = "POST_ORACLE_BMN_oracle"
 
 CONFIG = {
-    "train_dataset": f"results/calibration_datasets/{config_name}/posterior_dataset_train.npz",
-    "test_dataset": f"results/calibration_datasets/{config_name}/posterior_dataset_test.npz",
+    "train_dataset":
+        f"results/calibration_datasets/{config_name}/posterior_dataset_train.npz",
+    "test_dataset":
+        f"results/calibration_datasets/{config_name}/posterior_dataset_test.npz",
     "output_dir": "results/calibration_eval",
     "run_name": config_name,
     "plot_curve": True,
