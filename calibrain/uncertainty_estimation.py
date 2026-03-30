@@ -1373,3 +1373,192 @@ class UncertaintyEstimator:
         plt.tight_layout()
         plt.show()
 
+
+
+# # =============================================================================
+# # Example usage
+# #
+# # This section covers BOTH uncertainty modes for the current MEG setup:
+# #
+# #   1) pointwise mode
+# #   2) aggregated mode
+# #
+# # Visualizations are called separately for the two modes.
+# #
+# # Active:
+# #   - fixed MEG  (BMN)
+# #   - fixed MEG  (BMN_joint)
+# #   - free MEG reduced rank-2 (BMN)
+# #   - free MEG reduced rank-2 (BMN_joint)
+# #
+# # Commented:
+# #   - fixed EEG
+# #   - free EEG
+# # =============================================================================
+
+# # ------------------------------------------------------------------
+# # 1) FIXED MEG -- BMN
+# # ------------------------------------------------------------------
+# results_unc_fixed_meg = run_uncertainty_example_fixed(
+#     x_true_fixed=x_fixed_meg,
+#     out_fixed=out_fixed_bmn,
+#     nominal_coverage=0.95,
+#     src_idx=0,
+#     do_plots=False,   # plots called separately below
+# )
+
+# print("\n================ FIXED MEG / BMN / POINTWISE ================")
+# print("Empirical coverage :", results_unc_fixed_meg["diag_fixed_point"]["empirical_coverage"])
+# print("Count within       :", results_unc_fixed_meg["diag_fixed_point"]["count_within"])
+# print("Total count        :", results_unc_fixed_meg["diag_fixed_point"]["total_count"])
+
+# print("\n=============== FIXED MEG / BMN / AGGREGATED ===============")
+# print("Empirical coverage :", results_unc_fixed_meg["diag_fixed_agg"]["empirical_coverage"])
+# print("Count within       :", results_unc_fixed_meg["diag_fixed_agg"]["count_within"])
+# print("Total count        :", results_unc_fixed_meg["diag_fixed_agg"]["total_count"])
+
+# # Pointwise visualization
+# results_unc_fixed_meg["ue"].plot_fixed_interval_membership_pointwise(
+#     x_true=x_fixed_meg,
+#     x_hat=out_fixed_bmn["posterior_mean"],
+#     posterior_var=results_unc_fixed_meg["posterior_var_fixed"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )
+
+# # Aggregated visualization
+# results_unc_fixed_meg["ue"].plot_fixed_interval_membership_aggregated(
+#     diag_fixed=results_unc_fixed_meg["diag_fixed_agg"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )
+
+
+# # ------------------------------------------------------------------
+# # 2) FIXED MEG -- BMN_joint
+# # ------------------------------------------------------------------
+# results_unc_fixed_meg_joint = run_uncertainty_example_fixed(
+#     x_true_fixed=x_fixed_meg,
+#     out_fixed=out_fixed_joint,
+#     nominal_coverage=0.95,
+#     src_idx=0,
+#     do_plots=False,   # plots called separately below
+# )
+
+# print("\n============= FIXED MEG / BMN_joint / POINTWISE =============")
+# print("Empirical coverage :", results_unc_fixed_meg_joint["diag_fixed_point"]["empirical_coverage"])
+# print("Count within       :", results_unc_fixed_meg_joint["diag_fixed_point"]["count_within"])
+# print("Total count        :", results_unc_fixed_meg_joint["diag_fixed_point"]["total_count"])
+
+# print("\n============ FIXED MEG / BMN_joint / AGGREGATED ============")
+# print("Empirical coverage :", results_unc_fixed_meg_joint["diag_fixed_agg"]["empirical_coverage"])
+# print("Count within       :", results_unc_fixed_meg_joint["diag_fixed_agg"]["count_within"])
+# print("Total count        :", results_unc_fixed_meg_joint["diag_fixed_agg"]["total_count"])
+
+# # Pointwise visualization
+# results_unc_fixed_meg_joint["ue"].plot_fixed_interval_membership_pointwise(
+#     x_true=x_fixed_meg,
+#     x_hat=out_fixed_joint["posterior_mean"],
+#     posterior_var=results_unc_fixed_meg_joint["posterior_var_fixed"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )
+
+# # Aggregated visualization
+# results_unc_fixed_meg_joint["ue"].plot_fixed_interval_membership_aggregated(
+#     diag_fixed=results_unc_fixed_meg_joint["diag_fixed_agg"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )
+
+
+# # ------------------------------------------------------------------
+# # 3) FREE MEG REDUCED RANK-2 -- BMN
+# # ------------------------------------------------------------------
+# results_unc_meg = run_uncertainty_example_meg(
+#     a_true_meg_2d=a_free_meg,
+#     Q_basis=lf_free_meg["Q_basis"],
+#     out_meg=out_free_meg_bmn,
+#     nominal_coverage=0.95,
+#     src_idx=0,
+#     time_idx=0,
+#     psd_repair_blocks=True,
+#     block_epsilon=1e-12,
+#     do_plots=False,   # plots called separately below
+# )
+
+# print("\n============= FREE MEG / BMN / POINTWISE ===================")
+# print("Empirical coverage :", results_unc_meg["diag_meg_point"]["empirical_coverage"])
+# print("Count within       :", results_unc_meg["diag_meg_point"]["count_within"])
+# print("Total count        :", results_unc_meg["diag_meg_point"]["total_count"])
+
+# print("\n============ FREE MEG / BMN / AGGREGATED ==================")
+# print("Empirical coverage :", results_unc_meg["diag_meg_agg"]["empirical_coverage"])
+# print("Count within       :", results_unc_meg["diag_meg_agg"]["count_within"])
+# print("Total count        :", results_unc_meg["diag_meg_agg"]["total_count"])
+
+# # Pointwise visualization
+# results_unc_meg["ue"].plot_meg_ellipse_membership_pointwise(
+#     x_true_3d=results_unc_meg["x_true_meg_3d"],
+#     x_hat_2d=results_unc_meg["x_hat_meg_2d"],
+#     posterior_cov_2d=out_free_meg_bmn["posterior_cov"],
+#     src_idx=0,
+#     time_idx=0,
+#     nominal_coverage=0.95,
+#     V_tan=results_unc_meg["V_tan"],
+#     psd_repair_blocks=True,
+#     block_epsilon=1e-12,
+# )
+
+# # Aggregated visualization
+# results_unc_meg["ue"].plot_meg_ellipse_membership_aggregated(
+#     diag_meg=results_unc_meg["diag_meg_agg"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )
+
+
+# # ------------------------------------------------------------------
+# # 4) FREE MEG REDUCED RANK-2 -- BMN_joint
+# # ------------------------------------------------------------------
+# results_unc_meg_joint = run_uncertainty_example_meg(
+#     a_true_meg_2d=a_free_meg,
+#     Q_basis=lf_free_meg["Q_basis"],
+#     out_meg=out_free_meg_joint,
+#     nominal_coverage=0.95,
+#     src_idx=0,
+#     time_idx=0,
+#     psd_repair_blocks=True,
+#     block_epsilon=1e-12,
+#     do_plots=False,   # plots called separately below
+# )
+
+# print("\n=========== FREE MEG / BMN_joint / POINTWISE ==============")
+# print("Empirical coverage :", results_unc_meg_joint["diag_meg_point"]["empirical_coverage"])
+# print("Count within       :", results_unc_meg_joint["diag_meg_point"]["count_within"])
+# print("Total count        :", results_unc_meg_joint["diag_meg_point"]["total_count"])
+
+# print("\n========== FREE MEG / BMN_joint / AGGREGATED =============")
+# print("Empirical coverage :", results_unc_meg_joint["diag_meg_agg"]["empirical_coverage"])
+# print("Count within       :", results_unc_meg_joint["diag_meg_agg"]["count_within"])
+# print("Total count        :", results_unc_meg_joint["diag_meg_agg"]["total_count"])
+
+# # Pointwise visualization
+# results_unc_meg_joint["ue"].plot_meg_ellipse_membership_pointwise(
+#     x_true_3d=results_unc_meg_joint["x_true_meg_3d"],
+#     x_hat_2d=results_unc_meg_joint["x_hat_meg_2d"],
+#     posterior_cov_2d=out_free_meg_joint["posterior_cov"],
+#     src_idx=0,
+#     time_idx=0,
+#     nominal_coverage=0.95,
+#     V_tan=results_unc_meg_joint["V_tan"],
+#     psd_repair_blocks=True,
+#     block_epsilon=1e-12,
+# )
+
+# # Aggregated visualization
+# results_unc_meg_joint["ue"].plot_meg_ellipse_membership_aggregated(
+#     diag_meg=results_unc_meg_joint["diag_meg_agg"],
+#     src_idx=0,
+#     nominal_coverage=0.95,
+# )

@@ -155,15 +155,15 @@ class UncertaintyEstimator:
             else:
                 self.z_scores[c] = float(norm.ppf((1.0 + c) / 2.0))
 
-    # def __getstate__(self):
-    #     state = self.__dict__.copy()
-    #     state['logger'] = None
-    #     return state
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['logger'] = None
+        return state
 
-    # def __setstate__(self, state):
-    #     self.__dict__.update(state)
-    #     if self.logger is None:
-    #         self.logger = logging.getLogger(self.__class__.__name__)
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if self.logger is None:
+            self.logger = logging.getLogger(self.__class__.__name__)
             
     # ------------------------------------------------------------------
     # Core helpers
@@ -2000,144 +2000,144 @@ results_unc_meg_joint["ue"].plot_meg_ellipse_membership_aggregated(
 # ------------------------------------------------------------------
 # 5) FIXED EEG -- BMN / BMN_joint
 # ------------------------------------------------------------------
-# results_unc_fixed_eeg = run_uncertainty_example_fixed(
-#     x_true_fixed=x_fixed_eeg,
-#     out_fixed=out_fixed_eeg_bmn,
-#     nominal_coverage=0.95,
-#     src_idx=0,
-#     do_plots=False,
-# )
-#
-# print("\n================ FIXED EEG / BMN / POINTWISE ================")
-# print("Empirical coverage :", results_unc_fixed_eeg["diag_fixed_point"]["empirical_coverage"])
-# print("Count within       :", results_unc_fixed_eeg["diag_fixed_point"]["count_within"])
-# print("Total count        :", results_unc_fixed_eeg["diag_fixed_point"]["total_count"])
-#
-# print("\n=============== FIXED EEG / BMN / AGGREGATED ===============")
-# print("Empirical coverage :", results_unc_fixed_eeg["diag_fixed_agg"]["empirical_coverage"])
-# print("Count within       :", results_unc_fixed_eeg["diag_fixed_agg"]["count_within"])
-# print("Total count        :", results_unc_fixed_eeg["diag_fixed_agg"]["total_count"])
-#
-# results_unc_fixed_eeg["ue"].plot_fixed_interval_membership_pointwise(
-#     x_true=x_fixed_eeg,
-#     x_hat=out_fixed_eeg_bmn["posterior_mean"],
-#     posterior_var=results_unc_fixed_eeg["posterior_var_fixed"],
-#     src_idx=0,
-#     nominal_coverage=0.95,
-# )
-#
-# results_unc_fixed_eeg["ue"].plot_fixed_interval_membership_aggregated(
-#     diag_fixed=results_unc_fixed_eeg["diag_fixed_agg"],
-#     src_idx=0,
-#     nominal_coverage=0.95,
-# )
-#
-# results_unc_fixed_eeg_joint = run_uncertainty_example_fixed(
-#     x_true_fixed=x_fixed_eeg,
-#     out_fixed=out_fixed_eeg_joint,
-#     nominal_coverage=0.95,
-#     src_idx=0,
-#     do_plots=False,
-# )
-#
-# print("\n============= FIXED EEG / BMN_joint / POINTWISE =============")
-# print("Empirical coverage :", results_unc_fixed_eeg_joint["diag_fixed_point"]["empirical_coverage"])
-# print("Count within       :", results_unc_fixed_eeg_joint["diag_fixed_point"]["count_within"])
-# print("Total count        :", results_unc_fixed_eeg_joint["diag_fixed_point"]["total_count"])
-#
-# print("\n============ FIXED EEG / BMN_joint / AGGREGATED ============")
-# print("Empirical coverage :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["empirical_coverage"])
-# print("Count within       :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["count_within"])
-# print("Total count        :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["total_count"])
-#
-# results_unc_fixed_eeg_joint["ue"].plot_fixed_interval_membership_pointwise(
-#     x_true=x_fixed_eeg,
-#     x_hat=out_fixed_eeg_joint["posterior_mean"],
-#     posterior_var=results_unc_fixed_eeg_joint["posterior_var_fixed"],
-#     src_idx=0,
-#     nominal_coverage=0.95,
-# )
-#
-# results_unc_fixed_eeg_joint["ue"].plot_fixed_interval_membership_aggregated(
-#     diag_fixed=results_unc_fixed_eeg_joint["diag_fixed_agg"],
-#     src_idx=0,
-#     nominal_coverage=0.95,
-# )
+results_unc_fixed_eeg = run_uncertainty_example_fixed(
+    x_true_fixed=x_fixed_eeg,
+    out_fixed=out_fixed_eeg_bmn,
+    nominal_coverage=0.95,
+    src_idx=0,
+    do_plots=False,
+)
+
+print("\n================ FIXED EEG / BMN / POINTWISE ================")
+print("Empirical coverage :", results_unc_fixed_eeg["diag_fixed_point"]["empirical_coverage"])
+print("Count within       :", results_unc_fixed_eeg["diag_fixed_point"]["count_within"])
+print("Total count        :", results_unc_fixed_eeg["diag_fixed_point"]["total_count"])
+
+print("\n=============== FIXED EEG / BMN / AGGREGATED ===============")
+print("Empirical coverage :", results_unc_fixed_eeg["diag_fixed_agg"]["empirical_coverage"])
+print("Count within       :", results_unc_fixed_eeg["diag_fixed_agg"]["count_within"])
+print("Total count        :", results_unc_fixed_eeg["diag_fixed_agg"]["total_count"])
+
+results_unc_fixed_eeg["ue"].plot_fixed_interval_membership_pointwise(
+    x_true=x_fixed_eeg,
+    x_hat=out_fixed_eeg_bmn["posterior_mean"],
+    posterior_var=results_unc_fixed_eeg["posterior_var_fixed"],
+    src_idx=0,
+    nominal_coverage=0.95,
+)
+
+results_unc_fixed_eeg["ue"].plot_fixed_interval_membership_aggregated(
+    diag_fixed=results_unc_fixed_eeg["diag_fixed_agg"],
+    src_idx=0,
+    nominal_coverage=0.95,
+)
+
+results_unc_fixed_eeg_joint = run_uncertainty_example_fixed(
+    x_true_fixed=x_fixed_eeg,
+    out_fixed=out_fixed_eeg_joint,
+    nominal_coverage=0.95,
+    src_idx=0,
+    do_plots=False,
+)
+
+print("\n============= FIXED EEG / BMN_joint / POINTWISE =============")
+print("Empirical coverage :", results_unc_fixed_eeg_joint["diag_fixed_point"]["empirical_coverage"])
+print("Count within       :", results_unc_fixed_eeg_joint["diag_fixed_point"]["count_within"])
+print("Total count        :", results_unc_fixed_eeg_joint["diag_fixed_point"]["total_count"])
+
+print("\n============ FIXED EEG / BMN_joint / AGGREGATED ============")
+print("Empirical coverage :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["empirical_coverage"])
+print("Count within       :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["count_within"])
+print("Total count        :", results_unc_fixed_eeg_joint["diag_fixed_agg"]["total_count"])
+
+results_unc_fixed_eeg_joint["ue"].plot_fixed_interval_membership_pointwise(
+    x_true=x_fixed_eeg,
+    x_hat=out_fixed_eeg_joint["posterior_mean"],
+    posterior_var=results_unc_fixed_eeg_joint["posterior_var_fixed"],
+    src_idx=0,
+    nominal_coverage=0.95,
+)
+
+results_unc_fixed_eeg_joint["ue"].plot_fixed_interval_membership_aggregated(
+    diag_fixed=results_unc_fixed_eeg_joint["diag_fixed_agg"],
+    src_idx=0,
+    nominal_coverage=0.95,
+)
 
 
 # ------------------------------------------------------------------
 # 6) FREE EEG -- BMN / BMN_joint
 # ------------------------------------------------------------------
-# results_unc_eeg = run_uncertainty_example_eeg(
-#     x_true_eeg_3d=x_free_eeg,
-#     out_eeg=out_free_eeg_bmn,
-#     nominal_coverage=0.95,
-#     src_idx=0,
-#     time_idx=0,
-#     psd_repair_blocks=True,
-#     block_epsilon=1e-12,
-#     do_plots=False,
-# )
-#
-# print("\n================ EEG FREE / BMN / POINTWISE ================")
-# print("Empirical coverage :", results_unc_eeg["diag_eeg_point"]["empirical_coverage"])
-# print("Count within       :", results_unc_eeg["diag_eeg_point"]["count_within"])
-# print("Total count        :", results_unc_eeg["diag_eeg_point"]["total_count"])
-#
-# print("\n=============== EEG FREE / BMN / AGGREGATED ===============")
-# print("Empirical coverage :", results_unc_eeg["diag_eeg_agg"]["empirical_coverage"])
-# print("Count within       :", results_unc_eeg["diag_eeg_agg"]["count_within"])
-# print("Total count        :", results_unc_eeg["diag_eeg_agg"]["total_count"])
-#
-# results_unc_eeg["ue"].plot_eeg_ellipsoid_membership_pointwise(
-#     x_hat=results_unc_eeg["x_hat_eeg_3d"],
-#     x_true=x_free_eeg,
-#     posterior_cov=out_free_eeg_bmn["posterior_cov"],
-#     src_idx=0,
-#     time_idx=0,
-#     nominal_coverage=0.95,
-#     psd_repair_blocks=True,
-#     block_epsilon=1e-12,
-# )
-#
-# results_unc_eeg["ue"].plot_eeg_ellipsoid_membership_aggregated(
-#     diag_eeg=results_unc_eeg["diag_eeg_agg"],
-#     src_idx=0,
-# )
-#
-# results_unc_eeg_joint = run_uncertainty_example_eeg(
-#     x_true_eeg_3d=x_free_eeg,
-#     out_eeg=out_free_eeg_joint,
-#     nominal_coverage=0.95,
-#     src_idx=0,
-#     time_idx=0,
-#     psd_repair_blocks=True,
-#     block_epsilon=1e-12,
-#     do_plots=False,
-# )
-#
-# print("\n============= EEG FREE / BMN_joint / POINTWISE =============")
-# print("Empirical coverage :", results_unc_eeg_joint["diag_eeg_point"]["empirical_coverage"])
-# print("Count within       :", results_unc_eeg_joint["diag_eeg_point"]["count_within"])
-# print("Total count        :", results_unc_eeg_joint["diag_eeg_point"]["total_count"])
-#
-# print("\n============ EEG FREE / BMN_joint / AGGREGATED ============")
-# print("Empirical coverage :", results_unc_eeg_joint["diag_eeg_agg"]["empirical_coverage"])
-# print("Count within       :", results_unc_eeg_joint["diag_eeg_agg"]["count_within"])
-# print("Total count        :", results_unc_eeg_joint["diag_eeg_agg"]["total_count"])
-#
-# results_unc_eeg_joint["ue"].plot_eeg_ellipsoid_membership_pointwise(
-#     x_hat=results_unc_eeg_joint["x_hat_eeg_3d"],
-#     x_true=x_free_eeg,
-#     posterior_cov=out_free_eeg_joint["posterior_cov"],
-#     src_idx=0,
-#     time_idx=0,
-#     nominal_coverage=0.95,
-#     psd_repair_blocks=True,
-#     block_epsilon=1e-12,
-# )
-#
-# results_unc_eeg_joint["ue"].plot_eeg_ellipsoid_membership_aggregated(
-#     diag_eeg=results_unc_eeg_joint["diag_eeg_agg"],
-#     src_idx=0,
-# )
+results_unc_eeg = run_uncertainty_example_eeg(
+    x_true_eeg_3d=x_free_eeg,
+    out_eeg=out_free_eeg_bmn,
+    nominal_coverage=0.95,
+    src_idx=0,
+    time_idx=0,
+    psd_repair_blocks=True,
+    block_epsilon=1e-12,
+    do_plots=False,
+)
+
+print("\n================ EEG FREE / BMN / POINTWISE ================")
+print("Empirical coverage :", results_unc_eeg["diag_eeg_point"]["empirical_coverage"])
+print("Count within       :", results_unc_eeg["diag_eeg_point"]["count_within"])
+print("Total count        :", results_unc_eeg["diag_eeg_point"]["total_count"])
+
+print("\n=============== EEG FREE / BMN / AGGREGATED ===============")
+print("Empirical coverage :", results_unc_eeg["diag_eeg_agg"]["empirical_coverage"])
+print("Count within       :", results_unc_eeg["diag_eeg_agg"]["count_within"])
+print("Total count        :", results_unc_eeg["diag_eeg_agg"]["total_count"])
+
+results_unc_eeg["ue"].plot_eeg_ellipsoid_membership_pointwise(
+    x_hat=results_unc_eeg["x_hat_eeg_3d"],
+    x_true=x_free_eeg,
+    posterior_cov=out_free_eeg_bmn["posterior_cov"],
+    src_idx=0,
+    time_idx=0,
+    nominal_coverage=0.95,
+    psd_repair_blocks=True,
+    block_epsilon=1e-12,
+)
+
+results_unc_eeg["ue"].plot_eeg_ellipsoid_membership_aggregated(
+    diag_eeg=results_unc_eeg["diag_eeg_agg"],
+    src_idx=0,
+)
+
+results_unc_eeg_joint = run_uncertainty_example_eeg(
+    x_true_eeg_3d=x_free_eeg,
+    out_eeg=out_free_eeg_joint,
+    nominal_coverage=0.95,
+    src_idx=0,
+    time_idx=0,
+    psd_repair_blocks=True,
+    block_epsilon=1e-12,
+    do_plots=False,
+)
+
+print("\n============= EEG FREE / BMN_joint / POINTWISE =============")
+print("Empirical coverage :", results_unc_eeg_joint["diag_eeg_point"]["empirical_coverage"])
+print("Count within       :", results_unc_eeg_joint["diag_eeg_point"]["count_within"])
+print("Total count        :", results_unc_eeg_joint["diag_eeg_point"]["total_count"])
+
+print("\n============ EEG FREE / BMN_joint / AGGREGATED ============")
+print("Empirical coverage :", results_unc_eeg_joint["diag_eeg_agg"]["empirical_coverage"])
+print("Count within       :", results_unc_eeg_joint["diag_eeg_agg"]["count_within"])
+print("Total count        :", results_unc_eeg_joint["diag_eeg_agg"]["total_count"])
+
+results_unc_eeg_joint["ue"].plot_eeg_ellipsoid_membership_pointwise(
+    x_hat=results_unc_eeg_joint["x_hat_eeg_3d"],
+    x_true=x_free_eeg,
+    posterior_cov=out_free_eeg_joint["posterior_cov"],
+    src_idx=0,
+    time_idx=0,
+    nominal_coverage=0.95,
+    psd_repair_blocks=True,
+    block_epsilon=1e-12,
+)
+
+results_unc_eeg_joint["ue"].plot_eeg_ellipsoid_membership_aggregated(
+    diag_eeg=results_unc_eeg_joint["diag_eeg_agg"],
+    src_idx=0,
+)

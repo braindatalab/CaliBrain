@@ -2,7 +2,7 @@ from copy import deepcopy
 
 
 RUN_PARAMS = {
-    "nruns": 2 + 3,
+    "nruns": 10 + 25,
     "benchmark_n_jobs": 1,
     "random_state": 42,
 }
@@ -15,7 +15,7 @@ PATHS = {
 }
 
 UNCERTAINTY = {
-    "nominal_coverages": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999],
+    "nominal_coverages": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     "save_posterior_stats": True,
 }
 
@@ -36,7 +36,7 @@ ERP_CONFIG = {
 }
 
 COMMON_DATA_GRID = {
-    "subject": ["CC120166"], #["CC120166", "CC120264", "CC120309", "CC120313"],
+    "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
     "nnz": [5], # [5, 10, 100],
     "orientation_type": ["fixed"],
     "alpha_SNR": [0.5],

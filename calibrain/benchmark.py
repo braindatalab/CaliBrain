@@ -20,11 +20,11 @@ from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta, UncertaintyCalibrator
-# from calibrain.leadfield_builder import LeadfieldBuilder
 from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
 from calibrain import SpatialCVSolver, TemporalCVSolver
 from calibrain.calibration_storage import save_calibration_record
+from calibrain.calibration_dataset import EEG_COIL_TYPES, MEG_COIL_TYPES
 
 # Suppress verbose MNE console output in worker processes (joblib spawns new interpreters)
 logging.getLogger("mne").setLevel(logging.ERROR)
@@ -41,8 +41,6 @@ class Benchmark:
         source_simulator: SourceSimulator,
         leadfield_builder: LeadfieldBuilder,
         sensor_simulator: SensorSimulator,
-        uncertainty_estimator: UncertaintyEstimator,
-        metric_evaluator: MetricEvaluator,
         save_posterior_stats: bool = True,
         posterior_dir: str | Path | None = None,
         random_state=42,
@@ -69,10 +67,6 @@ class Benchmark:
             Instance of LeadfieldBuilder for generating leadfields.
         sensor_simulator : SensorSimulator
             Instance of SensorSimulator for generating data.
-        uncertainty_estimator : UncertaintyEstimator
-            Instance of UncertaintyEstimator for uncertainty estimation.
-        metric_evaluator : MetricEvaluator
-            Instance of MetricEvaluator for evaluating metrics.
         save_posterior_stats : bool, optional
             If True, persist per-run posterior summaries for later aggregation.
         posterior_dir : str or Path, optional
@@ -91,8 +85,6 @@ class Benchmark:
         self.source_simulator = source_simulator
         self.leadfield_builder = leadfield_builder
         self.sensor_simulator = sensor_simulator
-        self.uncertainty_estimator = uncertainty_estimator
-        self.metric_evaluator = metric_evaluator
         self.save_posterior_stats = save_posterior_stats
         self.posterior_dir = Path(posterior_dir) if posterior_dir else None
         if self.posterior_dir is not None:
@@ -292,6 +284,8 @@ class Benchmark:
         def _convert(value):
             if isinstance(value, (np.generic,)):
                 return value.item()
+            if isinstance(value, np.ndarray):
+                return value.tolist()
             if isinstance(value, Path):
                 return value.as_posix()
             if isinstance(value, dict):
@@ -306,9 +300,7 @@ class Benchmark:
         self,
         *,
         experiment_dir: str | Path,
-        x_true_avg: np.ndarray,
-        x_hat_avg: np.ndarray,
-        posterior_cov: np.ndarray,
+        datasets: dict,
         metadata: dict | None = None,
         posterior_dir: str | Path | None = None,
         filename: str | None = None,
@@ -319,9 +311,21 @@ class Benchmark:
         summary_path = base_dir / summary_filename
         try:
             with h5py.File(summary_path, "w") as handle:
-                handle.create_dataset("x_true", data=x_true_avg, compression="gzip")
-                handle.create_dataset("x_hat", data=x_hat_avg, compression="gzip")
-                handle.create_dataset("posterior_cov", data=posterior_cov, compression="gzip")
+                for name, value in datasets.items():
+                    dataset_kwargs = {"data": value}
+                    if isinstance(value, np.ndarray):
+                        if value.ndim == 0:
+                            pass
+                        else:
+                            dataset_kwargs["compression"] = "gzip"
+                    else:
+                        value_arr = np.asarray(value)
+                        if value_arr.ndim == 0:
+                            dataset_kwargs["data"] = value_arr
+                        else:
+                            dataset_kwargs["data"] = value_arr
+                            dataset_kwargs["compression"] = "gzip"
+                    handle.create_dataset(name, **dataset_kwargs)
                 safe_metadata = self._sanitize_metadata(metadata)
                 if safe_metadata:
                     handle.attrs["metadata_json"] = json.dumps(safe_metadata)
@@ -386,6 +390,7 @@ class Benchmark:
                 "units": leadfield_data.sensor_units,
                 "unitmult": leadfield_data.sensor_unitmult,
             },
+            "Q_basis": leadfield_data.Q_basis,
             "x": x,
             "x_active_indices": x_active_indices,
             "y_clean": y_clean,
@@ -431,7 +436,6 @@ class Benchmark:
         noise_params = dict(noise_params)
         solver_name = getattr(self.solver, "__name__", str(self.solver))
         orientation_type = data_params.get("orientation_type")
-        n_orient = 1 if orientation_type == "fixed" else 3
         solver_params['fwd_path'] = get_data_path() / '1284src_fwd' / data_params['subject']
 
         # Format human-friendly, 1-based progress counters and avoid division-by-zero
@@ -514,6 +518,17 @@ class Benchmark:
             noise_eta = prepared_data["noise_eta"]
             source_units = prepared_data["source_units"]
             source_unitmult = prepared_data["source_unitmult"]
+            
+            n_times = x.shape[-1]
+            
+            if orientation_type == "fixed":
+                n_orient = 1
+            else:
+                if x.ndim != 3:
+                    raise ValueError(
+                        f"Free-orientation simulations must have shape (N, comps, T); got {x.shape}"
+                    )
+                n_orient = x.shape[1]
 
             tmin = self.source_simulator.ERP_config['tmin']
             stim_onset = self.source_simulator.ERP_config['stim_onset']
@@ -597,7 +612,9 @@ class Benchmark:
             source_estimator.fit(L, y_noisy)
             solver_output = source_estimator.predict(y=y_noisy)
 
-            x_hat = solver_output.get("posterior_mean")
+            x_hat = solver_output.get("posterior_mean_reshaped")
+            if x_hat is None:
+                x_hat = solver_output.get("posterior_mean")
             x_hat_active_indices = solver_output.get("active_indices")
             posterior_cov = solver_output.get("posterior_cov")
             noise_var = solver_output.get("noise_var")
@@ -646,6 +663,14 @@ class Benchmark:
             if self.save_posterior_stats:
                 posterior_base = self.posterior_dir if self.posterior_dir is not None else Path(experiment_dir)
                 summary_filename = f"posterior_summary_run{global_run_id:08d}_seed{seed}.h5"
+
+                summary_arrays = {
+                    "x_true": x,
+                    "x_hat": x_hat,
+                    "posterior_cov": posterior_cov,
+                    "Q_basis": np.asarray(prepared_data.get("Q_basis"), dtype=float),
+                }
+
                 summary_metadata = {
                     "global_run_id": global_run_id,
                     "run_id": run_in_config,
@@ -656,16 +681,20 @@ class Benchmark:
                     "orientation_type": orientation_type,
                     "nnz": data_params.get("nnz"),
                     "alpha_SNR": data_params.get("alpha_SNR"),
+                    "n_sources": n_sources,
+                    "n_times": n_times,
                     "seed": seed,
                     "experiment_dir": Path(experiment_dir).as_posix(),
                     "posterior_dir": Path(posterior_base).as_posix(),
                     "posterior_filename": summary_filename,
+                    "sensor_kind": sensor_kind,
+                    "coil_type": sensor_coil_type,
+                    "sensor_units": sensor_units,
+                    "sensor_unitmult": sensor_unitmult,
                 }
                 summary_path = self._persist_posterior_summary(
                     experiment_dir=experiment_dir,
-                    x_true_avg=x,
-                    x_hat_avg=x_hat,
-                    posterior_cov=posterior_cov,
+                    datasets=summary_arrays,
                     metadata=summary_metadata,
                     posterior_dir=posterior_base,
                     filename=summary_filename,
