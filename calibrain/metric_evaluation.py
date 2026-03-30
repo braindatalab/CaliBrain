@@ -1,65 +1,180 @@
-from venv import logger
+import logging
+from typing import Optional, Dict, Any
+
 import numpy as np
-import pandas as pd
-import logging # Import logging
-import numpy as np
-from mne.io.constants import FIFF
-from scipy.spatial.distance import cdist
-from mne import read_forward_solution, convert_forward_solution
-from ot import emd2  # Earth Mover's Distance (Wasserstein-2)
-from mne.inverse_sparse.mxne_inverse import _make_sparse_stc
-from sklearn.metrics import jaccard_score, mean_squared_error, f1_score
 
-DEFAULT_CALIBRATION_METRICS = (
-    "mean_calibration_error",
-    "max_underconfidence_deviation",
-    "max_overconfidence_deviation",
-    "mean_absolute_deviation",
-    "mean_signed_deviation",
-)
+try:
+    from scipy.spatial.distance import cdist
+except Exception:
+    cdist = None
 
-DEFAULT_EVALUATION_METRICS = (
-    "mean_posterior_std",
-    "emd",
-    "jaccard_error",
-    "mse",
-    "euclidean_distance",
-    "f1",
-    "accuracy",
-)
+try:
+    from ot import emd2
+except Exception:
+    emd2 = None
 
+
+# =============================================================================
+# Helpers
+# =============================================================================
+def lift_reduced_sources_to_3d(a_red: np.ndarray, Q_basis: np.ndarray) -> np.ndarray:
+    """
+    Lift reduced coordinates back to the retained local 3D source basis.
+
+    Parameters
+    ----------
+    a_red : (N, k, T)
+    Q_basis : (N, 3, k)
+
+    Returns
+    -------
+    x_3d : (N, 3, T)
+    """
+    a_red = np.asarray(a_red, dtype=float)
+    Q_basis = np.asarray(Q_basis, dtype=float)
+
+    if a_red.ndim != 3:
+        raise ValueError(f"Expected a_red with shape (N, k, T). Got {a_red.shape}")
+    if Q_basis.ndim != 3:
+        raise ValueError(f"Expected Q_basis with shape (N, 3, k). Got {Q_basis.shape}")
+    if a_red.shape[0] != Q_basis.shape[0]:
+        raise ValueError("Mismatch in number of sources between a_red and Q_basis")
+    if a_red.shape[1] != Q_basis.shape[2]:
+        raise ValueError("Mismatch in reduced dimension k between a_red and Q_basis")
+
+    return np.einsum("nok,nkt->not", Q_basis, a_red)
+
+
+def get_subset_source_rr(
+    lf_dict: Dict[str, Any],
+    *,
+    to_mm: bool = False,
+) -> np.ndarray:
+    """
+    Get subset-aligned source coordinates for EMD and other source-space metrics.
+
+    Parameters
+    ----------
+    lf_dict : dict
+        Output of extract_subset_leadfield(...), containing:
+          - "fwd"
+          - "subset_idx"
+
+    to_mm : bool
+        If True, return coordinates in millimeters.
+        Otherwise return coordinates in meters (MNE default).
+
+    Returns
+    -------
+    coords_subset : ndarray, shape (N, 3)
+        Source coordinates aligned exactly with lf_dict["subset_idx"] and therefore
+        with the source ordering used in L_flat and L_block.
+
+    Notes
+    -----
+    - This helper uses the used-source ordering in the forward solution:
+          [left hemisphere used sources, right hemisphere used sources]
+    - This matches how subset_idx is constructed inside extract_subset_leadfield(...).
+    - The same helper works for fixed, free_eeg, and free_meg, because subset_idx
+      is source-level, not coefficient-level.
+    """
+    if "fwd" not in lf_dict:
+        raise ValueError('lf_dict must contain key "fwd".')
+    if "subset_idx" not in lf_dict:
+        raise ValueError('lf_dict must contain key "subset_idx".')
+
+    fwd = lf_dict["fwd"]
+    subset_idx = np.asarray(lf_dict["subset_idx"], dtype=int)
+
+    src = fwd["src"]
+    if len(src) != 2:
+        raise ValueError("Expected a two-hemisphere source space in fwd['src'].")
+
+    rr_lh = np.asarray(src[0]["rr"][src[0]["vertno"]], dtype=float)
+    rr_rh = np.asarray(src[1]["rr"][src[1]["vertno"]], dtype=float)
+    rr_used = np.vstack([rr_lh, rr_rh])
+
+    if np.any(subset_idx < 0) or np.any(subset_idx >= rr_used.shape[0]):
+        raise ValueError(
+            f"subset_idx contains out-of-range entries for used-source coordinates. "
+            f"Valid range is [0, {rr_used.shape[0] - 1}]."
+        )
+
+    coords_subset = rr_used[subset_idx]
+
+    if to_mm:
+        coords_subset = 1000.0 * coords_subset
+
+    return coords_subset
+
+
+# =============================================================================
+# MetricEvaluator
+# =============================================================================
 class MetricEvaluator:
-    def __init__(
-        self,
-        nominal_coverages: np.ndarray = None,
-        evaluation_metrics: list[str] | None = None,
-        calibration_metrics: list[str] | tuple[str, ...] | None = None,
-        logger: logging.Logger = None,
-    ):
-        """
-        Initialize the MetricEvaluator with confidence levels, metrics, and a logger.
+    """
+    Evaluator aligned with the updated UncertaintyEstimator.
 
-        Parameters
-        ----------
-        nominal_coverages : np.ndarray
-            Nominal confidence levels (c) - what we expect theoretically.
-        evaluation_metrics : list[str], optional
-            List of metric names (method names) to evaluate (non-calibration).
-        calibration_metrics : list[str], optional
-            Names of metrics that should be treated as calibration-specific.
-        logger : logging.Logger, optional
-            Logger instance for logging debug and error messages.
-        """
-        self.nominal_coverages = nominal_coverages
-        self.logger = logger
+    Supported settings
+    ------------------
+    - fixed
+    - eeg_free
+    - meg_free
 
-        if evaluation_metrics is None:
-            evaluation_metrics = DEFAULT_EVALUATION_METRICS
-        self.evaluation_metrics = tuple(evaluation_metrics)
+    Supported modes
+    ---------------
+    - pointwise
+    - aggregated
 
-        if calibration_metrics is None:
-            calibration_metrics = DEFAULT_CALIBRATION_METRICS
-        self.calibration_metrics = tuple(calibration_metrics)
+    Conventions
+    -----------
+    1) fixed:
+       x_true, x_hat have shape (N,T)
+
+    2) eeg_free:
+       x_true, x_hat have shape (N,3,T)
+       error metrics use amplitude representation ||x_i(t)||_2
+
+    3) meg_free:
+       x_true is 3D truth in the retained local 3D basis, shape (N,3,T)
+       x_hat is reduced 2D posterior mean, shape (N,2,T) or flat (2N,T)
+       posterior covariance is reduced 2D, shape (2N,2N)
+       error metrics use reduced-coordinate amplitude representation after
+       projecting truth to 2D via the same V_tan basis used by the inverse
+
+    Notes
+    -----
+    - Aggregated mode always means time-average.
+    - EMD expects coords already aligned with the source subset being evaluated.
+    - Calibration metrics are:
+        * max_underconfidence_deviation
+        * max_overconfidence_deviation
+        * mean_absolute_deviation
+        * mean_signed_deviation
+    - For MEG, pass V_tan = lf_free_meg["Q_basis"] whenever possible to avoid
+      basis mismatches.
+    """
+
+    def __init__(self, ue: "UncertaintyEstimator", logger: Optional[logging.Logger] = None):
+        self.ue = ue
+        self.logger = logger or logging.getLogger(__name__)
+
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _check_setting(setting: str) -> str:
+        setting = (setting or "").lower().strip()
+        if setting not in {"fixed", "eeg_free", "meg_free"}:
+            raise ValueError("setting must be one of: 'fixed', 'eeg_free', 'meg_free'.")
+        return setting
+
+    @staticmethod
+    def _check_mode(mode: str) -> str:
+        mode = (mode or "").lower().strip()
+        if mode not in {"pointwise", "aggregated"}:
+            raise ValueError("mode must be one of: 'pointwise', 'aggregated'.")
+        return mode
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -78,449 +193,894 @@ class MetricEvaluator:
         if not hasattr(self, "calibration_metrics") or self.calibration_metrics is None:
             self.calibration_metrics = DEFAULT_CALIBRATION_METRICS
 
-    # Calibration curve metrics
-    def mean_calibration_error(self, empirical_coverages, **kwargs):
-        """Calculate the area under the curve (AUC) deviation, which measures the average calibration error.
-        Parameters
-        ----------
-        empirical_coverages : np.ndarray
-            Empirical coverage values.
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-            
-        Returns
-        -------
-        float
-            The AUC deviation value.
-        """
-        delta_c = np.diff(self.nominal_coverages, prepend=self.nominal_coverages[0])
-        abs_dev = np.abs(empirical_coverages - self.nominal_coverages)
-        return np.sum(abs_dev * delta_c)
+    @staticmethod
+    def _reshape_meg_mean_if_needed(x_hat_meg: np.ndarray, N: int, T: int) -> np.ndarray:
+        x_hat_meg = np.asarray(x_hat_meg, dtype=float)
+        if x_hat_meg.ndim == 3:
+            if x_hat_meg.shape != (N, 2, T):
+                raise ValueError(f"x_hat for meg_free must be (N,2,T); got {x_hat_meg.shape}")
+            return x_hat_meg
+        if x_hat_meg.ndim == 2:
+            if x_hat_meg.shape != (2 * N, T):
+                raise ValueError(f"x_hat for meg_free flat form must be (2N,T); got {x_hat_meg.shape}")
+            return x_hat_meg.reshape(N, 2, T)
+        raise ValueError("x_hat for meg_free must have shape (N,2,T) or (2N,T).")
 
-    def max_underconfidence_deviation(self, empirical_coverages, **kwargs):
-        """
-        Calculate the maximum positive deviation (MUD) from the confidence levels ().
-        Parameters:
-        
-        MUD = max_i(ĉ_i - c_i)
-        
-        Represents the largest observed deviation due to underconfidence.
-        Identifies the most conservative confidence level.        
-        ----------
-        empirical_coverages : np.ndarray
-            Empirical coverage values.
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-        Returns
-        -------
-        float
-            The maximum positive deviation value.
-        """
-        deviation = empirical_coverages - self.nominal_coverages
-        return np.max(deviation)
+    @staticmethod
+    def _cov_blocks_from_full(posterior_uncert: np.ndarray, block_dim: int) -> np.ndarray:
+        posterior_uncert = np.asarray(posterior_uncert, dtype=float)
 
-    def max_overconfidence_deviation(self, empirical_coverages, **kwargs):
-        """
-        Calculate the maximum negative deviation from the confidence levels:
-        
-        MOD = -min_i(ĉ_i - c_i)
-        
-        It is Negated Minimal Deviation and represents the largest observed deviation due to overconfidence.
-        Identifies the most overconfident confidence level.        
-        Parameters
-        ----------
-        empirical_coverages : np.ndarray
-            Empirical coverage values.
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-        Returns
-        -------
-        float
-            The maximum negative deviation value.
-        """
-        deviation = empirical_coverages - self.nominal_coverages
-        return -np.min(deviation) #TODO: check whether we need the minus here!
+        if posterior_uncert.ndim == 3:
+            if posterior_uncert.shape[1:] != (block_dim, block_dim):
+                raise ValueError(
+                    f"Block covariance form must be (N,{block_dim},{block_dim}); "
+                    f"got {posterior_uncert.shape}"
+                )
+            return posterior_uncert
 
-    def mean_absolute_deviation(self, empirical_coverages, **kwargs):
-        """
-        Calculate the mean absolute deviation from the confidence levels.
-        
-        MAD = (1/K) * Σ_{i=1}^{K} |ĉ_i - c_i|
-        
-        Measures the average magnitude of deviation between empirical and nominal coverage.
-        Lower values indicate better overall calibration.
-        
-        ----------
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-        Returns
-        -------
-        float
-            The maximum absolute deviation value.
-        """
-        deviation = empirical_coverages - self.nominal_coverages
-        return np.mean(np.abs(deviation))
+        if posterior_uncert.ndim == 2:
+            M, K = posterior_uncert.shape
+            if M != K or M % block_dim != 0:
+                raise ValueError(
+                    f"Full covariance must be square with size multiple of {block_dim}; "
+                    f"got {posterior_uncert.shape}"
+                )
+            N = M // block_dim
+            blocks = np.zeros((N, block_dim, block_dim), dtype=float)
+            for i in range(N):
+                blocks[i] = posterior_uncert[
+                    block_dim * i:block_dim * i + block_dim,
+                    block_dim * i:block_dim * i + block_dim,
+                ]
+            return blocks
 
-    def mean_signed_deviation(self, empirical_coverages, **kwargs):
-        """
-        Calculate the mean signed deviation from the confidence levels.
-        Mean Signed Deviation (MSD)
-        
-        MSD = (1/K) * Σ_{i=1}^{K} (ĉ_i - c_i)
-        
-        Captures directional bias in calibration.
-        - Positive values: systematic underconfidence (intervals are too wide)
-        - Negative values: systematic overconfidence (intervals are too narrow)   
-        ----------
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations:
-            - 'empirical_coverages': np.ndarray, empirical coverage values.
-        Returns
-        -------
-        float
-            The mean signed deviation value.
-        """
-        deviation = empirical_coverages - self.nominal_coverages
-        return np.mean(deviation)
+        raise ValueError("posterior_uncert must be either full covariance or block covariance.")
 
-    def mean_posterior_std(self, posterior_var, **kwargs):
-        """
-        Calculate the mean posterior standard deviation across all sources.
-        
-        This provides a single-number summary of the overall uncertainty level.
-        Lower values indicate more confident estimates on average.
-        
-        Parameters
-        ----------
-        posterior_var : np.ndarray
-            Posterior variance vector of shape (n_sources,).
-        kwargs : dict
-            Additional keyword arguments that may be needed for metric calculations
-        Returns
-        -------
-        float
-            The mean posterior standard deviation.
-        """
-        posterior_std = np.sqrt(posterior_var).reshape(-1, 1)
-        # If a mask is needed, it should be an attribute of self, e.g., self.active_mask
-        # For now, calculating mean over all available std values.
-        # if hasattr(self, 'active_mask') and self.active_mask is not None:
-        #     return {"mean_posterior_std": np.mean(posterior_std[self.active_mask])}
-        return np.mean(posterior_std)
+    @staticmethod
+    def _fixed_variance_from_uncert(posterior_uncert: np.ndarray) -> np.ndarray:
+        posterior_uncert = np.asarray(posterior_uncert, dtype=float)
+        if posterior_uncert.ndim == 1:
+            return np.maximum(posterior_uncert, 0.0)
+        if posterior_uncert.ndim == 2:
+            if posterior_uncert.shape[0] != posterior_uncert.shape[1]:
+                raise ValueError("Fixed posterior covariance must be square.")
+            return np.maximum(np.diag(posterior_uncert), 0.0)
+        raise ValueError("For fixed setting, posterior_uncert must be (N,) or (N,N).")
 
+    def _get_meg_truth_2d(
+        self,
+        x_true_meg_3d: np.ndarray,
+        *,
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        x_true_meg_3d = np.asarray(x_true_meg_3d, dtype=float)
+        if x_true_meg_3d.ndim != 3 or x_true_meg_3d.shape[1] != 3:
+            raise ValueError(f"x_true for meg_free must be (N,3,T); got {x_true_meg_3d.shape}")
 
-    def emd(self, x, x_hat, orientation_type, subject, fwd_path, **kwargs):
-        """
-        Compute Earth Mover's Distance (EMD) between true and estimated source activations.
-        Adapted from BSI-ZOO
-        Parameters:
-        - x : (n_sources, n_times) or (n_sources, 3, n_times)
-            Ground truth source time courses.
-        - x_hat : same shape as x
-            Estimated source time courses.
-        - orientation_type : str
-            'fixed' or 'free' for orientation modeling.
-        - subject : str
-            Subject ID used to locate the forward model.
+        N = x_true_meg_3d.shape[0]
 
-        Returns:
-        - float
-            Earth Mover's Distance between normalized source distributions.
-        """
-        if orientation_type == "fixed":
-            temp_true = np.linalg.norm(x, axis=1)
-            a_mask = temp_true != 0
-            a = temp_true[a_mask]
+        if V_tan is None:
+            if L_free_Mx3N is None:
+                raise ValueError("Provide either V_tan or L_free_Mx3N for meg_free.")
+            V_tan = self.ue.precompute_meg_tangent_bases_svd(L_free_Mx3N)
 
-            temp_est = np.linalg.norm(x_hat, axis=1)
-            b_mask = temp_est != 0
-            b = temp_est[b_mask]
-            
-        elif orientation_type == "free":
-            temp_true = np.linalg.norm(x, axis=2)
-            temp_true = np.linalg.norm(temp_true, axis=1)
-            a_mask = temp_true != 0
-            a = temp_true[a_mask]
+        V_tan = np.asarray(V_tan, dtype=float)
+        if V_tan.shape != (N, 3, 2):
+            raise ValueError(f"V_tan must be (N,3,2); got {V_tan.shape}")
 
-            temp_est = np.linalg.norm(x_hat, axis=2)
-            temp_est = np.linalg.norm(temp_est, axis=1)
-            b_mask = temp_est != 0
-            b = temp_est[b_mask]
-        else:
-            raise ValueError(f"Unknown orientation_type: {orientation_type}")
+        return self.ue.project_meg_3d_to_2d(x_true_meg_3d, V_tan)
 
-        # Handle edge cases
-        if len(a) == 0 or len(b) == 0:
-            self.logger.warning("No active sources found for EMD computation")
-            return np.inf
+    @staticmethod
+    def calibration_metrics_4(nominal: np.ndarray, empirical: np.ndarray) -> Dict[str, float]:
+        nominal = np.asarray(nominal, dtype=float)
+        empirical = np.asarray(empirical, dtype=float)
 
-        # Load forward solution and extract source locations
-        fwd = read_forward_solution(f"{fwd_path}-fwd.fif")
-        fwd = convert_forward_solution(fwd, force_fixed=True)
-        src = fwd["src"]
+        dev = empirical - nominal
+        under = np.maximum(nominal - empirical, 0.0)
+        over = np.maximum(empirical - nominal, 0.0)
 
-        # Create sparse source time courses
-        stc_a = _make_sparse_stc(a[:, None], a_mask, fwd, tmin=1, tstep=1)
-        stc_b = _make_sparse_stc(b[:, None], b_mask, fwd, tmin=1, tstep=1)
+        return {
+            "max_underconfidence_deviation": float(np.max(under)),
+            "max_overconfidence_deviation": float(np.max(over)),
+            "mean_absolute_deviation": float(np.mean(np.abs(dev))),
+            "mean_signed_deviation": float(np.mean(dev)),
+        }
 
-        # Extract source coordinates
-        rr_a = np.r_[src[0]["rr"][stc_a.lh_vertno], src[1]["rr"][stc_a.rh_vertno]]
-        rr_b = np.r_[src[0]["rr"][stc_b.lh_vertno], src[1]["rr"][stc_b.rh_vertno]]
-        
-        # Compute distance matrix between source locations
-        M = cdist(rr_a, rr_b, metric="euclidean")
+    # ------------------------------------------------------------------
+    # Signal extraction for error metrics
+    # ------------------------------------------------------------------
+    def _signals_for_error_metrics(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        setting: str,
+        mode: str,
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> Dict[str, np.ndarray]:
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
 
-        # Normalize amplitudes to form probability distributions
-        a_norm = a / a.sum()
-        b_norm = b / b.sum()
+        if setting == "fixed":
+            x_true = np.asarray(x_true, dtype=float)
+            x_hat = np.asarray(x_hat, dtype=float)
 
-        # Compute Earth Mover's Distance
-        return emd2(a_norm, b_norm, M)
+            if x_true.ndim != 2 or x_hat.ndim != 2 or x_true.shape != x_hat.shape:
+                raise ValueError("For fixed, x_true and x_hat must both be (N,T).")
 
-    def jaccard_error(self, x, x_hat, orientation_type=None, **kwargs):
-        """
-        TODO: To be checked!
-        Calculate Jaccard error between true and estimated active source sets.
-        
-        Parameters
-        ----------
-        x : np.ndarray
-            True source activations
-        x_hat : np.ndarray  
-            Estimated source activations
-        orientation_type : str, optional
-            'fixed' or 'free' for orientation modeling
-        **kwargs : dict
-            Additional arguments
-            
-        Returns
-        -------
-        float
-            Jaccard error (1 - Jaccard index) between active source sets
-        """
-        # Convert continuous activations to binary (active/inactive)
-        if orientation_type == "fixed":
-            # For fixed orientation: check if source amplitude > threshold
-            x_binary = (np.linalg.norm(x, axis=1) > 1e-10).astype(int)
-            x_hat_binary = (np.linalg.norm(x_hat, axis=1) > 1e-10).astype(int)
-        elif orientation_type == "free":
-            # For free orientation: check if source amplitude > threshold
-            x_binary = (np.linalg.norm(np.linalg.norm(x, axis=2), axis=1) > 1e-10).astype(int)
-            x_hat_binary = (np.linalg.norm(np.linalg.norm(x_hat, axis=2), axis=1) > 1e-10).astype(int)
-        
-        # Compute Jaccard score for binary arrays
-        jaccard_score_value = jaccard_score(x_binary, x_hat_binary, average='binary')
-        
-        return 1 - jaccard_score_value  # Convert to error (lower is better)
+            if mode == "pointwise":
+                return {"truth_signal": x_true, "est_signal": x_hat}
 
-    def mse(self, x, x_hat, orientation_type, **kwargs):
-        if orientation_type == "free":
-            x = np.linalg.norm(x, axis=2)
-            x_hat = np.linalg.norm(x_hat, axis=2)
+            x_true_agg = np.mean(x_true, axis=1)
+            x_hat_agg = np.mean(x_hat, axis=1)
+            return {"truth_signal": x_true_agg, "est_signal": x_hat_agg}
 
-        return mean_squared_error(x, x_hat)
+        if setting == "eeg_free":
+            x_true = np.asarray(x_true, dtype=float)
+            x_hat = np.asarray(x_hat, dtype=float)
 
-    def _get_active_nnz(self, x, x_hat, orientation_type, subject, fwd_path, nnz):
-        "adapted from BSI-ZOO"
-        fwd = read_forward_solution(f"{'1284src_' + fwd_path}-fwd.fif")
+            if x_true.ndim != 3 or x_true.shape[1] != 3:
+                raise ValueError(f"For eeg_free, x_true must be (N,3,T); got {x_true.shape}")
+            if x_hat.shape != x_true.shape:
+                raise ValueError("For eeg_free, x_hat must match x_true shape (N,3,T).")
 
-        if orientation_type == "fixed":
-            fwd = convert_forward_solution(fwd, force_fixed=True)
+            if mode == "pointwise":
+                amp_true = np.linalg.norm(x_true, axis=1)
+                amp_hat = np.linalg.norm(x_hat, axis=1)
+                return {"truth_signal": amp_true, "est_signal": amp_hat}
 
-            active_set = np.linalg.norm(x, axis=1) != 0
+            x_true_agg = np.mean(x_true, axis=2)
+            x_hat_agg = np.mean(x_hat, axis=2)
+            amp_true_agg = np.linalg.norm(x_true_agg, axis=1)
+            amp_hat_agg = np.linalg.norm(x_hat_agg, axis=1)
+            return {"truth_signal": amp_true_agg, "est_signal": amp_hat_agg}
 
-            # check if no vertices are estimated
-            temp = np.linalg.norm(x_hat, axis=1)
-            if len(np.unique(temp)) == 1:
-                print("No vertices estimated!")
+        # meg_free
+        x_true = np.asarray(x_true, dtype=float)
+        if x_true.ndim != 3 or x_true.shape[1] != 3:
+            raise ValueError(f"For meg_free, x_true must be (N,3,T); got {x_true.shape}")
 
-            temp_ = np.partition(-temp, nnz)
-            max_temp = -temp_[:nnz]  # get n(=nnz) max amplitudes
-
-            # remove 0 from list incase less vertices than nnz were estimated
-            max_temp = np.delete(max_temp, np.where(max_temp == 0.0))
-            active_set_hat = np.array(list(map(max_temp.__contains__, temp)))
-
-            stc = _make_sparse_stc(
-                x[active_set], active_set, fwd, tmin=1, tstep=1
-            )  # ground truth
-            stc_hat = _make_sparse_stc(
-                x_hat[active_set_hat], active_set_hat, fwd, tmin=1, tstep=1
-            )  # estimate
-
-        elif orientation_type == "free":
-            fwd = convert_forward_solution(fwd)
-
-            # temp = np.linalg.norm
-            active_set = np.linalg.norm(x, axis=2) != 0
-
-            temp = np.linalg.norm(x_hat, axis=2)
-            temp = np.linalg.norm(temp, axis=1)
-            temp_ = np.partition(-temp, nnz)
-            max_temp = -temp_[:nnz]  # get n(=nnz) max amplitudes
-            max_temp = np.delete(max_temp, np.where(max_temp == 0.0))
-            active_set_hat = np.array(list(map(max_temp.__contains__, temp)))
-            active_set_hat = np.repeat(active_set_hat, 3).reshape(
-                active_set_hat.shape[0], -1
-            )
-
-            stc = _make_sparse_stc(
-                x[active_set], active_set, fwd, tmin=1, tstep=1
-            )  # ground truth
-            stc_hat = _make_sparse_stc(
-                x_hat[active_set_hat], active_set_hat, fwd, tmin=1, tstep=1
-            )  # estimate
-
-        return stc, stc_hat, active_set, active_set_hat, fwd
-    
-    def euclidean_distance(self, x, x_hat, orientation_type, subject, nnz, fwd_path, **kwargs):
-        "adapted from BSI-ZOO"
-        stc, stc_hat, _, _, fwd = self._get_active_nnz(x, x_hat, orientation_type, subject, fwd_path, nnz)
-
-        # euclidean distance check
-        lh_coordinates = fwd["src"][0]["rr"][stc.lh_vertno]
-        lh_coordinates_hat = fwd["src"][0]["rr"][stc_hat.lh_vertno]
-        rh_coordinates = fwd["src"][1]["rr"][stc.rh_vertno]
-        rh_coordinates_hat = fwd["src"][1]["rr"][stc_hat.rh_vertno]
-        coordinates = np.concatenate([lh_coordinates, rh_coordinates], axis=0)
-        coordinates_hat = np.concatenate([lh_coordinates_hat, rh_coordinates_hat], axis=0)
-        euclidean_distance = np.linalg.norm(
-            coordinates[: coordinates_hat.shape[0], :] - coordinates_hat, axis=1
+        N, _, T = x_true.shape
+        x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+        x_true_2d = self._get_meg_truth_2d(
+            x_true,
+            V_tan=V_tan,
+            L_free_Mx3N=L_free_Mx3N,
         )
 
-        return np.mean(euclidean_distance)
+        if mode == "pointwise":
+            amp_true = np.linalg.norm(x_true_2d, axis=1)
+            amp_hat = np.linalg.norm(x_hat_2d, axis=1)
+            return {"truth_signal": amp_true, "est_signal": amp_hat}
 
-    def f1(self, x, x_hat, orientation_type, **kwargs):
-        "adapted from BSI-ZOO"
-        if orientation_type == "fixed":
-            active_set = np.linalg.norm(x, axis=1) != 0
-            active_set_hat = np.linalg.norm(x_hat, axis=1) != 0
+        x_true_agg = np.mean(x_true_2d, axis=2)
+        x_hat_agg = np.mean(x_hat_2d, axis=2)
+        amp_true_agg = np.linalg.norm(x_true_agg, axis=1)
+        amp_hat_agg = np.linalg.norm(x_hat_agg, axis=1)
+        return {"truth_signal": amp_true_agg, "est_signal": amp_hat_agg}
 
-        elif orientation_type == "free":
-            temp = np.linalg.norm(x, axis=2)
-            active_set = np.linalg.norm(temp, axis=1) != 0
+    # ------------------------------------------------------------------
+    # Error metrics
+    # ------------------------------------------------------------------
+    def mse(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> float:
+        sig = self._signals_for_error_metrics(
+            x_true=x_true,
+            x_hat=x_hat,
+            setting=setting,
+            mode=mode,
+            V_tan=V_tan,
+            L_free_Mx3N=L_free_Mx3N,
+        )
+        d = sig["truth_signal"] - sig["est_signal"]
+        return float(np.mean(d * d))
 
-            temp = np.linalg.norm(x_hat, axis=2)
-            active_set_hat = np.linalg.norm(temp, axis=1) != 0
+    def mae(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> float:
+        sig = self._signals_for_error_metrics(
+            x_true=x_true,
+            x_hat=x_hat,
+            setting=setting,
+            mode=mode,
+            V_tan=V_tan,
+            L_free_Mx3N=L_free_Mx3N,
+        )
+        return float(np.mean(np.abs(sig["truth_signal"] - sig["est_signal"])))
 
-        return f1_score(active_set, active_set_hat)
+    def rmse(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> float:
+        return float(np.sqrt(self.mse(
+            x_true=x_true,
+            x_hat=x_hat,
+            setting=setting,
+            mode=mode,
+            V_tan=V_tan,
+            L_free_Mx3N=L_free_Mx3N,
+        )))
 
+    def rmae(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> float:
+        return float(np.sqrt(self.mae(
+            x_true=x_true,
+            x_hat=x_hat,
+            setting=setting,
+            mode=mode,
+            V_tan=V_tan,
+            L_free_Mx3N=L_free_Mx3N,
+        )))
 
-    def accuracy(self, x, x_hat, orientation_type, **kwargs):
-        """
-        Calculate accuracy between true and estimated active source sets.
-        
-        Accuracy = (TP + TN) / (TP + TN + FP + FN)
-        where:
-        - TP: True Positives (correctly identified active sources)
-        - TN: True Negatives (correctly identified inactive sources)  
-        - FP: False Positives (incorrectly identified as active)
-        - FN: False Negatives (missed active sources)
-        
-        Parameters
-        ----------
-        x : np.ndarray
-            True source activations (n_sources, n_times) or (n_sources, 3, n_times)
-        x_hat : np.ndarray  
-            Estimated source activations (same shape as x)
-        orientation_type : str
-            'fixed' or 'free' for orientation modeling
-        **kwargs : dict
-            Additional arguments
-            
-        Returns
-        -------
-        float
-            Accuracy score between 0.0 and 1.0 (higher is better)
-        """
-        # Convert continuous activations to binary (active/inactive)
-        if orientation_type == "fixed":
-            # For fixed orientation: check if source amplitude > threshold
-            true_active = (np.linalg.norm(x, axis=1) > 1e-10).astype(int)
-            pred_active = (np.linalg.norm(x_hat, axis=1) > 1e-10).astype(int)
-        elif orientation_type == "free":
-            # For free orientation: check if source amplitude > threshold
-            temp_true = np.linalg.norm(x, axis=2)
-            true_active = (np.linalg.norm(temp_true, axis=1) > 1e-10).astype(int)
-            
-            temp_pred = np.linalg.norm(x_hat, axis=2)
-            pred_active = (np.linalg.norm(temp_pred, axis=1) > 1e-10).astype(int)
+    # ------------------------------------------------------------------
+    # Posterior uncertainty summary
+    # ------------------------------------------------------------------
+    def mean_posterior_std(
+        self,
+        *,
+        posterior_uncert: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        n_times: Optional[int] = None,
+    ) -> float:
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
+
+        if setting == "fixed":
+            var = self._fixed_variance_from_uncert(posterior_uncert)
+            std = np.sqrt(np.maximum(var, 0.0))
+            if mode == "aggregated":
+                if n_times is None:
+                    raise ValueError("For aggregated mode, n_times must be provided.")
+                std = std / np.sqrt(float(n_times))
+            return float(np.mean(std))
+
+        if setting == "eeg_free":
+            blocks = self._cov_blocks_from_full(posterior_uncert, block_dim=3)
+            source_std = np.sqrt(np.maximum(np.trace(blocks, axis1=1, axis2=2) / 3.0, 0.0))
+            if mode == "aggregated":
+                if n_times is None:
+                    raise ValueError("For aggregated mode, n_times must be provided.")
+                source_std = source_std / np.sqrt(float(n_times))
+            return float(np.mean(source_std))
+
+        # meg_free
+        blocks = self._cov_blocks_from_full(posterior_uncert, block_dim=2)
+        source_std = np.sqrt(np.maximum(np.trace(blocks, axis1=1, axis2=2) / 2.0, 0.0))
+        if mode == "aggregated":
+            if n_times is None:
+                raise ValueError("For aggregated mode, n_times must be provided.")
+            source_std = source_std / np.sqrt(float(n_times))
+        return float(np.mean(source_std))
+
+    # ------------------------------------------------------------------
+    # EMD
+    # ------------------------------------------------------------------
+    def _source_mass_for_emd(
+        self,
+        *,
+        x: np.ndarray,
+        setting: str,
+        mode: str,
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+        is_truth: bool = True,
+    ) -> np.ndarray:
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
+
+        if setting == "fixed":
+            x = np.asarray(x, dtype=float)
+            if x.ndim != 2:
+                raise ValueError("For fixed, x must be (N,T).")
+            if mode == "pointwise":
+                return np.linalg.norm(x, axis=1)
+            return np.abs(np.mean(x, axis=1))
+
+        if setting == "eeg_free":
+            x = np.asarray(x, dtype=float)
+            if x.ndim != 3 or x.shape[1] != 3:
+                raise ValueError("For eeg_free, x must be (N,3,T).")
+            if mode == "pointwise":
+                amp = np.linalg.norm(x, axis=1)
+                return np.linalg.norm(amp, axis=1)
+            x_agg = np.mean(x, axis=2)
+            return np.linalg.norm(x_agg, axis=1)
+
+        # meg_free
+        if is_truth:
+            x_true_2d = self._get_meg_truth_2d(
+                x,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            )
+            if mode == "pointwise":
+                amp = np.linalg.norm(x_true_2d, axis=1)
+                return np.linalg.norm(amp, axis=1)
+            x_agg = np.mean(x_true_2d, axis=2)
+            return np.linalg.norm(x_agg, axis=1)
+
+        x = np.asarray(x, dtype=float)
+        if x.ndim != 3 or x.shape[1] != 2:
+            raise ValueError("For meg_free estimate, x must be (N,2,T).")
+        if mode == "pointwise":
+            amp = np.linalg.norm(x, axis=1)
+            return np.linalg.norm(amp, axis=1)
+        x_agg = np.mean(x, axis=2)
+        return np.linalg.norm(x_agg, axis=1)
+
+    def emd(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        coords: np.ndarray,
+        setting: str,
+        mode: str = "pointwise",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+        eps: float = 1e-12,
+    ) -> float:
+        if cdist is None or emd2 is None:
+            raise ImportError("EMD requires scipy.spatial.distance.cdist and POT (ot.emd2).")
+
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
+
+        coords = np.asarray(coords, dtype=float)
+        if coords.ndim != 2 or coords.shape[1] != 3:
+            raise ValueError("coords must be aligned subset coordinates with shape (N,3).")
+
+        if setting == "meg_free":
+            x_true = np.asarray(x_true, dtype=float)
+            if x_true.ndim != 3 or x_true.shape[1] != 3:
+                raise ValueError("For meg_free, x_true must be (N,3,T).")
+            N, _, T = x_true.shape
+            x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+            a = self._source_mass_for_emd(
+                x=x_true,
+                setting="meg_free",
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+                is_truth=True,
+            )
+            b = self._source_mass_for_emd(
+                x=x_hat_2d,
+                setting="meg_free",
+                mode=mode,
+                is_truth=False,
+            )
         else:
-            raise ValueError(f"Unknown orientation_type: {orientation_type}")
-        
-        # Calculate confusion matrix components
-        tp = np.sum((true_active == 1) & (pred_active == 1))  # True Positives
-        tn = np.sum((true_active == 0) & (pred_active == 0))  # True Negatives
-        fp = np.sum((true_active == 0) & (pred_active == 1))  # False Positives
-        fn = np.sum((true_active == 1) & (pred_active == 0))  # False Negatives
-        
-        # Calculate accuracy
-        total = tp + tn + fp + fn
-        if total == 0:
-            return 1.0  # Perfect accuracy when no sources exist
-        
-        accuracy_score = (tp + tn) / total
-        return accuracy_score
+            a = self._source_mass_for_emd(
+                x=x_true,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+                is_truth=True,
+            )
+            b = self._source_mass_for_emd(
+                x=x_hat,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+                is_truth=False,
+            )
 
-    # Evaluate metrics and return results as a dictionary (side-effect free)
-    def evaluate_metrics(self, which: str = "evaluation", **kwargs) -> dict:
-        """Evaluate configured metrics and return a dict mapping metric names to values.
+        if coords.shape[0] != a.shape[0] or coords.shape[0] != b.shape[0]:
+            raise ValueError(
+                f"coords must align with evaluated subset. "
+                f"Got coords.shape[0]={coords.shape[0]}, masses {a.shape[0]} and {b.shape[0]}"
+            )
 
-        Parameters
-        ----------
-        which : {"evaluation", "calibration", "all"}
-            Which set of metrics to evaluate.
-        kwargs : dict
-            Keyword arguments passed to metric methods (e.g., empirical_coverages, cov, x, x_hat, orientation_type, subject, fwd_path, nnz).
+        a_mask = a > eps
+        b_mask = b > eps
+        if not np.any(a_mask) or not np.any(b_mask):
+            self.logger.warning("EMD: empty active set in true or estimate -> returning inf.")
+            return float(np.inf)
 
-        Returns
-        -------
-        dict
-            Dictionary mapping metric names (or metric_name_error) to computed results.
-        """
-        results = {}
+        a_w = a[a_mask]
+        b_w = b[b_mask]
+        rr_a = coords[a_mask]
+        rr_b = coords[b_mask]
 
-        groups = {
-            "evaluation": self.evaluation_metrics,
-            "calibration": self.calibration_metrics,
-            "all": self.evaluation_metrics + self.calibration_metrics,
-        }
-        which = (which or "all").lower()
-        metric_names = groups.get(which)
+        M = cdist(rr_a, rr_b, metric="euclidean")
+        a_norm = a_w / np.sum(a_w)
+        b_norm = b_w / np.sum(b_w)
 
-        if not metric_names:
-            self.logger.warning("Unknown metric selection '%s'.", which)
-            return results
+        return float(emd2(a_norm, b_norm, M))
 
-        for metric_name_str in metric_names:
-            try:
-                if hasattr(self, metric_name_str):
-                    method = getattr(self, metric_name_str)
+    # ------------------------------------------------------------------
+    # Calibration
+    # ------------------------------------------------------------------
+    def calibration_curve(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        setting: str,
+        mode: str = "aggregated",
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+    ) -> Dict[str, Any]:
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
 
-                    if callable(method):
-                        self.logger.debug(f"Calling metric method: {metric_name_str}")
-                        result = method(**kwargs)
-                        results[metric_name_str] = result
-                    else:
-                        self.logger.error(
-                            f"Attribute '{metric_name_str}' found in {type(self).__name__} but it is not callable. Skipping."
-                        )
-                        results[f"{metric_name_str}_error"] = "Attribute not callable"
-                else:
-                    self.logger.error(
-                        f"Metric method '{metric_name_str}' not found in {type(self).__name__}. Skipping."
-                    )
-                    results[f"{metric_name_str}_error"] = "Method not found"
-
-            except Exception as e:
-                logger.error(
-                    f"Unexpected error evaluating metric method {metric_name_str} on '{type(self).__name__}': {e}",
-                    exc_info=True,
+        if setting == "fixed":
+            posterior_var = self._fixed_variance_from_uncert(posterior_uncert)
+            if mode == "pointwise":
+                curve = self.ue.calibration_curve_intervals_pointwise(
+                    x_true=x_true,
+                    x_hat=x_hat,
+                    posterior_var=posterior_var,
                 )
-                results[f"{metric_name_str}_error"] = f"Execution error: {str(e)}"
+            else:
+                curve = self.ue.calibration_curve_intervals_aggregated(
+                    x_true=x_true,
+                    x_hat=x_hat,
+                    posterior_var=posterior_var,
+                )
 
-        return results
+        elif setting == "eeg_free":
+            if mode == "pointwise":
+                curve = self.ue.calibration_curve_ellipsoid_eeg_free_pointwise(
+                    x_true=x_true,
+                    x_hat=x_hat,
+                    posterior_cov=posterior_uncert,
+                )
+            else:
+                curve = self.ue.calibration_curve_ellipsoid_eeg_free_aggregated(
+                    x_true=x_true,
+                    x_hat=x_hat,
+                    posterior_cov=posterior_uncert,
+                )
+
+        else:  # meg_free
+            x_true = np.asarray(x_true, dtype=float)
+            if x_true.ndim != 3 or x_true.shape[1] != 3:
+                raise ValueError(f"For meg_free, x_true must be (N,3,T); got {x_true.shape}")
+            N, _, T = x_true.shape
+            x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+
+            if mode == "pointwise":
+                curve = self.ue.calibration_curve_ellipse_meg_free_pointwise(
+                    x_true_3d=x_true,
+                    x_hat_2d=x_hat_2d,
+                    posterior_cov_2d=posterior_uncert,
+                    V_tan=V_tan,
+                    L_free_Mx3N=L_free_Mx3N,
+                )
+            else:
+                curve = self.ue.calibration_curve_ellipse_meg_free_aggregated(
+                    x_true_3d=x_true,
+                    x_hat_2d=x_hat_2d,
+                    posterior_cov_2d=posterior_uncert,
+                    V_tan=V_tan,
+                    L_free_Mx3N=L_free_Mx3N,
+                )
+
+        nominal = np.asarray(curve["nominal_coverages"], dtype=float)
+        empirical = np.asarray(curve["empirical_coverages"], dtype=float)
+
+        return {
+            "nominal": nominal,
+            "empirical": empirical,
+            "metrics_4": self.calibration_metrics_4(nominal, empirical),
+        }
+
+    # ------------------------------------------------------------------
+    # All metrics together
+    # ------------------------------------------------------------------
+    def evaluate_all(
+        self,
+        *,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        setting: str,
+        mode: str = "aggregated",
+        coords: Optional[np.ndarray] = None,
+        V_tan: Optional[np.ndarray] = None,
+        L_free_Mx3N: Optional[np.ndarray] = None,
+        compute_emd: bool = False,
+    ) -> Dict[str, Any]:
+        setting = self._check_setting(setting)
+        mode = self._check_mode(mode)
+
+        if mode == "aggregated":
+            if setting == "fixed":
+                n_times = np.asarray(x_true).shape[1]
+            else:
+                n_times = np.asarray(x_true).shape[2]
+        else:
+            n_times = None
+
+        out = {
+            "mse": self.mse(
+                x_true=x_true,
+                x_hat=x_hat,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            ),
+            "mae": self.mae(
+                x_true=x_true,
+                x_hat=x_hat,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            ),
+            "rmse": self.rmse(
+                x_true=x_true,
+                x_hat=x_hat,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            ),
+            "rmae": self.rmae(
+                x_true=x_true,
+                x_hat=x_hat,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            ),
+            "mean_posterior_std": self.mean_posterior_std(
+                posterior_uncert=posterior_uncert,
+                setting=setting,
+                mode=mode,
+                n_times=n_times,
+            ),
+            "calibration": self.calibration_curve(
+                x_true=x_true,
+                x_hat=x_hat,
+                posterior_uncert=posterior_uncert,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            ),
+        }
+
+        if compute_emd:
+            if coords is None:
+                raise ValueError("compute_emd=True requires subset-aligned coords with shape (N,3).")
+            out["emd"] = self.emd(
+                x_true=x_true,
+                x_hat=x_hat,
+                coords=coords,
+                setting=setting,
+                mode=mode,
+                V_tan=V_tan,
+                L_free_Mx3N=L_free_Mx3N,
+            )
+
+        return out
+
+
+# =============================================================================
+# Example helpers
+# =============================================================================
+def run_metric_example_fixed(
+    x_true_fixed,           # (N,T)
+    out_fixed,              # {"posterior_mean": (N,T), "posterior_cov": (N,N)}
+    coords_subset,          # (N,3)
+):
+    ue = UncertaintyEstimator()
+    ev = MetricEvaluator(ue)
+
+    x_true_fixed = np.asarray(x_true_fixed, dtype=float)
+    x_hat_fixed = np.asarray(out_fixed["posterior_mean"], dtype=float)
+    posterior_cov_fixed = np.asarray(out_fixed["posterior_cov"], dtype=float)
+    coords_subset = np.asarray(coords_subset, dtype=float)
+
+    res_fixed_point = ev.evaluate_all(
+        x_true=x_true_fixed,
+        x_hat=x_hat_fixed,
+        posterior_uncert=posterior_cov_fixed,
+        setting="fixed",
+        mode="pointwise",
+        coords=coords_subset,
+        compute_emd=True,
+    )
+
+    res_fixed_agg = ev.evaluate_all(
+        x_true=x_true_fixed,
+        x_hat=x_hat_fixed,
+        posterior_uncert=posterior_cov_fixed,
+        setting="fixed",
+        mode="aggregated",
+        coords=coords_subset,
+        compute_emd=True,
+    )
+
+    print("\n=== FIXED / POINTWISE ===")
+    print("MSE :", res_fixed_point["mse"])
+    print("MAE :", res_fixed_point["mae"])
+    print("RMSE:", res_fixed_point["rmse"])
+    print("RMAE:", res_fixed_point["rmae"])
+    print("Mean posterior std:", res_fixed_point["mean_posterior_std"])
+    print("EMD :", res_fixed_point["emd"])
+    print("Calibration metrics:", res_fixed_point["calibration"]["metrics_4"])
+
+    print("\n=== FIXED / AGGREGATED ===")
+    print("MSE :", res_fixed_agg["mse"])
+    print("MAE :", res_fixed_agg["mae"])
+    print("RMSE:", res_fixed_agg["rmse"])
+    print("RMAE:", res_fixed_agg["rmae"])
+    print("Mean posterior std:", res_fixed_agg["mean_posterior_std"])
+    print("EMD :", res_fixed_agg["emd"])
+    print("Calibration metrics:", res_fixed_agg["calibration"]["metrics_4"])
+
+    return {
+        "pointwise": res_fixed_point,
+        "aggregated": res_fixed_agg,
+    }
+
+
+def run_metric_example_meg(
+    a_true_meg_2d,          # (N,2,T)
+    Q_basis,                # (N,3,2)
+    out_meg,                # BMN / BMN_joint output for n_orient=2
+    coords_subset,          # (N,3)
+):
+    ue = UncertaintyEstimator()
+    ev = MetricEvaluator(ue)
+
+    a_true_meg_2d = np.asarray(a_true_meg_2d, dtype=float)
+    Q_basis = np.asarray(Q_basis, dtype=float)
+    coords_subset = np.asarray(coords_subset, dtype=float)
+
+    if a_true_meg_2d.ndim != 3 or a_true_meg_2d.shape[1] != 2:
+        raise ValueError(f"a_true_meg_2d must be (N,2,T); got {a_true_meg_2d.shape}")
+    if Q_basis.ndim != 3 or Q_basis.shape[1:] != (3, 2):
+        raise ValueError(f"Q_basis must be (N,3,2); got {Q_basis.shape}")
+
+    x_true_meg_3d = lift_reduced_sources_to_3d(a_true_meg_2d, Q_basis)
+
+    if "posterior_mean_reshaped" in out_meg:
+        x_hat_meg = np.asarray(out_meg["posterior_mean_reshaped"], dtype=float)
+    else:
+        x_hat_meg = np.asarray(out_meg["posterior_mean"], dtype=float)
+
+    posterior_cov_meg = np.asarray(out_meg["posterior_cov"], dtype=float)
+
+    res_meg_point = ev.evaluate_all(
+        x_true=x_true_meg_3d,
+        x_hat=x_hat_meg,
+        posterior_uncert=posterior_cov_meg,
+        setting="meg_free",
+        mode="pointwise",
+        coords=coords_subset,
+        V_tan=Q_basis,
+        compute_emd=True,
+    )
+
+    res_meg_agg = ev.evaluate_all(
+        x_true=x_true_meg_3d,
+        x_hat=x_hat_meg,
+        posterior_uncert=posterior_cov_meg,
+        setting="meg_free",
+        mode="aggregated",
+        coords=coords_subset,
+        V_tan=Q_basis,
+        compute_emd=True,
+    )
+
+    print("\n=== MEG FREE / POINTWISE ===")
+    print("MSE :", res_meg_point["mse"])
+    print("MAE :", res_meg_point["mae"])
+    print("RMSE:", res_meg_point["rmse"])
+    print("RMAE:", res_meg_point["rmae"])
+    print("Mean posterior std:", res_meg_point["mean_posterior_std"])
+    print("EMD :", res_meg_point["emd"])
+    print("Calibration metrics:", res_meg_point["calibration"]["metrics_4"])
+
+    print("\n=== MEG FREE / AGGREGATED ===")
+    print("MSE :", res_meg_agg["mse"])
+    print("MAE :", res_meg_agg["mae"])
+    print("RMSE:", res_meg_agg["rmse"])
+    print("RMAE:", res_meg_agg["rmae"])
+    print("Mean posterior std:", res_meg_agg["mean_posterior_std"])
+    print("EMD :", res_meg_agg["emd"])
+    print("Calibration metrics:", res_meg_agg["calibration"]["metrics_4"])
+
+    return {
+        "pointwise": res_meg_point,
+        "aggregated": res_meg_agg,
+    }
+
+
+# def run_metric_example_eeg(
+#     x_true_eeg_3d,         # (N,3,T)
+#     out_eeg,               # BMN / BMN_joint output for n_orient=3
+#     coords_subset,         # (N,3)
+# ):
+#     ue = UncertaintyEstimator()
+#     ev = MetricEvaluator(ue)
+#
+#     x_true_eeg_3d = np.asarray(x_true_eeg_3d, dtype=float)
+#     coords_subset = np.asarray(coords_subset, dtype=float)
+#
+#     if x_true_eeg_3d.ndim != 3 or x_true_eeg_3d.shape[1] != 3:
+#         raise ValueError(f"x_true_eeg_3d must be (N,3,T); got {x_true_eeg_3d.shape}")
+#
+#     N_eeg, _, T_eeg = x_true_eeg_3d.shape
+#
+#     if "posterior_mean_reshaped" in out_eeg:
+#         x_hat_eeg = np.asarray(out_eeg["posterior_mean_reshaped"], dtype=float)
+#     else:
+#         posterior_mean_eeg = np.asarray(out_eeg["posterior_mean"], dtype=float)
+#         if posterior_mean_eeg.shape != (3 * N_eeg, T_eeg):
+#             raise ValueError(
+#                 f'out_eeg["posterior_mean"] must be {(3 * N_eeg, T_eeg)}; '
+#                 f"got {posterior_mean_eeg.shape}"
+#             )
+#         x_hat_eeg = posterior_mean_eeg.reshape(N_eeg, 3, T_eeg)
+#
+#     posterior_cov_eeg = np.asarray(out_eeg["posterior_cov"], dtype=float)
+#
+#     res_eeg_point = ev.evaluate_all(
+#         x_true=x_true_eeg_3d,
+#         x_hat=x_hat_eeg,
+#         posterior_uncert=posterior_cov_eeg,
+#         setting="eeg_free",
+#         mode="pointwise",
+#         coords=coords_subset,
+#         compute_emd=True,
+#     )
+#
+#     res_eeg_agg = ev.evaluate_all(
+#         x_true=x_true_eeg_3d,
+#         x_hat=x_hat_eeg,
+#         posterior_uncert=posterior_cov_eeg,
+#         setting="eeg_free",
+#         mode="aggregated",
+#         coords=coords_subset,
+#         compute_emd=True,
+#     )
+#
+#     print("\n=== EEG FREE / POINTWISE ===")
+#     print("MSE :", res_eeg_point["mse"])
+#     print("MAE :", res_eeg_point["mae"])
+#     print("RMSE:", res_eeg_point["rmse"])
+#     print("RMAE:", res_eeg_point["rmae"])
+#     print("Mean posterior std:", res_eeg_point["mean_posterior_std"])
+#     print("EMD :", res_eeg_point["emd"])
+#     print("Calibration metrics:", res_eeg_point["calibration"]["metrics_4"])
+#
+#     print("\n=== EEG FREE / AGGREGATED ===")
+#     print("MSE :", res_eeg_agg["mse"])
+#     print("MAE :", res_eeg_agg["mae"])
+#     print("RMSE:", res_eeg_agg["rmse"])
+#     print("RMAE:", res_eeg_agg["rmae"])
+#     print("Mean posterior std:", res_eeg_agg["mean_posterior_std"])
+#     print("EMD :", res_eeg_agg["emd"])
+#     print("Calibration metrics:", res_eeg_agg["calibration"]["metrics_4"])
+#
+#     return {
+#         "pointwise": res_eeg_point,
+#         "aggregated": res_eeg_agg,
+#     }
+
+
+# =============================================================================
+# Example usage
+# =============================================================================
+
+# ------------------------------------------------------------------
+# Subset-aligned coordinates for EMD
+# ------------------------------------------------------------------
+coords_subset_fixed_meg = get_subset_source_rr(lf_fixed_meg)
+coords_subset_free_meg = get_subset_source_rr(lf_free_meg)
+
+# coords_subset_fixed_eeg = get_subset_source_rr(lf_fixed_eeg)
+# coords_subset_free_eeg = get_subset_source_rr(lf_free_eeg)
+
+# ------------------------------------------------------------------
+# MEG fixed -- BMN
+# ------------------------------------------------------------------
+results_fixed_meg_bmn = run_metric_example_fixed(
+    x_true_fixed=x_fixed_meg,
+    out_fixed=out_fixed_bmn,
+    coords_subset=coords_subset_fixed_meg,
+)
+
+# ------------------------------------------------------------------
+# MEG fixed -- BMN_joint
+# ------------------------------------------------------------------
+results_fixed_meg_joint = run_metric_example_fixed(
+    x_true_fixed=x_fixed_meg,
+    out_fixed=out_fixed_joint,
+    coords_subset=coords_subset_fixed_meg,
+)
+
+# ------------------------------------------------------------------
+# MEG free reduced rank-2 -- BMN
+# ------------------------------------------------------------------
+results_meg_bmn = run_metric_example_meg(
+    a_true_meg_2d=a_free_meg,
+    Q_basis=lf_free_meg["Q_basis"],
+    out_meg=out_free_meg_bmn,
+    coords_subset=coords_subset_free_meg,
+)
+
+# ------------------------------------------------------------------
+# MEG free reduced rank-2 -- BMN_joint
+# ------------------------------------------------------------------
+results_meg_joint = run_metric_example_meg(
+    a_true_meg_2d=a_free_meg,
+    Q_basis=lf_free_meg["Q_basis"],
+    out_meg=out_free_meg_joint,
+    coords_subset=coords_subset_free_meg,
+)
+
+# ------------------------------------------------------------------
+# EEG fixed -- BMN / BMN_joint
+# ------------------------------------------------------------------
+# results_fixed_eeg_bmn = run_metric_example_fixed(
+#     x_true_fixed=x_fixed_eeg,
+#     out_fixed=out_fixed_eeg_bmn,
+#     coords_subset=coords_subset_fixed_eeg,
+# )
+#
+# results_fixed_eeg_joint = run_metric_example_fixed(
+#     x_true_fixed=x_fixed_eeg,
+#     out_fixed=out_fixed_eeg_joint,
+#     coords_subset=coords_subset_fixed_eeg,
+# )
+
+# ------------------------------------------------------------------
+# EEG free -- BMN
+# ------------------------------------------------------------------
+# results_eeg_bmn = run_metric_example_eeg(
+#     x_true_eeg_3d=x_free_eeg,
+#     out_eeg=out_free_eeg_bmn,
+#     coords_subset=coords_subset_free_eeg,
+# )
+
+# ------------------------------------------------------------------
+# EEG free -- BMN_joint
+# ------------------------------------------------------------------
+# results_eeg_joint = run_metric_example_eeg(
+#     x_true_eeg_3d=x_free_eeg,
+#     out_eeg=out_free_eeg_joint,
+#     coords_subset=coords_subset_free_eeg,
+# )
