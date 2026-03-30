@@ -8,7 +8,7 @@ import numpy as np
 from calibrain.calibration_dataset import (
     concatenate_summaries,
     discover_posterior_summaries,
-    split_summaries_by_metadata,
+    filter_summaries_by_metadata,
 )
 from calibrain.workflows.common import load_python_config
 
@@ -31,8 +31,25 @@ def _serialize_filter(criteria: Dict[str, Any] | None) -> Dict[str, Any]:
 
     return {key: _convert(val) for key, val in criteria.items()}
 
-def _derive_split_path(base_path: Path, suffix: str) -> Path:
-    return base_path.with_name(f"{base_path.stem}{suffix}{base_path.suffix}")
+def _build_output_path(base_dir: Path, metadata: Dict[str, Any]) -> Path:
+    base_dir.mkdir(parents=True, exist_ok=True)
+    run_id = metadata.get("run_id") or metadata.get("global_run_id")
+    subject = metadata.get("subject")
+    solver = metadata.get("solver")
+    seed = metadata.get("seed")
+    parts = []
+    if subject:
+        parts.append(str(subject))
+    if solver:
+        parts.append(str(solver))
+    if run_id is not None:
+        parts.append(f"run{int(run_id):08d}")
+    if seed is not None:
+        parts.append(f"seed{seed}")
+    if not parts:
+        parts.append("summary")
+    stem = "_".join(parts)
+    return base_dir / f"{stem}.npz"
 
 
 def _write_dataset(
@@ -45,28 +62,44 @@ def _write_dataset(
     criteria: Dict[str, Any] | None,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        output_path,
-        x_true=dataset["x_true"],
-        x_hat=dataset["x_hat"],
-        posterior_cov=dataset["posterior_cov"],
-    )
+    arrays: Dict[str, np.ndarray] = {}
+    scalars: Dict[str, Any] = {}
+    for key, value in dataset.items():
+        if key == "metadata":
+            continue
+        if isinstance(value, np.ndarray):
+            arrays[key] = value
+        elif value is None:
+            continue
+        else:
+            scalars[key] = value
+
+    scalar_arrays = {key: np.array(val) for key, val in scalars.items()}
+    np.savez_compressed(output_path, **arrays, **scalar_arrays)
+
+    dataset_meta = {
+        "orientation_type": dataset.get("orientation_type"),
+        "coil_type": dataset.get("coil_type"),
+        "sensor_kind": dataset.get("sensor_kind"),
+        "n_sources": int(dataset.get("n_sources", 0)),
+        "n_times": int(dataset.get("n_times", 0)),
+    }
     meta_path = output_path.with_suffix(".json")
     meta_payload = {
         "created_at": datetime.now(timezone.utc).isoformat(),
         "summary_root": str(summaries_root),
         "summary_count": len(summaries),
-        "n_sources": int(dataset["n_sources"]),
-        "n_times": int(dataset["n_times"]),
+        "n_sources": dataset_meta["n_sources"],
+        "n_times": dataset_meta["n_times"],
         "split": split_name,
         "criteria": _serialize_filter(criteria),
+        "dataset_info": dataset_meta,
         "summaries": [str(summary.path) for summary in summaries],
     }
     meta_path.write_text(json.dumps(meta_payload, indent=2), encoding="utf-8")
-    print(f"[aggregation] Wrote {split_name} split with {len(summaries)} summaries -> {output_path}")
 
 
-def aggregate_posteriors(config: Union[str, Path, Dict[str, Any]]) -> None:
+def _aggregate_single(config: Dict[str, Any], tag: str | None = None) -> None:
     if isinstance(config, (str, Path)):
         config = load_python_config(config)
 
@@ -74,19 +107,8 @@ def aggregate_posteriors(config: Union[str, Path, Dict[str, Any]]) -> None:
     if not summaries_root.exists():
         raise FileNotFoundError(f"Summary root does not exist: {summaries_root}")
 
-    output_path = Path(config["output_path"])
-    train_filter = config.get("train_filter")
-    test_filter = config.get("test_filter")
-    train_output = (
-        Path(config["train_output"])
-        if config.get("train_output")
-        else _derive_split_path(output_path, "_train")
-    )
-    test_output = (
-        Path(config["test_output"])
-        if config.get("test_output")
-        else _derive_split_path(output_path, "_test")
-    )
+    output_dir = Path(config.get("output_dir", "results/calibration_datasets"))
+    criteria = config.get("filter")
 
     summaries = list(discover_posterior_summaries(summaries_root))
     if not summaries:
@@ -94,47 +116,43 @@ def aggregate_posteriors(config: Union[str, Path, Dict[str, Any]]) -> None:
             f"No posterior summary files found under {summaries_root}"
         )
 
-    if train_filter or test_filter:
-        train_summaries, test_summaries = split_summaries_by_metadata(
-            summaries,
-            train_filter,
-            test_filter,
-        )
-        if not train_summaries:
-            raise ValueError("No summaries matched the training metadata filters.")
-        if not test_summaries:
-            raise ValueError("No summaries available for the test split.")
+    if criteria:
+        summaries = filter_summaries_by_metadata(summaries, criteria)
+        if not summaries:
+            raise ValueError("No summaries matched the provided metadata filter.")
 
-        train_dataset = concatenate_summaries(train_summaries)
+    for summary in summaries:
+        dataset = concatenate_summaries([summary])
+        meta = (dataset.get("metadata") or [{}])[0]
+        output_path = _build_output_path(output_dir, meta or {})
         _write_dataset(
-            dataset=train_dataset,
-            output_path=train_output,
-            summaries=train_summaries,
+            dataset=dataset,
+            output_path=output_path,
+            summaries=[summary],
             summaries_root=summaries_root,
-            split_name="train",
-            criteria=train_filter,
+            split_name="single",
+            criteria=criteria,
         )
+    if tag:
+        print(f"[aggregation] Completed split '{tag}' with {len(summaries)} summaries.")
 
-        test_dataset = concatenate_summaries(test_summaries)
-        _write_dataset(
-            dataset=test_dataset,
-            output_path=test_output,
-            summaries=test_summaries,
-            summaries_root=summaries_root,
-            split_name="test",
-            criteria=test_filter or {"rule": "remainder"},
-        )
+
+def aggregate_posteriors(config: Union[str, Path, Dict[str, Any]]) -> None:
+    if isinstance(config, (str, Path)):
+        config = load_python_config(config)
+
+    if "splits" in config:
+        splits = config["splits"]
+        if isinstance(splits, dict):
+            items = splits.items()
+        else:
+            items = enumerate(splits)
+        for name, sub_config in items:
+            print(f"[aggregation] Running split '{name}'")
+            _aggregate_single(sub_config, tag=str(name))
         return
 
-    dataset = concatenate_summaries(summaries)
-    _write_dataset(
-        dataset=dataset,
-        output_path=output_path,
-        summaries=summaries,
-        summaries_root=summaries_root,
-        split_name="all",
-        criteria=None,
-    )
+    _aggregate_single(config)
 
 
 if __name__ == "__main__":

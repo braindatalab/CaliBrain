@@ -2,9 +2,62 @@ from typing import Optional
 
 from sklearn.isotonic import IsotonicRegression
 import numpy as np
-from scipy.stats import norm
+from mne.io.constants import FIFF
 from calibrain import UncertaintyEstimator
 from calibrain import MetricEvaluator
+from calibrain.uncertainty_estimation import lift_reduced_sources_to_3d
+
+EEG_COIL_TYPES = {FIFF.FIFFV_COIL_EEG}
+MEG_COIL_TYPES = {
+    FIFF.FIFFV_COIL_VV_MAG_T1,
+    FIFF.FIFFV_COIL_VV_PLANAR_T1,
+}
+ALLOWED_COIL_TYPES = EEG_COIL_TYPES | MEG_COIL_TYPES
+
+
+def _normalize_orientation(orientation_type: str | None) -> str:
+    if orientation_type is None:
+        return "fixed"
+    normalized = orientation_type.lower()
+    if normalized not in {"fixed", "free"}:
+        raise ValueError(f"Unsupported orientation_type '{orientation_type}'")
+    return normalized
+
+def _validate_coil_type(coil_type: int | None) -> None:
+    if coil_type is None:
+        return
+    if coil_type not in ALLOWED_COIL_TYPES:
+        raise ValueError(
+            f"Unsupported coil_type '{coil_type}'. Expected one of "
+            f"{sorted(ALLOWED_COIL_TYPES)} or None."
+        )
+
+def is_fixed_orientation(orientation_type: str | None) -> bool:
+    return _normalize_orientation(orientation_type) == "fixed"
+
+def is_free_eeg_orientation(
+    orientation_type: str | None,
+    coil_type: int | None,
+    n_components: int | None = None,
+) -> bool:
+    if _normalize_orientation(orientation_type) != "free":
+        return False
+    if coil_type is not None:
+        _validate_coil_type(coil_type)
+        return coil_type in EEG_COIL_TYPES
+    return n_components == 3
+
+def is_free_meg_orientation(
+    orientation_type: str | None,
+    coil_type: int | None,
+    n_components: int | None = None,
+) -> bool:
+    if _normalize_orientation(orientation_type) != "free":
+        return False
+    if coil_type is not None:
+        _validate_coil_type(coil_type)
+        return coil_type in MEG_COIL_TYPES
+    return n_components == 2
 
 # ============================================================================
 # UNCERTAINTY CALIBRATOR (NOMINAL RE-CALIBRATION)
@@ -19,10 +72,11 @@ class UncertaintyCalibrator:
     isotonic-regression based re-calibration of nominal coverages.
 
     It uses:
-      - UncertaintyEstimator.compute_empirical_coverage() to evaluate
+      - UncertaintyEstimator's aggregated membership/curve utilities to evaluate
         empirical coverage for any nominal coverage level c.
-      - MetricEvaluator.evaluate_metrics(which="calibration") to summarize
-        AAD, ASD, etc. using the configured calibration metrics.
+      - MetricEvaluator.calibration_metrics_4 (derived from the demos in
+        ``metric_evaluation.py``) to summarize AAD, ASD, etc. using the default
+        calibration metrics.
       - Experiment-level train/test splits provided by the caller to avoid
         overfitting entire sources.
 
@@ -65,63 +119,6 @@ class UncertaintyCalibrator:
         if getattr(self.metric_evaluator, "nominal_coverages", None) is None:
             self.metric_evaluator.nominal_coverages = self.nominal_coverages
 
-    # ----------------------------------------------------------------------
-    # Auxiliary functions
-    # ----------------------------------------------------------------------
-    def _ensure_z_score(self, c: float):
-        """
-        Ensure that the UncertaintyEstimator has a z-score entry for coverage c.
-
-        Your UncertaintyEstimator precomputes z-scores only for the original
-        nominal grid. After calibration we will generate new coverage levels
-        c_cal(c) which may not lie exactly on this grid, so we extend
-        `z_scores` when needed.
-        """
-        if c in self.uncertainty_estimator.z_scores:
-            return
-
-        if c <= 0.0:
-            self.uncertainty_estimator.z_scores[c] = 0.0
-        elif c >= 1.0:
-            self.uncertainty_estimator.z_scores[c] = np.inf
-        else:
-            self.uncertainty_estimator.z_scores[c] = norm.ppf((1.0 + c) / 2.0)
-
-    def _empirical_curve_for_levels(
-        self,
-        x_true: np.ndarray,
-        x_hat: np.ndarray,
-        posterior_var: np.ndarray,
-        coverages: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Compute empirical coverage for each coverage level in `coverages`
-        using the UncertaintyEstimator.
-
-        Parameters
-        ----------
-        x_true, x_hat, posterior_var : arrays, shape (n_sources, n_times) or (n_sources,)
-        coverages : array-like
-            Coverage levels c in [0, 1].
-
-        Returns
-        -------
-        empirical_coverages : ndarray, shape (len(coverages),)
-            Empirical coverage for each c.
-        """
-        empirical = []
-        for c in coverages:
-            c = float(c)
-            self._ensure_z_score(c)
-            _, _, _, cov = self.uncertainty_estimator.compute_empirical_coverage(
-                x_true=x_true,
-                x_hat=x_hat,
-                posterior_var=posterior_var,
-                nominal_coverage=c,
-            )
-            empirical.append(cov)
-        return np.array(empirical)
-
     def _invert_isotonic(self,
                           iso_model: IsotonicRegression,
                           targets: np.ndarray,
@@ -154,44 +151,57 @@ class UncertaintyCalibrator:
         c_cal = np.interp(targets, grid_emp, grid_c)
         return np.clip(c_cal, 0.0, 1.0)
 
-    # ----------------------------------------------------------------------
-    # Main calibration routine
-    # ----------------------------------------------------------------------
-    def _prepare_dataset(self,
-                         *,
-                         x_true: np.ndarray,
-                         x_hat: np.ndarray,
-                         posterior_std: np.ndarray) -> dict:
-        """Ensure arrays are numpy ndarrays with consistent 2D shapes."""
-        if x_true is None or x_hat is None or posterior_std is None:
-            raise ValueError("x_true, x_hat and posterior_std must be provided.")
+    def _orientation_flags(self, dataset: dict) -> tuple:
+        orientation_type = dataset.get("orientation_type")
+        coil_type = dataset.get("coil_type")
+        n_components_full: Optional[int] = None
+        n_components_reduced: Optional[int] = None
+        x_true = dataset.get("x_true")
+        if x_true is not None:
+            x_arr = np.asarray(x_true)
+            if x_arr.ndim >= 3:
+                n_components_full = x_arr.shape[1]
+            else:
+                n_components_full = 1
+            n_components_reduced = n_components_full
+        is_fixed = is_fixed_orientation(orientation_type)
+        is_free_eeg = is_free_eeg_orientation(
+            orientation_type, coil_type, n_components_full
+        )
+        is_free_meg = is_free_meg_orientation(
+            orientation_type, coil_type, n_components_reduced
+        )
+        return orientation_type, coil_type, is_fixed, is_free_eeg, is_free_meg
 
-        x_true = np.asarray(x_true)
-        x_hat = np.asarray(x_hat)
-        posterior_std = np.asarray(posterior_std)
-
-        if x_true.ndim == 1:
-            x_true = x_true[:, np.newaxis]
-        if x_hat.ndim == 1:
-            x_hat = x_hat[:, np.newaxis]
-        if posterior_std.ndim == 1:
-            posterior_std = posterior_std[:, np.newaxis]
-
-        posterior_var = np.square(posterior_std)
-
-        if x_true.shape != x_hat.shape or x_true.shape != posterior_std.shape:
+    @staticmethod
+    def _reshape_free_mean(x_hat: np.ndarray, n_sources: int, n_components: int) -> np.ndarray:
+        arr = np.asarray(x_hat, dtype=float)
+        if arr.ndim == 3:
+            if arr.shape[0] != n_sources or arr.shape[1] != n_components:
+                raise ValueError(
+                    f"Expected mean shape ({n_sources},{n_components},T); got {arr.shape}"
+                )
+            return arr
+        if arr.ndim != 2:
+            raise ValueError("Posterior means must be 2D or 3D arrays.")
+        n_times = arr.shape[1]
+        expected = n_sources * n_components
+        if arr.shape[0] != expected:
             raise ValueError(
-                "x_true, x_hat, and posterior_std must have the same shape after reshaping."
+                f"Posterior mean first dimension must equal {expected}; got {arr.shape[0]}"
             )
+        return arr.reshape(n_components, n_sources, n_times).transpose(1, 0, 2)
 
-        return {
-            "x_true": x_true,
-            "x_hat": x_hat,
-            "posterior_std": posterior_std,
-            "posterior_var": posterior_var,
-            "n_sources": x_true.shape[0],
-            "n_times": x_true.shape[-1],
-        }
+    @staticmethod
+    def _extract_meg_tangent_basis(q_basis: np.ndarray, n_sources: int) -> np.ndarray:
+        basis = np.asarray(q_basis, dtype=float)
+        if basis.ndim != 3 or basis.shape[0] != n_sources or basis.shape[1] != 3:
+            raise ValueError(
+                f"Q_basis must have shape ({n_sources},3,K); got {basis.shape}"
+            )
+        if basis.shape[2] >= 2:
+            return basis[:, :, :2]
+        raise ValueError("Q_basis must provide at least two tangent vectors.")
 
     def calibrate(
         self,
@@ -241,43 +251,200 @@ class UncertaintyCalibrator:
             print("=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION) ===")
 
         if train_data is None:
+            if x_true is None or x_hat is None or posterior_std is None:
+                raise ValueError(
+                    "Provide either 'train_data' or raw arrays x_true, x_hat, posterior_std."
+                )
+            if x_true.shape != x_hat.shape:
+                raise ValueError("x_true and x_hat must have identical shapes.")
+            if posterior_std.shape[0] != x_true.shape[0]:
+                raise ValueError(
+                    "posterior_std must provide one value per source for fixed orientation."
+                )
             train_data = {
+                "orientation_type": "fixed",
+                "coil_type": None,
                 "x_true": x_true,
                 "x_hat": x_hat,
                 "posterior_std": posterior_std,
+                "n_sources": x_true.shape[0],
+                "n_times": x_true.shape[-1],
             }
 
-        train = self._prepare_dataset(**train_data)
-        eval_payload = test_data or train_data
-        eval_data = self._prepare_dataset(**eval_payload)
+        if train_data.get("x_true") is None:
+            raise ValueError("train_data must include 'x_true'.")
+        if test_data is not None:
+            if test_data.get("x_true") is None:
+                raise ValueError("test_data must include 'x_true'.")
+            eval_data = test_data
+        else:
+            eval_data = train_data
 
         if verbose:
-            print(f"  train sources = {train['n_sources']}, train times = {train['n_times']}")
+            print(f"  train sources = {train_data['n_sources']}, train times = {train_data['n_times']}")
             print(f"  eval sources  = {eval_data['n_sources']}, eval times  = {eval_data['n_times']}\n")
 
-        # ------------------------------------------------------------------
-        # 1) Pre-calibration baseline on evaluation split
-        # ------------------------------------------------------------------
-        pre_curve_eval = self.uncertainty_estimator.get_calibration_curve(
-            x_true=eval_data['x_true'],
-            x_hat=eval_data['x_hat'],
-            posterior_var=eval_data['posterior_var'],
-        )
-        empirical_before_eval = pre_curve_eval['empirical_coverages']
-        calibration_metrics_before = self.metric_evaluator.evaluate_metrics(
-            which="calibration",
-            empirical_coverages=empirical_before_eval,
+        (
+            train_orientation,
+            train_coil,
+            train_is_fixed,
+            train_is_eeg,
+            train_is_meg,
+        ) = self._orientation_flags(train_data)
+        (
+            eval_orientation,
+            eval_coil,
+            eval_is_fixed,
+            eval_is_eeg,
+            eval_is_meg,
+        ) = self._orientation_flags(eval_data)
+
+        if (
+            train_is_fixed,
+            train_is_eeg,
+            train_is_meg,
+        ) != (
+            eval_is_fixed,
+            eval_is_eeg,
+            eval_is_meg,
+        ):
+            raise ValueError(
+                "Train and evaluation datasets must share the same orientation configuration."
+            )
+
+        setting_label: str
+
+        if train_is_fixed:
+            setting_label = "fixed"
+            train_cov = train_data.get("posterior_cov")
+            eval_cov = eval_data.get("posterior_cov")
+
+            if train_cov is not None:
+                train_var = self.uncertainty_estimator.posterior_variance_from_cov(train_cov)
+            else:
+                train_std = np.asarray(train_data["posterior_std"], dtype=float)
+                train_var = np.square(train_std.reshape(-1))
+
+            if eval_cov is not None:
+                eval_var = self.uncertainty_estimator.posterior_variance_from_cov(eval_cov)
+            else:
+                eval_std = np.asarray(eval_data["posterior_std"], dtype=float)
+                eval_var = np.square(eval_std.reshape(-1))
+
+            train_curve = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
+                x_true=train_data["x_true"],
+                x_hat=train_data["x_hat"],
+                posterior_var=train_var,
+            )
+            pre_curve_eval = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
+                x_true=eval_data["x_true"],
+                x_hat=eval_data["x_hat"],
+                posterior_var=eval_var,
+            )
+
+            def eval_empirical(levels):
+                return [
+                    self.uncertainty_estimator.aggregated_interval_membership(
+                        x_true=eval_data["x_true"],
+                        x_hat=eval_data["x_hat"],
+                        posterior_var=eval_var,
+                        nominal_coverage=float(c),
+                    )["empirical_coverage"]
+                    for c in levels
+                ]
+
+        elif train_is_eeg:
+            setting_label = "eeg_free"
+            n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
+            n_eval = int(eval_data.get("n_sources") or eval_data["x_true"].shape[0])
+            train_true = self._reshape_free_mean(train_data["x_true"], n_train, 3)
+            train_hat = self._reshape_free_mean(train_data["x_hat"], n_train, 3)
+            eval_true = self._reshape_free_mean(eval_data["x_true"], n_eval, 3)
+            eval_hat = self._reshape_free_mean(eval_data["x_hat"], n_eval, 3)
+            train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+            eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
+
+            train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
+                x_true=train_true,
+                x_hat=train_hat,
+                posterior_cov=train_cov,
+            )
+            pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
+                x_true=eval_true,
+                x_hat=eval_hat,
+                posterior_cov=eval_cov,
+            )
+
+            def eval_empirical(levels):
+                return [
+                    self.uncertainty_estimator.aggregated_ellipsoid_membership_eeg_free(
+                        x_true=eval_true,
+                        x_hat=eval_hat,
+                        posterior_cov=eval_cov,
+                        nominal_coverage=float(c),
+                    )["empirical_coverage"]
+                    for c in levels
+                ]
+
+        elif train_is_meg:
+            setting_label = "meg_free"
+            train_basis = train_data.get("Q_basis")
+            eval_basis = eval_data.get("Q_basis")
+            if train_basis is None or eval_basis is None:
+                raise ValueError("Free-orientation MEG datasets must include Q_basis.")
+            n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
+            n_eval = int(eval_data.get("n_sources") or eval_data["x_true"].shape[0])
+
+            train_V_tan = self._extract_meg_tangent_basis(train_basis, n_train)
+            eval_V_tan = self._extract_meg_tangent_basis(eval_basis, n_eval)
+
+            train_hat_2d = self._reshape_free_mean(train_data["x_hat"], n_train, 2)
+            eval_hat_2d = self._reshape_free_mean(eval_data["x_hat"], n_eval, 2)
+            train_true_2d = self._reshape_free_mean(train_data["x_true"], n_train, 2)
+            eval_true_2d = self._reshape_free_mean(eval_data["x_true"], n_eval, 2)
+
+            train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
+            eval_true_3d = lift_reduced_sources_to_3d(eval_true_2d, eval_V_tan)
+            train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+            eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
+
+            train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
+                x_true_3d=train_true_3d,
+                x_hat_2d=train_hat_2d,
+                posterior_cov_2d=train_cov,
+                V_tan=train_V_tan,
+            )
+            pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
+                x_true_3d=eval_true_3d,
+                x_hat_2d=eval_hat_2d,
+                posterior_cov_2d=eval_cov,
+                V_tan=eval_V_tan,
+            )
+
+            def eval_empirical(levels):
+                return [
+                    self.uncertainty_estimator.aggregated_ellipse_membership_meg_free(
+                        x_true_3d=eval_true_3d,
+                        x_hat_2d=eval_hat_2d,
+                        posterior_cov_2d=eval_cov,
+                        nominal_coverage=float(c),
+                        V_tan=eval_V_tan,
+                    )["empirical_coverage"]
+                    for c in levels
+                ]
+
+        else:
+            raise ValueError(
+                f"Unsupported orientation/coil combination: {train_orientation}, {train_coil}"
+            )
+
+        empirical_before_eval = pre_curve_eval["empirical_coverages"]
+        calibration_metrics_before = self.metric_evaluator.calibration_metrics_4(
+            np.asarray(pre_curve_eval["nominal_coverages"], dtype=float),
+            np.asarray(empirical_before_eval, dtype=float),
         )
 
-        # ------------------------------------------------------------------
-        # 2) Learn isotonic mapping on training experiments
-        # ------------------------------------------------------------------
-        empirical_train = self._empirical_curve_for_levels(
-            x_true=train['x_true'],
-            x_hat=train['x_hat'],
-            posterior_var=train['posterior_var'],
-            coverages=self.nominal_coverages,
-        )
+        empirical_train = train_curve["empirical_coverages"]
 
         iso = IsotonicRegression(increasing=True, out_of_bounds="clip")
         iso.fit(self.nominal_coverages, empirical_train)
@@ -286,16 +453,11 @@ class UncertaintyCalibrator:
         # ------------------------------------------------------------------
         # 3) Evaluate after calibration on evaluation split
         # ------------------------------------------------------------------
-        empirical_after_eval = self._empirical_curve_for_levels(
-            x_true=eval_data['x_true'],
-            x_hat=eval_data['x_hat'],
-            posterior_var=eval_data['posterior_var'],
-            coverages=c_recalibrated,
-        )
+        empirical_after_eval = np.asarray(eval_empirical(c_recalibrated), dtype=float)
 
-        calibration_metrics_after = self.metric_evaluator.evaluate_metrics(
-            which="calibration",
-            empirical_coverages=empirical_after_eval,
+        calibration_metrics_after = self.metric_evaluator.calibration_metrics_4(
+            self.nominal_coverages,
+            empirical_after_eval,
         )
 
         # ------------------------------------------------------------------
@@ -309,11 +471,14 @@ class UncertaintyCalibrator:
         self.is_calibrated = True
 
         split_metadata = {
-            'train_n_sources': train['n_sources'],
-            'train_n_times': train['n_times'],
+            'train_n_sources': train_data['n_sources'],
+            'train_n_times': train_data['n_times'],
             'eval_n_sources': eval_data['n_sources'],
             'eval_n_times': eval_data['n_times'],
             'uses_separate_eval_split': test_data is not None,
+            'orientation_type': train_data.get('orientation_type'),
+            'coil_type': train_data.get('coil_type'),
+            'setting': setting_label,
         }
 
         pre_results = {
@@ -344,9 +509,6 @@ class UncertaintyCalibrator:
 
         return results
 
-    # ----------------------------------------------------------------------
-    # Public API: apply + summary
-    # ----------------------------------------------------------------------
     def apply_calibration(self, nominal_levels: np.ndarray) -> np.ndarray:
         """
         Apply learned calibration to new nominal coverage levels.

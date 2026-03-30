@@ -26,6 +26,7 @@ class LeadfieldData:
     sensor_unitmult: Optional[int] = None
     coil_type: Optional[int] = None
     src_coords: Optional[np.ndarray] = None
+    Q_basis: Optional[np.ndarray] = None
 
 class LeadfieldBuilder:
     """
@@ -671,7 +672,7 @@ class LeadfieldBuilder:
                     )
 
                 self.logger.debug(f"Loading leadfield matrix from file: {leadfield_path}")
-                with np.load(leadfield_path) as data:
+                with np.load(leadfield_path, allow_pickle=True) as data:
                     if "leadfield" not in data and "leadfield" not in data:
                         raise ValueError(f"File {leadfield_path} does not contain 'leadfield' or 'leadfield' key.")
                     
@@ -682,7 +683,8 @@ class LeadfieldBuilder:
                         sensor_units=data.get("sensor_units", data.get("units")),
                         sensor_unitmult=data.get("sensor_unitmult"),
                         coil_type=data.get("coil_type"),
-                        src_coords=data.get("src_coords")
+                        src_coords=data.get("src_coords"),
+                        Q_basis=data.get("Q_basis"),
                     )
                     
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)

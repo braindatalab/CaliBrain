@@ -21,7 +21,7 @@ from calibrain import (
     sflex_gamma_lambda_map,
 )
 from calibrain.utils import get_data_path
-from calibrain.workflows.common import build_uncertainty_components, load_python_config
+from calibrain.workflows.common import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/benchmark_default.py")
 
@@ -76,11 +76,6 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
     sensor_simulator = SensorSimulator(logger=logger)
     source_simulator = SourceSimulator(ERP_config=ERP_config, logger=logger)
 
-    uncertainty_estimator, metric_evaluator = build_uncertainty_components(
-        nominal_coverages=config.get("nominal_coverages"),
-        logger=logger,
-    )
-
     estimators_cfg: List[Dict[str, Any]] = config.get("estimators", [])
     if not estimators_cfg:
         raise ValueError("Benchmark config must define at least one estimator entry.")
@@ -131,8 +126,6 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
             source_simulator=source_simulator,
             leadfield_builder=leadfield_builder,
             sensor_simulator=sensor_simulator,
-            uncertainty_estimator=uncertainty_estimator,
-            metric_evaluator=metric_evaluator,
             save_posterior_stats=save_posterior_stats,
             posterior_dir=posterior_dir,
             random_state=random_state,

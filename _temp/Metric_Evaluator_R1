@@ -1,8 +1,7 @@
 import logging
-from typing import Optional, Dict, Any, Iterable
+from typing import Optional, Dict, Any
 
 import numpy as np
-from calibrain import UncertaintyEstimator
 
 try:
     from scipy.spatial.distance import cdist
@@ -112,14 +111,6 @@ def get_subset_source_rr(
 # =============================================================================
 # MetricEvaluator
 # =============================================================================
-DEFAULT_CALIBRATION_METRICS = (
-    "mean_signed_deviation",
-    "mean_absolute_deviation",
-    "max_underconfidence_deviation",
-    "max_overconfidence_deviation",
-)
-
-
 class MetricEvaluator:
     """
     Evaluator aligned with the updated UncertaintyEstimator.
@@ -164,29 +155,9 @@ class MetricEvaluator:
       basis mismatches.
     """
 
-    def __init__(
-        self,
-        ue: UncertaintyEstimator,
-        *,
-        nominal_coverages: Optional[Iterable[float]] = None,
-        evaluation_metrics: Optional[Iterable[str]] = None,
-        calibration_metrics: Optional[Iterable[str]] = None,
-        logger: Optional[logging.Logger] = None,
-    ):
+    def __init__(self, ue: "UncertaintyEstimator", logger: Optional[logging.Logger] = None):
         self.ue = ue
         self.logger = logger or logging.getLogger(__name__)
-        if nominal_coverages is not None:
-            cov = np.asarray(list(nominal_coverages), dtype=float)
-            if cov.ndim != 1 or cov.size == 0:
-                raise ValueError("nominal_coverages must be a 1-D array with at least one entry.")
-            self.ue.nominal_coverages = cov
-        self.nominal_coverages = np.asarray(self.ue.nominal_coverages, dtype=float)
-        self.evaluation_metrics = (
-            tuple(evaluation_metrics) if evaluation_metrics is not None else tuple()
-        )
-        self.calibration_metrics = (
-            tuple(calibration_metrics) if calibration_metrics is not None else DEFAULT_CALIBRATION_METRICS
-        )
 
     # ------------------------------------------------------------------
     # Validation helpers
@@ -1037,49 +1008,49 @@ def run_metric_example_meg(
 # ------------------------------------------------------------------
 # Subset-aligned coordinates for EMD
 # ------------------------------------------------------------------
-# coords_subset_fixed_meg = get_subset_source_rr(lf_fixed_meg)
-# coords_subset_free_meg = get_subset_source_rr(lf_free_meg)
+coords_subset_fixed_meg = get_subset_source_rr(lf_fixed_meg)
+coords_subset_free_meg = get_subset_source_rr(lf_free_meg)
 
-# # coords_subset_fixed_eeg = get_subset_source_rr(lf_fixed_eeg)
-# # coords_subset_free_eeg = get_subset_source_rr(lf_free_eeg)
+# coords_subset_fixed_eeg = get_subset_source_rr(lf_fixed_eeg)
+# coords_subset_free_eeg = get_subset_source_rr(lf_free_eeg)
 
-# # ------------------------------------------------------------------
-# # MEG fixed -- BMN
-# # ------------------------------------------------------------------
-# results_fixed_meg_bmn = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_meg,
-#     out_fixed=out_fixed_bmn,
-#     coords_subset=coords_subset_fixed_meg,
-# )
+# ------------------------------------------------------------------
+# MEG fixed -- BMN
+# ------------------------------------------------------------------
+results_fixed_meg_bmn = run_metric_example_fixed(
+    x_true_fixed=x_fixed_meg,
+    out_fixed=out_fixed_bmn,
+    coords_subset=coords_subset_fixed_meg,
+)
 
-# # ------------------------------------------------------------------
-# # MEG fixed -- BMN_joint
-# # ------------------------------------------------------------------
-# results_fixed_meg_joint = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_meg,
-#     out_fixed=out_fixed_joint,
-#     coords_subset=coords_subset_fixed_meg,
-# )
+# ------------------------------------------------------------------
+# MEG fixed -- BMN_joint
+# ------------------------------------------------------------------
+results_fixed_meg_joint = run_metric_example_fixed(
+    x_true_fixed=x_fixed_meg,
+    out_fixed=out_fixed_joint,
+    coords_subset=coords_subset_fixed_meg,
+)
 
-# # ------------------------------------------------------------------
-# # MEG free reduced rank-2 -- BMN
-# # ------------------------------------------------------------------
-# results_meg_bmn = run_metric_example_meg(
-#     a_true_meg_2d=a_free_meg,
-#     Q_basis=lf_free_meg["Q_basis"],
-#     out_meg=out_free_meg_bmn,
-#     coords_subset=coords_subset_free_meg,
-# )
+# ------------------------------------------------------------------
+# MEG free reduced rank-2 -- BMN
+# ------------------------------------------------------------------
+results_meg_bmn = run_metric_example_meg(
+    a_true_meg_2d=a_free_meg,
+    Q_basis=lf_free_meg["Q_basis"],
+    out_meg=out_free_meg_bmn,
+    coords_subset=coords_subset_free_meg,
+)
 
-# # ------------------------------------------------------------------
-# # MEG free reduced rank-2 -- BMN_joint
-# # ------------------------------------------------------------------
-# results_meg_joint = run_metric_example_meg(
-#     a_true_meg_2d=a_free_meg,
-#     Q_basis=lf_free_meg["Q_basis"],
-#     out_meg=out_free_meg_joint,
-#     coords_subset=coords_subset_free_meg,
-# )
+# ------------------------------------------------------------------
+# MEG free reduced rank-2 -- BMN_joint
+# ------------------------------------------------------------------
+results_meg_joint = run_metric_example_meg(
+    a_true_meg_2d=a_free_meg,
+    Q_basis=lf_free_meg["Q_basis"],
+    out_meg=out_free_meg_joint,
+    coords_subset=coords_subset_free_meg,
+)
 
 # ------------------------------------------------------------------
 # EEG fixed -- BMN / BMN_joint
