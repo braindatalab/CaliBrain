@@ -6,9 +6,10 @@ from calibrain.uncertainty_estimation import UncertaintyEstimator
 from calibrain.metric_evaluation import MetricEvaluator
 from calibrain.uncertainty_calibration import UncertaintyCalibrator
 from calibrain.visualization import Visualizer
-from calibrain.benchmark import Benchmark
+from calibrain.data_generation import DataGenerator, Benchmark
 
 __all__ = [
+    "DataGenerator",
     "Benchmark",
     "LeadfieldBuilder",
     "SourceSimulator",

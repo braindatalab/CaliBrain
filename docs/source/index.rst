@@ -122,7 +122,7 @@ CaliBrain is built around a modular architecture:
 - :class:`~calibrain.UncertaintyEstimator` - Quantifies uncertainty
 - :class:`~calibrain.MetricEvaluator` - Evaluates performance
 - :class:`~calibrain.Visualizer` - Creates visualizations
-- :class:`~calibrain.Benchmark` - Orchestrates workflows
+- :class:`~calibrain.DataGenerator` - Orchestrates data generation workflows
 
 License and Citation
 ====================

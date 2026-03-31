@@ -89,7 +89,7 @@ Please see the [Usage Guide](docs/source/usage.rst).
 To recalibrate uncertainty estimates using whole experiments instead of per-source cross-validation:
 
 1. **Pick a workflow-specific entry point**  
-   - `python calibrain/workflows/benchmarking.py --config configs/benchmark_default.py`  
+   - `python calibrain/workflows/data_generation.py --config configs/data_generation_default.py`  
    - `python calibrain/workflows/aggregation.py --config configs/aggregate_default.py`  
    - `python calibrain/workflows/calibration.py --config configs/calibration_default.py`
 
@@ -97,7 +97,7 @@ To recalibrate uncertainty estimates using whole experiments instead of per-sour
    Each config file defines a `CONFIG` dictionary describing the inputs for its workflow (solver grids, metadata filters, dataset paths, etc.). Copy or modify the `.py` files under `configs/` to capture different experiment setups; you can add comments or share common structures inside the module.
 
 3. **Typical sequence**
-   - Run the benchmarking module to generate simulations (each run stores a single `posterior_summary_*.h5` file containing arrays + metadata).
+   - Run the data-generation module to produce simulations (each run stores a single `posterior_summary_*.h5` file containing arrays + metadata).
    - Adjust the aggregation config module (e.g., `configs/aggregate_default.py`) to define metadata filters, then run the aggregation module to produce `_train.npz` / `_test.npz`.
    - Update the calibration config module (e.g., `configs/calibration_default.py`) with the aggregated dataset paths and run the calibration module to get isotonic calibration metrics/plots.
 

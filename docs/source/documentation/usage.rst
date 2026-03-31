@@ -69,7 +69,7 @@ Core components of **CaliBrain**:
 - **UncertaintyEstimator**: Analyze confidence intervals and calibration.
 - **MetricEvaluator**: Compute evaluation metrics for model performance.
 - **Visualizer**: Plot calibration results, source estimates, and uncertainty.
-- **Benchmark**: Automate experiment running and results collection.
+- **DataGenerator**: Automate experiment running and results collection.
 
 Examples
 --------

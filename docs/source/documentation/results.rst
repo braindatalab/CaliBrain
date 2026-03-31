@@ -3,18 +3,17 @@
 Results
 ================================
 
-The ``results/`` directory organizes all outputs generated during data simulation, forward modeling, benchmarking, and uncertainty analysis. The structure is as follows:
+The ``results/`` directory organizes all outputs generated during data simulation, forward modeling, and uncertainty analysis. The structure is as follows:
 
-1. ``benchmark_results/``
---------------------------
+1. ``posterior_summaries/``
+---------------------------
 
-Stores the benchmark performance results as ``.csv`` files.
-- ``benchmark_results/benchmark_log_TIMESTAMP.txt``: Log file for a specific benchmarking run.
+Stores the per-run ``posterior_summary_*.h5`` files emitted by the data-generation sweeps, each containing arrays plus metadata for a single simulation.
 
 2. ``logs/``
 ------------
 
-- ``logs/benchmark_log_TIMESTAMP.txt``: Log file for a specific benchmarking run.
+- ``logs/data_generation_log_TIMESTAMP.txt``: Log file for a specific data-generation run.
 
 3. ``figures/``
 ---------------
@@ -39,7 +38,7 @@ Stores the benchmark performance results as ``.csv`` files.
       - ``data_simulation/``: Figures related to synthetic data generation.
       - ``uncertainty_analysis/``: Figures related to uncertainty estimation.
 
-3. ``forward/``
+4. ``forward/``
 ---------------
 
 - Stores precomputed forward models and leadfields for source localization.

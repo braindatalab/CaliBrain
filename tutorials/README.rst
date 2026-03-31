@@ -22,7 +22,7 @@ All tutorials in this directory are automatically processed by Sphinx Gallery an
    - Simulating brain source activity and sensor measurements  
    - Solving inverse problems with multiple methods
    - Quantifying uncertainty and evaluating performance
-   - Automated benchmarking workflows
+   - Automated data-generation workflows
 
 Tutorial Features
 =================

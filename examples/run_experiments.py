@@ -1,19 +1,18 @@
 """
 .. _example-run_experiment:
 
-=========================
-Run benchmark experiments
-=========================
+==========================
+Run data generation sweeps
+==========================
 
-This example demonstrates how to run comprehensive benchmarking experiments
+This example demonstrates how to run comprehensive data-generation sweeps
 for evaluating source localization algorithms using CaliBrain.
 
 The script shows how to:
 - Set up ERP simulation parameters and logging
 - Configure parameter grids for MEG and EEG experiments  
 - Compare multiple algorithms (Gamma-MAP, eLORETA)
-- Evaluate uncertainty estimation and calibration performance
-- Generate comprehensive metrics and save results
+- Generate posterior summaries for later calibration datasets
 """
 
 import os
@@ -23,7 +22,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from calibrain import Benchmark, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
+from calibrain import DataGenerator, LeadfieldBuilder, MetricEvaluator, UncertaintyEstimator, SourceSimulator, SensorSimulator, gamma_map, eloreta
 from calibrain.utils import get_data_path
 
 # https://github.com/mne-tools/mne-python/blob/main/mne/_fiff/constants.py
@@ -31,9 +30,9 @@ from calibrain.utils import get_data_path
 
 def main():
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs("results/benchmark_results", exist_ok=True)
+    os.makedirs("results/data_generation", exist_ok=True)
     os.makedirs("results/logs", exist_ok=True)
-    log_file = f"results/logs/benchmark_log_{timestamp}.log"
+    log_file = f"results/logs/data_generation_log_{timestamp}.log"
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
@@ -143,7 +142,7 @@ def main():
     nruns = 1
     # df = []
     # for solver, solver_param_grid, data_param_grid in estimators:
-    #     benchmark = Benchmark(
+    #     generator = DataGenerator(
     #         solver=solver,
     #         solver_param_grid=solver_param_grid,
     #         data_param_grid=data_param_grid,
@@ -156,11 +155,11 @@ def main():
     #         random_state=42,
     #         logger=logger
     #     )
-    #     results_df = benchmark.run(nruns=nruns)
+    #     results_df = generator.run(nruns=nruns)
     #     df.append(results_df)
 
     # results_df = pd.concat(df)
-    # results_df.to_csv(f"results/benchmark_results/benchmark_results_{timestamp}.csv", index=False)
+    # results_df.to_csv(f"results/data_generation/data_generation_{timestamp}.csv", index=False)
     
     # print(results_df.head())
 

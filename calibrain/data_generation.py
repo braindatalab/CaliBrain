@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import logging
+import warnings
 import h5py
 from typing import Optional
 from pathlib import Path
@@ -30,7 +31,7 @@ from calibrain.calibration_dataset import EEG_COIL_TYPES, MEG_COIL_TYPES
 logging.getLogger("mne").setLevel(logging.ERROR)
 logging.getLogger("mne.utils").setLevel(logging.ERROR)
 
-class Benchmark:
+class DataGenerator:
     def __init__(
         self,
         solver: callable,
@@ -47,7 +48,7 @@ class Benchmark:
         logger=None,
     ):
         """
-        Initialize the Benchmark class.
+        Initialize the DataGenerator class.
 
         Parameters:
         ----------
@@ -137,7 +138,7 @@ class Benchmark:
                 alpha_snr,
             )
         except Exception:
-            # tolerate logging errors — do not break benchmarking
+            # tolerate logging errors — do not break generation
             try:
                 # fallback to basic debug message
                 self.logger.debug("Progress logging failed for run %s", run_id)
@@ -808,7 +809,7 @@ class Benchmark:
 
         except Exception as e:
             self.logger.error(
-                f"Error during benchmarking global_run_id {this_result.get('global_run_id', 'N/A')} (config run {this_result.get('run_id', 'N/A')}): {e}",
+                f"Error during data generation global_run_id {this_result.get('global_run_id', 'N/A')} (config run {this_result.get('run_id', 'N/A')}): {e}",
                 exc_info=True,
             )
             this_result["error_message"] = str(e)
@@ -827,7 +828,7 @@ class Benchmark:
         global_total_runs: Optional[int] = None,
     ):
         """
-        Run benchmarking by iterating over combinations of solver and data parameters.
+        Run data generation by iterating over combinations of solver and data parameters.
 
         Parameters
         ----------
@@ -838,7 +839,7 @@ class Benchmark:
         n_jobs : int
             Number of parallel workers to use. ``1`` (default) keeps the sequential behaviour.
         run_offset : int
-            Number of experiments completed prior to this benchmark call. Used
+            Number of experiments completed prior to this generator call. Used
             for global progress tracking when multiple estimators are run
             sequentially.
         global_total_runs : int, optional
@@ -881,7 +882,7 @@ class Benchmark:
                 seed_idx += 1
         
         self.logger.info(
-            "%s\nStarting benchmark for estimator %s with %d experiments (%d nruns x %d configurations)",
+            "%s\nStarting data generation for estimator %s with %d experiments (%d nruns x %d configurations)",
             "-" * 50,
             getattr(self.solver, "__name__", str(self.solver)),
             total_runs,
@@ -912,15 +913,27 @@ class Benchmark:
             results_list = [self._execute_single_run(*args) for args in worker_args]
         else:
             # parallel execution
-            self.logger.debug(f"Running benchmark in parallel with n_jobs={n_jobs}")
+            self.logger.debug(f"Running data generation in parallel with n_jobs={n_jobs}")
             parallel = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)
             results_list = parallel(
                 delayed(self._execute_single_run)(*args)
                 for args in worker_args
             )
 
-        self.logger.debug("Benchmarking completed.")
+        self.logger.debug("Data generation completed.")
         return pd.DataFrame(results_list)
+
+
+class Benchmark(DataGenerator):
+    """Deprecated alias for backwards compatibility."""
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Benchmark is deprecated; use DataGenerator instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 # TODO: move plotting functions to Visualizer class
 def plot_error_curves(err_gamma, title="Gamma/Lambda errors", save_path=None):

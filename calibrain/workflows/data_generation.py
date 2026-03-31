@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
 from calibrain import (
-    Benchmark,
+    DataGenerator,
     LeadfieldBuilder,
     SourceSimulator,
     SensorSimulator,
@@ -23,7 +23,7 @@ from calibrain import (
 from calibrain.utils import get_data_path
 from calibrain.workflows.common import load_python_config
 
-DEFAULT_CONFIG_PATH = Path("configs/benchmark_default.py")
+DEFAULT_CONFIG_PATH = Path("configs/data_generation_default.py")
 
 _SOLVER_REGISTRY = {
     "gamma_map": gamma_map,
@@ -44,14 +44,14 @@ def _resolve_solver(name: str):
         ) from exc
 
 
-def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
+def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
     if isinstance(config, (str, Path)):
         config = load_python_config(config)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = Path(config.get("log_dir", "results/logs"))
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"benchmark_log_{timestamp}.log"
+    log_file = log_dir / f"data_generation_log_{timestamp}.log"
 
     logging.basicConfig(
         level=logging.INFO,
@@ -65,7 +65,7 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
 
     nruns = int(config.get("nruns", 1))
-    benchmark_n_jobs = int(config.get("benchmark_n_jobs", 1))
+    generation_n_jobs = int(config.get("generation_n_jobs", config.get("benchmark_n_jobs", 1)))
     random_state = int(config.get("random_state", 42))
 
     ERP_config = config.get("ERP_config", {})
@@ -78,7 +78,7 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
 
     estimators_cfg: List[Dict[str, Any]] = config.get("estimators", [])
     if not estimators_cfg:
-        raise ValueError("Benchmark config must define at least one estimator entry.")
+        raise ValueError("Data generation config must define at least one estimator entry.")
 
     save_posterior_stats = bool(config.get("save_posterior_stats", True))
 
@@ -114,7 +114,7 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
             * len(ParameterGrid(noise_grid))
         )
         total_local_runs = nruns * max(1, num_configs)
-        benchmark = Benchmark(
+        generator = DataGenerator(
             solver=solver,
             solver_param_grid=solver_params,
             data_param_grid=data_grid,
@@ -128,9 +128,9 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
             random_state=random_state,
             logger=logger,
         )
-        results_df = benchmark.run(
+        results_df = generator.run(
             nruns=nruns,
-            n_jobs=benchmark_n_jobs,
+            n_jobs=generation_n_jobs,
             run_offset=run_offset,
             global_total_runs=total_experiments,
         )
@@ -138,7 +138,7 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
         run_offset += total_local_runs
 
     if not df_list:
-        raise RuntimeError("Benchmark produced no results data.")
+        raise RuntimeError("Data generation produced no results data.")
 
     final_df = pd.concat(df_list)
     final_df.sort_values(
@@ -170,9 +170,9 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
     other_cols = [c for c in final_df.columns if c not in desired_cols]
     final_df = final_df[[c for c in desired_cols if c in final_df.columns] + other_cols]
 
-    logger.info("Benchmark results DataFrame assembled with %d rows", len(final_df))
+    logger.info("Data generation results DataFrame assembled with %d rows", len(final_df))
     return final_df
 
 
 if __name__ == "__main__":
-    run_benchmark(DEFAULT_CONFIG_PATH)
+    run_data_generation(DEFAULT_CONFIG_PATH)

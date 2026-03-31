@@ -38,7 +38,7 @@ Version 0.1.0 (2025-04-28)
 *   Added `DataSimulator` for generating synthetic data.
 *   Added `SourceEstimator` for estimating source activity using gamma MAP and eLORETA.
 *   Added `UncertaintyEstimator` for estimating uncertainty in source activity.
-*   Added `Benchmark` class for benchmarking source estimation methods.
+*   Added `DataGenerator` class for orchestrating source-estimation data generation.
 *   Added `utils` module for utility functions.
 
 Version 0.1.1 (2025-05-24) 
@@ -57,5 +57,5 @@ Version 0.1.0 (2025-04-28)
 *   Added `DataSimulator` for generating synthetic data.
 *   Added `SourceEstimator` for estimating source activity using gamma MAP and eLORETA.
 *   Added `UncertaintyEstimator` for estimating uncertainty in source activity.
-*   Added `Benchmark` class for benchmarking source estimation methods.
+*   Added `DataGenerator` class for orchestrating source-estimation data generation.
 *   Added `utils` module for utility functions.
