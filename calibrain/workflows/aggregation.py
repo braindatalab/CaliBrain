@@ -10,7 +10,7 @@ from calibrain.calibration_dataset import (
     discover_posterior_summaries,
     filter_summaries_by_metadata,
 )
-from calibrain.workflows.common import load_python_config
+from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/aggregate_default.py")
 

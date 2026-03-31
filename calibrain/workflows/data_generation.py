@@ -21,7 +21,7 @@ from calibrain import (
     gamma_lambda_map_sflex,
 )
 from calibrain.utils import get_data_path
-from calibrain.workflows.common import load_python_config
+from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/data_generation_default.py")
 

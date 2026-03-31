@@ -1,10 +1,12 @@
-from typing import Union, Optional
-import yaml
+from typing import Any, Dict, Union, Optional
 import logging
 from pathlib import Path
-import mne
 import os
+import runpy
+
+import mne
 import numpy as np
+import yaml
 
 
 def load_config(config_file: str, logger=None) -> dict:
@@ -45,6 +47,14 @@ def load_config(config_file: str, logger=None) -> dict:
     except yaml.YAMLError as e:
         logger.error(f"Error parsing YAML file: {e}")
         raise
+
+
+def load_python_config(config_path: Path | str) -> Dict[str, Any]:
+    """Execute a Python config file and return its CONFIG dict."""
+    namespace = runpy.run_path(str(config_path))
+    if "CONFIG" not in namespace:
+        raise ValueError(f"Config {config_path} must define a CONFIG dict.")
+    return namespace["CONFIG"]
     
 
 def save_subjects_mne_info(subjects=["CC120166", "CC120264", "CC120309", "CC120313"], fwd_dir='examples/BSI-ZOO_forward_data'):
