@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Any, Iterable
+from typing import Optional, Dict, Any, Iterable, Tuple
 
 import numpy as np
 from calibrain import UncertaintyEstimator
@@ -44,6 +44,25 @@ def lift_reduced_sources_to_3d(a_red: np.ndarray, Q_basis: np.ndarray) -> np.nda
         raise ValueError("Mismatch in reduced dimension k between a_red and Q_basis")
 
     return np.einsum("nok,nkt->not", Q_basis, a_red)
+
+
+def _reshape_free_mean(arr: np.ndarray, n_sources: int, n_components: int) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    if arr.ndim == 3:
+        if arr.shape[0] != n_sources or arr.shape[1] != n_components:
+            raise ValueError(
+                f"Expected shape ({n_sources},{n_components},T); got {arr.shape}"
+            )
+        return arr
+    if arr.ndim != 2:
+        raise ValueError("Posterior means must be 2D or 3D arrays.")
+    n_times = arr.shape[1]
+    expected = n_sources * n_components
+    if arr.shape[0] != expected:
+        raise ValueError(
+            f"First dimension must equal {expected}; got {arr.shape[0]}"
+        )
+    return arr.reshape(n_components, n_sources, n_times).transpose(1, 0, 2)
 
 
 def get_subset_source_rr(
@@ -652,6 +671,109 @@ class MetricEvaluator:
 
         return float(emd2(a_norm, b_norm, M))
 
+
+def _prepare_meg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    n_sources = int(eval_data.get("n_sources") or 0)
+    if n_sources <= 0:
+        raise ValueError("MEG dataset missing n_sources metadata required for EMD.")
+
+    q_basis = eval_data.get("Q_basis")
+    if q_basis is None:
+        raise ValueError("MEG dataset missing Q_basis required for EMD.")
+    q_basis = np.asarray(q_basis, dtype=float)
+
+    x_hat = _reshape_free_mean(np.asarray(eval_data["x_hat"], dtype=float), n_sources, 2)
+
+    x_true_raw = np.asarray(eval_data["x_true"], dtype=float)
+    if x_true_raw.ndim == 3 and x_true_raw.shape[1] == 2:
+        x_true_2d = x_true_raw
+        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
+    elif x_true_raw.ndim == 3 and x_true_raw.shape[1] == 3:
+        x_true_3d = x_true_raw
+        basis_T = np.transpose(q_basis, (0, 2, 1))
+        x_true_2d = np.einsum("nki,nit->nkt", basis_T, x_true_3d)
+    else:
+        x_true_2d = _reshape_free_mean(x_true_raw, n_sources, 2)
+        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
+
+    return x_true_2d, x_true_3d, x_hat, q_basis
+
+
+def _prepare_eeg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+    n_sources = int(eval_data.get("n_sources") or 0)
+    if n_sources <= 0:
+        raise ValueError("EEG dataset missing n_sources metadata required for EMD.")
+
+    x_true = np.asarray(eval_data["x_true"], dtype=float)
+    if not (x_true.ndim == 3 and x_true.shape[1] == 3):
+        x_true = _reshape_free_mean(x_true, n_sources, 3)
+
+    x_hat = np.asarray(eval_data["x_hat"], dtype=float)
+    if not (x_hat.ndim == 3 and x_hat.shape[1] == 3):
+        x_hat = _reshape_free_mean(x_hat, n_sources, 3)
+
+    return x_true, x_hat
+
+
+def compute_dataset_emd(
+    *,
+    metric_evaluator: MetricEvaluator,
+    eval_data: Dict[str, Any],
+    coords: Optional[np.ndarray],
+    setting: Optional[str],
+    emd_mode: str = "reduced",
+) -> Optional[float]:
+    if coords is None or setting is None:
+        return None
+
+    logger = getattr(metric_evaluator, "logger", None) or logging.getLogger(__name__)
+    mode = (emd_mode or "reduced").lower()
+    if mode not in {"reduced", "lifted"}:
+        raise ValueError("emd_mode must be 'reduced' or 'lifted'.")
+
+    try:
+        if setting == "meg_free":
+            x_true_2d, x_true_3d, x_hat_2d, q_basis = _prepare_meg_sources_for_emd_dataset(eval_data)
+            if mode == "lifted":
+                x_hat_3d = lift_reduced_sources_to_3d(x_hat_2d, q_basis)
+                return metric_evaluator.emd(
+                    x_true=x_true_3d,
+                    x_hat=x_hat_3d,
+                    coords=coords,
+                    setting="eeg_free",
+                    mode="aggregated",
+                )
+            return metric_evaluator.emd(
+                x_true=x_true_2d,
+                x_hat=x_hat_2d,
+                coords=coords,
+                setting="meg_free",
+                mode="aggregated",
+                V_tan=q_basis,
+            )
+
+        if setting == "eeg_free":
+            x_true_3d, x_hat_3d = _prepare_eeg_sources_for_emd_dataset(eval_data)
+            return metric_evaluator.emd(
+                x_true=x_true_3d,
+                x_hat=x_hat_3d,
+                coords=coords,
+                setting="eeg_free",
+                mode="aggregated",
+            )
+
+        return metric_evaluator.emd(
+            x_true=eval_data["x_true"],
+            x_hat=eval_data["x_hat"],
+            coords=coords,
+            setting=setting,
+            mode="aggregated",
+            V_tan=eval_data.get("Q_basis"),
+        )
+    except Exception as exc:
+        logger.warning("EMD computation failed (%s mode): %s", setting, exc)
+        return None
+
     # ------------------------------------------------------------------
     # Calibration
     # ------------------------------------------------------------------
@@ -827,289 +949,3 @@ class MetricEvaluator:
 # =============================================================================
 # Example helpers
 # =============================================================================
-def run_metric_example_fixed(
-    x_true_fixed,           # (N,T)
-    out_fixed,              # {"posterior_mean": (N,T), "posterior_cov": (N,N)}
-    coords_subset,          # (N,3)
-):
-    ue = UncertaintyEstimator()
-    ev = MetricEvaluator(ue)
-
-    x_true_fixed = np.asarray(x_true_fixed, dtype=float)
-    x_hat_fixed = np.asarray(out_fixed["posterior_mean"], dtype=float)
-    posterior_cov_fixed = np.asarray(out_fixed["posterior_cov"], dtype=float)
-    coords_subset = np.asarray(coords_subset, dtype=float)
-
-    res_fixed_point = ev.evaluate_all(
-        x_true=x_true_fixed,
-        x_hat=x_hat_fixed,
-        posterior_uncert=posterior_cov_fixed,
-        setting="fixed",
-        mode="pointwise",
-        coords=coords_subset,
-        compute_emd=True,
-    )
-
-    res_fixed_agg = ev.evaluate_all(
-        x_true=x_true_fixed,
-        x_hat=x_hat_fixed,
-        posterior_uncert=posterior_cov_fixed,
-        setting="fixed",
-        mode="aggregated",
-        coords=coords_subset,
-        compute_emd=True,
-    )
-
-    print("\n=== FIXED / POINTWISE ===")
-    print("MSE :", res_fixed_point["mse"])
-    print("MAE :", res_fixed_point["mae"])
-    print("RMSE:", res_fixed_point["rmse"])
-    print("RMAE:", res_fixed_point["rmae"])
-    print("Mean posterior std:", res_fixed_point["mean_posterior_std"])
-    print("EMD :", res_fixed_point["emd"])
-    print("Calibration metrics:", res_fixed_point["calibration"]["metrics_4"])
-
-    print("\n=== FIXED / AGGREGATED ===")
-    print("MSE :", res_fixed_agg["mse"])
-    print("MAE :", res_fixed_agg["mae"])
-    print("RMSE:", res_fixed_agg["rmse"])
-    print("RMAE:", res_fixed_agg["rmae"])
-    print("Mean posterior std:", res_fixed_agg["mean_posterior_std"])
-    print("EMD :", res_fixed_agg["emd"])
-    print("Calibration metrics:", res_fixed_agg["calibration"]["metrics_4"])
-
-    return {
-        "pointwise": res_fixed_point,
-        "aggregated": res_fixed_agg,
-    }
-
-
-def run_metric_example_meg(
-    a_true_meg_2d,          # (N,2,T)
-    Q_basis,                # (N,3,2)
-    out_meg,                # BMN / BMN_joint output for n_orient=2
-    coords_subset,          # (N,3)
-):
-    ue = UncertaintyEstimator()
-    ev = MetricEvaluator(ue)
-
-    a_true_meg_2d = np.asarray(a_true_meg_2d, dtype=float)
-    Q_basis = np.asarray(Q_basis, dtype=float)
-    coords_subset = np.asarray(coords_subset, dtype=float)
-
-    if a_true_meg_2d.ndim != 3 or a_true_meg_2d.shape[1] != 2:
-        raise ValueError(f"a_true_meg_2d must be (N,2,T); got {a_true_meg_2d.shape}")
-    if Q_basis.ndim != 3 or Q_basis.shape[1:] != (3, 2):
-        raise ValueError(f"Q_basis must be (N,3,2); got {Q_basis.shape}")
-
-    x_true_meg_3d = lift_reduced_sources_to_3d(a_true_meg_2d, Q_basis)
-
-    if "posterior_mean_reshaped" in out_meg:
-        x_hat_meg = np.asarray(out_meg["posterior_mean_reshaped"], dtype=float)
-    else:
-        x_hat_meg = np.asarray(out_meg["posterior_mean"], dtype=float)
-
-    posterior_cov_meg = np.asarray(out_meg["posterior_cov"], dtype=float)
-
-    res_meg_point = ev.evaluate_all(
-        x_true=x_true_meg_3d,
-        x_hat=x_hat_meg,
-        posterior_uncert=posterior_cov_meg,
-        setting="meg_free",
-        mode="pointwise",
-        coords=coords_subset,
-        V_tan=Q_basis,
-        compute_emd=True,
-    )
-
-    res_meg_agg = ev.evaluate_all(
-        x_true=x_true_meg_3d,
-        x_hat=x_hat_meg,
-        posterior_uncert=posterior_cov_meg,
-        setting="meg_free",
-        mode="aggregated",
-        coords=coords_subset,
-        V_tan=Q_basis,
-        compute_emd=True,
-    )
-
-    print("\n=== MEG FREE / POINTWISE ===")
-    print("MSE :", res_meg_point["mse"])
-    print("MAE :", res_meg_point["mae"])
-    print("RMSE:", res_meg_point["rmse"])
-    print("RMAE:", res_meg_point["rmae"])
-    print("Mean posterior std:", res_meg_point["mean_posterior_std"])
-    print("EMD :", res_meg_point["emd"])
-    print("Calibration metrics:", res_meg_point["calibration"]["metrics_4"])
-
-    print("\n=== MEG FREE / AGGREGATED ===")
-    print("MSE :", res_meg_agg["mse"])
-    print("MAE :", res_meg_agg["mae"])
-    print("RMSE:", res_meg_agg["rmse"])
-    print("RMAE:", res_meg_agg["rmae"])
-    print("Mean posterior std:", res_meg_agg["mean_posterior_std"])
-    print("EMD :", res_meg_agg["emd"])
-    print("Calibration metrics:", res_meg_agg["calibration"]["metrics_4"])
-
-    return {
-        "pointwise": res_meg_point,
-        "aggregated": res_meg_agg,
-    }
-
-
-# def run_metric_example_eeg(
-#     x_true_eeg_3d,         # (N,3,T)
-#     out_eeg,               # BMN / BMN_joint output for n_orient=3
-#     coords_subset,         # (N,3)
-# ):
-#     ue = UncertaintyEstimator()
-#     ev = MetricEvaluator(ue)
-#
-#     x_true_eeg_3d = np.asarray(x_true_eeg_3d, dtype=float)
-#     coords_subset = np.asarray(coords_subset, dtype=float)
-#
-#     if x_true_eeg_3d.ndim != 3 or x_true_eeg_3d.shape[1] != 3:
-#         raise ValueError(f"x_true_eeg_3d must be (N,3,T); got {x_true_eeg_3d.shape}")
-#
-#     N_eeg, _, T_eeg = x_true_eeg_3d.shape
-#
-#     if "posterior_mean_reshaped" in out_eeg:
-#         x_hat_eeg = np.asarray(out_eeg["posterior_mean_reshaped"], dtype=float)
-#     else:
-#         posterior_mean_eeg = np.asarray(out_eeg["posterior_mean"], dtype=float)
-#         if posterior_mean_eeg.shape != (3 * N_eeg, T_eeg):
-#             raise ValueError(
-#                 f'out_eeg["posterior_mean"] must be {(3 * N_eeg, T_eeg)}; '
-#                 f"got {posterior_mean_eeg.shape}"
-#             )
-#         x_hat_eeg = posterior_mean_eeg.reshape(N_eeg, 3, T_eeg)
-#
-#     posterior_cov_eeg = np.asarray(out_eeg["posterior_cov"], dtype=float)
-#
-#     res_eeg_point = ev.evaluate_all(
-#         x_true=x_true_eeg_3d,
-#         x_hat=x_hat_eeg,
-#         posterior_uncert=posterior_cov_eeg,
-#         setting="eeg_free",
-#         mode="pointwise",
-#         coords=coords_subset,
-#         compute_emd=True,
-#     )
-#
-#     res_eeg_agg = ev.evaluate_all(
-#         x_true=x_true_eeg_3d,
-#         x_hat=x_hat_eeg,
-#         posterior_uncert=posterior_cov_eeg,
-#         setting="eeg_free",
-#         mode="aggregated",
-#         coords=coords_subset,
-#         compute_emd=True,
-#     )
-#
-#     print("\n=== EEG FREE / POINTWISE ===")
-#     print("MSE :", res_eeg_point["mse"])
-#     print("MAE :", res_eeg_point["mae"])
-#     print("RMSE:", res_eeg_point["rmse"])
-#     print("RMAE:", res_eeg_point["rmae"])
-#     print("Mean posterior std:", res_eeg_point["mean_posterior_std"])
-#     print("EMD :", res_eeg_point["emd"])
-#     print("Calibration metrics:", res_eeg_point["calibration"]["metrics_4"])
-#
-#     print("\n=== EEG FREE / AGGREGATED ===")
-#     print("MSE :", res_eeg_agg["mse"])
-#     print("MAE :", res_eeg_agg["mae"])
-#     print("RMSE:", res_eeg_agg["rmse"])
-#     print("RMAE:", res_eeg_agg["rmae"])
-#     print("Mean posterior std:", res_eeg_agg["mean_posterior_std"])
-#     print("EMD :", res_eeg_agg["emd"])
-#     print("Calibration metrics:", res_eeg_agg["calibration"]["metrics_4"])
-#
-#     return {
-#         "pointwise": res_eeg_point,
-#         "aggregated": res_eeg_agg,
-#     }
-
-
-# =============================================================================
-# Example usage
-# =============================================================================
-
-# ------------------------------------------------------------------
-# Subset-aligned coordinates for EMD
-# ------------------------------------------------------------------
-# coords_subset_fixed_meg = get_subset_source_rr(lf_fixed_meg)
-# coords_subset_free_meg = get_subset_source_rr(lf_free_meg)
-
-# # coords_subset_fixed_eeg = get_subset_source_rr(lf_fixed_eeg)
-# # coords_subset_free_eeg = get_subset_source_rr(lf_free_eeg)
-
-# # ------------------------------------------------------------------
-# # MEG fixed -- BMN
-# # ------------------------------------------------------------------
-# results_fixed_meg_bmn = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_meg,
-#     out_fixed=out_fixed_bmn,
-#     coords_subset=coords_subset_fixed_meg,
-# )
-
-# # ------------------------------------------------------------------
-# # MEG fixed -- BMN_joint
-# # ------------------------------------------------------------------
-# results_fixed_meg_joint = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_meg,
-#     out_fixed=out_fixed_joint,
-#     coords_subset=coords_subset_fixed_meg,
-# )
-
-# # ------------------------------------------------------------------
-# # MEG free reduced rank-2 -- BMN
-# # ------------------------------------------------------------------
-# results_meg_bmn = run_metric_example_meg(
-#     a_true_meg_2d=a_free_meg,
-#     Q_basis=lf_free_meg["Q_basis"],
-#     out_meg=out_free_meg_bmn,
-#     coords_subset=coords_subset_free_meg,
-# )
-
-# # ------------------------------------------------------------------
-# # MEG free reduced rank-2 -- BMN_joint
-# # ------------------------------------------------------------------
-# results_meg_joint = run_metric_example_meg(
-#     a_true_meg_2d=a_free_meg,
-#     Q_basis=lf_free_meg["Q_basis"],
-#     out_meg=out_free_meg_joint,
-#     coords_subset=coords_subset_free_meg,
-# )
-
-# ------------------------------------------------------------------
-# EEG fixed -- BMN / BMN_joint
-# ------------------------------------------------------------------
-# results_fixed_eeg_bmn = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_eeg,
-#     out_fixed=out_fixed_eeg_bmn,
-#     coords_subset=coords_subset_fixed_eeg,
-# )
-#
-# results_fixed_eeg_joint = run_metric_example_fixed(
-#     x_true_fixed=x_fixed_eeg,
-#     out_fixed=out_fixed_eeg_joint,
-#     coords_subset=coords_subset_fixed_eeg,
-# )
-
-# ------------------------------------------------------------------
-# EEG free -- BMN
-# ------------------------------------------------------------------
-# results_eeg_bmn = run_metric_example_eeg(
-#     x_true_eeg_3d=x_free_eeg,
-#     out_eeg=out_free_eeg_bmn,
-#     coords_subset=coords_subset_free_eeg,
-# )
-
-# ------------------------------------------------------------------
-# EEG free -- BMN_joint
-# ------------------------------------------------------------------
-# results_eeg_joint = run_metric_example_eeg(
-#     x_true_eeg_3d=x_free_eeg,
-#     out_eeg=out_free_eeg_joint,
-#     coords_subset=coords_subset_free_eeg,
-# )

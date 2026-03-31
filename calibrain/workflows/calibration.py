@@ -4,11 +4,14 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
+import mne
 import numpy as np
 from scipy.linalg import block_diag
 
 from calibrain import MetricEvaluator, UncertaintyCalibrator, UncertaintyEstimator
-from calibrain.workflows.common import load_python_config
+from calibrain.metric_evaluation import compute_dataset_emd
+from calibrain.utils import get_data_path
+from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/calibration_default.py")
 
@@ -50,6 +53,25 @@ def _slugify(value: str) -> str:
     cleaned = [ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in value.strip()]
     slug = "".join(cleaned).strip("-_")
     return slug or "run"
+
+_COORD_CACHE: Dict[str, np.ndarray] = {}
+
+
+def _load_subject_coords(subject: str) -> np.ndarray:
+    if not subject:
+        raise ValueError("Dataset does not specify a subject; cannot load coordinates.")
+    if subject in _COORD_CACHE:
+        return _COORD_CACHE[subject]
+
+    fwd_dir = get_data_path() / "1284src_fwd"
+    fwd_path = fwd_dir / f"{subject}-fwd.fif"
+    if not fwd_path.exists():
+        raise FileNotFoundError(f"Forward solution not found for subject '{subject}': {fwd_path}")
+    fwd = mne.read_forward_solution(str(fwd_path), verbose="ERROR")
+    coords = np.vstack([hemi["rr"][hemi["vertno"]] for hemi in fwd["src"]])
+    _COORD_CACHE[subject] = coords
+    return coords
+
 
 
 def _expand_path_spec(value: Any, pattern: str) -> List[Path]:
@@ -171,6 +193,7 @@ def _load_npz_dataset(path: Path) -> Dict[str, np.ndarray]:
             "coil_type": _read_scalar_field(data, "coil_type"),
             "n_sources": int(_read_scalar_field(data, "n_sources", 0) or 0),
             "n_times": int(_read_scalar_field(data, "n_times", 0) or 0),
+            "subject": _read_str_field(data, "subject"),
         }
 
         if "posterior_cov" not in data:
@@ -306,10 +329,15 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
     eval_limit = config.get("eval_limit")
     if isinstance(eval_limit, int) and eval_limit > 0:
         eval_paths = eval_paths[:eval_limit]
+    emd_mode = str(config.get("emd_mode", "reduced")).lower()
+    if emd_mode not in {"reduced", "lifted"}:
+        raise ValueError("emd_mode must be 'reduced' or 'lifted'.")
 
     output_dir = Path(config.get("output_dir", "results/calibration_eval"))
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_curve = bool(config.get("plot_curve", False))
+    plot_source_idx = int(config.get("plot_source_idx", 0))
+    plot_nominal = float(config.get("plot_nominal", 0.95))
     run_name = config.get("run_name")
     run_slug = _slugify(run_name) if isinstance(run_name, str) and run_name.strip() else None
 
@@ -333,6 +361,15 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
         print(f"[calibration] Evaluating {eval_path.name} ({idx}/{len(eval_paths)})")
         logger.info("Loaded eval dataset: %s", eval_path)
         eval_data = _load_npz_dataset(eval_path)
+        eval_subject = eval_data.get("subject")
+        eval_coords: np.ndarray | None = None
+        if eval_subject:
+            try:
+                eval_coords = _load_subject_coords(str(eval_subject))
+            except Exception as exc:
+                logger.warning("Unable to load source coordinates for subject %s: %s", eval_subject, exc)
+        else:
+            logger.warning("Evaluation dataset %s lacks subject metadata; EMD will be skipped.", eval_path)
         calibrator = UncertaintyCalibrator(
             uncertainty_estimator=uncertainty_estimator,
             metric_evaluator=metric_evaluator,
@@ -355,17 +392,29 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
         post_block = calibration_results.get("post_calibration", {})
         sanitized_pre = {k: v for k, v in pre_block.items() if k not in {"ci_lowers", "ci_uppers"}}
         sanitized_post = {k: v for k, v in post_block.items() if k not in {"ci_lowers", "ci_uppers"}}
+        split_meta = post_block.get("split_metadata") or pre_block.get("split_metadata") or {}
+        setting_label = split_meta.get("setting")
+        emd_value = compute_dataset_emd(
+            metric_evaluator=metric_evaluator,
+            eval_data=eval_data,
+            coords=eval_coords,
+            setting=setting_label,
+            emd_mode=emd_mode,
+        )
 
         payload = {
             "created_at": datetime.now(timezone.utc).isoformat(),
             "train_sources": train_sources,
             "eval_source": str(eval_path),
+            "eval_subject": eval_subject,
             "run_name": run_name,
             "pre_calibration": _serialize_block(sanitized_pre),
             "post_calibration": _serialize_block(sanitized_post),
             "train_empirical_coverages": _serialize_array(
                 calibration_results.get("train_empirical_coverages")
             ),
+            "emd": float(emd_value) if emd_value is not None else None,
+            "emd_mode": emd_mode,
         }
         output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         logger.info("Saved calibration summary -> %s", output_path)
