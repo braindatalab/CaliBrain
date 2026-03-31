@@ -18,7 +18,7 @@ from calibrain import (
     BMN,
     BMN_joint,
     gamma_map_sflex,
-    sflex_gamma_lambda_map,
+    gamma_lambda_map_sflex,
 )
 from calibrain.utils import get_data_path
 from calibrain.workflows.common import load_python_config
@@ -31,7 +31,7 @@ _SOLVER_REGISTRY = {
     "BMN": BMN,
     "BMN_joint": BMN_joint,
     "gamma_map_sflex": gamma_map_sflex,
-    "sflex_gamma_lambda_map": sflex_gamma_lambda_map,
+    "gamma_lambda_map_sflex": gamma_lambda_map_sflex,
 }
 
 
@@ -44,7 +44,7 @@ def _resolve_solver(name: str):
         ) from exc
 
 
-def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
+def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFrame:
     if isinstance(config, (str, Path)):
         config = load_python_config(config)
 
@@ -82,9 +82,6 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
 
     save_posterior_stats = bool(config.get("save_posterior_stats", True))
 
-    results_dir = Path(config.get("results_dir", "results/benchmark_results"))
-    results_dir.mkdir(parents=True, exist_ok=True)
-    results_prefix = config.get("results_filename_prefix", "benchmark_results")
     posterior_dir = Path(config.get("posterior_dir", "results/posterior_summaries"))
     posterior_dir.mkdir(parents=True, exist_ok=True)
 
@@ -173,10 +170,8 @@ def run_benchmark(config: Union[str, Path, Dict[str, Any]]) -> Path:
     other_cols = [c for c in final_df.columns if c not in desired_cols]
     final_df = final_df[[c for c in desired_cols if c in final_df.columns] + other_cols]
 
-    output_csv = results_dir / f"{results_prefix}_{timestamp}.csv"
-    final_df.to_csv(output_csv, index=False)
-    logger.info("Benchmark results written to %s", output_csv)
-    return output_csv
+    logger.info("Benchmark results DataFrame assembled with %d rows", len(final_df))
+    return final_df
 
 
 if __name__ == "__main__":

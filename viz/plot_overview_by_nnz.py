@@ -456,7 +456,7 @@ def main():
     
     show = False
     dpi = 600
-    solvers = ["BMN", "BMN_joint", "gamma_map_sflex", "sflex_gamma_lambda_map"]
+    solvers = ["BMN", "BMN_joint", "gamma_map_sflex", "gamma_lambda_map_sflex"]
     noise_types = ["baseline", "oracle", "adaptive_joint_learning"]
     subjects = ["CC120166", "CC120264", "CC120309", "CC120313"]
     orientation_types = ["fixed"]
@@ -474,7 +474,7 @@ def main():
     if df.empty:
         raise SystemExit("No data left after solver/noise selection.")
 
-    solver_aliases = {"BMN_joint": "BMN", "sflex_gamma_lambda_map": "gamma_map_sflex"}
+    solver_aliases = {"BMN_joint": "BMN", "gamma_lambda_map_sflex": "gamma_map_sflex"}
     solver_display = {"BMN": "BMN", "gamma_map_sflex": "sFLEX-Gamma MAP"}
     df = df.copy()
     df["solver_canonical"] = df["solver"].map(solver_aliases).fillna(df["solver"])
