@@ -3,7 +3,7 @@ from copy import deepcopy
 
 RUN_PARAMS = {
     "nruns": 10 + 25,
-    "benchmark_n_jobs": 1,
+    "generation_n_jobs": 1,
     "random_state": 42,
 }
 

@@ -113,7 +113,7 @@ def _load_legacy_metadata(path: Path) -> dict | None:
 
 def load_posterior_summary(summary: PosteriorSummary) -> dict:
     """
-    Load a single posterior summary file produced by benchmarking.
+    Load a single posterior summary file produced by the data-generation workflow.
     Supports the new HDF5 format as well as legacy ``.npz`` files.
     """
     suffix = summary.path.suffix.lower()

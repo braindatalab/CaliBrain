@@ -10,8 +10,8 @@ of CaliBrain for brain source localization and uncertainty quantification.
 These examples show complete workflows that you can adapt for your own research 
 projects. Each example is a standalone script that can be run independently.
 
-**Quick Start**: If you're new to CaliBrain, start with the benchmarking experiment 
-to see how different algorithms compare on simulated data.
+**Quick Start**: If you're new to CaliBrain, start with the data-generation sweep 
+to see how different algorithms behave on simulated data.
 
 🔬 **Interactive Gallery**: All examples are automatically processed by Sphinx Gallery and converted to HTML with embedded plots and downloadable notebooks.
 
@@ -20,13 +20,12 @@ Available Examples
 
 All examples in this directory are automatically processed and available in multiple formats:
 
-**Benchmarking Experiments** (``run_experiments.py``)
-   Comprehensive comparison of different inverse methods:
+**Data-Generation Sweeps** (``run_experiments.py``)
+   Comprehensive solver sweeps that populate calibration datasets:
    
    - Multiple algorithms (Gamma-MAP, eLORETA, Bayesian Minimum Norm)
    - Various noise conditions and source configurations
-   - Performance metrics and calibration analysis
-   - Automated result visualization
+   - Posterior summaries saved for calibration and visualization
 
 **Leadfield Simulation** (``leadfield_simulation_example.py``)
    Step-by-step leadfield matrix computation:

@@ -5,7 +5,7 @@ API Reference
    :maxdepth: 2
    :hidden:
 
-   benchmark/Benchmark
+   data_generation/DataGenerator
    source_simulation/SourceSimulator
    leadfield_builder/LeadfieldBuilder
    sensor_simulation/SensorSimulator
@@ -81,9 +81,9 @@ Utilities
    :undoc-members:
    :show-inheritance:
 
-Benchmarking
-----------------
+Data Generation
+---------------
 
-.. automodule:: calibrain.benchmark
+.. automodule:: calibrain.data_generation
    :members:
    :undoc-members:
