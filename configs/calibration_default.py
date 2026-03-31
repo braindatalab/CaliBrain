@@ -19,6 +19,10 @@ CONFIG = {
     # Optionally limit the number of eval files processed (set to None for all).
     "eval_limit": None,
     
+    # Choose EMD comparison space for MEG free orientation: "reduced" (2D tangent plane)
+    # or "lifted" (reconstructed 3D sources).
+    "emd_mode": "lifted",
+    
     # Output + visualization controls.
     "output_dir": "results/calibration_eval",
     "run_name": "POST_BMN_ORACLE_FIXED",
