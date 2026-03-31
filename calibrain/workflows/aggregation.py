@@ -62,6 +62,21 @@ def _write_dataset(
     criteria: Dict[str, Any] | None,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_entries = dataset.get("metadata") or []
+    subject_candidates = {
+        entry.get("subject")
+        for entry in metadata_entries
+        if isinstance(entry, dict) and entry.get("subject")
+    }
+    primary_subject = subject_candidates.pop() if len(subject_candidates) == 1 else None
+
+    solver_candidates = {
+        entry.get("solver")
+        for entry in metadata_entries
+        if isinstance(entry, dict) and entry.get("solver")
+    }
+    primary_solver = solver_candidates.pop() if len(solver_candidates) == 1 else None
+
     arrays: Dict[str, np.ndarray] = {}
     scalars: Dict[str, Any] = {}
     for key, value in dataset.items():
@@ -74,6 +89,11 @@ def _write_dataset(
         else:
             scalars[key] = value
 
+    if primary_subject is not None:
+        scalars["subject"] = primary_subject
+    if primary_solver is not None:
+        scalars["solver"] = primary_solver
+
     scalar_arrays = {key: np.array(val) for key, val in scalars.items()}
     np.savez_compressed(output_path, **arrays, **scalar_arrays)
 
@@ -83,6 +103,8 @@ def _write_dataset(
         "sensor_kind": dataset.get("sensor_kind"),
         "n_sources": int(dataset.get("n_sources", 0)),
         "n_times": int(dataset.get("n_times", 0)),
+        "subject": primary_subject,
+        "solver": primary_solver,
     }
     meta_path = output_path.with_suffix(".json")
     meta_payload = {
@@ -94,6 +116,7 @@ def _write_dataset(
         "split": split_name,
         "criteria": _serialize_filter(criteria),
         "dataset_info": dataset_meta,
+        "solver": primary_solver,
         "summaries": [str(summary.path) for summary in summaries],
     }
     meta_path.write_text(json.dumps(meta_payload, indent=2), encoding="utf-8")
