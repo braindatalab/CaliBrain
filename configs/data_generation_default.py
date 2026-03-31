@@ -55,12 +55,12 @@ def _estimator(solver: str, solver_params: dict, noise_grid: dict) -> dict:
 
 
 ESTIMATORS = [
-    _estimator("BMN", {"max_iter": [1000], "normalization": [True]}, ORACLE_NOISE),
-    _estimator("BMN", {"max_iter": [1000], "normalization": [True]}, BASELINE_NOISE),
-    _estimator("BMN_joint", {"learn_noise":[True]}, ADAPTIVE_NOISE),
+    _estimator("BMN", {"max_iter": [300], "normalization": [True]}, ORACLE_NOISE),
+    _estimator("BMN", {"max_iter": [300], "normalization": [True]}, BASELINE_NOISE),
+    _estimator("BMN_joint", {"max_iter": [300], "learn_noise":[True]}, ADAPTIVE_NOISE),
     _estimator("gamma_map_sflex", {"sigma": [0.001], "max_iter": [1000]}, ORACLE_NOISE),
     _estimator("gamma_map_sflex", {"sigma": [0.001], "max_iter": [1000]}, BASELINE_NOISE),
-    _estimator("gamma_lambda_map_sflex", {"learn_lambda": [True]}, ADAPTIVE_NOISE),
+    _estimator("gamma_lambda_map_sflex", {"learn_lambda": [True], "max_iter": [1000]}, ADAPTIVE_NOISE),
 ]
 
 
