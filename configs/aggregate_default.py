@@ -23,7 +23,7 @@ def train_run_filter(rid, threshold=RUN_SPLIT_THRESHOLD):
 def eval_run_filter(rid, threshold=RUN_SPLIT_THRESHOLD):
     return rid is not None and int(rid) > threshold
 
-EXPERIMENT_NAME = "POST_BMN_ORACLE_FIXED"
+EXPERIMENT_NAME = "POST_ORACLE_fixed_bmn_oracle"
 # "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
 
 CONFIGS = {
@@ -33,8 +33,8 @@ CONFIGS = {
         "filter": {
             "alpha_SNR": [0.5],
             "nnz": [5],
-            "solver": ["BMN"],
-            "noise_type": ["oracle"],
+            # "solver": ["BMN"],
+            # "noise_type": ["oracle"],
             # "subject": ["CC120166"],
             "orientation_type": ["fixed"],
             "coil_type": [FIFF.FIFFV_COIL_VV_MAG_T1],
@@ -47,7 +47,7 @@ CONFIGS = {
         "filter": {
             "alpha_SNR": [0.5],
             "nnz": [5],
-            "solver": ["BMN"],
+            # "solver": ["BMN_joint"],
             "noise_type": ["oracle"],
             # "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
             "orientation_type": ["fixed"],
