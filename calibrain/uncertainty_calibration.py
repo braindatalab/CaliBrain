@@ -212,6 +212,7 @@ class UncertaintyCalibrator:
         train_data: Optional[dict] = None,
         test_data: Optional[dict] = None,
         verbose: bool = False,
+        fit: bool = True,
     ) -> dict:
         """
         Run the full calibration procedure on the provided posterior statistics.
@@ -236,6 +237,11 @@ class UncertaintyCalibrator:
             data is also used for evaluation.
         verbose : bool, optional
             If True, print progress information.
+        fit : bool, optional
+            If False, skip isotonic regression fitting and report only the raw
+            (pre-calibration) coverage curve on the evaluation data. The
+            returned ``post_calibration`` block mirrors the pre-calibration
+            results with an identity mapping.
 
         Returns
         -------
@@ -250,7 +256,7 @@ class UncertaintyCalibrator:
         if verbose:
             print("=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION) ===")
 
-        if train_data is None:
+        if train_data is None and fit:
             if x_true is None or x_hat is None or posterior_std is None:
                 raise ValueError(
                     "Provide either 'train_data' or raw arrays x_true, x_hat, posterior_std."
@@ -271,18 +277,47 @@ class UncertaintyCalibrator:
                 "n_times": x_true.shape[-1],
             }
 
-        if train_data.get("x_true") is None:
-            raise ValueError("train_data must include 'x_true'.")
         if test_data is not None:
             if test_data.get("x_true") is None:
                 raise ValueError("test_data must include 'x_true'.")
             eval_data = test_data
-        else:
+        elif train_data is not None:
+            if train_data.get("x_true") is None:
+                raise ValueError("train_data must include 'x_true'.")
             eval_data = train_data
+        else:
+            if x_true is None or x_hat is None or posterior_std is None:
+                raise ValueError(
+                    "Provide 'test_data' (or raw arrays) when fit=False and no train_data is supplied."
+                )
+            if x_true.shape != x_hat.shape:
+                raise ValueError("x_true and x_hat must have identical shapes.")
+            if posterior_std.shape[0] != x_true.shape[0]:
+                raise ValueError(
+                    "posterior_std must provide one value per source for fixed orientation."
+                )
+            eval_data = {
+                "orientation_type": "fixed",
+                "coil_type": None,
+                "x_true": x_true,
+                "x_hat": x_hat,
+                "posterior_std": posterior_std,
+                "n_sources": x_true.shape[0],
+                "n_times": x_true.shape[-1],
+            }
 
         if verbose:
-            print(f"  train sources = {train_data['n_sources']}, train times = {train_data['n_times']}")
-            print(f"  eval sources  = {eval_data['n_sources']}, eval times  = {eval_data['n_times']}\n")
+            if train_data is not None:
+                print(
+                    f"  train sources = {train_data['n_sources']}, train times = {train_data['n_times']}"
+                )
+            else:
+                print("  train sources = (skipped; fit=False)")
+            print(
+                f"  eval sources  = {eval_data['n_sources']}, eval times  = {eval_data['n_times']}\n"
+            )
+
+        train_data_for_flags = train_data if train_data is not None else eval_data
 
         (
             train_orientation,
@@ -290,7 +325,7 @@ class UncertaintyCalibrator:
             train_is_fixed,
             train_is_eeg,
             train_is_meg,
-        ) = self._orientation_flags(train_data)
+        ) = self._orientation_flags(train_data_for_flags)
         (
             eval_orientation,
             eval_coil,
@@ -299,31 +334,25 @@ class UncertaintyCalibrator:
             eval_is_meg,
         ) = self._orientation_flags(eval_data)
 
-        if (
-            train_is_fixed,
-            train_is_eeg,
-            train_is_meg,
-        ) != (
-            eval_is_fixed,
-            eval_is_eeg,
-            eval_is_meg,
-        ):
-            raise ValueError(
-                "Train and evaluation datasets must share the same orientation configuration."
-            )
+        if fit:
+            if (
+                train_is_fixed,
+                train_is_eeg,
+                train_is_meg,
+            ) != (
+                eval_is_fixed,
+                eval_is_eeg,
+                eval_is_meg,
+            ):
+                raise ValueError(
+                    "Train and evaluation datasets must share the same orientation configuration."
+                )
 
         setting_label: str
 
         if train_is_fixed:
             setting_label = "fixed"
-            train_cov = train_data.get("posterior_cov")
             eval_cov = eval_data.get("posterior_cov")
-
-            if train_cov is not None:
-                train_var = self.uncertainty_estimator.posterior_variance_from_cov(train_cov)
-            else:
-                train_std = np.asarray(train_data["posterior_std"], dtype=float)
-                train_var = np.square(train_std.reshape(-1))
 
             if eval_cov is not None:
                 eval_var = self.uncertainty_estimator.posterior_variance_from_cov(eval_cov)
@@ -331,16 +360,27 @@ class UncertaintyCalibrator:
                 eval_std = np.asarray(eval_data["posterior_std"], dtype=float)
                 eval_var = np.square(eval_std.reshape(-1))
 
-            train_curve = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
-                x_true=train_data["x_true"],
-                x_hat=train_data["x_hat"],
-                posterior_var=train_var,
-            )
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
                 x_true=eval_data["x_true"],
                 x_hat=eval_data["x_hat"],
                 posterior_var=eval_var,
             )
+
+            train_curve = None
+            if fit:
+                if train_data is None:
+                    raise ValueError("train_data is required when fit=True.")
+                train_cov = train_data.get("posterior_cov")
+                if train_cov is not None:
+                    train_var = self.uncertainty_estimator.posterior_variance_from_cov(train_cov)
+                else:
+                    train_std = np.asarray(train_data["posterior_std"], dtype=float)
+                    train_var = np.square(train_std.reshape(-1))
+                train_curve = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
+                    x_true=train_data["x_true"],
+                    x_hat=train_data["x_hat"],
+                    posterior_var=train_var,
+                )
 
             def eval_empirical(levels):
                 return [
@@ -355,25 +395,30 @@ class UncertaintyCalibrator:
 
         elif train_is_eeg:
             setting_label = "eeg_free"
-            n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
             n_eval = int(eval_data.get("n_sources") or eval_data["x_true"].shape[0])
-            train_true = self._reshape_free_mean(train_data["x_true"], n_train, 3)
-            train_hat = self._reshape_free_mean(train_data["x_hat"], n_train, 3)
             eval_true = self._reshape_free_mean(eval_data["x_true"], n_eval, 3)
             eval_hat = self._reshape_free_mean(eval_data["x_hat"], n_eval, 3)
-            train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
             eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
-            train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
-                x_true=train_true,
-                x_hat=train_hat,
-                posterior_cov=train_cov,
-            )
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
                 x_true=eval_true,
                 x_hat=eval_hat,
                 posterior_cov=eval_cov,
             )
+
+            train_curve = None
+            if fit:
+                if train_data is None:
+                    raise ValueError("train_data is required when fit=True.")
+                n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
+                train_true = self._reshape_free_mean(train_data["x_true"], n_train, 3)
+                train_hat = self._reshape_free_mean(train_data["x_hat"], n_train, 3)
+                train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+                train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
+                    x_true=train_true,
+                    x_hat=train_hat,
+                    posterior_cov=train_cov,
+                )
 
             def eval_empirical(levels):
                 return [
@@ -388,38 +433,45 @@ class UncertaintyCalibrator:
 
         elif train_is_meg:
             setting_label = "meg_free"
-            train_basis = train_data.get("Q_basis")
             eval_basis = eval_data.get("Q_basis")
-            if train_basis is None or eval_basis is None:
+            if eval_basis is None:
                 raise ValueError("Free-orientation MEG datasets must include Q_basis.")
-            n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
             n_eval = int(eval_data.get("n_sources") or eval_data["x_true"].shape[0])
 
-            train_V_tan = self._extract_meg_tangent_basis(train_basis, n_train)
             eval_V_tan = self._extract_meg_tangent_basis(eval_basis, n_eval)
 
-            train_hat_2d = self._reshape_free_mean(train_data["x_hat"], n_train, 2)
             eval_hat_2d = self._reshape_free_mean(eval_data["x_hat"], n_eval, 2)
-            train_true_2d = self._reshape_free_mean(train_data["x_true"], n_train, 2)
             eval_true_2d = self._reshape_free_mean(eval_data["x_true"], n_eval, 2)
 
-            train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
             eval_true_3d = lift_reduced_sources_to_3d(eval_true_2d, eval_V_tan)
-            train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
             eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
-            train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
-                x_true_3d=train_true_3d,
-                x_hat_2d=train_hat_2d,
-                posterior_cov_2d=train_cov,
-                V_tan=train_V_tan,
-            )
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
                 x_true_3d=eval_true_3d,
                 x_hat_2d=eval_hat_2d,
                 posterior_cov_2d=eval_cov,
                 V_tan=eval_V_tan,
             )
+
+            train_curve = None
+            if fit:
+                if train_data is None:
+                    raise ValueError("train_data is required when fit=True.")
+                train_basis = train_data.get("Q_basis")
+                if train_basis is None:
+                    raise ValueError("Free-orientation MEG training datasets must include Q_basis.")
+                n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
+                train_V_tan = self._extract_meg_tangent_basis(train_basis, n_train)
+                train_hat_2d = self._reshape_free_mean(train_data["x_hat"], n_train, 2)
+                train_true_2d = self._reshape_free_mean(train_data["x_true"], n_train, 2)
+                train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
+                train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+                train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
+                    x_true_3d=train_true_3d,
+                    x_hat_2d=train_hat_2d,
+                    posterior_cov_2d=train_cov,
+                    V_tan=train_V_tan,
+                )
 
             def eval_empirical(levels):
                 return [
@@ -444,6 +496,49 @@ class UncertaintyCalibrator:
             np.asarray(empirical_before_eval, dtype=float),
         )
 
+        train_meta = train_data if train_data is not None else eval_data
+        split_metadata = {
+            'train_n_sources': train_meta.get('n_sources'),
+            'train_n_times': train_meta.get('n_times'),
+            'eval_n_sources': eval_data.get('n_sources'),
+            'eval_n_times': eval_data.get('n_times'),
+            'uses_separate_eval_split': test_data is not None,
+            'orientation_type': train_meta.get('orientation_type'),
+            'coil_type': train_meta.get('coil_type'),
+            'setting': setting_label,
+            'fit': bool(fit),
+        }
+
+        pre_results = {
+            'nominal_coverages': pre_curve_eval['nominal_coverages'],
+            'empirical_coverages': empirical_before_eval,
+            'calibration_metrics': calibration_metrics_before,
+            'ci_lowers': pre_curve_eval.get('ci_lowers'),
+            'ci_uppers': pre_curve_eval.get('ci_uppers'),
+            'ci_counts': pre_curve_eval.get('ci_counts'),
+            'split_metadata': split_metadata,
+        }
+
+        if not fit:
+            identity_levels = np.asarray(pre_curve_eval["nominal_coverages"], dtype=float)
+            post_results = {
+                'nominal_coverages': identity_levels,
+                'empirical_coverages': np.asarray(empirical_before_eval, dtype=float),
+                'calibration_metrics': calibration_metrics_before,
+                'recalibrated_nominal_coverages': identity_levels,
+                'split_metadata': split_metadata,
+            }
+            return {
+                'pre_calibration': pre_results,
+                'post_calibration': post_results,
+                'train_empirical_coverages': None,
+                'calibration_metric_names': tuple(
+                    getattr(self.metric_evaluator, "calibration_metrics", tuple())
+                ),
+            }
+
+        if train_curve is None:
+            raise RuntimeError("Internal error: train_curve missing despite fit=True.")
         empirical_train = train_curve["empirical_coverages"]
 
         iso = IsotonicRegression(increasing=True, out_of_bounds="clip")
@@ -470,26 +565,6 @@ class UncertaintyCalibrator:
         self.calibration_model.fit(self.nominal_coverages, c_recalibrated)
         self.is_calibrated = True
 
-        split_metadata = {
-            'train_n_sources': train_data['n_sources'],
-            'train_n_times': train_data['n_times'],
-            'eval_n_sources': eval_data['n_sources'],
-            'eval_n_times': eval_data['n_times'],
-            'uses_separate_eval_split': test_data is not None,
-            'orientation_type': train_data.get('orientation_type'),
-            'coil_type': train_data.get('coil_type'),
-            'setting': setting_label,
-        }
-
-        pre_results = {
-            'nominal_coverages': pre_curve_eval['nominal_coverages'],
-            'empirical_coverages': empirical_before_eval,
-            'calibration_metrics': calibration_metrics_before,
-            'ci_lowers': pre_curve_eval.get('ci_lowers'),
-            'ci_uppers': pre_curve_eval.get('ci_uppers'),
-            'ci_counts': pre_curve_eval.get('ci_counts'),
-            'split_metadata': split_metadata,
-        }
         post_results = {
             'nominal_coverages': self.nominal_coverages,
             'empirical_coverages': empirical_after_eval,
