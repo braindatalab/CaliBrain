@@ -2,14 +2,17 @@ from copy import deepcopy
 
 
 RUN_PARAMS = {
-    "nruns": 10 + 25,
-    "generation_n_jobs": 1,
+    # "nruns": 10 + 25,
+    "nruns": 3 + 5,
+    "generation_n_jobs": 8,
     "random_state": 42,
 }
+ORIENTATION_TYPE = "fixed"
 
 PATHS = {
-    "log_dir": "results/logs/fixed",
-    "posterior_dir": "results/posterior_summaries/fixed",
+    "log_dir": f"/data/orabem/calibrain/results/logs/{ORIENTATION_TYPE}",
+    "posterior_dir": f"/data/orabem/calibrain/results/posterior_summaries/{ORIENTATION_TYPE}",
+    "manifest_path": f"/data/orabem/calibrain/results/run_manifest/{ORIENTATION_TYPE}.csv",
 }
 
 UNCERTAINTY = {
@@ -34,15 +37,18 @@ ERP_CONFIG = {
 }
 
 COMMON_DATA_GRID = {
-    "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
-    "nnz": [1, 3, 5, 10, 100],
-    "orientation_type": ["fixed"],
-    "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
+    # "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+    "subject": ["CC120166", "CC120264"],
+    # "nnz": [1, 3, 5, 10, 100],
+    "nnz": [1, 3],# 10, 100],
+    "orientation_type": [ORIENTATION_TYPE],
+    # "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
+    "alpha_SNR": [0.1, 0.9],
     "sensor_white_noise_std": [0.001],
 }
 
 ORACLE_NOISE = {"noise_type": ["oracle"]}
-BASELINE_NOISE = {"noise_type": ["baseline"]}
+# BASELINE_NOISE = {"noise_type": ["baseline"]}
 ADAPTIVE_NOISE = {"noise_type": ["adaptive_joint_learning"]}
 
 def _estimator(solver: str, solver_params: dict, noise_grid: dict) -> dict:
@@ -56,10 +62,10 @@ def _estimator(solver: str, solver_params: dict, noise_grid: dict) -> dict:
 
 ESTIMATORS = [
     _estimator("BMN", {"max_iter": [300], "normalization": [True]}, ORACLE_NOISE),
-    _estimator("BMN", {"max_iter": [300], "normalization": [True]}, BASELINE_NOISE),
+    # _estimator("BMN", {"max_iter": [300], "normalization": [True]}, BASELINE_NOISE),
     _estimator("BMN_joint", {"max_iter": [300], "learn_noise":[True]}, ADAPTIVE_NOISE),
     _estimator("gamma_map_sflex", {"sigma": [0.001], "max_iter": [1000]}, ORACLE_NOISE),
-    _estimator("gamma_map_sflex", {"sigma": [0.001], "max_iter": [1000]}, BASELINE_NOISE),
+    # _estimator("gamma_map_sflex", {"sigma": [0.001], "max_iter": [1000]}, BASELINE_NOISE),
     _estimator("gamma_lambda_map_sflex", {"learn_lambda": [True], "max_iter": [1000]}, ADAPTIVE_NOISE),
 ]
 

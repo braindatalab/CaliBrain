@@ -85,6 +85,9 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
     posterior_dir = Path(config.get("posterior_dir", "results/posterior_summaries"))
     posterior_dir.mkdir(parents=True, exist_ok=True)
 
+    manifest_path = Path(config.get("manifest_path", "results/run_manifest.csv"))
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+
     df_list = []
     config_counts = []
     for estimator in estimators_cfg:
@@ -171,6 +174,28 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
     final_df = final_df[[c for c in desired_cols if c in final_df.columns] + other_cols]
 
     logger.info("Data generation results DataFrame assembled with %d rows", len(final_df))
+
+    if "posterior_summary" not in final_df.columns:
+        raise ValueError(
+            "Data generation results are missing the 'posterior_summary' column. "
+            "Make sure `save_posterior_stats=True` in the data generation config."
+        )
+
+    # Append to (or create) a CSV manifest so downstream steps can discover runs
+    # without scanning the filesystem.
+    try:
+        if manifest_path.exists():
+            existing = pd.read_csv(manifest_path)
+            combined = pd.concat([existing, final_df], ignore_index=True)
+            if "posterior_summary" in combined.columns:
+                combined.drop_duplicates(subset=["posterior_summary"], inplace=True, keep="last")
+        else:
+            combined = final_df
+        combined.to_csv(manifest_path, index=False)
+        logger.info("Updated run manifest CSV: %s (%d rows)", manifest_path, len(combined))
+    except Exception as exc:
+        raise RuntimeError(f"Failed to write run manifest CSV at {manifest_path}: {exc}") from exc
+
     return final_df
 
 

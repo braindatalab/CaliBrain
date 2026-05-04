@@ -3,6 +3,8 @@ import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
+import zipfile
+import zlib
 
 import mne
 import numpy as np
@@ -186,34 +188,41 @@ def _read_str_field(data, key, default=None):
 
 
 def _load_npz_dataset(path: Path) -> Dict[str, np.ndarray]:
-    with np.load(path) as data:
-        orientation_type = _read_str_field(data, "orientation_type", "fixed")
-        payload: Dict[str, Any] = {
-            "orientation_type": orientation_type,
-            "coil_type": _read_scalar_field(data, "coil_type"),
-            "n_sources": int(_read_scalar_field(data, "n_sources", 0) or 0),
-            "n_times": int(_read_scalar_field(data, "n_times", 0) or 0),
-            "subject": _read_str_field(data, "subject"),
-        }
+    try:
+        with np.load(path) as data:
+            orientation_type = _read_str_field(data, "orientation_type", "fixed")
+            payload: Dict[str, Any] = {
+                "orientation_type": orientation_type,
+                "coil_type": _read_scalar_field(data, "coil_type"),
+                "n_sources": int(_read_scalar_field(data, "n_sources", 0) or 0),
+                "n_times": int(_read_scalar_field(data, "n_times", 0) or 0),
+                "subject": _read_str_field(data, "subject"),
+            }
 
-        if "posterior_cov" not in data:
-            raise ValueError(
-                f"Dataset {path} is missing 'posterior_cov'. Regenerate the aggregation dataset with the current workflow."
-            )
+            if "posterior_cov" not in data:
+                raise ValueError(
+                    f"Dataset {path} is missing 'posterior_cov'. Regenerate the aggregation dataset with the current workflow."
+                )
 
-        payload["x_true"] = data["x_true"]
-        payload["x_hat"] = data["x_hat"]
-        payload["posterior_cov"] = data["posterior_cov"]
-        if "Q_basis" in data:
-            payload["Q_basis"] = data["Q_basis"]
+            payload["x_true"] = data["x_true"]
+            payload["x_hat"] = data["x_hat"]
+            payload["posterior_cov"] = data["posterior_cov"]
+            if "Q_basis" in data:
+                payload["Q_basis"] = data["Q_basis"]
 
-        if payload["n_sources"] == 0:
-            if "x_true" in payload:
-                payload["n_sources"] = payload["x_true"].shape[0]
-        if payload["n_times"] == 0:
-            if "x_true" in payload:
-                payload["n_times"] = payload["x_true"].shape[-1]
-        return payload
+            if payload["n_sources"] == 0:
+                if "x_true" in payload:
+                    payload["n_sources"] = payload["x_true"].shape[0]
+            if payload["n_times"] == 0:
+                if "x_true" in payload:
+                    payload["n_times"] = payload["x_true"].shape[-1]
+            return payload
+    except (zipfile.BadZipFile, zlib.error, OSError, ValueError) as exc:
+        raise ValueError(
+            f"Failed to read aggregated NPZ dataset {path}. "
+            "The file is likely corrupted (e.g., interrupted aggregation). "
+            "Delete it and re-run the aggregation workflow for this split."
+        ) from exc
 
 
 def _serialize_array(value):
@@ -303,20 +312,24 @@ def _plot_aggregated_curves(
     plt.close(fig)
 
 
-def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
+def _run_calibration_single(config: Dict[str, Any]) -> Path:
     if isinstance(config, (str, Path)):
-        config = load_python_config(config)
+        raise TypeError("_run_calibration_single expects a dict config.")
 
     logger = logging.getLogger(__name__)
-    train_paths = _collect_dataset_paths(
-        dataset=config.get("train_dataset"),
-        directory=config.get("train_dir"),
-        pattern=config.get("train_pattern", "*.npz"),
-        label="Train",
-    )
-    if not train_paths:
-        raise ValueError("Provide at least one train dataset via 'train_dataset' or 'train_dir'.")
-    train_sources = [str(p) for p in train_paths]
+    fit_calibration = bool(config.get("fit_calibration", True))
+    train_paths: List[Path] = []
+    train_sources: List[str] = []
+    if fit_calibration:
+        train_paths = _collect_dataset_paths(
+            dataset=config.get("train_dataset"),
+            directory=config.get("train_dir"),
+            pattern=config.get("train_pattern", "*.npz"),
+            label="Train",
+        )
+        if not train_paths:
+            raise ValueError("Provide at least one train dataset via 'train_dataset' or 'train_dir'.")
+        train_sources = [str(p) for p in train_paths]
 
     eval_paths = _collect_dataset_paths(
         dataset=config.get("test_dataset"),
@@ -341,12 +354,14 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
     run_name = config.get("run_name")
     run_slug = _slugify(run_name) if isinstance(run_name, str) and run_name.strip() else None
 
-    train_datasets = [_load_npz_dataset(path) for path in train_paths]
-    train_data = _combine_datasets(train_datasets)
+    train_data: Dict[str, Any] | None = None
+    if fit_calibration:
+        train_datasets = [_load_npz_dataset(path) for path in train_paths]
+        train_data = _combine_datasets(train_datasets)
 
-    logger.info("Loaded %d training datasets.", len(train_paths))
-    for path in train_paths:
-        logger.debug("  train -> %s", path)
+        logger.info("Loaded %d training datasets.", len(train_paths))
+        for path in train_paths:
+            logger.debug("  train -> %s", path)
 
     uncertainty_estimator, metric_evaluator = build_uncertainty_components(
         nominal_coverages=config.get("nominal_coverages"),
@@ -377,6 +392,7 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
         calibration_results = calibrator.calibrate(
             train_data=train_data,
             test_data=eval_data,
+            fit=fit_calibration,
         )
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -460,6 +476,31 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
         print(f"[calibration] Saved aggregated calibration curve -> {agg_path}")
 
     return outputs[-1] if outputs else output_dir
+
+
+def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
+    if isinstance(config, (str, Path)):
+        config = load_python_config(config)
+
+    runs = config.get("runs")
+    if runs is not None:
+        if isinstance(runs, dict):
+            items = list(runs.items())
+        elif isinstance(runs, list):
+            items = list(enumerate(runs))
+        else:
+            raise ValueError("calibration CONFIG['runs'] must be a dict or list of per-run configs.")
+
+        last: Path | None = None
+        for name, sub_config in items:
+            label = str(name)
+            print(f"[calibration] Running preset '{label}'")
+            if not isinstance(sub_config, dict):
+                raise ValueError(f"Run '{label}' must be a dict config.")
+            last = _run_calibration_single(sub_config)
+        return last if last is not None else Path(config.get("output_dir", "results/calibration_eval"))
+
+    return _run_calibration_single(config)
 
 
 if __name__ == "__main__":

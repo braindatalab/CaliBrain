@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Union
 
@@ -7,9 +8,9 @@ import numpy as np
 
 from calibrain.calibration_dataset import (
     concatenate_summaries,
-    discover_posterior_summaries,
     filter_summaries_by_metadata,
 )
+from calibrain.run_manifest import summaries_from_manifest
 from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/aggregate_default.py")
@@ -94,8 +95,32 @@ def _write_dataset(
     if primary_solver is not None:
         scalars["solver"] = primary_solver
 
+    # Persist additional per-run metadata that is useful for downstream grouping
+    # (plots, pooled filtering, pairing fixed/free runs). When aggregating a
+    # single posterior summary (the default), these are unambiguous.
+    def _unique_or_none(values):
+        uniq = {v for v in values if v is not None}
+        return uniq.pop() if len(uniq) == 1 else None
+
+    def _collect_unique(key: str):
+        return _unique_or_none(
+            entry.get(key)
+            for entry in metadata_entries
+            if isinstance(entry, dict)
+        )
+
+    for key in ("noise_type", "alpha_SNR", "nnz", "seed", "run_id", "global_run_id"):
+        value = _collect_unique(key)
+        if value is not None:
+            scalars[key] = value
+
     scalar_arrays = {key: np.array(val) for key, val in scalars.items()}
-    np.savez_compressed(output_path, **arrays, **scalar_arrays)
+    # Write NPZ atomically to avoid corrupted zip archives if the job is interrupted.
+    # NOTE: numpy appends ".npz" when the provided filename does not end with it.
+    # Use a tmp path that ends with ".npz" so we can safely os.replace it.
+    tmp_npz = output_path.with_suffix(".tmp.npz")
+    np.savez_compressed(tmp_npz, **arrays, **scalar_arrays)
+    os.replace(tmp_npz, output_path)
 
     dataset_meta = {
         "orientation_type": dataset.get("orientation_type"),
@@ -119,24 +144,33 @@ def _write_dataset(
         "solver": primary_solver,
         "summaries": [str(summary.path) for summary in summaries],
     }
-    meta_path.write_text(json.dumps(meta_payload, indent=2), encoding="utf-8")
+    tmp_meta = meta_path.with_name(f"{meta_path.name}.tmp")
+    tmp_meta.write_text(json.dumps(meta_payload, indent=2), encoding="utf-8")
+    os.replace(tmp_meta, meta_path)
 
 
 def _aggregate_single(config: Dict[str, Any], tag: str | None = None) -> None:
     if isinstance(config, (str, Path)):
         config = load_python_config(config)
 
-    summaries_root = Path(config["summaries_root"])
-    if not summaries_root.exists():
-        raise FileNotFoundError(f"Summary root does not exist: {summaries_root}")
+    if "manifest_path" not in config:
+        raise KeyError(
+            "Aggregation config must specify 'manifest_path' (CSV) so discovery does not "
+            "scan the filesystem."
+        )
+    manifest_path = Path(config["manifest_path"])
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Manifest CSV does not exist: {manifest_path}")
+
+    summaries_root = Path(config.get("summaries_root") or manifest_path.parent)
 
     output_dir = Path(config.get("output_dir", "results/calibration_datasets"))
     criteria = config.get("filter")
 
-    summaries = list(discover_posterior_summaries(summaries_root))
+    summaries = summaries_from_manifest(manifest_path)
     if not summaries:
         raise FileNotFoundError(
-            f"No posterior summary files found under {summaries_root}"
+            f"No posterior summary files found in manifest {manifest_path}"
         )
 
     if criteria:
@@ -171,6 +205,12 @@ def aggregate_posteriors(config: Union[str, Path, Dict[str, Any]]) -> None:
         else:
             items = enumerate(splits)
         for name, sub_config in items:
+            if isinstance(sub_config, dict):
+                sub_config = dict(sub_config)
+                if "manifest_path" not in sub_config and "manifest_path" in config:
+                    sub_config["manifest_path"] = config["manifest_path"]
+                if "summaries_root" not in sub_config and "summaries_root" in config:
+                    sub_config["summaries_root"] = config["summaries_root"]
             print(f"[aggregation] Running split '{name}'")
             _aggregate_single(sub_config, tag=str(name))
         return

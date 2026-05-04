@@ -499,6 +499,10 @@ class DataGenerator:
             sensor_coil_type = sensor_meta.get("coil_type")
             sensor_units = sensor_meta.get("units")
             sensor_unitmult = sensor_meta.get("unitmult")
+            # Persist sensor metadata in the per-run results so the CSV manifest
+            # can be used for filtering without opening the H5 summaries.
+            this_result["sensor_kind"] = sensor_kind
+            this_result["coil_type"] = sensor_coil_type
             self.sensor_simulator.set_sensor_metadata(
                 kind=sensor_kind,
                 coil_type=sensor_coil_type,
@@ -521,6 +525,8 @@ class DataGenerator:
             source_unitmult = prepared_data["source_unitmult"]
             
             n_times = x.shape[-1]
+            this_result["n_sources"] = int(n_sources)
+            this_result["n_times"] = int(n_times)
             
             if orientation_type == "fixed":
                 n_orient = 1
