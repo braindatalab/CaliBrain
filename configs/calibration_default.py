@@ -64,16 +64,16 @@ from pathlib import Path
 # Manual selector (edit these)
 # ---------------------------------------------------------------------------
 
-SELECT_ORIENTATION = "fixed"  # "fixed" or "free"
+SELECT_ORIENTATION = "free"  # "fixed" or "free"
 SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
 
 # Keep this list in sync with `configs/aggregate_default.py:SELECT_SOLVER_NOISE_PAIRS`.
 SOLVER_NOISE_PAIRS = [
     ("BMN", "oracle"),
-    # ("BMN", "baseline"),
+    ("BMN", "baseline"),
     ("BMN_joint", "adaptive_joint_learning"),
     ("gamma_map_sflex", "oracle"),
-    # ("gamma_map_sflex", "baseline"),
+    ("gamma_map_sflex", "baseline"),
     ("gamma_lambda_map_sflex", "adaptive_joint_learning"),
 ]
 
@@ -83,8 +83,7 @@ SOLVER_NOISE_PAIRS = [
 
 AGG_ROOT = Path("/data/orabem/calibrain/results/aggregated_data")
 
-# HEADS = ("CC120166", "CC120264", "CC120309", "CC120313")
-HEADS = ("CC120166", "CC120264") #, "CC120309", "CC120313")
+HEADS = ("CC120166", "CC120264", "CC120309", "CC120313")
 
 
 def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:

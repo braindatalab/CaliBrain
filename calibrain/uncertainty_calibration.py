@@ -352,13 +352,18 @@ class UncertaintyCalibrator:
 
         if train_is_fixed:
             setting_label = "fixed"
-            eval_cov = eval_data.get("posterior_cov")
-
-            if eval_cov is not None:
-                eval_var = self.uncertainty_estimator.posterior_variance_from_cov(eval_cov)
-            else:
+            if "posterior_var" in eval_data:
+                eval_var = np.asarray(eval_data["posterior_var"], dtype=float).reshape(-1)
+            elif "posterior_std" in eval_data:
                 eval_std = np.asarray(eval_data["posterior_std"], dtype=float)
                 eval_var = np.square(eval_std.reshape(-1))
+            else:
+                eval_cov = eval_data.get("posterior_cov")
+                if eval_cov is None:
+                    raise ValueError(
+                        "Fixed-orientation datasets must include one of: posterior_var, posterior_std, posterior_cov."
+                    )
+                eval_var = self.uncertainty_estimator.posterior_variance_from_cov(eval_cov)
 
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
                 x_true=eval_data["x_true"],
@@ -370,12 +375,18 @@ class UncertaintyCalibrator:
             if fit:
                 if train_data is None:
                     raise ValueError("train_data is required when fit=True.")
-                train_cov = train_data.get("posterior_cov")
-                if train_cov is not None:
-                    train_var = self.uncertainty_estimator.posterior_variance_from_cov(train_cov)
-                else:
+                if "posterior_var" in train_data:
+                    train_var = np.asarray(train_data["posterior_var"], dtype=float).reshape(-1)
+                elif "posterior_std" in train_data:
                     train_std = np.asarray(train_data["posterior_std"], dtype=float)
                     train_var = np.square(train_std.reshape(-1))
+                else:
+                    train_cov = train_data.get("posterior_cov")
+                    if train_cov is None:
+                        raise ValueError(
+                            "Fixed-orientation training datasets must include one of: posterior_var, posterior_std, posterior_cov."
+                        )
+                    train_var = self.uncertainty_estimator.posterior_variance_from_cov(train_cov)
                 train_curve = self.uncertainty_estimator.calibration_curve_intervals_aggregated(
                     x_true=train_data["x_true"],
                     x_hat=train_data["x_hat"],
@@ -398,7 +409,10 @@ class UncertaintyCalibrator:
             n_eval = int(eval_data.get("n_sources") or eval_data["x_true"].shape[0])
             eval_true = self._reshape_free_mean(eval_data["x_true"], n_eval, 3)
             eval_hat = self._reshape_free_mean(eval_data["x_hat"], n_eval, 3)
-            eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
+            if "posterior_cov_blocks" in eval_data:
+                eval_cov = np.asarray(eval_data["posterior_cov_blocks"], dtype=float)
+            else:
+                eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
                 x_true=eval_true,
@@ -413,7 +427,10 @@ class UncertaintyCalibrator:
                 n_train = int(train_data.get("n_sources") or train_data["x_true"].shape[0])
                 train_true = self._reshape_free_mean(train_data["x_true"], n_train, 3)
                 train_hat = self._reshape_free_mean(train_data["x_hat"], n_train, 3)
-                train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+                if "posterior_cov_blocks" in train_data:
+                    train_cov = np.asarray(train_data["posterior_cov_blocks"], dtype=float)
+                else:
+                    train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
                 train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
                     x_true=train_true,
                     x_hat=train_hat,
@@ -444,7 +461,10 @@ class UncertaintyCalibrator:
             eval_true_2d = self._reshape_free_mean(eval_data["x_true"], n_eval, 2)
 
             eval_true_3d = lift_reduced_sources_to_3d(eval_true_2d, eval_V_tan)
-            eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
+            if "posterior_cov_blocks" in eval_data:
+                eval_cov = np.asarray(eval_data["posterior_cov_blocks"], dtype=float)
+            else:
+                eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
             pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
                 x_true_3d=eval_true_3d,
@@ -465,7 +485,10 @@ class UncertaintyCalibrator:
                 train_hat_2d = self._reshape_free_mean(train_data["x_hat"], n_train, 2)
                 train_true_2d = self._reshape_free_mean(train_data["x_true"], n_train, 2)
                 train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
-                train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
+                if "posterior_cov_blocks" in train_data:
+                    train_cov = np.asarray(train_data["posterior_cov_blocks"], dtype=float)
+                else:
+                    train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
                 train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
                     x_true_3d=train_true_3d,
                     x_hat_2d=train_hat_2d,

@@ -9,11 +9,15 @@ import numpy as np
 from calibrain.calibration_dataset import (
     concatenate_summaries,
     filter_summaries_by_metadata,
+    EEG_COIL_TYPES,
+    MEG_COIL_TYPES,
 )
 from calibrain.run_manifest import summaries_from_manifest
 from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/aggregate_default.py")
+
+UNCERTAINTY_SCHEMA_VERSION = 2
 
 
 def _serialize_filter(criteria: Dict[str, Any] | None) -> Dict[str, Any]:
@@ -31,6 +35,67 @@ def _serialize_filter(criteria: Dict[str, Any] | None) -> Dict[str, Any]:
         return value
 
     return {key: _convert(val) for key, val in criteria.items()}
+
+
+def _reduce_posterior_uncertainty(dataset: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Reduce stored uncertainty so aggregated datasets do not persist full
+    posterior covariance matrices.
+
+    Output schema (UNCERTAINTY_SCHEMA_VERSION=2)
+    - fixed: store `posterior_var` with shape (N,)
+    - free EEG/MEG: store `posterior_cov_blocks` with shape (N,K,K), K=3 (EEG) or 2 (MEG)
+    """
+    if "posterior_cov" not in dataset:
+        raise ValueError("Expected dataset to contain 'posterior_cov' for reduction.")
+
+    orientation = str(dataset.get("orientation_type") or "fixed").lower()
+    coil_type = dataset.get("coil_type")
+    cov = np.asarray(dataset["posterior_cov"], dtype=float)
+
+    # Always drop the full covariance from aggregated outputs.
+    dataset = dict(dataset)
+    dataset.pop("posterior_cov", None)
+    dataset["uncertainty_schema_version"] = int(UNCERTAINTY_SCHEMA_VERSION)
+
+    if orientation == "fixed":
+        if cov.ndim != 2 or cov.shape[0] != cov.shape[1]:
+            raise ValueError(f"Fixed posterior_cov must be square; got {cov.shape}")
+        dataset["posterior_var"] = np.maximum(np.diag(cov).astype(float, copy=False), 0.0)
+        return dataset
+
+    if orientation != "free":
+        raise ValueError(f"Unsupported orientation_type '{orientation}' for uncertainty reduction.")
+
+    if coil_type in EEG_COIL_TYPES:
+        block_dim = 3
+    elif coil_type in MEG_COIL_TYPES:
+        block_dim = 2
+    else:
+        raise ValueError(
+            f"Free-orientation datasets must specify a supported coil_type; got {coil_type}"
+        )
+
+    n_sources = int(dataset.get("n_sources") or 0)
+    if n_sources <= 0:
+        x_true = np.asarray(dataset.get("x_true"))
+        n_sources = int(x_true.shape[0]) if x_true.size else 0
+    if n_sources <= 0:
+        raise ValueError("Unable to infer n_sources for free-orientation uncertainty reduction.")
+
+    expected = (block_dim * n_sources, block_dim * n_sources)
+    if cov.shape != expected:
+        raise ValueError(
+            f"Free posterior_cov must be {expected} for K={block_dim}; got {cov.shape}"
+        )
+
+    blocks = np.zeros((n_sources, block_dim, block_dim), dtype=float)
+    for i in range(n_sources):
+        start = block_dim * i
+        blocks[i] = cov[start:start + block_dim, start:start + block_dim]
+    dataset["posterior_cov_blocks"] = blocks
+    return dataset
+
 
 def _build_output_path(base_dir: Path, metadata: Dict[str, Any]) -> Path:
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -180,6 +245,7 @@ def _aggregate_single(config: Dict[str, Any], tag: str | None = None) -> None:
 
     for summary in summaries:
         dataset = concatenate_summaries([summary])
+        dataset = _reduce_posterior_uncertainty(dataset)
         meta = (dataset.get("metadata") or [{}])[0]
         output_path = _build_output_path(output_dir, meta or {})
         _write_dataset(

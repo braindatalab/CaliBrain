@@ -133,7 +133,8 @@ def _combine_datasets(datasets: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
 
     x_true_list: List[np.ndarray] = []
     x_hat_list: List[np.ndarray] = []
-    cov_list: List[np.ndarray] = []
+    var_list: List[np.ndarray] = []
+    block_list: List[np.ndarray] = []
     q_basis_list: List[np.ndarray] = []
 
     for ds in datasets:
@@ -146,7 +147,34 @@ def _combine_datasets(datasets: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
 
         x_true_list.append(np.asarray(ds["x_true"], dtype=float))
         x_hat_list.append(np.asarray(ds["x_hat"], dtype=float))
-        cov_list.append(np.asarray(ds["posterior_cov"], dtype=float))
+        if "posterior_var" in ds:
+            var_list.append(np.asarray(ds["posterior_var"], dtype=float).reshape(-1))
+        elif "posterior_cov_blocks" in ds:
+            block_list.append(np.asarray(ds["posterior_cov_blocks"], dtype=float))
+        elif "posterior_cov" in ds:
+            cov = np.asarray(ds["posterior_cov"], dtype=float)
+            if orientation == "fixed":
+                var_list.append(np.maximum(np.diag(cov), 0.0))
+            else:
+                # Legacy support: reduce full covariance to diagonal blocks.
+                if cov.ndim != 2 or cov.shape[0] != cov.shape[1]:
+                    raise ValueError("posterior_cov must be a square matrix.")
+                if coil_type is None:
+                    raise ValueError("Free-orientation pooling requires coil_type metadata.")
+                block_dim = 3 if int(coil_type) in (1,) else 2  # EEG=1, MEG=3022/3012
+                n_sources = int(np.asarray(ds["x_true"]).shape[0])
+                expected = (block_dim * n_sources, block_dim * n_sources)
+                if cov.shape != expected:
+                    raise ValueError(f"Unexpected posterior_cov shape {cov.shape}; expected {expected}.")
+                blocks = np.zeros((n_sources, block_dim, block_dim), dtype=float)
+                for i in range(n_sources):
+                    start = block_dim * i
+                    blocks[i] = cov[start:start + block_dim, start:start + block_dim]
+                block_list.append(blocks)
+        else:
+            raise ValueError(
+                "Dataset must include one of: posterior_var, posterior_cov_blocks, posterior_cov."
+            )
         q_basis = ds.get("Q_basis")
         if q_basis is not None:
             q_basis_arr = np.asarray(q_basis, dtype=float)
@@ -155,17 +183,23 @@ def _combine_datasets(datasets: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
 
     combined_true = np.concatenate(x_true_list, axis=0)
     combined_hat = np.concatenate(x_hat_list, axis=0)
-    combined_cov = block_diag(*cov_list)
-
     combined: Dict[str, Any] = {
         "orientation_type": orientation,
         "coil_type": coil_type,
         "x_true": combined_true,
         "x_hat": combined_hat,
-        "posterior_cov": combined_cov,
         "n_sources": combined_true.shape[0],
         "n_times": int(n_times or combined_true.shape[-1]),
     }
+
+    if var_list and block_list:
+        raise ValueError("Cannot mix posterior_var and posterior_cov_blocks while pooling.")
+    if var_list:
+        combined["posterior_var"] = np.concatenate(var_list, axis=0)
+    elif block_list:
+        combined["posterior_cov_blocks"] = np.concatenate(block_list, axis=0)
+    else:
+        raise RuntimeError("Internal error: no uncertainty fields collected while pooling.")
     if q_basis_list:
         combined["Q_basis"] = np.concatenate(q_basis_list, axis=0)
     return combined
@@ -199,14 +233,21 @@ def _load_npz_dataset(path: Path) -> Dict[str, np.ndarray]:
                 "subject": _read_str_field(data, "subject"),
             }
 
-            if "posterior_cov" not in data:
-                raise ValueError(
-                    f"Dataset {path} is missing 'posterior_cov'. Regenerate the aggregation dataset with the current workflow."
-                )
-
             payload["x_true"] = data["x_true"]
             payload["x_hat"] = data["x_hat"]
-            payload["posterior_cov"] = data["posterior_cov"]
+            if "posterior_var" in data:
+                payload["posterior_var"] = data["posterior_var"]
+            elif "posterior_cov_blocks" in data:
+                payload["posterior_cov_blocks"] = data["posterior_cov_blocks"]
+            elif "posterior_cov" in data:
+                # Legacy aggregated dataset.
+                payload["posterior_cov"] = data["posterior_cov"]
+            else:
+                raise ValueError(
+                    f"Dataset {path} is missing uncertainty fields. Expected one of "
+                    "'posterior_var', 'posterior_cov_blocks', or legacy 'posterior_cov'. "
+                    "Regenerate the aggregation datasets with the current workflow."
+                )
             if "Q_basis" in data:
                 payload["Q_basis"] = data["Q_basis"]
 

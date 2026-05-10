@@ -363,7 +363,7 @@ class UncertaintyEstimator:
         self,
         x_true: np.ndarray,          # (N,3,T)
         x_hat: np.ndarray,           # (N,3,T)
-        posterior_cov: np.ndarray,   # (3N,3N)
+        posterior_cov: np.ndarray,   # (3N,3N) or (N,3,3)
         nominal_coverage: float,
         *,
         psd_repair_blocks: bool = False,
@@ -381,15 +381,22 @@ class UncertaintyEstimator:
             raise ValueError("x_hat must match x_true shape (N,3,T).")
 
         N, _, T = x_true.shape
-        if posterior_cov.shape != (3 * N, 3 * N):
-            raise ValueError(f"posterior_cov must be (3N,3N); got {posterior_cov.shape}")
+        cov_is_blocks = posterior_cov.ndim == 3
+        if cov_is_blocks:
+            if posterior_cov.shape != (N, 3, 3):
+                raise ValueError(
+                    f"posterior_cov block form must be (N,3,3); got {posterior_cov.shape}"
+                )
+        else:
+            if posterior_cov.shape != (3 * N, 3 * N):
+                raise ValueError(f"posterior_cov must be (3N,3N); got {posterior_cov.shape}")
 
         q_values = np.zeros((N, T), dtype=float)
         within = np.zeros((N, T), dtype=bool)
         cov_blocks = np.zeros((N, 3, 3), dtype=float)
 
         for i in range(N):
-            Sigma3 = posterior_cov[3 * i:3 * i + 3, 3 * i:3 * i + 3]
+            Sigma3 = posterior_cov[i] if cov_is_blocks else posterior_cov[3 * i:3 * i + 3, 3 * i:3 * i + 3]
             Sigma3 = (Sigma3 + Sigma3.T) / 2.0
             if psd_repair_blocks:
                 Sigma3 = self._psd_clip_block(Sigma3, block_epsilon)
@@ -420,7 +427,7 @@ class UncertaintyEstimator:
         self,
         x_true: np.ndarray,          # (N,3,T)
         x_hat: np.ndarray,           # (N,3,T)
-        posterior_cov: np.ndarray,   # (3N,3N)
+        posterior_cov: np.ndarray,   # (3N,3N) or (N,3,3)
         nominal_coverage: float,
         *,
         psd_repair_blocks: bool = False,
@@ -436,8 +443,15 @@ class UncertaintyEstimator:
             raise ValueError("x_hat must match x_true shape (N,3,T).")
 
         N, _, T = x_true.shape
-        if posterior_cov.shape != (3 * N, 3 * N):
-            raise ValueError(f"posterior_cov must be (3N,3N); got {posterior_cov.shape}")
+        cov_is_blocks = posterior_cov.ndim == 3
+        if cov_is_blocks:
+            if posterior_cov.shape != (N, 3, 3):
+                raise ValueError(
+                    f"posterior_cov block form must be (N,3,3); got {posterior_cov.shape}"
+                )
+        else:
+            if posterior_cov.shape != (3 * N, 3 * N):
+                raise ValueError(f"posterior_cov must be (3N,3N); got {posterior_cov.shape}")
 
         x_true_agg = np.mean(x_true, axis=2)
         x_hat_agg = np.mean(x_hat, axis=2)
@@ -449,7 +463,7 @@ class UncertaintyEstimator:
         cov_blocks = np.zeros((N, 3, 3), dtype=float)
 
         for i in range(N):
-            Sigma3 = posterior_cov[3 * i:3 * i + 3, 3 * i:3 * i + 3]
+            Sigma3 = posterior_cov[i] if cov_is_blocks else posterior_cov[3 * i:3 * i + 3, 3 * i:3 * i + 3]
             Sigma3 = (Sigma3 + Sigma3.T) / 2.0
             if psd_repair_blocks:
                 Sigma3 = self._psd_clip_block(Sigma3, block_epsilon)
@@ -683,7 +697,7 @@ class UncertaintyEstimator:
         self,
         x_true_3d: np.ndarray,          # (N,3,T)
         x_hat_2d: np.ndarray,           # (N,2,T)
-        posterior_cov_2d: np.ndarray,   # (2N,2N)
+        posterior_cov_2d: np.ndarray,   # (2N,2N) or (N,2,2)
         nominal_coverage: float,
         *,
         V_tan: Optional[np.ndarray] = None,
@@ -719,8 +733,17 @@ class UncertaintyEstimator:
         N, _, T = x_true_3d.shape
         if x_hat_2d.shape[0] != N or x_hat_2d.shape[2] != T:
             raise ValueError("x_hat_2d must have shape (N,2,T) matching x_true_3d.")
-        if posterior_cov_2d.shape != (2 * N, 2 * N):
-            raise ValueError(f"posterior_cov_2d must be (2N,2N); got {posterior_cov_2d.shape}")
+        cov_is_blocks = posterior_cov_2d.ndim == 3
+        if cov_is_blocks:
+            if posterior_cov_2d.shape != (N, 2, 2):
+                raise ValueError(
+                    f"posterior_cov_2d block form must be (N,2,2); got {posterior_cov_2d.shape}"
+                )
+        else:
+            if posterior_cov_2d.shape != (2 * N, 2 * N):
+                raise ValueError(
+                    f"posterior_cov_2d must be (2N,2N); got {posterior_cov_2d.shape}"
+                )
 
         if V_tan is None:
             if L_free_Mx3N is None:
@@ -738,7 +761,7 @@ class UncertaintyEstimator:
         cov_blocks = np.zeros((N, 2, 2), dtype=float)
 
         for i in range(N):
-            Sigma2 = posterior_cov_2d[2 * i:2 * i + 2, 2 * i:2 * i + 2]
+            Sigma2 = posterior_cov_2d[i] if cov_is_blocks else posterior_cov_2d[2 * i:2 * i + 2, 2 * i:2 * i + 2]
             Sigma2 = (Sigma2 + Sigma2.T) / 2.0
             if psd_repair_blocks:
                 Sigma2 = self._psd_clip_block(Sigma2, block_epsilon)
@@ -773,7 +796,7 @@ class UncertaintyEstimator:
         self,
         x_true_3d: np.ndarray,          # (N,3,T)
         x_hat_2d: np.ndarray,           # (N,2,T)
-        posterior_cov_2d: np.ndarray,   # (2N,2N)
+        posterior_cov_2d: np.ndarray,   # (2N,2N) or (N,2,2)
         nominal_coverage: float,
         *,
         V_tan: Optional[np.ndarray] = None,
@@ -800,8 +823,17 @@ class UncertaintyEstimator:
         N, _, T = x_true_3d.shape
         if x_hat_2d.shape[0] != N or x_hat_2d.shape[2] != T:
             raise ValueError("x_hat_2d must have shape (N,2,T) matching x_true_3d.")
-        if posterior_cov_2d.shape != (2 * N, 2 * N):
-            raise ValueError(f"posterior_cov_2d must be (2N,2N); got {posterior_cov_2d.shape}")
+        cov_is_blocks = posterior_cov_2d.ndim == 3
+        if cov_is_blocks:
+            if posterior_cov_2d.shape != (N, 2, 2):
+                raise ValueError(
+                    f"posterior_cov_2d block form must be (N,2,2); got {posterior_cov_2d.shape}"
+                )
+        else:
+            if posterior_cov_2d.shape != (2 * N, 2 * N):
+                raise ValueError(
+                    f"posterior_cov_2d must be (2N,2N); got {posterior_cov_2d.shape}"
+                )
 
         if V_tan is None:
             if L_free_Mx3N is None:
@@ -823,7 +855,7 @@ class UncertaintyEstimator:
         cov_blocks = np.zeros((N, 2, 2), dtype=float)
 
         for i in range(N):
-            Sigma2 = posterior_cov_2d[2 * i:2 * i + 2, 2 * i:2 * i + 2]
+            Sigma2 = posterior_cov_2d[i] if cov_is_blocks else posterior_cov_2d[2 * i:2 * i + 2, 2 * i:2 * i + 2]
             Sigma2 = (Sigma2 + Sigma2.T) / 2.0
             if psd_repair_blocks:
                 Sigma2 = self._psd_clip_block(Sigma2, block_epsilon)
