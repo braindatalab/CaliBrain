@@ -76,7 +76,7 @@ from mne.io.constants import FIFF
 # Manual selector (edit these)
 # ---------------------------------------------------------------------------
 
-SELECT_ORIENTATION = "fixed"  # "fixed" or "free"
+SELECT_ORIENTATION = "free"  # "fixed" or "free"
 SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
 
 # Run all solver×noise pairs defined in configs/data_generation_default.py.
@@ -85,10 +85,10 @@ SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_p
 # data-generation stage (see `configs/data_generation_default.py`).
 SELECT_SOLVER_NOISE_PAIRS: List[Tuple[str, str]] = [
     ("BMN", "oracle"),
-    # ("BMN", "baseline"),
+    ("BMN", "baseline"),
     ("BMN_joint", "adaptive_joint_learning"),
     ("gamma_map_sflex", "oracle"),
-    # ("gamma_map_sflex", "baseline"),
+    ("gamma_map_sflex", "baseline"),
     ("gamma_lambda_map_sflex", "adaptive_joint_learning"),
 ]
 
@@ -96,18 +96,15 @@ SELECT_SOLVER_NOISE_PAIRS: List[Tuple[str, str]] = [
 # Experiment constants (paper defaults)
 # ---------------------------------------------------------------------------
 
-# HEADS = ["CC120166", "CC120264", "CC120309", "CC120313"]
-HEADS = ["CC120166", "CC120264"] #, "CC120309", "CC120313"]
+HEADS = ["CC120166", "CC120264", "CC120309", "CC120313"]
 
-CAL_RUNS = 3 # 10
-TEST_RUNS = 5 # 25
-TEST_SNR = 0.9 # 0.5
-TEST_NNZ = 3 # 5
+CAL_RUNS = 10
+TEST_RUNS = 25
+TEST_SNR = 0.5
+TEST_NNZ = 5
 
-# SNR_GRID = [0.1, 0.3, 0.5, 0.7, 0.9]
-SNR_GRID = [0.1, 0.9]
-# NNZ_GRID = [1, 3, 5, 10, 100]
-NNZ_GRID = [1, 3]
+SNR_GRID = [0.1, 0.3, 0.5, 0.7, 0.9]
+NNZ_GRID = [1, 3, 5, 10, 100]
 
 # ---------------------------------------------------------------------------
 # Paths + common filters (edit these to match your environment)
