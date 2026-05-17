@@ -434,7 +434,7 @@ def plot_figure_2(records: Sequence[CurveRecord], output_dir: Path) -> Path:
         )
         for c, noise in enumerate(noise_order):
             ax = axes[r][c]
-            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect")
+            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect calibration")
             any_plotted = False
             for strategy in STRATEGIES:
                 key = ("fixed", solver, noise, strategy)
@@ -500,7 +500,7 @@ def plot_figure_s1(records: Sequence[CurveRecord], output_dir: Path) -> Path:
         )
         for c, noise in enumerate(noise_order):
             ax = axes[r][c]
-            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect")
+            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect calibration")
             fixed_runs = grouped.get(("fixed", solver, noise, "precal"), [])
             free_runs = grouped.get(("free", solver, noise, "precal"), [])
             if not fixed_runs and not free_runs:
@@ -584,7 +584,7 @@ def plot_figure_s2(records: Sequence[CurveRecord], output_dir: Path) -> Path:
         )
         for c, noise in enumerate(noise_order):
             ax = axes[r][c]
-            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect")
+            ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.35, label="perfect calibration")
             any_plotted = False
             for strategy in ("post_oracle", "post_pooled", "post_pooled_mismatch"):
                 fixed_runs = grouped.get(("fixed", solver, noise, strategy), [])
@@ -626,8 +626,36 @@ def plot_figure_s2(records: Sequence[CurveRecord], output_dir: Path) -> Path:
             if c == 0:
                 ax.set_ylabel("Empirical coverage")
 
-    handles, labels = axes[0][0].get_legend_handles_labels()
-    legend_ax.legend(handles, labels, loc="center left", frameon=False)
+    # Group legend into orientation (colors) and strategy (line styles) to keep
+    # the legend compact and readable.
+    from matplotlib.lines import Line2D
+
+    orientation_handles = [
+        Line2D([0], [0], color=ORIENTATION_COLORS["fixed"], lw=2, label="fixed"),
+        Line2D([0], [0], color=ORIENTATION_COLORS["free"], lw=2, label="free"),
+    ]
+    strategy_handles = [
+        Line2D([0], [0], color="0.35", lw=1.5, linestyle="--", label="perfect calibration"),
+        Line2D([0], [0], color="k", lw=2, linestyle=strategy_linestyles["post_oracle"], label="post oracle"),
+        Line2D([0], [0], color="k", lw=2, linestyle=strategy_linestyles["post_pooled"], label="post pooled"),
+        Line2D([0], [0], color="k", lw=2, linestyle=strategy_linestyles["post_pooled_mismatch"], label="post pooled mismatch"),
+    ]
+
+    legend1 = legend_ax.legend(
+        handles=orientation_handles,
+        title="Orientation",
+        loc="upper left",
+        bbox_to_anchor=(0.0, 0.98),
+        frameon=False,
+    )
+    legend_ax.add_artist(legend1)
+    legend_ax.legend(
+        handles=strategy_handles,
+        title="Strategy",
+        loc="upper left",
+        bbox_to_anchor=(0.0, 0.74),
+        frameon=False,
+    )
     out_path = output_dir / "FigureS2_postcal_fixed_vs_free_default.png"
     _save_figure(fig, out_path)
     plt.close(fig)
