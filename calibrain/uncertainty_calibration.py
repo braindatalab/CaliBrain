@@ -59,6 +59,7 @@ def is_free_meg_orientation(
         return coil_type in MEG_COIL_TYPES
     return n_components == 2
 
+
 # ============================================================================
 # UNCERTAINTY CALIBRATOR (NOMINAL RE-CALIBRATION)
 # ============================================================================
@@ -213,6 +214,7 @@ class UncertaintyCalibrator:
         test_data: Optional[dict] = None,
         verbose: bool = False,
         fit: bool = True,
+        free_interval_type: str = "full_cov",
     ) -> dict:
         """
         Run the full calibration procedure on the provided posterior statistics.
@@ -334,6 +336,12 @@ class UncertaintyCalibrator:
             eval_is_meg,
         ) = self._orientation_flags(eval_data)
 
+        if free_interval_type not in {"full_cov", "marginal"}:
+            raise ValueError(
+                "free_interval_type must be 'full_cov' or 'marginal'. "
+                f"Got {free_interval_type!r}."
+            )
+
         if fit:
             if (
                 train_is_fixed,
@@ -414,11 +422,18 @@ class UncertaintyCalibrator:
             else:
                 eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
-            pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
-                x_true=eval_true,
-                x_hat=eval_hat,
-                posterior_cov=eval_cov,
-            )
+            if free_interval_type == "marginal":
+                pre_curve_eval = self.uncertainty_estimator.calibration_curve_componentwise_eeg_free_aggregated(
+                    x_true=eval_true,
+                    x_hat=eval_hat,
+                    posterior_uncert=eval_cov,
+                )
+            else:
+                pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
+                    x_true=eval_true,
+                    x_hat=eval_hat,
+                    posterior_cov=eval_cov,
+                )
 
             train_curve = None
             if fit:
@@ -431,13 +446,33 @@ class UncertaintyCalibrator:
                     train_cov = np.asarray(train_data["posterior_cov_blocks"], dtype=float)
                 else:
                     train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
-                train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
-                    x_true=train_true,
-                    x_hat=train_hat,
-                    posterior_cov=train_cov,
-                )
+
+                if free_interval_type == "marginal":
+                    train_curve = self.uncertainty_estimator.calibration_curve_componentwise_eeg_free_aggregated(
+                        x_true=train_true,
+                        x_hat=train_hat,
+                        posterior_uncert=train_cov,
+                    )
+                else:
+                    train_curve = self.uncertainty_estimator.calibration_curve_ellipsoid_eeg_free_aggregated(
+                        x_true=train_true,
+                        x_hat=train_hat,
+                        posterior_cov=train_cov,
+                    )
 
             def eval_empirical(levels):
+                if free_interval_type == "marginal":
+                    return [
+                        self.uncertainty_estimator.aggregated_componentwise_interval_membership_free(
+                            x_true=eval_true,
+                            x_hat=eval_hat,
+                            posterior_uncert=eval_cov,
+                            nominal_coverage=float(c),
+                            n_orient=3,
+                        )["empirical_coverage"]
+                        for c in levels
+                    ]
+
                 return [
                     self.uncertainty_estimator.aggregated_ellipsoid_membership_eeg_free(
                         x_true=eval_true,
@@ -447,6 +482,7 @@ class UncertaintyCalibrator:
                     )["empirical_coverage"]
                     for c in levels
                 ]
+
 
         elif train_is_meg:
             setting_label = "meg_free"
@@ -460,18 +496,25 @@ class UncertaintyCalibrator:
             eval_hat_2d = self._reshape_free_mean(eval_data["x_hat"], n_eval, 2)
             eval_true_2d = self._reshape_free_mean(eval_data["x_true"], n_eval, 2)
 
-            eval_true_3d = lift_reduced_sources_to_3d(eval_true_2d, eval_V_tan)
             if "posterior_cov_blocks" in eval_data:
                 eval_cov = np.asarray(eval_data["posterior_cov_blocks"], dtype=float)
             else:
                 eval_cov = np.asarray(eval_data["posterior_cov"], dtype=float)
 
-            pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
-                x_true_3d=eval_true_3d,
-                x_hat_2d=eval_hat_2d,
-                posterior_cov_2d=eval_cov,
-                V_tan=eval_V_tan,
-            )
+            if free_interval_type == "marginal":
+                pre_curve_eval = self.uncertainty_estimator.calibration_curve_componentwise_meg_free_aggregated(
+                    x_true_2d=eval_true_2d,
+                    x_hat_2d=eval_hat_2d,
+                    posterior_uncert_2d=eval_cov,
+                )
+            else:
+                eval_true_3d = lift_reduced_sources_to_3d(eval_true_2d, eval_V_tan)
+                pre_curve_eval = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
+                    x_true_3d=eval_true_3d,
+                    x_hat_2d=eval_hat_2d,
+                    posterior_cov_2d=eval_cov,
+                    V_tan=eval_V_tan,
+                )
 
             train_curve = None
             if fit:
@@ -484,19 +527,39 @@ class UncertaintyCalibrator:
                 train_V_tan = self._extract_meg_tangent_basis(train_basis, n_train)
                 train_hat_2d = self._reshape_free_mean(train_data["x_hat"], n_train, 2)
                 train_true_2d = self._reshape_free_mean(train_data["x_true"], n_train, 2)
-                train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
                 if "posterior_cov_blocks" in train_data:
                     train_cov = np.asarray(train_data["posterior_cov_blocks"], dtype=float)
                 else:
                     train_cov = np.asarray(train_data["posterior_cov"], dtype=float)
-                train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
-                    x_true_3d=train_true_3d,
-                    x_hat_2d=train_hat_2d,
-                    posterior_cov_2d=train_cov,
-                    V_tan=train_V_tan,
-                )
+
+                if free_interval_type == "marginal":
+                    train_curve = self.uncertainty_estimator.calibration_curve_componentwise_meg_free_aggregated(
+                        x_true_2d=train_true_2d,
+                        x_hat_2d=train_hat_2d,
+                        posterior_uncert_2d=train_cov,
+                    )
+                else:
+                    train_true_3d = lift_reduced_sources_to_3d(train_true_2d, train_V_tan)
+                    train_curve = self.uncertainty_estimator.calibration_curve_ellipse_meg_free_aggregated(
+                        x_true_3d=train_true_3d,
+                        x_hat_2d=train_hat_2d,
+                        posterior_cov_2d=train_cov,
+                        V_tan=train_V_tan,
+                    )
 
             def eval_empirical(levels):
+                if free_interval_type == "marginal":
+                    return [
+                        self.uncertainty_estimator.aggregated_componentwise_interval_membership_free(
+                            x_true=eval_true_2d,
+                            x_hat=eval_hat_2d,
+                            posterior_uncert=eval_cov,
+                            nominal_coverage=float(c),
+                            n_orient=2,
+                        )["empirical_coverage"]
+                        for c in levels
+                    ]
+
                 return [
                     self.uncertainty_estimator.aggregated_ellipse_membership_meg_free(
                         x_true_3d=eval_true_3d,
@@ -507,6 +570,7 @@ class UncertaintyCalibrator:
                     )["empirical_coverage"]
                     for c in levels
                 ]
+
 
         else:
             raise ValueError(
@@ -529,6 +593,7 @@ class UncertaintyCalibrator:
             'orientation_type': train_meta.get('orientation_type'),
             'coil_type': train_meta.get('coil_type'),
             'setting': setting_label,
+            'interval_type': pre_curve_eval.get('interval_type'),
             'fit': bool(fit),
         }
 
@@ -539,6 +604,7 @@ class UncertaintyCalibrator:
             'ci_lowers': pre_curve_eval.get('ci_lowers'),
             'ci_uppers': pre_curve_eval.get('ci_uppers'),
             'ci_counts': pre_curve_eval.get('ci_counts'),
+            'interval_type': pre_curve_eval.get('interval_type'),
             'split_metadata': split_metadata,
         }
 
@@ -549,8 +615,9 @@ class UncertaintyCalibrator:
                 'empirical_coverages': np.asarray(empirical_before_eval, dtype=float),
                 'calibration_metrics': calibration_metrics_before,
                 'recalibrated_nominal_coverages': identity_levels,
-                'split_metadata': split_metadata,
-            }
+                'interval_type': pre_curve_eval.get('interval_type'),
+            'split_metadata': split_metadata,
+        }
             return {
                 'pre_calibration': pre_results,
                 'post_calibration': post_results,

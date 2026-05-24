@@ -392,6 +392,7 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
     plot_curve = bool(config.get("plot_curve", False))
     plot_source_idx = int(config.get("plot_source_idx", 0))
     plot_nominal = float(config.get("plot_nominal", 0.95))
+    free_interval_type = config.get("free_interval_type", "full_cov")
     run_name = config.get("run_name")
     run_slug = _slugify(run_name) if isinstance(run_name, str) and run_name.strip() else None
 
@@ -434,6 +435,7 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
             train_data=train_data,
             test_data=eval_data,
             fit=fit_calibration,
+            free_interval_type=free_interval_type,
         )
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

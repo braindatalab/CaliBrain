@@ -34,6 +34,10 @@ How to run (no env vars, no CLI changes):
    - SOLVER_NOISE_PAIRS: list of (solver, noise_type) tuples to include
    - AGG_ROOT: must match where aggregation wrote datasets
 
+
+Optional (free orientation only):
+- Set `free_interval_type` to "full_cov" (default; ellipsoid/ellipse) or "marginal" (per component).
+
 2) Run calibration:
    ``python calibrain/workflows/calibration.py``
 
@@ -127,6 +131,7 @@ def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:
         "plot_curve": False,
         "plot_nominal": 0.95,
         "plot_source_idx": 0,
+        "free_interval_type": "full_cov",  # or "marginal"
         "nominal_coverages": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     }
     if fit_calibration:
