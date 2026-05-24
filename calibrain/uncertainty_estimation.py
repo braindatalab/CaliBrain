@@ -329,6 +329,7 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "marginal",
         }
 
     def calibration_curve_intervals_aggregated(
@@ -354,6 +355,7 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "marginal",
         }
 
     # ------------------------------------------------------------------
@@ -522,6 +524,7 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "full_cov",
         }
 
     def calibration_curve_ellipsoid_eeg_free_aggregated(
@@ -552,7 +555,446 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "full_cov",
         }
+
+
+    # ------------------------------------------------------------------
+    # Direction-aggregated marginal intervals (free orientation)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _as_source_major_free_mean(
+        posterior_mean: np.ndarray,
+        *,
+        n_sources: int,
+        n_orient: int,
+        name: str = "posterior_mean",
+    ) -> np.ndarray:
+        """Convert a free-orientation posterior mean to source-major shape (N,K,T).
+
+        Accepted input shapes
+        ---------------------
+        - (N,K,T): already source-major.
+        - (K*N,T): flattened source-major representation.
+
+        Notes
+        -----
+        This assumes source-major flattening:
+
+            (N,K,T) -> (N*K,T),
+
+        consistent with lead-field reshaping conventions such as:
+
+            L_block.reshape(M, N*K).
+        """
+        posterior_mean = np.asarray(posterior_mean, dtype=float)
+
+        if posterior_mean.ndim == 3:
+            if posterior_mean.shape[0] != n_sources or posterior_mean.shape[1] != n_orient:
+                raise ValueError(
+                    f"{name} must have shape (N,K,T)=({n_sources},{n_orient},T). Got {posterior_mean.shape}."
+                )
+            return posterior_mean
+
+        if posterior_mean.ndim == 2:
+            expected_first_dim = n_sources * n_orient
+            if posterior_mean.shape[0] != expected_first_dim:
+                raise ValueError(
+                    f"{name} has incompatible flattened shape. Expected first dimension {expected_first_dim}, got {posterior_mean.shape[0]}."
+                )
+            T = posterior_mean.shape[1]
+            return posterior_mean.reshape(n_sources, n_orient, T)
+
+        raise ValueError(f"{name} must be either (N,K,T) or (K*N,T). Got {posterior_mean.shape}.")
+
+    @staticmethod
+    def componentwise_variance_from_uncert(
+        posterior_uncert: np.ndarray,
+        *,
+        n_sources: int,
+        n_orient: int,
+        min_var: float = 1e-12,
+    ) -> np.ndarray:
+        """Extract per-source per-component marginal variances as an (N,K) array.
+
+        Supports:
+        - full covariance: (K*N, K*N), uses diag(...) and reshapes to (N,K)
+        - block covariance: (N, K, K), uses diagonal blocks directly
+
+        This utility underpins the `interval_type="marginal"` diagnostic for free
+        orientation, where directions/components are not evaluated separately but
+        pooled (see `calibration_curve_componentwise_intervals_*`).
+        """
+        posterior_uncert = np.asarray(posterior_uncert, dtype=float)
+
+        if posterior_uncert.ndim == 2:
+            expected = (n_sources * n_orient, n_sources * n_orient)
+            if posterior_uncert.shape != expected:
+                raise ValueError(f"posterior_uncert must have shape {expected}. Got {posterior_uncert.shape}.")
+            posterior_var = np.diag(posterior_uncert).astype(float, copy=True).reshape(n_sources, n_orient)
+        elif posterior_uncert.ndim == 3:
+            expected = (n_sources, n_orient, n_orient)
+            if posterior_uncert.shape != expected:
+                raise ValueError(
+                    f"posterior_uncert block form must have shape {expected}. Got {posterior_uncert.shape}."
+                )
+            posterior_var = np.diagonal(posterior_uncert, axis1=1, axis2=2).astype(float, copy=True)
+        else:
+            raise ValueError("posterior_uncert must be either (K*N,K*N) or (N,K,K).")
+
+        if min_var <= 0.0:
+            return np.maximum(posterior_var, 0.0)
+        return np.maximum(posterior_var, float(min_var))
+
+    def pointwise_componentwise_interval_membership_free(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        nominal_coverage: float,
+        *,
+        n_orient: int,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Pointwise marginal (component-wise) CI membership for free orientation.
+
+        This implements the "direction-aggregated marginal" diagnostic from
+        `_temp/Component_CI_R1.py`:
+
+        - Build scalar normal credible intervals per retained component using
+          only marginal variances (diagonal of the covariance).
+        - Pool interval membership over sources, components, and time.
+
+        Important
+        ---------
+        Directions/components are *not* evaluated separately. They are pooled
+        because local coordinate systems are arbitrary (EEG xyz axes depend on
+        coordinate choice; MEG reduced components are voxel-dependent).
+        """
+        x_true = np.asarray(x_true, dtype=float)
+        x_hat = np.asarray(x_hat, dtype=float)
+
+        if x_true.ndim != 3 or x_true.shape[1] != n_orient:
+            raise ValueError(f"x_true must have shape (N,{n_orient},T). Got {x_true.shape}.")
+        if x_hat.shape != x_true.shape:
+            raise ValueError(f"x_hat must match x_true shape. Got {x_hat.shape} vs {x_true.shape}.")
+
+        N, K, T = x_true.shape
+
+        posterior_var = self.componentwise_variance_from_uncert(
+            posterior_uncert,
+            n_sources=N,
+            n_orient=n_orient,
+            min_var=min_var,
+        )
+        posterior_var_full = np.repeat(posterior_var[:, :, None], T, axis=2)
+
+        ci_lower, ci_upper = self.credible_intervals_normal(
+            mean=x_hat,
+            variance=posterior_var_full,
+            nominal_coverage=float(nominal_coverage),
+        )
+
+        within = (x_true >= ci_lower) & (x_true <= ci_upper)
+        count_within = int(np.sum(within))
+        total_count = int(within.size)
+
+        return {
+            "ci_lower": ci_lower,
+            "ci_upper": ci_upper,
+            "within": within,
+            "posterior_var": posterior_var,
+            "posterior_var_full": posterior_var_full,
+            "z_score": float(self._get_z(float(nominal_coverage))),
+            "count_within": count_within,
+            "total_count": total_count,
+            "empirical_coverage": float(count_within / total_count),
+            "aggregation_axes": "sources, directions, time",
+            "n_sources": int(N),
+            "n_orient": int(K),
+            "n_times": int(T),
+        }
+
+    def aggregated_componentwise_interval_membership_free(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        nominal_coverage: float,
+        *,
+        n_orient: int,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Temporally aggregated marginal (component-wise) CI membership.
+
+        This corresponds to building the diagnostic on time-averaged signals:
+
+        - Aggregate `x_true`/`x_hat` over time (mean over T).
+        - Scale marginal variances by 1/T (variance of the mean).
+        - Build scalar CIs per component and pool membership over sources and
+          components.
+        """
+        x_true = np.asarray(x_true, dtype=float)
+        x_hat = np.asarray(x_hat, dtype=float)
+
+        if x_true.ndim != 3 or x_true.shape[1] != n_orient:
+            raise ValueError(f"x_true must have shape (N,{n_orient},T). Got {x_true.shape}.")
+        if x_hat.shape != x_true.shape:
+            raise ValueError(f"x_hat must match x_true shape. Got {x_hat.shape} vs {x_true.shape}.")
+
+        N, K, T = x_true.shape
+
+        x_true_agg = np.mean(x_true, axis=2)
+        x_hat_agg = np.mean(x_hat, axis=2)
+
+        posterior_var = self.componentwise_variance_from_uncert(
+            posterior_uncert,
+            n_sources=N,
+            n_orient=n_orient,
+            min_var=min_var,
+        )
+        posterior_var_agg = posterior_var / float(T)
+
+        ci_lower, ci_upper = self.credible_intervals_normal(
+            mean=x_hat_agg,
+            variance=posterior_var_agg,
+            nominal_coverage=float(nominal_coverage),
+        )
+
+        within = (x_true_agg >= ci_lower) & (x_true_agg <= ci_upper)
+        count_within = int(np.sum(within))
+        total_count = int(within.size)
+
+        return {
+            "x_true_agg": x_true_agg,
+            "x_hat_agg": x_hat_agg,
+            "ci_lower": ci_lower,
+            "ci_upper": ci_upper,
+            "within": within,
+            "posterior_var": posterior_var,
+            "posterior_var_agg": posterior_var_agg,
+            "z_score": float(self._get_z(float(nominal_coverage))),
+            "count_within": count_within,
+            "total_count": total_count,
+            "empirical_coverage": float(count_within / total_count),
+            "aggregation_axes": "sources, directions",
+            "n_sources": int(N),
+            "n_orient": int(K),
+            "n_times": int(T),
+        }
+
+    def calibration_curve_componentwise_intervals_pointwise_free(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        *,
+        n_orient: int,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Calibration curve for marginal (component-wise) intervals (pointwise).
+
+        Summary
+        -------
+        Builds scalar normal credible intervals per component (using only
+        marginal variances) and pools membership over sources, components, and
+        time. This is the `interval_type="marginal"` diagnostic for free
+        orientation.
+
+        Shapes
+        ------
+        - EEG free: `n_orient=3`, `x_true/x_hat` are (N,3,T)
+        - Reduced MEG free: `n_orient=2`, `x_true/x_hat` are (N,2,T)
+        - `posterior_uncert`: either full (K*N,K*N) or per-source blocks (N,K,K)
+
+        Important
+        ---------
+        Components are not evaluated separately (pooled), because local
+        coordinate labels are arbitrary.
+        """
+        empirical_coverages = []
+        counts = []
+        totals = []
+
+        nominal_coverages = np.asarray(self.nominal_coverages, dtype=float)
+        for c in nominal_coverages:
+            out = self.pointwise_componentwise_interval_membership_free(
+                x_true=x_true,
+                x_hat=x_hat,
+                posterior_uncert=posterior_uncert,
+                nominal_coverage=float(c),
+                n_orient=n_orient,
+                min_var=min_var,
+            )
+            empirical_coverages.append(out["empirical_coverage"])
+            counts.append(out["count_within"])
+            totals.append(out["total_count"])
+
+        return {
+            "nominal_coverages": nominal_coverages,
+            "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
+            "ci_counts": np.asarray(counts, dtype=int),
+            "total_counts": np.asarray(totals, dtype=int),
+            "n_orient": int(n_orient),
+            "mode": "pointwise",
+            "interval_type": "marginal",
+            "direction_aggregation": "pooled_over_all_components",
+        }
+
+    def calibration_curve_componentwise_intervals_aggregated_free(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        *,
+        n_orient: int,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Calibration curve for marginal (component-wise) intervals (aggregated).
+
+        Summary
+        -------
+        Temporally aggregated version of the `interval_type="marginal"` free
+        diagnostic:
+
+        1) average `x_true`/`x_hat` over time,
+        2) scale marginal variances by 1/T,
+        3) build scalar CIs per component,
+        4) pool membership over sources and components.
+
+        This is the mode used by `workflows/calibration.py`.
+
+        Important
+        ---------
+        Components are pooled (no direction-wise curves), because local
+        coordinate systems are arbitrary.
+        """
+        empirical_coverages = []
+        counts = []
+        totals = []
+
+        nominal_coverages = np.asarray(self.nominal_coverages, dtype=float)
+        for c in nominal_coverages:
+            out = self.aggregated_componentwise_interval_membership_free(
+                x_true=x_true,
+                x_hat=x_hat,
+                posterior_uncert=posterior_uncert,
+                nominal_coverage=float(c),
+                n_orient=n_orient,
+                min_var=min_var,
+            )
+            empirical_coverages.append(out["empirical_coverage"])
+            counts.append(out["count_within"])
+            totals.append(out["total_count"])
+
+        return {
+            "nominal_coverages": nominal_coverages,
+            "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
+            "ci_counts": np.asarray(counts, dtype=int),
+            "total_counts": np.asarray(totals, dtype=int),
+            "n_orient": int(n_orient),
+            "mode": "aggregated",
+            "interval_type": "marginal",
+            "direction_aggregation": "pooled_over_all_components",
+        }
+
+    def calibration_curve_componentwise_eeg_free_pointwise(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        *,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Pointwise marginal calibration curve for free-orientation EEG (K=3).
+
+        Expected shapes:
+        - `x_true`, `x_hat`: (N,3,T)
+        - `posterior_uncert`: (3N,3N) or per-source blocks (N,3,3)
+        """
+        return self.calibration_curve_componentwise_intervals_pointwise_free(
+            x_true=x_true,
+            x_hat=x_hat,
+            posterior_uncert=posterior_uncert,
+            n_orient=3,
+            min_var=min_var,
+        )
+
+    def calibration_curve_componentwise_eeg_free_aggregated(
+        self,
+        x_true: np.ndarray,
+        x_hat: np.ndarray,
+        posterior_uncert: np.ndarray,
+        *,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Aggregated marginal calibration curve for free-orientation EEG (K=3).
+
+        Expected shapes:
+        - `x_true`, `x_hat`: (N,3,T)
+        - `posterior_uncert`: (3N,3N) or per-source blocks (N,3,3)
+        """
+        return self.calibration_curve_componentwise_intervals_aggregated_free(
+            x_true=x_true,
+            x_hat=x_hat,
+            posterior_uncert=posterior_uncert,
+            n_orient=3,
+            min_var=min_var,
+        )
+
+    def calibration_curve_componentwise_meg_free_pointwise(
+        self,
+        x_true_2d: np.ndarray,
+        x_hat_2d: np.ndarray,
+        posterior_uncert_2d: np.ndarray,
+        *,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Pointwise marginal calibration curve for reduced free-orientation MEG (K=2).
+
+        Expected shapes:
+        - `x_true_2d`, `x_hat_2d`: (N,2,T)
+        - `posterior_uncert_2d`: (2N,2N) or per-source blocks (N,2,2)
+
+        Notes
+        -----
+        This diagnostic operates directly in reduced 2D coefficient coordinates:
+        no 2D->3D lifting and no 3D->2D projection is performed here.
+        """
+        return self.calibration_curve_componentwise_intervals_pointwise_free(
+            x_true=x_true_2d,
+            x_hat=x_hat_2d,
+            posterior_uncert=posterior_uncert_2d,
+            n_orient=2,
+            min_var=min_var,
+        )
+
+    def calibration_curve_componentwise_meg_free_aggregated(
+        self,
+        x_true_2d: np.ndarray,
+        x_hat_2d: np.ndarray,
+        posterior_uncert_2d: np.ndarray,
+        *,
+        min_var: float = 1e-12,
+    ) -> Dict[str, Any]:
+        """Aggregated marginal calibration curve for reduced free-orientation MEG (K=2).
+
+        Expected shapes:
+        - `x_true_2d`, `x_hat_2d`: (N,2,T)
+        - `posterior_uncert_2d`: (2N,2N) or per-source blocks (N,2,2)
+
+        Notes
+        -----
+        This diagnostic operates directly in reduced 2D coefficient coordinates:
+        no 2D->3D lifting and no 3D->2D projection is performed here.
+        """
+        return self.calibration_curve_componentwise_intervals_aggregated_free(
+            x_true=x_true_2d,
+            x_hat=x_hat_2d,
+            posterior_uncert=posterior_uncert_2d,
+            n_orient=2,
+            min_var=min_var,
+        )
 
     # ------------------------------------------------------------------
     # MEG free orientation (reduced 2D model)
@@ -922,6 +1364,7 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "full_cov",
         }
 
     def calibration_curve_ellipse_meg_free_aggregated(
@@ -956,6 +1399,7 @@ class UncertaintyEstimator:
             "nominal_coverages": self.nominal_coverages,
             "empirical_coverages": np.asarray(empirical_coverages, dtype=float),
             "ci_counts": np.asarray(counts, dtype=int),
+            "interval_type": "full_cov",
         }
 
     # ------------------------------------------------------------------

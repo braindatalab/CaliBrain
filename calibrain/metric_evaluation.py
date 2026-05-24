@@ -787,10 +787,17 @@ def compute_dataset_emd(
         mode: str = "aggregated",
         V_tan: Optional[np.ndarray] = None,
         L_free_Mx3N: Optional[np.ndarray] = None,
+        free_interval_type: str = "full_cov",
     ) -> Dict[str, Any]:
         setting = self._check_setting(setting)
         mode = self._check_mode(mode)
 
+        if free_interval_type not in {"full_cov", "marginal"}:
+            raise ValueError(
+                "free_interval_type must be 'full_cov' or 'marginal'. "
+                f"Got {free_interval_type!r}."
+            )
+            
         if setting == "fixed":
             posterior_var = self._fixed_variance_from_uncert(posterior_uncert)
             if mode == "pointwise":
@@ -807,42 +814,111 @@ def compute_dataset_emd(
                 )
 
         elif setting == "eeg_free":
-            if mode == "pointwise":
-                curve = self.ue.calibration_curve_ellipsoid_eeg_free_pointwise(
-                    x_true=x_true,
-                    x_hat=x_hat,
-                    posterior_cov=posterior_uncert,
-                )
+            if free_interval_type == "marginal":
+                if mode == "pointwise":
+                    curve = self.ue.calibration_curve_componentwise_eeg_free_pointwise(
+                        x_true=x_true,
+                        x_hat=x_hat,
+                        posterior_uncert=posterior_uncert,
+                    )
+                else:
+                    curve = self.ue.calibration_curve_componentwise_eeg_free_aggregated(
+                        x_true=x_true,
+                        x_hat=x_hat,
+                        posterior_uncert=posterior_uncert,
+                    )
             else:
-                curve = self.ue.calibration_curve_ellipsoid_eeg_free_aggregated(
-                    x_true=x_true,
-                    x_hat=x_hat,
-                    posterior_cov=posterior_uncert,
-                )
+                if mode == "pointwise":
+                    curve = self.ue.calibration_curve_ellipsoid_eeg_free_pointwise(
+                        x_true=x_true,
+                        x_hat=x_hat,
+                        posterior_cov=posterior_uncert,
+                    )
+                else:
+                    curve = self.ue.calibration_curve_ellipsoid_eeg_free_aggregated(
+                        x_true=x_true,
+                        x_hat=x_hat,
+                        posterior_cov=posterior_uncert,
+                    )
+
 
         else:  # meg_free
             x_true = np.asarray(x_true, dtype=float)
-            if x_true.ndim != 3 or x_true.shape[1] != 3:
-                raise ValueError(f"For meg_free, x_true must be (N,3,T); got {x_true.shape}")
-            N, _, T = x_true.shape
-            x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+            if x_true.ndim != 3:
+                raise ValueError(f"For meg_free, x_true must be 3D (N,K,T); got {x_true.shape}")
+            N, K, T = x_true.shape
 
-            if mode == "pointwise":
-                curve = self.ue.calibration_curve_ellipse_meg_free_pointwise(
-                    x_true_3d=x_true,
-                    x_hat_2d=x_hat_2d,
-                    posterior_cov_2d=posterior_uncert,
-                    V_tan=V_tan,
-                    L_free_Mx3N=L_free_Mx3N,
-                )
+            if free_interval_type == "marginal":
+                # Work in reduced 2D tangent coordinates.
+                if K == 2:
+                    x_true_2d = x_true
+                elif K == 3:
+                    if V_tan is None:
+                        raise ValueError("meg_free marginal calibration needs V_tan when x_true is 3D.")
+                    V = np.asarray(V_tan, dtype=float)
+                    if V.shape != (N, 3, 2):
+                        raise ValueError(f"V_tan must have shape (N,3,2); got {V.shape}")
+                    x_true_2d = np.einsum('nck,nct->nkt', V, x_true)
+                else:
+                    raise ValueError(f"For meg_free marginal, x_true must have K=2 or K=3; got {K}")
+
+                x_hat_arr = np.asarray(x_hat, dtype=float)
+                if x_hat_arr.ndim == 3 and x_hat_arr.shape[1] == 3:
+                    if V_tan is None:
+                        raise ValueError("meg_free marginal calibration needs V_tan when x_hat is 3D.")
+                    V = np.asarray(V_tan, dtype=float)
+                    if V.shape != (N, 3, 2):
+                        raise ValueError(f"V_tan must have shape (N,3,2); got {V.shape}")
+                    x_hat_2d = np.einsum('nck,nct->nkt', V, x_hat_arr)
+                else:
+                    x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+
+                if mode == "pointwise":
+                    curve = self.ue.calibration_curve_componentwise_meg_free_pointwise(
+                        x_true_2d=x_true_2d,
+                        x_hat_2d=x_hat_2d,
+                        posterior_uncert_2d=posterior_uncert,
+                    )
+                else:
+                    curve = self.ue.calibration_curve_componentwise_meg_free_aggregated(
+                        x_true_2d=x_true_2d,
+                        x_hat_2d=x_hat_2d,
+                        posterior_uncert_2d=posterior_uncert,
+                    )
+
             else:
-                curve = self.ue.calibration_curve_ellipse_meg_free_aggregated(
-                    x_true_3d=x_true,
-                    x_hat_2d=x_hat_2d,
-                    posterior_cov_2d=posterior_uncert,
-                    V_tan=V_tan,
-                    L_free_Mx3N=L_free_Mx3N,
-                )
+                # Full-covariance 3D ellipses: x_true may be reduced (K=2) or lifted (K=3).
+                if K == 2:
+                    if V_tan is None:
+                        raise ValueError("meg_free full_cov calibration needs V_tan when x_true is reduced 2D.")
+                    q_basis = np.asarray(V_tan, dtype=float)
+                    if q_basis.shape != (N, 3, 2):
+                        raise ValueError(f"V_tan must have shape (N,3,2); got {q_basis.shape}")
+                    x_true_3d = lift_reduced_sources_to_3d(x_true, q_basis)
+                elif K == 3:
+                    x_true_3d = x_true
+                else:
+                    raise ValueError(f"For meg_free, x_true must have K=2 (reduced) or K=3 (lifted); got {K}")
+
+                x_hat_2d = self._reshape_meg_mean_if_needed(x_hat, N, T)
+
+                if mode == "pointwise":
+                    curve = self.ue.calibration_curve_ellipse_meg_free_pointwise(
+                        x_true_3d=x_true_3d,
+                        x_hat_2d=x_hat_2d,
+                        posterior_cov_2d=posterior_uncert,
+                        V_tan=V_tan,
+                        L_free_Mx3N=L_free_Mx3N,
+                    )
+                else:
+                    curve = self.ue.calibration_curve_ellipse_meg_free_aggregated(
+                        x_true_3d=x_true_3d,
+                        x_hat_2d=x_hat_2d,
+                        posterior_cov_2d=posterior_uncert,
+                        V_tan=V_tan,
+                        L_free_Mx3N=L_free_Mx3N,
+                    )
+
 
         nominal = np.asarray(curve["nominal_coverages"], dtype=float)
         empirical = np.asarray(curve["empirical_coverages"], dtype=float)
@@ -868,6 +944,7 @@ def compute_dataset_emd(
         V_tan: Optional[np.ndarray] = None,
         L_free_Mx3N: Optional[np.ndarray] = None,
         compute_emd: bool = False,
+        free_interval_type: str = "full_cov",
     ) -> Dict[str, Any]:
         setting = self._check_setting(setting)
         mode = self._check_mode(mode)
@@ -927,6 +1004,7 @@ def compute_dataset_emd(
                 mode=mode,
                 V_tan=V_tan,
                 L_free_Mx3N=L_free_Mx3N,
+                free_interval_type=free_interval_type,
             ),
         }
 
