@@ -36,7 +36,7 @@ How to run (no env vars, no CLI changes):
 
 1) Choose what to aggregate by editing:
    - SELECT_ORIENTATION: "fixed" or "free"
-   - SELECT_EXPERIMENT: "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
+   - SELECT_EXPERIMENT: "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
    - SELECT_SOLVER_NOISE_PAIRS: list of (solver, noise_type) tuples to include
    - (and update MANIFEST_PATH / BASE_OUTPUT_ROOT / COIL_TYPE if needed)
 
@@ -60,11 +60,18 @@ What to change between runs (typical sequence):
       SELECT_EXPERIMENT = "post_pooled_mismatch"
       Run once per orientation (fixed, free). This produces all 4 held-out heads for every solver×noise panel.
 
+  - Post-fixed (fit at default setting; evaluate across a sweep):
+      SELECT_EXPERIMENT = "post_fixed"
+      SELECT_SWEEP = "snr" (vary alpha_SNR with nnz fixed) or "nnz" (vary nnz with alpha_SNR fixed)
+      Run once per orientation (fixed, free). This produces per-head train pools at the default setting and
+      per-head eval pools spanning the chosen sweep.
+
 This file supports the paper-style aggregation experiments:
   - precal: evaluate raw uncertainty (no isotonic fit later)
   - post_oracle: 10 calibration runs at (SNR=0.5, NNZ=5), test on 25 runs same condition
   - post_pooled: 10 calibration runs pooled over all SNR/NNZ, test at (SNR=0.5, NNZ=5)
   - post_pooled_mismatch: hold out one head for test; calibrate on the other three pooled
+  - post_fixed: calibrate at (SNR=0.5, NNZ=5), test across SNR or NNZ grid to measure mismatch
 """
 
 from pathlib import Path
@@ -76,8 +83,13 @@ from mne.io.constants import FIFF
 # Manual selector (edit these)
 # ---------------------------------------------------------------------------
 
-SELECT_ORIENTATION = "free"  # "fixed" or "free"
-SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
+SELECT_ORIENTATION = "fixed"  # "fixed" or "free"
+SELECT_EXPERIMENT = "post_fixed"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
+
+# Only used when SELECT_EXPERIMENT == "post_fixed".
+# - "snr": evaluate across SNR_GRID with nnz fixed to TEST_NNZ
+# - "nnz": evaluate across NNZ_GRID with alpha_SNR fixed to TEST_SNR
+SELECT_SWEEP = "nnz"  # "snr" | "nnz"
 
 # Run all solver×noise pairs defined in configs/data_generation_default.py.
 # Define the solver×noise pairs you want to aggregate in *this* run.
@@ -243,9 +255,47 @@ def _add_experiment_splits(
             )
         return
 
+    if SELECT_EXPERIMENT == "post_fixed":
+        sweep = str(SELECT_SWEEP).lower()
+        if sweep not in {"snr", "nnz"}:
+            raise ValueError("SELECT_SWEEP must be 'snr' or 'nnz' when SELECT_EXPERIMENT == 'post_fixed'.")
+        eval_dirname = "eval_snr" if sweep == "snr" else "eval_nnz"
+        for head in HEADS:
+            splits[f"{solver}__{noise_type}__{head}__train"] = _split(
+                output_dir=base_output_dir / head / "train",
+                extra_filter={
+                    **base_filter,
+                    "subject": [head],
+                    "alpha_SNR": [TEST_SNR],
+                    "nnz": [TEST_NNZ],
+                    "run_id": CAL_FILTER,
+                },
+            )
+            if sweep == "snr":
+                eval_filter = {
+                    **base_filter,
+                    "subject": [head],
+                    "alpha_SNR": SNR_GRID,
+                    "nnz": [TEST_NNZ],
+                    "run_id": TEST_FILTER,
+                }
+            else:
+                eval_filter = {
+                    **base_filter,
+                    "subject": [head],
+                    "alpha_SNR": [TEST_SNR],
+                    "nnz": NNZ_GRID,
+                    "run_id": TEST_FILTER,
+                }
+            splits[f"{solver}__{noise_type}__{head}__eval"] = _split(
+                output_dir=base_output_dir / head / eval_dirname,
+                extra_filter=eval_filter,
+            )
+        return
+
     raise ValueError(
         "Unknown SELECT_EXPERIMENT. Expected one of: "
-        "'precal', 'post_oracle', 'post_pooled', 'post_pooled_mismatch'."
+        "'precal', 'post_oracle', 'post_pooled', 'post_pooled_mismatch', 'post_fixed'."
     )
 
 

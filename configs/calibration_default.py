@@ -30,7 +30,7 @@ How to run (no env vars, no CLI changes):
 
 1) Choose what to calibrate/evaluate by editing:
    - SELECT_ORIENTATION: "fixed" or "free"
-   - SELECT_EXPERIMENT: "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
+   - SELECT_EXPERIMENT: "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
    - SOLVER_NOISE_PAIRS: list of (solver, noise_type) tuples to include
    - AGG_ROOT: must match where aggregation wrote datasets
 
@@ -58,6 +58,11 @@ What to change between runs:
       SELECT_EXPERIMENT = "post_pooled_mismatch"
       Run once per orientation.
 
+  - Post-fixed:
+      SELECT_EXPERIMENT = "post_fixed"
+      SELECT_SWEEP = "snr" (vary alpha_SNR with nnz fixed) or "nnz" (vary nnz with alpha_SNR fixed)
+      Run once per orientation.
+
 This is designed to pair with the directory layout produced by
 ``configs/aggregate_default.py`` in this repo (per-head train/eval folders).
 """
@@ -69,7 +74,12 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 SELECT_ORIENTATION = "free"  # "fixed" or "free"
-SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch"
+SELECT_EXPERIMENT = "post_fixed"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
+
+# Only used when SELECT_EXPERIMENT == "post_fixed".
+# - "snr": evaluate across SNR sweep with nnz fixed
+# - "nnz": evaluate across NNZ sweep with alpha_SNR fixed
+SELECT_SWEEP = "snr"  # "snr" | "nnz"
 
 # Keep this list in sync with `configs/aggregate_default.py:SELECT_SOLVER_NOISE_PAIRS`.
 SOLVER_NOISE_PAIRS = [
@@ -109,6 +119,15 @@ def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:
         train_dir = base_dir / head / "train"
         eval_dir = base_dir / head / "eval"
         tag = head
+    elif SELECT_EXPERIMENT == "post_fixed":
+        if head is None:
+            raise ValueError("head is required for post_fixed")
+        sweep = str(SELECT_SWEEP).lower()
+        if sweep not in {"snr", "nnz"}:
+            raise ValueError("SELECT_SWEEP must be 'snr' or 'nnz' when SELECT_EXPERIMENT == 'post_fixed'.")
+        train_dir = base_dir / head / "train"
+        eval_dir = base_dir / head / ("eval_snr" if sweep == "snr" else "eval_nnz")
+        tag = f"{head}__{sweep}"
     else:
         raise ValueError(f"Unknown SELECT_EXPERIMENT: {SELECT_EXPERIMENT}")
 
@@ -122,6 +141,7 @@ def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:
     )
     cfg = {
         "fit_calibration": fit_calibration,
+        "fit_once": bool(SELECT_EXPERIMENT == "post_fixed"),
         "eval_dir": str(eval_dir),
         "eval_pattern": "*.npz",
         "eval_limit": None,
@@ -145,7 +165,7 @@ for solver, noise in SOLVER_NOISE_PAIRS:
     if SELECT_EXPERIMENT == "precal":
         key = f"{solver}__{noise}__precal"
         runs[key] = _single_run_config(solver=solver, noise=noise, head=None)
-    elif SELECT_EXPERIMENT in {"post_oracle", "post_pooled"}:
+    elif SELECT_EXPERIMENT in {"post_oracle", "post_pooled", "post_fixed"}:
         for head in HEADS:
             key = f"{solver}__{noise}__{head}__{SELECT_EXPERIMENT}"
             runs[key] = _single_run_config(solver=solver, noise=noise, head=head)
