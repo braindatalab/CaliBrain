@@ -359,6 +359,7 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
 
     logger = logging.getLogger(__name__)
     fit_calibration = bool(config.get("fit_calibration", True))
+    fit_once = bool(config.get("fit_once", False))
     train_paths: List[Path] = []
     train_sources: List[str] = []
     if fit_calibration:
@@ -414,6 +415,16 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
     aggregated_pre_runs: List[np.ndarray] = []
     aggregated_post_runs: List[np.ndarray] = []
 
+    calibrator = UncertaintyCalibrator(
+        uncertainty_estimator=uncertainty_estimator,
+        metric_evaluator=metric_evaluator,
+    )
+    if fit_calibration and fit_once:
+        calibrator.fit_mapping(
+            train_data=train_data,
+            free_interval_type=free_interval_type,
+        )
+
     for idx, eval_path in enumerate(eval_paths, start=1):
         print(f"[calibration] Evaluating {eval_path.name} ({idx}/{len(eval_paths)})")
         logger.info("Loaded eval dataset: %s", eval_path)
@@ -427,16 +438,18 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
                 logger.warning("Unable to load source coordinates for subject %s: %s", eval_subject, exc)
         else:
             logger.warning("Evaluation dataset %s lacks subject metadata; EMD will be skipped.", eval_path)
-        calibrator = UncertaintyCalibrator(
-            uncertainty_estimator=uncertainty_estimator,
-            metric_evaluator=metric_evaluator,
-        )
-        calibration_results = calibrator.calibrate(
-            train_data=train_data,
-            test_data=eval_data,
-            fit=fit_calibration,
-            free_interval_type=free_interval_type,
-        )
+        if fit_calibration and fit_once:
+            calibration_results = calibrator.evaluate_with_mapping(
+                test_data=eval_data,
+                free_interval_type=free_interval_type,
+            )
+        else:
+            calibration_results = calibrator.calibrate(
+                train_data=train_data,
+                test_data=eval_data,
+                fit=fit_calibration,
+                free_interval_type=free_interval_type,
+            )
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         if len(eval_paths) == 1 and run_slug:
