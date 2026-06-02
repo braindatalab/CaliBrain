@@ -74,7 +74,11 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 SELECT_ORIENTATION = "free"  # "fixed" or "free"
-SELECT_EXPERIMENT = "post_fixed"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
+
+# Only used for free orientation experiments; ignored for fixed orientation since that only has one interval type.
+free_interval_type = "marginal"  # "full_cov" (ellipsoid/ellipse) or "marginal" (per component)
+
+SELECT_EXPERIMENT = "post_pooled_mismatch"  # "precal" | "post_oracle" | "post_pooled" | "post_pooled_mismatch" | "post_fixed"
 
 # Only used when SELECT_EXPERIMENT == "post_fixed".
 # - "snr": evaluate across SNR sweep with nnz fixed
@@ -131,14 +135,16 @@ def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:
     else:
         raise ValueError(f"Unknown SELECT_EXPERIMENT: {SELECT_EXPERIMENT}")
 
-    output_dir = (
+    output_root = (
         Path("/data/orabem/calibrain/results/calibration_eval")
         / SELECT_ORIENTATION
         / solver
         / noise
         / SELECT_EXPERIMENT
-        / tag
     )
+    if SELECT_ORIENTATION == "free":
+        output_root = output_root / free_interval_type
+    output_dir = output_root / tag
     cfg = {
         "fit_calibration": fit_calibration,
         "fit_once": bool(SELECT_EXPERIMENT == "post_fixed"),
@@ -151,7 +157,7 @@ def _single_run_config(*, solver: str, noise: str, head: str | None) -> dict:
         "plot_curve": False,
         "plot_nominal": 0.95,
         "plot_source_idx": 0,
-        "free_interval_type": "full_cov",  # or "marginal"
+        "free_interval_type": free_interval_type,
         "nominal_coverages": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     }
     if fit_calibration:
