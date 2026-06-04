@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.413** total execution time for 5 files **from all galleries**:
+**00:01.059** total execution time for 5 files **from all galleries**:
 
 .. container::
 
@@ -32,18 +32,18 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``../../tutorials/sensor_simulation_tutorial.py``)
-     - 00:01.818
+   * - :ref:`sphx_glr_auto_tutorials_02_source_simulation.py` (``../../tutorials/02_source_simulation.py``)
+     - 00:00.461
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``../../tutorials/source_simulation_tutorial.py``)
-     - 00:00.584
+   * - :ref:`sphx_glr_auto_tutorials_03_leadfield_building.py` (``../../tutorials/03_leadfield_building.py``)
+     - 00:00.171
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py` (``../../examples/leadfield_simulation_example.py``)
-     - 00:00.010
+   * - :ref:`sphx_glr_auto_examples_02_plot_calibration_record.py` (``../../examples/02_plot_calibration_record.py``)
+     - 00:00.161
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``../../examples/run_experiments.py``)
-     - 00:00.001
+   * - :ref:`sphx_glr_auto_tutorials_01_what_is_calibrain.py` (``../../tutorials/01_what_is_calibrain.py``)
+     - 00:00.153
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py` (``../../tutorials/visualization_tutorial.py``)
-     - 00:00.000
+   * - :ref:`sphx_glr_auto_examples_01_read_manifest_csv.py` (``../../examples/01_read_manifest_csv.py``)
+     - 00:00.114
      - 0.0
