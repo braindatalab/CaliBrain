@@ -13,18 +13,27 @@ def load_config(config_file: str, logger=None) -> dict:
     """
     Load the configuration from a YAML file.
 
-    Parameters:
-    - config_file (str): Path to the YAML configuration file.
-    - logger (logging.Logger, optional): Logger instance for logging messages.
+    Parameters
+    ----------
+    config_file : str
+        Path to the YAML configuration file.
+    logger : logging.Logger, optional
+        Logger instance for logging messages.
       If None, a default logger will be created.
 
-    Raises:
-    - FileNotFoundError: If the configuration file is not found.
-    - yaml.YAMLError: If there is an error parsing the YAML file.
-    - ValueError: If the configuration file is empty or invalid.
+    Raises
+    ------
+    FileNotFoundError
+        If the configuration file is not found.
+    yaml.YAMLError
+        If there is an error parsing the YAML file.
+    ValueError
+        If the configuration file is empty or invalid.
 
-    Returns:
-    - config (dict): The loaded configuration as a dictionary.
+    Returns
+    -------
+    config : dict
+        The loaded configuration as a dictionary.
     """
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file does not exist: {config_file}")
@@ -82,12 +91,17 @@ def inspect_object(obj, show_private=False):
     """
     Print attributes and methods of a Python object separately.
 
-    Parameters:
-    - obj: The object to inspect.
-    - show_private (bool): If True, include private attributes/methods (starting with '_').
+    Parameters
+    ----------
+    obj
+        The object to inspect.
+    show_private : bool
+        If True, include private attributes/methods (starting with '_').
 
-    Returns:
-    - dict with 'attributes' and 'methods' keys
+    Returns
+    -------
+    dict
+        Dictionary with 'attributes' and 'methods' keys.
     """
     def is_valid(name):
         return show_private or not name.startswith("_")

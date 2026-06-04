@@ -74,6 +74,7 @@ class UncertaintyEstimator:
     For MEG, the inverse model is assumed to be built on a reduced 2-orientation
     leadfield obtained source-wise via SVD or, preferably, taken directly from
     the extractor as `Q_basis`. Therefore:
+
       - truth can be represented in reduced coordinates a_true with shape (N,2,T)
       - if needed, truth can be lifted to local 3D via Q_basis -> shape (N,3,T)
       - posterior mean is in reduced 2D coordinates, shape (N,2,T)

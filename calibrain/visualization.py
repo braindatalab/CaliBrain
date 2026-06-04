@@ -32,11 +32,16 @@ class Visualizer:
         """
         Plot spatial maps showing point-wise coverage for different confidence levels.
         
-        Parameters:
-        - x (ndarray): True source activity, shape (n_sources,) or (n_sources, n_times)
-        - ci_lower (ndarray): Lower confidence bounds, shape (n_coverages, n_sources)
-        - ci_upper (ndarray): Upper confidence bounds, shape (n_coverages, n_sources)
-        - nominal_coverages (ndarray): Nominal coverage levels
+        Parameters
+        ----------
+        x : ndarray
+            True source activity, shape (n_sources,) or (n_sources, n_times).
+        ci_lower : ndarray
+            Lower confidence bounds, shape (n_coverages, n_sources).
+        ci_upper : ndarray
+            Upper confidence bounds, shape (n_coverages, n_sources).
+        nominal_coverages : ndarray
+            Nominal coverage levels.
         """
         # Ensure x is 1D (average over time if needed)
         if x.ndim > 1:
@@ -855,12 +860,18 @@ class Visualizer:
         standard deviation across runs are displayed; optional weights can be used
         to compute weighted statistics.
         
-        Parameters:
-        - nominal_coverage (ndarray): Array of nominal coverage levels (confidence levels).
-        - pre_empirical_coverage (ndarray | ndarray runs x levels): Empirical coverage before calibration.
-        - post_empirical_coverage (ndarray | ndarray runs x levels): Empirical coverage after calibration.
-        - pre_weights (array-like, optional): Sample weights for the pre-calibration curves.
-        - post_weights (array-like, optional): Sample weights for the post-calibration curves.
+        Parameters
+        ----------
+        nominal_coverage : ndarray
+            Array of nominal coverage levels (confidence levels).
+        pre_empirical_coverage : ndarray | ndarray runs x levels
+            Empirical coverage before calibration.
+        post_empirical_coverage : ndarray | ndarray runs x levels
+            Empirical coverage after calibration.
+        pre_weights : array-like, optional
+            Sample weights for the pre-calibration curves.
+        post_weights : array-like, optional
+            Sample weights for the post-calibration curves.
         """
         nominal_arr = np.asarray(nominal_coverage, dtype=float)
         pre_mean, pre_std, pre_count = self._summarize_calibration_curves(

@@ -50,7 +50,7 @@ class DataGenerator:
         """
         Initialize the DataGenerator class.
 
-        Parameters:
+        Parameters
         ----------
         solver : callable
             The solver function (e.g., gamma_map, eloreta).
@@ -149,13 +149,19 @@ class DataGenerator:
         """
         Create a directory structure for the experiment, with subdirectories for each parameter in a specified order, followed by any remaining parameters.
     
-        Parameters:
-        - base_dir (str): Base directory for the experiment.
-        - params (dict): Dictionary of parameters.
-        - desired_order (list): List of parameter keys in the desired order for the directory structure.
+        Parameters
+        ----------
+        base_dir : str
+            Base directory for the experiment.
+        params : dict
+            Dictionary of parameters.
+        desired_order : list
+            List of parameter keys in the desired order for the directory structure.
     
-        Returns:
-        - experiment_dir (str): Path to the experiment directory.
+        Returns
+        -------
+        experiment_dir : str
+            Path to the experiment directory.
         """
         # Exclude 'cov' and sanitize values for directory names
         sanitized_params_for_path = {

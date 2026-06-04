@@ -58,6 +58,7 @@ class SourceSimulator:
             ERP simulation configuration. If None, defaults are used.
 
             Required/used keys (with defaults):
+
             - tmin : float, default -0.5
                 Start time (s) of the epoch.
             - tmax : float, default  0.5
@@ -70,9 +71,11 @@ class SourceSimulator:
                 Bandpass limits (Hz) for ERP-like waveform shaping.
             - amplitude_distribution : dict
                 Log-normal amplitude distribution in nAm:
+
                 * median : float, default 20.0
                 * sigma  : float, default 0.2
                 * clip   : (low, high), default (2.5, 50.0)
+
             - random_erp_timing : bool, default True
                 If True, randomize ERP segment duration and start offset after stim_onset.
             - erp_min_length : int or None, default None

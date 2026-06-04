@@ -535,8 +535,8 @@ def normalize_R(G, R, G_3, n_nzero, force_equal, n_src, n_orient):
     This function normalizes the product G @ R @ G.T so that its trace matches a
     reference value (n_nzero).
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     G : ndarray, shape (n_chan, n_src * n_orient)
         The lead-field or forward matrix after applying whitening and source scaling.
     R : ndarray
@@ -554,8 +554,8 @@ def normalize_R(G, R, G_3, n_nzero, force_equal, n_src, n_orient):
     n_orient : int
         Number of orientations per source (1 for fixed, 3 for free orientation).
         
-    Returns:
-    --------
+    Returns
+    -------
     G_R_Gt : ndarray
         The normalized product G @ R @ G.T.
     """
@@ -581,15 +581,15 @@ def get_G_3(G, n_orient):
     """
     Reshape and transpose the lead-field matrix G for multi-orientation sources.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     G : ndarray, shape (n_chan, n_src * n_orient)
         The original lead-field matrix, after whitening and orientation‐prior scaling.
     n_orient : int
         Number of orientations per source (1 for fixed, 3 for free orientation).
         
-    Returns:
-    --------
+    Returns
+    -------
     ndarray or None :
         If n_orient > 1, returns an array of shape (n_src, n_orient, n_chan),
         so that each source’s 3×n_chan lead-field slice is one block.
@@ -612,16 +612,16 @@ def R_sqrt_mult(other, R_sqrt):
     
     This function handles both diagonal and block-diagonal cases for R_sqrt.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     other : ndarray, shape (n_chan, n_src * n_orient) or similar
         The matrix to be multiplied with R_sqrt.
     R_sqrt : ndarray
         The square root of the source covariance matrix R. It is either a 1D vector
         (for a diagonal matrix) or a 3D array (for block-diagonal multi-orientation case).
         
-    Returns:
-    --------
+    Returns
+    -------
     out : ndarray
         The result of the matrix multiplication.
     """
@@ -653,14 +653,14 @@ def compute_reginv2(sing, n_nzero, lambda2):
     
     This applies Tikhonov regularization in the SVD domain to handle small singular values.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     sing : array-like, singular values from the SVD.
     n_nzero : int, number of non-zero singular values (typically number of sensors).
     lambda2 : float, regularization parameter.
     
-    Returns:
-    --------
+    Returns
+    -------
     reginv : array-like, the regularized inverses.
     """
     # Ensure the singular values are in floating point for precision.
@@ -680,14 +680,14 @@ def compute_orient_prior(G, n_orient, loose=0.9):
     The orientation prior weights help to scale the source estimates according
     to expected orientation variability (e.g., "loose" constraints for x and y directions).
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     G : ndarray, the lead-field matrix.
     n_orient : int, number of orientations per source.
     loose : float, scaling factor for certain orientations.
     
-    Returns:
-    --------
+    Returns
+    -------
     orient_prior : ndarray, shape (n_sources * n_orient,)
         The prior weights for each source orientation.
     """
@@ -706,15 +706,15 @@ def safe_svd(A, full_matrices=False):
     """
     Safely compute the SVD of matrix A.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     A : ndarray
         The matrix for which to compute the singular value decomposition.
     full_matrices : bool
         Flag determining if full or reduced SVD is computed.
     
-    Returns:
-    --------
+    Returns
+    -------
     U, S, Vh : ndarrays
         The left singular vectors, singular values, and right singular vectors.
     """
@@ -732,8 +732,8 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
       5. Perform an SVD on the effective gain matrix and regularize the singular values.
       6. Assemble the final inverse operator (kernel K).
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     L : ndarray, shape (n_chan, n_src*n_orient)
         The original lead-field matrix.
     lambda2 : float, regularization parameter to stabilize the inversion.
@@ -742,8 +742,8 @@ def compute_eloreta_kernel(L, *, lambda2, n_orient, whitener, loose=1.0, max_ite
     loose : float, parameter for the orientation prior (looseness of the constraints).
     max_iter : int, maximum number of iterations for the iterative fitting procedure.
     
-    Returns:
-    --------
+    Returns
+    -------
     K : ndarray, the eLORETA kernel (inverse operator) used to compute source estimates.
     Sigma : ndarray, the posterior source covariance matrix.
     """
@@ -868,8 +868,8 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
       - Computes the eLORETA kernel,
       - And finally estimates the source activity.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     L : ndarray, shape (n_chan, n_src*n_orient)
         The lead-field (forward) matrix mapping sources to sensors.
     y : ndarray, shape (n_chan, n_times) or (n_chan,)
@@ -878,8 +878,8 @@ def eloreta(L, y, noise_var,  n_orient=1, verbose=True, logger=None, **kwargs):
     n_orient : int
         Number of orientations per source (1 for fixed or 3 for free orientation).
     
-    Returns:
-    --------
+    Returns
+    -------
     x : ndarray
         The estimated source activations. The shape will be (n_src, n_times) for
         single orientation or (n_src, n_orient, n_times) for free orientations.
@@ -1524,13 +1524,19 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         """
         Initialize the SourceEstimator class.
 
-        Parameters:
-        - solver (callable): The inverse solver function (e.g., gamma_map, eloreta).
-        - solver_params (dict, optional): Parameters for the solver function.
-        - noise_var (float, optional): Noise variance for the solver.
-        - logger (logging.Logger, optional): Logger instance for logging messages.
-        - n_orient (int, optional): Number of orientations for the sources.
-          Default is 1 (for fixed orientation) or 3 (for free orientation).
+        Parameters
+        ----------
+        solver : callable
+            The inverse solver function (e.g., gamma_map, eloreta).
+        solver_params : dict, optional
+            Parameters for the solver function.
+        noise_var : float, optional
+            Noise variance for the solver.
+        logger : logging.Logger, optional
+            Logger instance for logging messages.
+        n_orient : int, optional
+            Number of orientations for the sources. Default is 1 (for fixed
+            orientation) or 3 (for free orientation).
         """
         # Follow sklearn convention: __init__ should *only* assign the passed
         # parameters to attributes without mutating them. Keep `solver_params`
@@ -1582,13 +1588,18 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         """
         Fit the inverse solver to the data.
 
-        Parameters:
-        - L (np.ndarray): Leadfield matrix of shape (n_sensors, n_sources)
-          for fixed orientation or (n_sensors, n_sources, n_orient) for free orientation.
-        - y (np.ndarray): Observed EEG/MEG signals of shape (n_sensors, n_times).
+        Parameters
+        ----------
+        L : np.ndarray
+            Leadfield matrix of shape (n_sensors, n_sources) for fixed
+            orientation or (n_sensors, n_sources, n_orient) for free orientation.
+        y : np.ndarray
+            Observed EEG/MEG signals of shape (n_sensors, n_times).
 
-        Returns:
-        - self: The fitted estimator.
+        Returns
+        -------
+        self
+            The fitted estimator.
         """
         self.logger.debug("Fitting the solver...")
         self.L_ = self._format_leadfield(L)
@@ -1600,11 +1611,15 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         """
         Internal method to compute the source estimates.
 
-        Parameters:
-        - y (np.ndarray): Observed EEG/MEG signals of shape (n_sensors, n_times).
+        Parameters
+        ----------
+        y : np.ndarray
+            Observed EEG/MEG signals of shape (n_sensors, n_times).
 
-        Returns:
-        - x_hat (np.ndarray): Estimated source activity of shape (n_sources, n_times).
+        Returns
+        -------
+        x_hat : np.ndarray
+            Estimated source activity of shape (n_sources, n_times).
         - active_indices (np.ndarray): Indices of active sources.
         - posterior_cov (np.ndarray): Posterior covariance matrix of estimated sources.
         """        
