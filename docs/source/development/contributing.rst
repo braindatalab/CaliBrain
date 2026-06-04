@@ -13,8 +13,8 @@ Getting Started
 ---------------
 
 - Open an **Issue** on GitHub to propose a change or report a bug.
-- For general usage questions, use **GitHub Discussions**.
-- Please follow our **Code of Conduct**.
+- For general usage questions, use the repository issue tracker unless a
+  dedicated discussion forum is enabled.
 
 How to Contribute
 -----------------
@@ -105,15 +105,15 @@ For a complete development setup:
    # Install in development mode with all dependencies
    pip install -e ".[dev,docs]"
    
-   # Install pre-commit hooks (optional)
-   pre-commit install
+   # Install optional tooling if the project adds a pre-commit config.
+   # pre-commit install
 
 Running Tests
 -------------
 
 .. code-block:: bash
 
-   # Run all tests
+   # Run all tests if a tests/ directory is present
    pytest tests/
    
    # Run with coverage
@@ -129,8 +129,8 @@ Building Documentation
    make clean
    make html
    
-   # Or use the build script
-   ./build_docs.sh
+   # Or call Sphinx directly
+   sphinx-build -b html docs/source docs/build/html
 
 Code Review Guidelines
 ----------------------

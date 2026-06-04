@@ -1,69 +1,21 @@
 :orphan:
 
-.. _examples:
+Executable Examples
+===================
 
-==========================
-Examples
-==========================
+These examples are executable Sphinx-Gallery scripts. They are stored in the
+repository-level ``examples`` directory and rendered into the documentation
+under ``docs/source/auto_examples`` during ``make html``.
 
-This gallery contains practical examples demonstrating real-world applications 
-of CaliBrain for brain source localization and uncertainty quantification.
+Examples should be focused and lightweight. They should demonstrate one
+operation, produce a clear figure when possible, and avoid paper-scale data.
+Use numeric filename prefixes, for example ``01_read_manifest_csv.py``, so the
+gallery presents examples in the intended reading order.
 
-These examples show complete workflows that you can adapt for your own research 
-projects. Each example is a standalone script that can be run independently.
 
-**Quick Start**: If you're new to CaliBrain, start with the data-generation sweep 
-to see how different algorithms behave on simulated data.
+.. raw:: html
 
-🔬 **Interactive Gallery**: All examples are automatically processed by Sphinx Gallery and converted to HTML with embedded plots and downloadable notebooks.
-
-Available Examples
-==================
-
-All examples in this directory are automatically processed and available in multiple formats:
-
-**Data-Generation Sweeps** (``run_experiments.py``)
-   Comprehensive solver sweeps that populate calibration datasets:
-   
-   - Multiple algorithms (Gamma-MAP, eLORETA, Bayesian Minimum Norm)
-   - Various noise conditions and source configurations
-   - Posterior summaries saved for calibration and visualization
-
-**Leadfield Simulation** (``leadfield_simulation_example.py``)
-   Step-by-step leadfield matrix computation:
-   
-   - Forward model setup and configuration
-   - Source space and BEM model creation
-   - Leadfield matrix extraction and validation
-
-Example Features
-================
-
-Each example includes:
-
-- **Python script** (`.py`) - Complete working example in this directory
-- **HTML documentation** - Generated automatically with embedded plots
-- **Jupyter notebook** (`.ipynb`) - Available for download and interactive exploration
-- **Download options** - Get the source code and modify for your needs
-
-Running Examples
-================
-
-Each example can be executed directly from the command line::
-
-    cd examples/
-    python run_experiments.py
-
-All scripts in this directory are automatically converted to beautiful HTML documentation with embedded plots and made available as downloadable Jupyter notebooks through Sphinx Gallery.
-
-Prerequisites
-=============
-
-Make sure CaliBrain is installed before running examples::
-
-    pip install calibrain
-
-See the installation guide for detailed setup instructions.
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
 
 
 .. raw:: html
@@ -74,35 +26,35 @@ See the installation guide for detailed setup instructions.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to simulate leadfield matrices using CaliBrain&#x27;s LeadfieldBuilder component.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example creates a lightweight manifest CSV, loads it with CaliBrain&#x27;s manifest helper, and visualizes how many posterior summaries are available per solver. In production workflows, the manifest is written by data generation and used by aggregation to select runs.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_leadfield_simulation_example_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_01_read_manifest_csv_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py`
+  :doc:`/auto_examples/01_read_manifest_csv`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Leadfield Matrix Simulation</div>
+      <div class="sphx-glr-thumbnail-title">01. Read a manifest CSV</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to run comprehensive data-generation sweeps for evaluating source localization algorithms using CaliBrain.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example writes a compact calibration JSON record, loads it with CaliBrain&#x27;s storage helper, and plots pre- and post-calibration curves. The same record structure is produced by the calibration workflow.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_run_experiments_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_02_plot_calibration_record_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_run_experiments.py`
+  :doc:`/auto_examples/02_plot_calibration_record`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Run benchmark experiments</div>
+      <div class="sphx-glr-thumbnail-title">02. Plot a calibration JSON record</div>
     </div>
 
 
@@ -116,8 +68,8 @@ See the installation guide for detailed setup instructions.
 .. toctree::
    :hidden:
 
-   /auto_examples/leadfield_simulation_example
-   /auto_examples/run_experiments
+   /auto_examples/01_read_manifest_csv
+   /auto_examples/02_plot_calibration_record
 
 
 .. only:: html
