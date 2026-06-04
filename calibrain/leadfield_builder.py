@@ -615,6 +615,9 @@ class LeadfieldBuilder:
         subject: str = "fsaverage",
         orientation_type: str = "fixed",
         retrieve_mode: str = "load",
+        config: Optional[Union[str, Path, Dict]] = None,
+        n_sensors: int = 64,
+        n_sources: int = 1284,
         return_metadata: bool = False,
     ) -> Union[np.ndarray, LeadfieldData]:
         """
@@ -703,13 +706,19 @@ class LeadfieldBuilder:
                 raise
 
         elif retrieve_mode == "simulate":
-            if not config:
-                raise ValueError("Path to the configuration file (config) must be provided when retrieve_mode='simulate'.")
             self.logger.debug(f"Simulating leadfield matrix using LeadfieldBuilder with config: {config}")
 
             try:
-                config = load_config(Path(config))
-                L_simulator = LeadfieldBuilder(config=config, logger=self.logger)
+                if config is not None:
+                    if isinstance(config, (str, Path)):
+                        config = load_config(Path(config))
+                    L_simulator = LeadfieldBuilder(
+                        config=config,
+                        leadfield_dir=self.leadfield_dir,
+                        logger=self.logger,
+                    )
+                else:
+                    L_simulator = self
                 leadfield = L_simulator.simulate()
                 self.logger.info(f"Simulated leadfield matrix with shape {leadfield.shape}")
                 metadata = LeadfieldData(
@@ -717,7 +726,8 @@ class LeadfieldBuilder:
                     sensor_unitmult=L_simulator.sensor_unitmult,
                     sensor_kind=L_simulator.sensor_kind,
                     coil_type=L_simulator.coil_type,
-                    src_coords=L_simulator.src_coords
+                    src_coords=getattr(L_simulator, "src_coords", None),
+                    Q_basis=getattr(L_simulator, "Q_basis", None),
                 )
 
                 if orientation_type == "free":
@@ -766,7 +776,7 @@ class LeadfieldBuilder:
             #     raise ValueError(f"Invalid channel_type '{self.channel_type}'. Choose 'eeg', 'meg', or 'grad'.")
 
         else:
-            raise ValueError(f"Invalid leadfield mode '{self.retrieve_mode}'. Options are 'load', 'simulate', or 'random'.")
+            raise ValueError(f"Invalid leadfield mode '{retrieve_mode}'. Options are 'load', 'simulate', or 'random'.")
 
         # Update n_sensors and n_sources based on the actual leadfield dimensions
         if leadfield.ndim == 2 == expected_dimensions: # Fixed
