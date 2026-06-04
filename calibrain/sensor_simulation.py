@@ -40,24 +40,29 @@ class SensorSimulator:
           y_noisy = y_clean + eta * eps, where eps ~ N(0, sigma^2 I)
 
     Supported orientation conventions
-    -------------------------------
+    ---------------------------------
     Fixed orientation:
+
       - x: (n_sources, n_times)              [nAm]
       - L: (n_sensors, n_sources)            [sensor_unit / nAm]
       - y: (n_sensors, n_times)              [sensor_unit]
 
     Free orientation:
+
       - x: (n_sources, K, n_times)           [nAm]  (3 components of dipole moment)
       - L: (n_sensors, n_sources, K)         [sensor_unit / nAm]
       - y: (n_sensors, n_times)              [sensor_unit]
+
       with K = 2 for MEG (tangential components) and K = 3 for EEG (full 3D).
 
     Units
     -----
     By default, metadata assumes MEG magnetometers:
+
       - kind    = FIFFV_MEG_CH
       - units   = FIFF_UNIT_T
       - unitmult= FIFF_UNITM_F  (femto; 1e-15)
+
     These are metadata fields; numerical outputs depend on your L units.
     """
 
@@ -262,13 +267,17 @@ class SensorSimulator:
         ----------
         x : np.ndarray
             Source activity:
+
               - fixed: (n_sources, n_times)
               - free : (n_sources, K, n_times), with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
+
               Typically in nAm for dipole moments.
         L : np.ndarray
             Leadfield:
+
               - fixed: (n_sensors, n_sources)
               - free : (n_sensors, n_sources, K), with K = 2 for MEG and K = 3 for EEG.
+
                 Units depend on modality and construction, e.g. fT/nAm for MEG or µV/nAm for EEG.
         alpha_SNR : float
             Noise mixing parameter in [0, 1].

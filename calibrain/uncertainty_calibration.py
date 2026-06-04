@@ -67,7 +67,7 @@ def is_free_meg_orientation(
 class UncertaintyCalibrator:
     """
     Uncertainty Calibrator
-    =====================
+    ======================
 
     This class connects UncertaintyEstimator and MetricEvaluator with an
     isotonic-regression based re-calibration of nominal coverages.
