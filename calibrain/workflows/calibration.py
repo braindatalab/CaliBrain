@@ -11,7 +11,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 from calibrain import MetricEvaluator, UncertaintyCalibrator, UncertaintyEstimator
-from calibrain.metric_evaluation import compute_dataset_emd
+from calibrain.metric_evaluation import _compute_dataset_emd
 from calibrain.utils import get_data_path
 from calibrain.utils import load_python_config
 
@@ -466,7 +466,7 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
         sanitized_post = {k: v for k, v in post_block.items() if k not in {"ci_lowers", "ci_uppers"}}
         split_meta = post_block.get("split_metadata") or pre_block.get("split_metadata") or {}
         setting_label = split_meta.get("setting")
-        emd_value = compute_dataset_emd(
+        emd_value = _compute_dataset_emd(
             metric_evaluator=metric_evaluator,
             eval_data=eval_data,
             coords=eval_coords,
