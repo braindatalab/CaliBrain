@@ -671,109 +671,6 @@ class MetricEvaluator:
 
         return float(emd2(a_norm, b_norm, M))
 
-
-def _prepare_meg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    n_sources = int(eval_data.get("n_sources") or 0)
-    if n_sources <= 0:
-        raise ValueError("MEG dataset missing n_sources metadata required for EMD.")
-
-    q_basis = eval_data.get("Q_basis")
-    if q_basis is None:
-        raise ValueError("MEG dataset missing Q_basis required for EMD.")
-    q_basis = np.asarray(q_basis, dtype=float)
-
-    x_hat = _reshape_free_mean(np.asarray(eval_data["x_hat"], dtype=float), n_sources, 2)
-
-    x_true_raw = np.asarray(eval_data["x_true"], dtype=float)
-    if x_true_raw.ndim == 3 and x_true_raw.shape[1] == 2:
-        x_true_2d = x_true_raw
-        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
-    elif x_true_raw.ndim == 3 and x_true_raw.shape[1] == 3:
-        x_true_3d = x_true_raw
-        basis_T = np.transpose(q_basis, (0, 2, 1))
-        x_true_2d = np.einsum("nki,nit->nkt", basis_T, x_true_3d)
-    else:
-        x_true_2d = _reshape_free_mean(x_true_raw, n_sources, 2)
-        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
-
-    return x_true_2d, x_true_3d, x_hat, q_basis
-
-
-def _prepare_eeg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
-    n_sources = int(eval_data.get("n_sources") or 0)
-    if n_sources <= 0:
-        raise ValueError("EEG dataset missing n_sources metadata required for EMD.")
-
-    x_true = np.asarray(eval_data["x_true"], dtype=float)
-    if not (x_true.ndim == 3 and x_true.shape[1] == 3):
-        x_true = _reshape_free_mean(x_true, n_sources, 3)
-
-    x_hat = np.asarray(eval_data["x_hat"], dtype=float)
-    if not (x_hat.ndim == 3 and x_hat.shape[1] == 3):
-        x_hat = _reshape_free_mean(x_hat, n_sources, 3)
-
-    return x_true, x_hat
-
-
-def compute_dataset_emd(
-    *,
-    metric_evaluator: MetricEvaluator,
-    eval_data: Dict[str, Any],
-    coords: Optional[np.ndarray],
-    setting: Optional[str],
-    emd_mode: str = "reduced",
-) -> Optional[float]:
-    if coords is None or setting is None:
-        return None
-
-    logger = getattr(metric_evaluator, "logger", None) or logging.getLogger(__name__)
-    mode = (emd_mode or "reduced").lower()
-    if mode not in {"reduced", "lifted"}:
-        raise ValueError("emd_mode must be 'reduced' or 'lifted'.")
-
-    try:
-        if setting == "meg_free":
-            x_true_2d, x_true_3d, x_hat_2d, q_basis = _prepare_meg_sources_for_emd_dataset(eval_data)
-            if mode == "lifted":
-                x_hat_3d = lift_reduced_sources_to_3d(x_hat_2d, q_basis)
-                return metric_evaluator.emd(
-                    x_true=x_true_3d,
-                    x_hat=x_hat_3d,
-                    coords=coords,
-                    setting="eeg_free",
-                    mode="aggregated",
-                )
-            return metric_evaluator.emd(
-                x_true=x_true_2d,
-                x_hat=x_hat_2d,
-                coords=coords,
-                setting="meg_free",
-                mode="aggregated",
-                V_tan=q_basis,
-            )
-
-        if setting == "eeg_free":
-            x_true_3d, x_hat_3d = _prepare_eeg_sources_for_emd_dataset(eval_data)
-            return metric_evaluator.emd(
-                x_true=x_true_3d,
-                x_hat=x_hat_3d,
-                coords=coords,
-                setting="eeg_free",
-                mode="aggregated",
-            )
-
-        return metric_evaluator.emd(
-            x_true=eval_data["x_true"],
-            x_hat=eval_data["x_hat"],
-            coords=coords,
-            setting=setting,
-            mode="aggregated",
-            V_tan=eval_data.get("Q_basis"),
-        )
-    except Exception as exc:
-        logger.warning("EMD computation failed (%s mode): %s", setting, exc)
-        return None
-
     # ------------------------------------------------------------------
     # Calibration
     # ------------------------------------------------------------------
@@ -1024,6 +921,104 @@ def compute_dataset_emd(
         return out
 
 
-# =============================================================================
-# Example helpers
-# =============================================================================
+def _prepare_meg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    n_sources = int(eval_data.get("n_sources") or 0)
+    if n_sources <= 0:
+        raise ValueError("MEG dataset missing n_sources metadata required for EMD.")
+
+    q_basis = eval_data.get("Q_basis")
+    if q_basis is None:
+        raise ValueError("MEG dataset missing Q_basis required for EMD.")
+    q_basis = np.asarray(q_basis, dtype=float)
+
+    x_hat = _reshape_free_mean(np.asarray(eval_data["x_hat"], dtype=float), n_sources, 2)
+
+    x_true_raw = np.asarray(eval_data["x_true"], dtype=float)
+    if x_true_raw.ndim == 3 and x_true_raw.shape[1] == 2:
+        x_true_2d = x_true_raw
+        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
+    elif x_true_raw.ndim == 3 and x_true_raw.shape[1] == 3:
+        x_true_3d = x_true_raw
+        basis_T = np.transpose(q_basis, (0, 2, 1))
+        x_true_2d = np.einsum("nki,nit->nkt", basis_T, x_true_3d)
+    else:
+        x_true_2d = _reshape_free_mean(x_true_raw, n_sources, 2)
+        x_true_3d = lift_reduced_sources_to_3d(x_true_2d, q_basis)
+
+    return x_true_2d, x_true_3d, x_hat, q_basis
+
+
+def _prepare_eeg_sources_for_emd_dataset(eval_data: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+    n_sources = int(eval_data.get("n_sources") or 0)
+    if n_sources <= 0:
+        raise ValueError("EEG dataset missing n_sources metadata required for EMD.")
+
+    x_true = np.asarray(eval_data["x_true"], dtype=float)
+    if not (x_true.ndim == 3 and x_true.shape[1] == 3):
+        x_true = _reshape_free_mean(x_true, n_sources, 3)
+
+    x_hat = np.asarray(eval_data["x_hat"], dtype=float)
+    if not (x_hat.ndim == 3 and x_hat.shape[1] == 3):
+        x_hat = _reshape_free_mean(x_hat, n_sources, 3)
+
+    return x_true, x_hat
+
+
+def _compute_dataset_emd(
+    *,
+    metric_evaluator: MetricEvaluator,
+    eval_data: Dict[str, Any],
+    coords: Optional[np.ndarray],
+    setting: Optional[str],
+    emd_mode: str = "reduced",
+) -> Optional[float]:
+    if coords is None or setting is None:
+        return None
+
+    logger = getattr(metric_evaluator, "logger", None) or logging.getLogger(__name__)
+    mode = (emd_mode or "reduced").lower()
+    if mode not in {"reduced", "lifted"}:
+        raise ValueError("emd_mode must be 'reduced' or 'lifted'.")
+
+    try:
+        if setting == "meg_free":
+            x_true_2d, x_true_3d, x_hat_2d, q_basis = _prepare_meg_sources_for_emd_dataset(eval_data)
+            if mode == "lifted":
+                x_hat_3d = lift_reduced_sources_to_3d(x_hat_2d, q_basis)
+                return metric_evaluator.emd(
+                    x_true=x_true_3d,
+                    x_hat=x_hat_3d,
+                    coords=coords,
+                    setting="eeg_free",
+                    mode="aggregated",
+                )
+            return metric_evaluator.emd(
+                x_true=x_true_2d,
+                x_hat=x_hat_2d,
+                coords=coords,
+                setting="meg_free",
+                mode="aggregated",
+                V_tan=q_basis,
+            )
+
+        if setting == "eeg_free":
+            x_true_3d, x_hat_3d = _prepare_eeg_sources_for_emd_dataset(eval_data)
+            return metric_evaluator.emd(
+                x_true=x_true_3d,
+                x_hat=x_hat_3d,
+                coords=coords,
+                setting="eeg_free",
+                mode="aggregated",
+            )
+
+        return metric_evaluator.emd(
+            x_true=eval_data["x_true"],
+            x_hat=eval_data["x_hat"],
+            coords=coords,
+            setting=setting,
+            mode="aggregated",
+            V_tan=eval_data.get("Q_basis"),
+        )
+    except Exception as exc:
+        logger.warning("EMD computation failed (%s mode): %s", setting, exc)
+        return None
