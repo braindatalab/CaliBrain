@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import logging
-import warnings
 import h5py
 from typing import Optional
 from pathlib import Path
@@ -20,10 +19,9 @@ from matplotlib.patches import Ellipse
 from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
-from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, eloreta, UncertaintyCalibrator
+from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, UncertaintyCalibrator
 from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
-from calibrain import SpatialCVSolver, TemporalCVSolver
 from calibrain.calibration_storage import save_calibration_record
 from calibrain.calibration_dataset import EEG_COIL_TYPES, MEG_COIL_TYPES
 
@@ -53,7 +51,7 @@ class DataGenerator:
         Parameters
         ----------
         solver : callable
-            The solver function (e.g., gamma_map, eloreta).
+            The solver function (e.g., gamma_map).
         solver_param_grid : dict
             Grid of solver hyperparameters (e.g. noise_type, init_gamma).
         data_param_grid : dict
@@ -566,8 +564,6 @@ class DataGenerator:
                 "adaptive_joint_learning",
                 "oracle",
                 "baseline",
-                "spatial_cv",
-                "temporal_cv",
             }
             
             solver_params['src_coords'] = src_coords
@@ -576,50 +572,25 @@ class DataGenerator:
             if noise_type not in allowed_noise_types:
                 raise ValueError(f"Invalid noise_type: {noise_type!r}. Allowed: {sorted(allowed_noise_types)}")
 
-            if noise_type in ('spatial_cv', 'temporal_cv'):
-                grid_factors = np.logspace(-2, 2, 20)
-                alphas = baseline_noise_var * grid_factors
-                noise_variances = np.unique(alphas).tolist() or [baseline_noise_var]
-
-                # TODO: remove temporary plotting code
-                # Visualize the alpha grid relative to the baseline noise variance
-                plot_alphas_cv(alphas, grid_factors, baseline_noise_var, experiment_dir)
-
-                estimator = SpatialCVSolver if noise_type == 'spatial_cv' else TemporalCVSolver
-                source_estimator = estimator(
-                    solver=self.solver,
-                    solver_params=solver_params,
-                    n_orient=n_orient,
-                    logger=self.logger,
-                    noise_variances=noise_variances,
-                    cv=noise_params.get('cv', 5),
-                    n_jobs=noise_params.get('n_jobs', 1),
+            if noise_type == 'oracle':
+                self.logger.debug("Using oracle noise variance estimate")
+                noise_var = float(np.var(noise))
+            elif noise_type == 'baseline':
+                self.logger.debug("Using baseline noise variance estimate")
+                noise_var = baseline_noise_var
+                self.logger.debug(
+                    f"Baseline noise variance (global run {run_id}, config run {run_in_config}): {noise_var:.3e}, eta: {noise_eta:.3e}"
                 )
-            else:
-                if noise_type == 'oracle':
-                    self.logger.debug("Using oracle noise variance estimate")
-                    # DEPRECATED computation of oracle noise var.
-                    # noise_var = float((data_params['sensor_white_noise_std'] * noise_eta) ** 2)
-                    #  NOTE: +++ NEW +++
-                    noise_var = float(np.var(noise))
-                elif noise_type == 'baseline':
-                    self.logger.debug("Using baseline noise variance estimate")
-                    noise_var = baseline_noise_var
-                    self.logger.debug(
-                        f"Baseline noise variance (global run {run_id}, config run {run_in_config}): {noise_var:.3e}, eta: {noise_eta:.3e}"
-                    )
-                elif noise_type == 'adaptive_joint_learning':
-                    # TODO: temporarily set to baseline noise var until adaptive joint learning is fully integrated
-                    # noise_var = baseline_noise_var
-                    noise_var = None
+            elif noise_type == 'adaptive_joint_learning':
+                noise_var = None
 
-                source_estimator = SourceEstimator(
-                    solver=self.solver,
-                    solver_params=solver_params,
-                    noise_var=noise_var,
-                    n_orient=n_orient,
-                    logger=self.logger
-                )
+            source_estimator = SourceEstimator(
+                solver=self.solver,
+                solver_params=solver_params,
+                noise_var=noise_var,
+                n_orient=n_orient,
+                logger=self.logger
+            )
 
             self.logger.debug(f"Fitting source estimator {self.solver.__name__}")
             source_estimator.fit(L, y_noisy)
@@ -935,17 +906,6 @@ class DataGenerator:
         self.logger.debug("Data generation completed.")
         return pd.DataFrame(results_list)
 
-
-class Benchmark(DataGenerator):
-    """Deprecated alias for backwards compatibility."""
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Benchmark is deprecated; use DataGenerator instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
 
 # TODO: move plotting functions to Visualizer class
 def plot_error_curves(err_gamma, title="Gamma/Lambda errors", save_path=None):

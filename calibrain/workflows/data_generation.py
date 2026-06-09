@@ -13,7 +13,6 @@ from calibrain import (
     LeadfieldBuilder,
     SourceSimulator,
     SensorSimulator,
-    eloreta,
     gamma_map,
     BMN,
     BMN_joint,
@@ -27,7 +26,6 @@ DEFAULT_CONFIG_PATH = Path("configs/data_generation_default.py")
 
 _SOLVER_REGISTRY = {
     "gamma_map": gamma_map,
-    "eloreta": eloreta,
     "BMN": BMN,
     "BMN_joint": BMN_joint,
     "gamma_map_sflex": gamma_map_sflex,
@@ -65,7 +63,7 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
     logger = logging.getLogger(__name__)
 
     nruns = int(config.get("nruns", 1))
-    generation_n_jobs = int(config.get("generation_n_jobs", config.get("benchmark_n_jobs", 1)))
+    generation_n_jobs = int(config.get("generation_n_jobs", 1))
     random_state = int(config.get("random_state", 42))
 
     ERP_config = config.get("ERP_config", {})
