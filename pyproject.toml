@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrain"
-version = "0.1.2"
+version = "1.0.0"
 description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},

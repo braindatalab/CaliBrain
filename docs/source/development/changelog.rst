@@ -12,17 +12,54 @@ This document records notable changes to the CaliBrain project.
 Current status
 --------------
 
-The current active workflow pipeline is centered on the following inverse
+Version 1.0.0 marks a major consolidation of the CaliBrain package around a
+stable, production-ready workflow. The package is now centered on simulation-based
+uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
+robust support for fixed and free-orientation source models.
+
+Supported inverse solvers
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The current supported workflow pipeline is built around the following inverse
 solvers:
 
-* ``gamma_map_sflex``
-* ``gamma_lambda_map_sflex``
-* ``BMN``
-* ``BMN_joint``
+* ``gamma_map_sflex`` — Sparse Flexible Gamma MAP
+* ``gamma_lambda_map_sflex`` — Joint Gamma-Lambda MAP
+* ``BMN`` — Bayesian Minimum Norm
+* ``BMN_joint`` — Bayesian Minimum Norm with joint noise learning
 
-Legacy methods such as ``gamma_map`` and ``eLORETA`` may still appear in older
-changelog entries below, but they are not part of the current supported
-workflow configuration.
+Each solver supports both fixed-orientation and free-orientation source
+configurations, with unit-aware handling of EEG/MEG signal scaling and posterior
+uncertainty summaries.
+
+Deprecated and removed methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Older methods such as ``gamma_map``, ``eLORETA``, and related cross-validation
+branches have been removed from the supported pipeline. These may still appear
+in historical changelog entries below but are no longer maintained or tested.
+
+
+Version 1.0.0 (2026-06-11)
+--------------------------
+
+*   [BREAKING] Consolidated the supported inverse workflow around
+    ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and
+    ``BMN_joint``.
+*   [FEATURE] Expanded the core simulation stack with stronger support for
+    source simulation, sensor simulation, and leadfield handling across fixed
+    and free-orientation settings.
+*   [FEATURE] Added and extended uncertainty estimation and calibration
+    capabilities, including componentwise uncertainty handling and the multiple calibration modes.
+*   [FEATURE] Added manifest workflow modules for data generation,
+    aggregation, calibration, and calibration-figure generation.
+*   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for
+    calibration, uncertainty, and spatial-performance metrics.
+*   [ENHANCEMENT] Improved ``DataGenerator`` orchestration for end-to-end
+    simulation and posterior-summary generation.
+*   [BUGFIX] Fixed unit handling and source/sensor projection consistency
+    across the simulation pipeline.
+
 
 Version 0.1.2 (2025-08-19)
 --------------------------
@@ -44,23 +81,6 @@ Version 0.1.2 (2025-08-19)
     - Standardized EEG/MEG projections to SI units (V, T)
     - Added logic to format plot labels according to unit scaling
 
-Version 0.1.1 (2025-05-24) 
---------------------------
-
-*   [FEATURE] Include ERP signal generation. Add Multi trial simulation and refactor DataSimulator ([Issue #6](https://github.com/braindatalab/CaliBrain/issues/6), implemented in [PR #7](https://github.com/braindatalab/CaliBrain/pull/7)).
-*   [ENHANCEMENT] Refactored ERP signal generation for smoother waveforms and support for random Hanning window length/duration ([Commit 035d65c](https://github.com/braindatalab/CaliBrain/commit/035d65c0f434ae614d675eb3e03e0585a2bc6254)).
-*   [BUGFIX] Enhance noise handling in data simulation
-
-Version 0.1.0 (2025-04-28)
---------------------------
-
-*   Initial release.
-*   Added `LeadfieldSimulator` for simulating leadfields.
-*   Added `DataSimulator` for generating synthetic data.
-*   Added `SourceEstimator` for estimating source activity using gamma MAP and eLORETA.
-*   Added `UncertaintyEstimator` for estimating uncertainty in source activity.
-*   Added `DataGenerator` class for orchestrating source-estimation data generation.
-*   Added `utils` module for utility functions.
 
 Version 0.1.1 (2025-05-24) 
 --------------------------
