@@ -3,6 +3,7 @@ from pathlib import Path
 
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
+from sphinx_gallery.sorting import FileNameSortKey
 
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -10,8 +11,8 @@ sys.path.insert(0, str(project_root))
 import calibrain
 
 project = 'CaliBrain'
-copyright = '2025, Mohammad Orabe, Ismail Huseynov, Stefan Haufe'
-author = 'Mohammad Orabe, Ismail Huseynov, Stefan Haufe'
+copyright = '2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
+author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
 release = calibrain.__version__
 version = release
 documentation_version = "dev"
@@ -31,13 +32,15 @@ extensions = [
 ]
 
 autosummary_generate = True
-exclude_patterns = []
+exclude_patterns = ['_generated_getting_started/*.rst']
+suppress_warnings = ['config.cache']
 
 sphinx_gallery_conf = {
-    'examples_dirs': ['../../tutorials', '../../examples'],
-    'gallery_dirs': ['auto_tutorials', 'auto_examples'],
+    'examples_dirs': ['_quickstart_gallery', '../../tutorials'],
+    'gallery_dirs': ['_generated_getting_started', 'auto_tutorials'],
     'filename_pattern': r'.*\.py$',
     'ignore_pattern': r'__init__\.py',
+    'within_subsection_order': FileNameSortKey,
     'plot_gallery': True,
     'download_all_examples': True,
     'image_scrapers': ('matplotlib',),
