@@ -1,13 +1,13 @@
 """
-03. Building and Loading Leadfields
-===================================
+03. Leadfield Construction
+==========================
 
-This tutorial demonstrates the three leadfield retrieval modes used by
-``LeadfieldBuilder``:
+This tutorial mainly explains the ``LeadfieldBuilder`` class. It demonstrates
+the three leadfield retrieval modes used by ``LeadfieldBuilder``:
 
 - ``retrieve_mode="random"``: create a synthetic random leadfield;
 - ``retrieve_mode="simulate"``: run a simulation pipeline;
-- ``retrieve_mode="load"``: load a stored leadfield NPZ file.
+- ``retrieve_mode="load"``: load a leadfield through the standard loading API.
 
 The full MNE simulation pipeline requires subject surfaces, BEM files, sensor
 information, and forward-solution configuration. To keep this tutorial
@@ -16,7 +16,7 @@ subclass that returns a deterministic synthetic leadfield while preserving the
 same ``get_leadfield(..., retrieve_mode="simulate")`` interface.
 """
 
-# sphinx_gallery_thumbnail_number = 1
+
 
 # %%
 # Scientific motivation
@@ -33,19 +33,16 @@ same ``get_leadfield(..., retrieve_mode="simulate")`` interface.
 # - MEG magnetometer leadfields are typically reported in ``fT / nAm``;
 # - EEG leadfields are typically reported in ``µV / nAm``.
 
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 from mne.io.constants import FIFF
+from tempfile import TemporaryDirectory
 
 from calibrain import LeadfieldBuilder
 from calibrain.utils import get_data_path
 
 
 RANDOM_SEED = 23
-OUTPUT_DIR = Path("results/tutorials/03_leadfield_building")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # %%
 # Use the CaliBrain data-root helper
@@ -53,12 +50,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 #
 # CaliBrain resolves local datasets with ``get_data_path``. With no argument,
 # it uses ``CALIBRAIN_DATA`` if the environment variable is set, otherwise the
-# repository-level ``data`` directory. Here we pass a tutorial-specific path so
-# the example is self-contained and does not depend on local paper-scale data.
+# repository-level ``data`` directory.
 
-data_root = get_data_path(OUTPUT_DIR / "example_dataset")
+data_root = get_data_path()
 leadfield_dir = data_root / "1284src_leadfield"
-leadfield_dir.mkdir(parents=True, exist_ok=True)
 
 print("tutorial data root:", data_root)
 print("tutorial leadfield directory:", leadfield_dir)
@@ -100,85 +95,58 @@ print("random free shape:", random_free.leadfield.shape)
 #
 # In production, ``retrieve_mode="simulate"`` runs the full MNE-based pipeline:
 # source space, BEM model, sensor info, forward solution, and leadfield
-# extraction. The subclass below provides a tiny deterministic simulation for
-# documentation. It sets MEG metadata so the result is interpretable as
-# ``fT / nAm``.
+# extraction. That path requires external anatomy and MNE configuration, so this
+# lightweight tutorial shows the expected output structure with a synthetic
+# stand-in that matches the usual fixed-orientation shape and metadata.
 
-
-class DemoLeadfieldBuilder(LeadfieldBuilder):
-    """Small deterministic leadfield simulator for documentation examples."""
-
-    def __init__(self, *, leadfield_dir, seed=RANDOM_SEED):
-        super().__init__(config=None, leadfield_dir=leadfield_dir)
-        self.seed = seed
-
-    def simulate(self):
-        rng = np.random.default_rng(self.seed)
-        n_sensors = 12
-        n_sources = 24
-        source_positions = rng.normal(scale=0.04, size=(n_sources, 3))
-        sensor_positions = rng.normal(scale=0.08, size=(n_sensors, 3))
-        distances = np.linalg.norm(
-            sensor_positions[:, None, :] - source_positions[None, :, :],
-            axis=2,
-        )
-        leadfield = 1.0 / np.maximum(distances, 0.02) ** 2
-        leadfield *= rng.choice([-1.0, 1.0], size=leadfield.shape)
-        leadfield /= np.linalg.norm(leadfield, axis=0, keepdims=True)
-
-        self.sensor_kind = FIFF.FIFFV_MEG_CH
-        self.sensor_units = FIFF.FIFF_UNIT_T
-        self.sensor_unitmult = FIFF.FIFF_UNITM_F
-        self.coil_type = FIFF.FIFFV_COIL_VV_MAG_T1
-        self.src_coords = source_positions
-        self.Q_basis = np.eye(n_sources)
-        return leadfield
-
-
-simulated_builder = DemoLeadfieldBuilder(leadfield_dir=leadfield_dir)
-simulated = simulated_builder.get_leadfield(
-    subject="demo",
-    orientation_type="fixed",
-    retrieve_mode="simulate",
-    return_metadata=True,
+rng = np.random.default_rng(RANDOM_SEED)
+n_sensors = 12
+n_sources = 24
+source_positions = rng.normal(scale=0.04, size=(n_sources, 3))
+sensor_positions = rng.normal(scale=0.08, size=(n_sensors, 3))
+distances = np.linalg.norm(
+    sensor_positions[:, None, :] - source_positions[None, :, :],
+    axis=2,
 )
+simulated_leadfield = 1.0 / np.maximum(distances, 0.02) ** 2
+simulated_leadfield *= rng.choice([-1.0, 1.0], size=simulated_leadfield.shape)
+simulated_leadfield /= np.linalg.norm(simulated_leadfield, axis=0, keepdims=True)
+simulated_q_basis = np.eye(n_sources)
 
-print("simulated shape:", simulated.leadfield.shape)
-print("simulated sensor unit:", simulated.sensor_units)
-print("simulated sensor unit multiplier:", simulated.sensor_unitmult)
-print("simulated coil type:", simulated.coil_type)
+print("simulate-like shape:", simulated_leadfield.shape)
+print("simulate-like sensor unit:", FIFF.FIFF_UNIT_T)
+print("simulate-like sensor unit multiplier:", FIFF.FIFF_UNITM_F)
+print("simulate-like coil type:", FIFF.FIFFV_COIL_VV_MAG_T1)
 
 # %%
-# Store a leadfield for load mode
-# -------------------------------
+# Exercise the load interface
+# ---------------------------
 #
-# ``retrieve_mode="load"`` expects NPZ files named
-# ``<subject>_<orientation>_leadfield.npz`` in the configured leadfield
-# directory. The stored file should contain a ``leadfield`` array and may also
-# contain sensor/source metadata.
+# In the full workflow, ``retrieve_mode="load"`` reads a precomputed leadfield
+# dataset from ``leadfield_dir``. Here we create a temporary fixture and then
+# load it through the standard ``LeadfieldBuilder`` API.
 
-subject = "demo_subject"
-load_path = leadfield_dir / f"{subject}_fixed_leadfield.npz"
+tmpdir = TemporaryDirectory()
+temp_builder = LeadfieldBuilder(leadfield_dir=tmpdir.name)
 np.savez(
-    load_path,
-    leadfield=simulated.leadfield,
-    sensor_kind=simulated.sensor_kind,
-    sensor_units=simulated.sensor_units,
-    sensor_unitmult=simulated.sensor_unitmult,
-    coil_type=simulated.coil_type,
-    src_coords=simulated.src_coords,
-    Q_basis=simulated.Q_basis,
+    f"{tmpdir.name}/demo_subject_fixed_leadfield.npz",
+    leadfield=simulated_leadfield,
+    sensor_kind=FIFF.FIFFV_MEG_CH,
+    sensor_units=FIFF.FIFF_UNIT_T,
+    sensor_unitmult=FIFF.FIFF_UNITM_F,
+    coil_type=FIFF.FIFFV_COIL_VV_MAG_T1,
+    src_coords=source_positions,
+    Q_basis=simulated_q_basis,
 )
-
-loaded = builder.get_leadfield(
-    subject=subject,
+loaded = temp_builder.get_leadfield(
+    subject="demo_subject",
     orientation_type="fixed",
     retrieve_mode="load",
     return_metadata=True,
 )
 
 print("loaded shape:", loaded.leadfield.shape)
-print("loaded equals saved:", np.allclose(loaded.leadfield, simulated.leadfield))
+print("loaded equals simulate-like:", np.allclose(loaded.leadfield, simulated_leadfield))
 
 # %%
 # Visualize leadfield magnitudes
@@ -189,7 +157,7 @@ print("loaded equals saved:", np.allclose(loaded.leadfield, simulated.leadfield)
 
 fig, ax = plt.subplots(figsize=(7, 3.5))
 ax.plot(np.linalg.norm(random_fixed.leadfield, axis=0), label="random fixed")
-ax.plot(np.linalg.norm(simulated.leadfield, axis=0), label="simulated fixed")
+ax.plot(np.linalg.norm(simulated_leadfield, axis=0), label="simulate-like fixed")
 ax.plot(np.linalg.norm(loaded.leadfield, axis=0), "--", label="loaded fixed")
 ax.set(
     xlabel="Source index",
@@ -198,7 +166,6 @@ ax.set(
 )
 ax.legend(loc="best")
 fig.tight_layout()
-fig.savefig(OUTPUT_DIR / "leadfield_norms.png", dpi=150)
 
 # %%
 # Summary
@@ -208,10 +175,8 @@ fig.savefig(OUTPUT_DIR / "leadfield_norms.png", dpi=150)
 #
 # - ``random``: fast synthetic matrices for testing shape logic;
 # - ``simulate``: full MNE forward-model construction in production;
-# - ``load``: standard workflow mode for precomputed leadfield NPZ files.
+# - ``load``: standard workflow mode for precomputed leadfield datasets.
 #
 # For paper-scale workflows, use ``get_data_path`` to locate the local dataset
 # root and point ``LeadfieldBuilder`` to the directory containing
 # ``*_fixed_leadfield.npz`` or ``*_free_leadfield.npz`` files.
-
-print(f"Saved leadfield tutorial figure in: {OUTPUT_DIR}")

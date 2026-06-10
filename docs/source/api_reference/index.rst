@@ -23,15 +23,10 @@ Top-level public API
    MetricEvaluator
    Visualizer
    DataGenerator
-   Benchmark
-   gamma_map
    gamma_map_sflex
    gamma_lambda_map_sflex
-   eloreta
    BMN
    BMN_joint
-   SpatialCVSolver
-   TemporalCVSolver
 
 .. toctree::
    :maxdepth: 1
@@ -46,15 +41,10 @@ Top-level public API
    generated/calibrain.MetricEvaluator
    generated/calibrain.Visualizer
    generated/calibrain.DataGenerator
-   generated/calibrain.Benchmark
-   generated/calibrain.gamma_map
    generated/calibrain.gamma_map_sflex
    generated/calibrain.gamma_lambda_map_sflex
-   generated/calibrain.eloreta
    generated/calibrain.BMN
    generated/calibrain.BMN_joint
-   generated/calibrain.SpatialCVSolver
-   generated/calibrain.TemporalCVSolver
 
 Workflow entrypoints
 --------------------
@@ -121,7 +111,6 @@ Metric and utility helpers
    :toctree: generated
    :nosignatures:
 
-   metric_evaluation.compute_dataset_emd
    metric_evaluation.get_subset_source_rr
    uncertainty_estimation.lift_reduced_sources_to_3d
    utils.get_data_path
@@ -132,7 +121,6 @@ Metric and utility helpers
    :maxdepth: 1
    :caption: Metric and utility helpers
 
-   generated/calibrain.metric_evaluation.compute_dataset_emd
    generated/calibrain.metric_evaluation.get_subset_source_rr
    generated/calibrain.uncertainty_estimation.lift_reduced_sources_to_3d
    generated/calibrain.utils.get_data_path

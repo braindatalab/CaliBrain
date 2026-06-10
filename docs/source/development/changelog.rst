@@ -3,6 +3,27 @@ Changelog
 
 This document records notable changes to the CaliBrain project.
 
+.. note::
+
+   This page is kept as a historical record. Older entries describe earlier
+   package states and may mention methods or workflow paths that are no longer
+   part of the current supported pipeline.
+
+Current status
+--------------
+
+The current active workflow pipeline is centered on the following inverse
+solvers:
+
+* ``gamma_map_sflex``
+* ``gamma_lambda_map_sflex``
+* ``BMN``
+* ``BMN_joint``
+
+Legacy methods such as ``gamma_map`` and ``eLORETA`` may still appear in older
+changelog entries below, but they are not part of the current supported
+workflow configuration.
+
 Version 0.1.2 (2025-08-19)
 --------------------------
 
