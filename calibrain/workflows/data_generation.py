@@ -13,7 +13,6 @@ from calibrain import (
     LeadfieldBuilder,
     SourceSimulator,
     SensorSimulator,
-    gamma_map,
     BMN,
     BMN_joint,
     gamma_map_sflex,
@@ -25,7 +24,6 @@ from calibrain.utils import load_python_config
 DEFAULT_CONFIG_PATH = Path("configs/data_generation_default.py")
 
 _SOLVER_REGISTRY = {
-    "gamma_map": gamma_map,
     "BMN": BMN,
     "BMN_joint": BMN_joint,
     "gamma_map_sflex": gamma_map_sflex,

@@ -19,7 +19,7 @@ from matplotlib.patches import Ellipse
 from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
-from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, gamma_map, UncertaintyCalibrator
+from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, UncertaintyCalibrator
 from calibrain.utils import get_data_path, inspect_object
 from mne.io.constants import FIFF
 from calibrain.calibration_storage import save_calibration_record
@@ -51,7 +51,7 @@ class DataGenerator:
         Parameters
         ----------
         solver : callable
-            The solver function (e.g., gamma_map).
+            The solver function (e.g., ``gamma_map_sflex`` or ``BMN``).
         solver_param_grid : dict
             Grid of solver hyperparameters (e.g. noise_type, init_gamma).
         data_param_grid : dict

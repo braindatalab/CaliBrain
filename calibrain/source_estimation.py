@@ -2,8 +2,7 @@ import logging
 import numpy as np
 from numpy.linalg import inv
 from matplotlib import cm
-from sklearn.model_selection import GridSearchCV, check_cv
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from scipy import linalg
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import chi2, norm
@@ -1527,7 +1526,7 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
         Parameters
         ----------
         solver : callable
-            The inverse solver function (e.g., gamma_map, eloreta).
+            The inverse solver function (e.g., gamma_map_sflex, BMN).
         solver_params : dict, optional
             Parameters for the solver function.
         noise_var : float, optional
@@ -1656,167 +1655,6 @@ class SourceEstimator(BaseEstimator, ClassifierMixin):
                 raise ValueError("Estimator has not been fitted and no data was provided to predict().")
             y = self.y_
         return self._get_coef(y)
-
-# ==================
-# Cross validation
-# ==================
-
-def _logdet(A):
-    """Compute the logdet of a positive semidefinite matrix."""
-    from scipy import linalg
-
-    vals = linalg.eigvalsh(A)
-    # avoid negative (numerical errors) or zero (semi-definite matrix) values
-    tol = vals.max() * vals.size * np.finfo(np.float64).eps
-    vals = np.where(vals > tol, vals, tol)
-    return np.sum(np.log(vals))
-
-def logdet_bregman_div_distance_nll(y, Sigma_Y):
-    """Compute the log-det Bregman divergence between two matrices."""
-    Sigma_Y_inv = np.linalg.inv(Sigma_Y)
-    n_features, n_times = y.shape
-    Cov_y = y @ y.T / n_times
-    log_like = np.mean(np.sum((y.T @ Sigma_Y_inv) * y.T, axis=1))
-    log_like -= _logdet(Cov_y @ Sigma_Y_inv)
-    out = log_like - n_features
-    return out
-
-class SpatialSolver(SourceEstimator):
-    """Lightweight sklearn-compatible adaptor around SourceEstimator for CV.
-
-    The constructor must store all input parameters as attributes and must not
-    mutate them so that sklearn.clone can work correctly (required by
-    GridSearchCV). The class implements a small-fit/predict wrapper around the
-    underlying solver so CV can call .fit/.predict as expected.
-    """
-    def __init__(self, solver, solver_params=None, noise_var=None, n_orient=1,  logger=None):
-        super().__init__(solver, solver_params=solver_params, noise_var=noise_var, n_orient=n_orient, logger=logger)
-
-    def fit(self, L, y):
-        """Fit by running the underlying solver to produce x_hat and posterior cov.
-
-        Parameters
-        ----------
-        L : ndarray
-            Leadfield matrix (n_sensors, n_sources)
-        y : ndarray
-            Sensor data (n_sensors, n_times)
-        """
-        super().fit(L, y)
-        self.coef_ = self._get_coef(self.y_)
-
-        return self
-
-    def predict(self, L):
-        # Predict sensor data from leadfield L and estimated sources x_hat
-        posterior_mean = self.coef_.get("posterior_mean")
-        return L @ posterior_mean  # posterior_mean is x_hat
-
-    def score(self, L, y):
-        # Simple negative MSE score compatible with sklearn (higher is better)
-        y_pred = self.predict(L)
-        return -np.mean((y_pred - y) ** 2)
-
-class BaseCVSolver(SourceEstimator):
-    def __init__(
-        self,
-        solver,
-        solver_params=None,
-        n_orient=1,
-        noise_variances=None,
-        cv=5,
-        n_jobs=1,
-        logger=None,
-    ):
-        super().__init__(
-            solver,
-            solver_params=solver_params,
-            noise_var=None,
-            n_orient=n_orient,
-            logger=logger,
-        )
-        self.noise_variances = noise_variances
-        self.cv = cv
-        self.n_jobs = n_jobs
-
-    def fit(self, L, y):
-        return super().fit(L, y)
-
-    def predict(self, y=None):
-        if y is None:
-            if not hasattr(self, "y_"):
-                raise ValueError("Estimator has not been fitted and no data was provided to predict().")
-            y = self.y_
-        self._get_noise_var(y)
-        return self.solver(
-            self.L_,
-            y,
-            noise_var=self.noise_var,
-            n_orient=self.n_orient,
-            logger=self.logger,
-            **(self.solver_params or {}),
-        )
-
-class SpatialCVSolver(BaseCVSolver):
-    def _get_noise_var(self, y):
-        """Sets noise_var attribute with spatial cross-validation."""
-        gs = GridSearchCV(
-            estimator=SpatialSolver(
-                self.solver,
-                solver_params=self.solver_params,
-                noise_var=self.noise_var,
-                n_orient=self.n_orient,
-                logger=self.logger,
-            ),
-            param_grid=dict(noise_var=self.noise_variances),
-            scoring="neg_mean_squared_error",
-            cv=self.cv,
-            n_jobs=self.n_jobs,
-            error_score="raise",
-        )
-        if self.logger is not None:
-            self.logger.debug("Running spatial cross-validation...")
-        gs.fit(self.L_, y)
-        self.grid_search_ = gs
-        self.noise_var = gs.best_estimator_.noise_var
-
-class TemporalCVSolver(BaseCVSolver):
-    def _get_noise_var(self, y):
-        """Sets noise_var attribute with temporal cross-validation."""
-        base_solver = SpatialSolver(
-            self.solver,
-            solver_params=self.solver_params,
-            noise_var=self.noise_var,
-            n_orient=self.n_orient,
-            logger=self.logger,
-        )
-        
-        cv = check_cv(self.cv)
-        scores = []
-        sensor_eye = np.eye(self.L_.shape[0])
-        for noise_var in self.noise_variances:
-            noise_cov = noise_var * sensor_eye  # TODO: check if this works for all noise types
-            
-            solver = clone(base_solver)
-            solver.set_params(noise_var=noise_var)
-            temporal_cv_scores = []
-            for train_idx, test_idx in cv.split(y.T):
-                solver.fit(self.L_, y[:, train_idx])
-                y_test = y[:, test_idx]
-
-                posterior_mean = solver.coef_.get("posterior_mean")
-                X_var = np.mean(posterior_mean ** 2, axis=1)
-                Sigma_Y = noise_cov + ((self.L_ * X_var[None, :]) @ self.L_.T)
-
-                temporal_cv_scores.append(
-                    logdet_bregman_div_distance_nll(y_test, Sigma_Y)
-                )
-            scores.append(np.mean(temporal_cv_scores))
-        scores = np.asarray(scores)
-        # best_idx = int(np.argmax(scores))
-        best_idx = int(np.argmin(scores))
-        self.noise_var = self.noise_variances[best_idx]
-
 
 # =================
 # Gamma-MAP with Joint Learning

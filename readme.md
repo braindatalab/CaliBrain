@@ -33,8 +33,8 @@ data paths, and output locations.
 - `LeadfieldBuilder`: load or construct leadfield data.
 - `SourceSimulator` and `SensorSimulator`: simulate source activity and sensor
   measurements.
-- `gamma_map`, `gamma_map_sflex`, `gamma_lambda_map_sflex`, `eloreta`, `BMN`,
-  and `BMN_joint`: inverse solvers.
+- `gamma_map_sflex`, `gamma_lambda_map_sflex`, `BMN`, and `BMN_joint`:
+  inverse solvers.
 - `UncertaintyEstimator`: construct coverage curves for intervals, ellipses,
   and ellipsoids.
 - `UncertaintyCalibrator`: fit isotonic nominal-coverage recalibration maps.
@@ -71,8 +71,8 @@ The rendered site is written to `docs/build/html/index.html`.
 ## Documentation
 
 The redesigned documentation is under `docs/source` and is based on the current
-source tree and workflow scripts. Executable tutorials in `tutorials/` and
-examples in `examples/` are rendered with Sphinx-Gallery during `make html`.
+source tree and workflow scripts. Executable tutorials in `tutorials/` are
+rendered with Sphinx-Gallery during `make html`.
 
 ## License
 
