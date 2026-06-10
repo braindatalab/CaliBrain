@@ -5,14 +5,13 @@ This section contains the scientific and workflow documentation for the current
 CaliBrain package. It is organized from conceptual background to practical
 workflow execution and interpretation.
 
-Getting started
----------------
+Overview
+--------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   ../getting_started/overview
-   ../getting_started/quickstart
+   overview
 
 Example dataset
 ---------------
@@ -22,14 +21,13 @@ Example dataset
 
    ../datasets/index
 
-Tutorials and examples
-----------------------
+Tutorials
+---------
 
 .. toctree::
    :maxdepth: 2
 
    ../tutorials/index
-   ../examples/index
 
 References
 ----------
@@ -37,6 +35,4 @@ References
 .. toctree::
    :maxdepth: 1
 
-   ../references
    How to Cite CaliBrain <../cite/index>
-   Papers Citing CaliBrain <../papers_citing/index>

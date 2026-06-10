@@ -2,17 +2,17 @@
 02. Source Simulation
 =====================
 
-This tutorial demonstrates CaliBrain source-level simulation under several
-configurations. It creates sparse ERP-like source time courses for fixed
-orientation, free-orientation EEG, and free-orientation MEG, then visualizes the
-active sources.
+This tutorial mainly explains the ``SourceSimulator`` class. It demonstrates
+CaliBrain source-level simulation under several configurations. It creates
+sparse ERP-like source time courses for fixed orientation, free-orientation
+EEG, and free-orientation MEG, then visualizes the active sources.
 
 Source simulation is the first numerical step in the CaliBrain workflow. Later
 tutorials project these source signals through a leadfield to create
 sensor-level data.
 """
 
-# sphinx_gallery_thumbnail_number = 1
+
 
 # %%
 # Scientific motivation
@@ -36,8 +36,6 @@ sensor-level data.
 # Numerically, the simulated values are expressed in ``nAm``. The
 # ``amplitude_distribution`` therefore controls peak dipole moments in ``nAm``.
 
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 from mne.io.constants import FIFF
@@ -46,8 +44,6 @@ from calibrain import SourceSimulator
 
 
 RANDOM_SEED = 13
-OUTPUT_DIR = Path("results/tutorials/02_source_simulation")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # %%
 # Configure ERP-like source waveforms
@@ -128,27 +124,31 @@ source_configs = {
         "seed": RANDOM_SEED,
     },
 }
+x_fixed, active_fixed = simulator.simulate(
+    n_sources=source_configs["fixed"]["n_sources"],
+    nnz=source_configs["fixed"]["nnz"],
+    orientation_type=source_configs["fixed"]["orientation_type"],
+    seed=source_configs["fixed"]["seed"],
+)
+print(f"{'fixed':>11} shape: {x_fixed.shape}; active sources: {active_fixed}")
 
+x_free_eeg, active_free_eeg = simulator.simulate(
+    n_sources=source_configs["free_eeg"]["n_sources"],
+    nnz=source_configs["free_eeg"]["nnz"],
+    orientation_type=source_configs["free_eeg"]["orientation_type"],
+    coil_type=source_configs["free_eeg"]["coil_type"],
+    seed=source_configs["free_eeg"]["seed"],
+)
+print(f"{'free_eeg':>11} shape: {x_free_eeg.shape}; active sources: {active_free_eeg}")
 
-def simulate_config(name, config):
-    """Run SourceSimulator for one configuration."""
-    kwargs = {
-        "n_sources": config["n_sources"],
-        "nnz": config["nnz"],
-        "orientation_type": config["orientation_type"],
-        "seed": config["seed"],
-    }
-    if config["coil_type"] is not None:
-        kwargs["coil_type"] = config["coil_type"]
-    x, active = simulator.simulate(**kwargs)
-    print(f"{name:>11} shape: {x.shape}; active sources: {active}")
-    return x, active
-
-
-simulation_outputs = {
-    name: simulate_config(name, config)
-    for name, config in source_configs.items()
-}
+x_free_meg, active_free_meg = simulator.simulate(
+    n_sources=source_configs["free_meg"]["n_sources"],
+    nnz=source_configs["free_meg"]["nnz"],
+    orientation_type=source_configs["free_meg"]["orientation_type"],
+    coil_type=source_configs["free_meg"]["coil_type"],
+    seed=source_configs["free_meg"]["seed"],
+)
+print(f"{'free_meg':>11} shape: {x_free_meg.shape}; active sources: {active_free_meg}")
 
 # %%
 # Fixed-orientation example
@@ -156,8 +156,6 @@ simulation_outputs = {
 #
 # Fixed orientation represents each source location with one scalar time course.
 # The returned source matrix has shape ``(n_sources, n_times)``.
-
-x_fixed, active_fixed = simulation_outputs["fixed"]
 
 fig, ax = plt.subplots(figsize=(7, 3.5))
 for src_idx in active_fixed:
@@ -175,7 +173,6 @@ ax.set(
 )
 ax.legend(loc="upper right", ncols=2, fontsize=8)
 fig.tight_layout()
-fig.savefig(OUTPUT_DIR / "fixed_active_sources.png", dpi=150)
 
 # %%
 # EEG and MEG free-orientation examples
@@ -188,9 +185,6 @@ fig.savefig(OUTPUT_DIR / "fixed_active_sources.png", dpi=150)
 # For free orientation, plotting every component can be visually crowded. A
 # compact summary is the Euclidean norm across orientation components for each
 # active source.
-
-x_free_eeg, active_free_eeg = simulation_outputs["free_eeg"]
-x_free_meg, active_free_meg = simulation_outputs["free_meg"]
 
 free_eeg_norm = np.linalg.norm(x_free_eeg, axis=1)
 free_meg_norm = np.linalg.norm(x_free_meg, axis=1)
@@ -214,7 +208,6 @@ for ax in axes:
 
 fig.suptitle("Free-orientation source activity summarized by component norm")
 fig.tight_layout()
-fig.savefig(OUTPUT_DIR / "free_orientation_norms.png", dpi=150)
 
 # %%
 # What this stage produces
@@ -229,5 +222,3 @@ fig.savefig(OUTPUT_DIR / "free_orientation_norms.png", dpi=150)
 #   per retained MEG-sensitive component.
 #
 # The next step is leadfield generation/loading, followed by sensor simulation.
-
-print(f"Saved source-simulation figures in: {OUTPUT_DIR}")

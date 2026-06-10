@@ -1,18 +1,19 @@
 """
-01. What is CaliBrain?
-========================
+01. Introduction
+================
 
 CaliBrain studies whether posterior uncertainty estimates in M/EEG inverse
 source imaging are empirically calibrated. In a calibrated model, intervals
 requested at nominal coverage ``c`` should contain the true simulated source
 activity approximately ``c`` of the time.
 
-This first tutorial uses lightweight synthetic fixed-orientation source arrays.
-It avoids external forward models so that the gallery build remains fast and
+This first tutorial serves as both the introduction and the scientific
+background entry point for the runnable gallery. It uses lightweight synthetic
+fixed-orientation source arrays so that the gallery build remains fast and
 reproducible.
 """
 
-# sphinx_gallery_thumbnail_number = 1
+
 
 # %%
 # Scientific question
@@ -29,8 +30,6 @@ reproducible.
 # - ``x_hat``: posterior mean estimate,
 # - ``posterior_var``: source-wise posterior variance.
 
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -38,10 +37,8 @@ from calibrain import UncertaintyEstimator
 
 
 RANDOM_SEED = 7
-OUTPUT_DIR = Path("results/tutorials/01_what_is_calibrain")
 
 rng = np.random.default_rng(RANDOM_SEED)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # %%
 # Simulate sparse fixed-orientation source activity
@@ -64,8 +61,8 @@ x_true[active_sources] = rng.normal(1.0, 0.2, size=(5, 1)) * erp_waveform
 # Create a simple posterior estimate
 # ----------------------------------
 #
-# In real workflows, inverse solvers such as ``gamma_map``,
-# ``gamma_map_sflex``, ``BMN``, or ``eLORETA`` produce posterior means and
+# In real workflows, inverse solvers such as ``gamma_map_sflex``
+# or ``BMN`` produce posterior means and
 # covariance estimates. This first tutorial uses controlled synthetic posterior
 # statistics so the calibration concept is isolated from solver details.
 
@@ -96,8 +93,8 @@ curve = uncertainty.calibration_curve_intervals_aggregated(
 print(np.round(curve["empirical_coverages"], 3))
 
 # %%
-# Plot and save the calibration curve
-# -----------------------------------
+# Plot the calibration curve
+# --------------------------
 #
 # The dashed diagonal is perfect calibration. Points below the diagonal indicate
 # undercoverage, i.e. overconfident uncertainty. Points above the diagonal
@@ -121,23 +118,10 @@ ax.set_aspect("equal", adjustable="box")
 ax.grid(True, linestyle="--", alpha=0.4)
 ax.legend()
 fig.tight_layout()
-fig.savefig(OUTPUT_DIR / "calibration_curve.png", dpi=150)
-
-np.savez_compressed(
-    OUTPUT_DIR / "calibration_curve.npz",
-    nominal_coverages=curve["nominal_coverages"],
-    empirical_coverages=curve["empirical_coverages"],
-    active_sources=active_sources,
-)
 
 # %%
-# Outputs
+# Summary
 # -------
-#
-# Running this tutorial writes two local artifacts:
-#
-# - ``results/tutorials/01_what_is_calibrain/calibration_curve.png``
-# - ``results/tutorials/01_what_is_calibrain/calibration_curve.npz``
 #
 # Production workflows use the same scientific objects but persist them as H5
 # posterior summaries, manifest CSV files, aggregated NPZ datasets, calibration

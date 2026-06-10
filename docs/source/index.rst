@@ -14,7 +14,7 @@ nested inside each section and appear in the sidebar for that section.
    :hidden:
    :maxdepth: 1
 
-   Install <install/index>
+   Installation <installation/index>
    Documentation <documentation/index>
    API Reference <api_reference/index>
    Development <development/index>

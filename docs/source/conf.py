@@ -32,12 +32,12 @@ extensions = [
 ]
 
 autosummary_generate = True
-exclude_patterns = ['_generated_getting_started/*.rst']
+exclude_patterns = []
 suppress_warnings = ['config.cache']
 
 sphinx_gallery_conf = {
-    'examples_dirs': ['_quickstart_gallery', '../../tutorials'],
-    'gallery_dirs': ['_generated_getting_started', 'auto_tutorials'],
+    'examples_dirs': ['../../tutorials'],
+    'gallery_dirs': ['auto_tutorials'],
     'filename_pattern': r'.*\.py$',
     'ignore_pattern': r'__init__\.py',
     'within_subsection_order': FileNameSortKey,
