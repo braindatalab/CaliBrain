@@ -12,9 +12,9 @@ software:
 
 .. code-block:: text
 
-   Orabe, M., Huseynov, I., & Haufe, S. CaliBrain: simulation-based
-   uncertainty calibration for M/EEG inverse source imaging. Software,
-   version <version>, https://github.com/braindatalab/CaliBrain
+   Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. CaliBrain:
+   simulation-based uncertainty calibration for M/EEG inverse source imaging.
+   Software, version <version>, https://github.com/braindatalab/CaliBrain
 
 Replace ``<version>`` with the version or git commit hash used for the analysis.
 For reproducibility, include the commit hash whenever possible:
@@ -30,7 +30,7 @@ BibTeX
 
    @software{calibrain,
      title = {CaliBrain: simulation-based uncertainty calibration for M/EEG inverse source imaging},
-     author = {Orabe, Mohammad and Huseynov, Ismail and Haufe, Stefan},
+     author = {Orabe, Mohammad and Huseynov, Ismail and Nagarajan, Srikantan and Haufe, Stefan},
      url = {https://github.com/braindatalab/CaliBrain},
      version = {<version-or-commit>},
      year = {<year>}
