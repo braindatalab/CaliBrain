@@ -1,0 +1,6 @@
+﻿calibrain.utils.get\_data\_path
+===============================
+
+.. currentmodule:: calibrain.utils
+
+.. autofunction:: get_data_path

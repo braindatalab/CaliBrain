@@ -1,0 +1,20 @@
+﻿calibrain.SourceSimulator
+=========================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: SourceSimulator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SourceSimulator.simulate
+   
+   
+
+   
+   
+   

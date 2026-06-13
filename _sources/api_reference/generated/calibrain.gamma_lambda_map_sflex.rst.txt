@@ -1,0 +1,6 @@
+﻿calibrain.gamma\_lambda\_map\_sflex
+===================================
+
+.. currentmodule:: calibrain
+
+.. autofunction:: gamma_lambda_map_sflex

@@ -1,0 +1,6 @@
+﻿calibrain.calibration\_storage.stack\_empirical\_curves
+=======================================================
+
+.. currentmodule:: calibrain.calibration_storage
+
+.. autofunction:: stack_empirical_curves

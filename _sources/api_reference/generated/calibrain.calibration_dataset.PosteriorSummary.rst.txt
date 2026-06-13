@@ -1,0 +1,26 @@
+﻿calibrain.calibration\_dataset.PosteriorSummary
+===============================================
+
+.. currentmodule:: calibrain.calibration_dataset
+
+.. autoclass:: PosteriorSummary
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PosteriorSummary.metadata
+      ~PosteriorSummary.path
+   
+   

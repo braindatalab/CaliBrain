@@ -1,0 +1,6 @@
+﻿calibrain.uncertainty\_estimation.lift\_reduced\_sources\_to\_3d
+================================================================
+
+.. currentmodule:: calibrain.uncertainty_estimation
+
+.. autofunction:: lift_reduced_sources_to_3d

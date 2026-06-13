@@ -1,0 +1,976 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>calibrain.LeadfieldBuilder &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_reference/generated/calibrain.LeadfieldBuilder';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://braindatalab.github.io/CaliBrain/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'stable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="calibrain.SourceSimulator" href="calibrain.SourceSimulator.html" />
+    <link rel="prev" title="API Reference" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">You are viewing CaliBrain v1.0.0 documentation</div>
+</aside>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">calibrain.LeadfieldBuilder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceSimulator.html">calibrain.SourceSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SensorSimulator.html">calibrain.SensorSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceEstimator.html">calibrain.SourceEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyEstimator.html">calibrain.UncertaintyEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyCalibrator.html">calibrain.UncertaintyCalibrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.MetricEvaluator.html">calibrain.MetricEvaluator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.Visualizer.html">calibrain.Visualizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.DataGenerator.html">calibrain.DataGenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_map_sflex.html">calibrain.gamma_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_lambda_map_sflex.html">calibrain.gamma_lambda_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN.html">calibrain.BMN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN_joint.html">calibrain.BMN_joint</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Top-level public API</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">calibrain.LeadfieldBuilder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceSimulator.html">calibrain.SourceSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SensorSimulator.html">calibrain.SensorSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceEstimator.html">calibrain.SourceEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyEstimator.html">calibrain.UncertaintyEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyCalibrator.html">calibrain.UncertaintyCalibrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.MetricEvaluator.html">calibrain.MetricEvaluator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.Visualizer.html">calibrain.Visualizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.DataGenerator.html">calibrain.DataGenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_map_sflex.html">calibrain.gamma_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_lambda_map_sflex.html">calibrain.gamma_lambda_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN.html">calibrain.BMN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN_joint.html">calibrain.BMN_joint</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.data_generation.run_data_generation.html">calibrain.workflows.data_generation.run_data_generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.aggregation.aggregate_posteriors.html">calibrain.workflows.aggregation.aggregate_posteriors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.run_calibration.html">calibrain.workflows.calibration.run_calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.build_uncertainty_components.html">calibrain.workflows.calibration.build_uncertainty_components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.plot_paper_calibration_figures.main.html">calibrain.workflows.plot_paper_calibration_figures.main</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Workflow entrypoints</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.data_generation.run_data_generation.html">calibrain.workflows.data_generation.run_data_generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.aggregation.aggregate_posteriors.html">calibrain.workflows.aggregation.aggregate_posteriors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.run_calibration.html">calibrain.workflows.calibration.run_calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.build_uncertainty_components.html">calibrain.workflows.calibration.build_uncertainty_components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.plot_paper_calibration_figures.main.html">calibrain.workflows.plot_paper_calibration_figures.main</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.ManifestRow.html">calibrain.run_manifest.ManifestRow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.load_manifest_csv.html">calibrain.run_manifest.load_manifest_csv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.summaries_from_manifest.html">calibrain.run_manifest.summaries_from_manifest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.PosteriorSummary.html">calibrain.calibration_dataset.PosteriorSummary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.load_posterior_summary.html">calibrain.calibration_dataset.load_posterior_summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.filter_summaries_by_metadata.html">calibrain.calibration_dataset.filter_summaries_by_metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.concatenate_summaries.html">calibrain.calibration_dataset.concatenate_summaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.save_calibration_record.html">calibrain.calibration_storage.save_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.load_calibration_record.html">calibrain.calibration_storage.load_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.iter_calibration_records.html">calibrain.calibration_storage.iter_calibration_records</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.stack_empirical_curves.html">calibrain.calibration_storage.stack_empirical_curves</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Data model helpers</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.ManifestRow.html">calibrain.run_manifest.ManifestRow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.load_manifest_csv.html">calibrain.run_manifest.load_manifest_csv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.summaries_from_manifest.html">calibrain.run_manifest.summaries_from_manifest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.PosteriorSummary.html">calibrain.calibration_dataset.PosteriorSummary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.load_posterior_summary.html">calibrain.calibration_dataset.load_posterior_summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.filter_summaries_by_metadata.html">calibrain.calibration_dataset.filter_summaries_by_metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.concatenate_summaries.html">calibrain.calibration_dataset.concatenate_summaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.save_calibration_record.html">calibrain.calibration_storage.save_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.load_calibration_record.html">calibrain.calibration_storage.load_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.iter_calibration_records.html">calibrain.calibration_storage.iter_calibration_records</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.stack_empirical_curves.html">calibrain.calibration_storage.stack_empirical_curves</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.metric_evaluation.get_subset_source_rr.html">calibrain.metric_evaluation.get_subset_source_rr</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.uncertainty_estimation.lift_reduced_sources_to_3d.html">calibrain.uncertainty_estimation.lift_reduced_sources_to_3d</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.get_data_path.html">calibrain.utils.get_data_path</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_config.html">calibrain.utils.load_config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_python_config.html">calibrain.utils.load_python_config</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Metric and utility helpers</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.metric_evaluation.get_subset_source_rr.html">calibrain.metric_evaluation.get_subset_source_rr</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.uncertainty_estimation.lift_reduced_sources_to_3d.html">calibrain.uncertainty_estimation.lift_reduced_sources_to_3d</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.get_data_path.html">calibrain.utils.get_data_path</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_config.html">calibrain.utils.load_config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_python_config.html">calibrain.utils.load_python_config</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">calibrain.LeadfieldBuilder</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="calibrain-leadfieldbuilder">
+<h1>calibrain.LeadfieldBuilder<a class="headerlink" href="#calibrain-leadfieldbuilder" title="Link to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibrain.</span></span><span class="sig-name descname"><span class="pre">LeadfieldBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leadfield_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder" title="Link to this definition">#</a></dt>
+<dd><p>Simulates leadfield matrices based on a configuration dictionary.</p>
+<p>Handles the creation or loading of necessary MNE-Python components like
+source space, BEM model, montage, info, and forward solution.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.config">
+<span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.config" title="Link to this definition">#</a></dt>
+<dd><p>The configuration dictionary driving the simulation process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.self.logger">
+<span class="sig-prename descclassname"><span class="pre">self.</span></span><span class="sig-name descname"><span class="pre">logger</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.self.logger" title="Link to this definition">#</a></dt>
+<dd><p>Logger instance for logging messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)">logging.Logger</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.data_path">
+<span class="sig-name descname"><span class="pre">data_path</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.data_path" title="Link to this definition">#</a></dt>
+<dd><p>Path to the data directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.subject">
+<span class="sig-name descname"><span class="pre">subject</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.subject" title="Link to this definition">#</a></dt>
+<dd><p>Subject identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.subjects_dir">
+<span class="sig-name descname"><span class="pre">subjects_dir</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.subjects_dir" title="Link to this definition">#</a></dt>
+<dd><p>Path to the FreeSurfer subjects directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.save_path">
+<span class="sig-name descname"><span class="pre">save_path</span></span><a class="headerlink" href="#calibrain.LeadfieldBuilder.save_path" title="Link to this definition">#</a></dt>
+<dd><p>Base path where generated files (source space, BEM, etc.) will be saved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.get_leadfield" title="calibrain.LeadfieldBuilder.get_leadfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_leadfield</span></code></a>([subject, orientation_type, ...])</p></td>
+<td><p>Get or generate the leadfield matrix based on the specified mode.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_bem_model" title="calibrain.LeadfieldBuilder.handle_bem_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_bem_model</span></code></a>()</p></td>
+<td><p>Load or create the BEM (Boundary Element Model) solution.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_forward_solution" title="calibrain.LeadfieldBuilder.handle_forward_solution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_forward_solution</span></code></a>(info, src, bem)</p></td>
+<td><p>Load or create the forward solution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_info" title="calibrain.LeadfieldBuilder.handle_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_info</span></code></a>()</p></td>
+<td><p>Load or create the MNE measurement info object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_leadfield" title="calibrain.LeadfieldBuilder.handle_leadfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_leadfield</span></code></a>([fwd])</p></td>
+<td><p>Load or extract the leadfield matrix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_montage" title="calibrain.LeadfieldBuilder.handle_montage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_montage</span></code></a>()</p></td>
+<td><p>Load or create the sensor montage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.handle_source_space" title="calibrain.LeadfieldBuilder.handle_source_space"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_source_space</span></code></a>()</p></td>
+<td><p>Load or create the source space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.LeadfieldBuilder.simulate" title="calibrain.LeadfieldBuilder.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a>()</p></td>
+<td><p>Run the full simulation pipeline.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leadfield_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the LeadfieldBuilder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Configuration dictionary containing paths and parameters for
+each simulation step (data, source_space, bem_model, montage,
+info, forward_solution, leadfield).</p></li>
+<li><p><strong>channel_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Type of channels to simulate (‘eeg’, ‘meg’, or ‘grad’). If None,
+all channel types will be simulated. Default is None.</p></li>
+<li><p><strong>leadfield_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Directory where leadfield matrices are stored or will be saved.</p></li>
+<li><p><strong>self.logger</strong> (<a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><em>logging.Logger</em></a><em>, </em><em>optional</em>) – Custom self.logger instance. If None, a default self.logger is created,
+by default None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.14)"><strong>FileNotFoundError</strong></a> – If <cite>data_path</cite> or <cite>subjects_dir</cite> specified in the config do not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_source_space">
+<span class="sig-name descname"><span class="pre">handle_source_space</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_source_space"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_source_space" title="Link to this definition">#</a></dt>
+<dd><p>Load or create the source space.</p>
+<p>Reads the source space from the file specified in <cite>config[‘source_space’][‘fname’]</cite>
+if it exists. Otherwise, creates a new source space using
+<cite>mne.setup_source_space</cite> with parameters from the configuration.
+Saves the created source space if <cite>config[‘source_space’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The loaded or created source space object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://mne.tools/stable/generated/mne.SourceSpaces.html#mne.SourceSpaces" title="(in MNE v1.12)">mne.SourceSpaces</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_bem_model">
+<span class="sig-name descname"><span class="pre">handle_bem_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_bem_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_bem_model" title="Link to this definition">#</a></dt>
+<dd><p>Load or create the BEM (Boundary Element Model) solution.</p>
+<p>Reads the BEM solution from the file specified in <cite>config[‘bem_model’][‘fname’]</cite>
+if it exists. Otherwise, creates a new BEM model using <cite>mne.make_bem_model</cite>
+and computes the solution using <cite>mne.make_bem_solution</cite> with parameters
+from the configuration. Saves the created BEM solution if
+<cite>config[‘bem_model’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The loaded or created BEM solution object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://mne.tools/stable/generated/mne.bem.ConductorModel.html#mne.bem.ConductorModel" title="(in MNE v1.12)">mne.bem.ConductorModel</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_montage">
+<span class="sig-name descname"><span class="pre">handle_montage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_montage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_montage" title="Link to this definition">#</a></dt>
+<dd><p>Load or create the sensor montage.</p>
+<p>Reads the montage from the file specified in <cite>config[‘montage’][‘fname’]</cite>
+if it exists. Otherwise, creates a standard montage using
+<cite>mne.channels.make_standard_montage</cite> with parameters from the configuration.
+Saves the created montage if <cite>config[‘montage’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The loaded or created montage object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://mne.tools/stable/generated/mne.channels.DigMontage.html#mne.channels.DigMontage" title="(in MNE v1.12)">mne.channels.DigMontage</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_info">
+<span class="sig-name descname"><span class="pre">handle_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_info" title="Link to this definition">#</a></dt>
+<dd><p>Load or create the MNE measurement info object.</p>
+<p>Reads the info from the file specified in <cite>config[‘info’][‘fname’]</cite>
+if it exists. Otherwise, creates a new info object using <cite>mne.create_info</cite>
+with parameters from the configuration, associating it with the montage
+obtained via <cite>handle_montage</cite>. Saves the created info object if
+<cite>config[‘info’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The loaded or created info object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="(in MNE v1.12)">mne.Info</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If info cannot be created because the montage is missing or invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_forward_solution">
+<span class="sig-name descname"><span class="pre">handle_forward_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_forward_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_forward_solution" title="Link to this definition">#</a></dt>
+<dd><p>Load or create the forward solution.</p>
+<p>Reads the forward solution from the file specified in
+<cite>config[‘forward_solution’][‘fname’]</cite> if it exists and has a valid suffix.
+Otherwise, creates a new forward solution using <cite>mne.make_forward_solution</cite>
+with parameters from the configuration. Converts the solution to fixed
+orientation if <cite>config[‘forward_solution’][‘orientation_type’]</cite> is ‘fixed’.
+Saves the created forward solution if <cite>config[‘forward_solution’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>info</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="(in MNE v1.12)"><em>mne.Info</em></a>) – The measurement info object.</p></li>
+<li><p><strong>src</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.SourceSpaces.html#mne.SourceSpaces" title="(in MNE v1.12)"><em>mne.SourceSpaces</em></a>) – The source space object.</p></li>
+<li><p><strong>bem</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.bem.ConductorModel.html#mne.bem.ConductorModel" title="(in MNE v1.12)"><em>mne.bem.ConductorModel</em></a>) – The BEM solution object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded or created forward solution object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)">mne.Forward</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.handle_leadfield">
+<span class="sig-name descname"><span class="pre">handle_leadfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fwd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.handle_leadfield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.handle_leadfield" title="Link to this definition">#</a></dt>
+<dd><p>Load or extract the leadfield matrix.</p>
+<p>Reads the leadfield matrix from the .npz file specified in
+<cite>config[‘leadfield’][‘fname’]</cite> if it exists. Otherwise, extracts the
+leadfield data from the provided forward solution <cite>fwd</cite>. Reshapes the
+matrix for free orientation if necessary. Saves the extracted leadfield
+matrix if <cite>config[‘leadfield’][‘save’]</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fwd</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><em>mne.Forward</em></a><em>, </em><em>optional</em>) – The forward solution object. Required if the leadfield matrix is not
+loaded from a file, by default None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The leadfield matrix. Shape is (n_sensors, n_sources) for fixed
+orientation or (n_sensors, n_sources, 3) for free orientation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the leadfield cannot be loaded from a file and <cite>fwd</cite> is not provided,
+    or if a loaded leadfield file is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.simulate" title="Link to this definition">#</a></dt>
+<dd><p>Run the full simulation pipeline.</p>
+<p>Executes the sequence of handling/creating source space, BEM model,
+info object, forward solution, and finally the leadfield matrix,
+based on the provided configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The final leadfield matrix. Shape depends on the orientation type.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If any step in the pipeline fails.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.LeadfieldBuilder.get_leadfield">
+<span class="sig-name descname"><span class="pre">get_leadfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fsaverage'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrieve_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'load'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sources</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1284</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/leadfield_builder.html#LeadfieldBuilder.get_leadfield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.LeadfieldBuilder.get_leadfield" title="Link to this definition">#</a></dt>
+<dd><p>Get or generate the leadfield matrix based on the specified mode.</p>
+<p>Updates self.n_sensors and self.n_sources based on the obtained leadfield.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subject</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The leadfield matrix (L) when <code class="docutils literal notranslate"><span class="pre">return_metadata</span></code> is False.
+When True, returns a <code class="docutils literal notranslate"><span class="pre">LeadfieldData</span></code> object that includes both the
+leadfield matrix and its associated sensor metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or LeadfieldData</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If retrieve_mode is invalid, required paths are missing,
+    or loaded/simulated leadfield has unexpected dimensions/format.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.14)"><strong>FileNotFoundError</strong></a> – If leadfield_dir does not exist when mode=’load’.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="calibrain.SourceSimulator.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">calibrain.SourceSimulator</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.config"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.config</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.self.logger"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.self.logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.data_path"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.data_path</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.subject"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.subject</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.subjects_dir"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.subjects_dir</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.save_path"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.save_path</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.__init__"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_source_space"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_source_space()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_bem_model"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_bem_model()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_montage"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_montage()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_info"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_info()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_forward_solution"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_forward_solution()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.handle_leadfield"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.handle_leadfield()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.simulate"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.simulate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.LeadfieldBuilder.get_leadfield"><code class="docutils literal notranslate"><span class="pre">LeadfieldBuilder.get_leadfield()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/api_reference/generated/calibrain.LeadfieldBuilder.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

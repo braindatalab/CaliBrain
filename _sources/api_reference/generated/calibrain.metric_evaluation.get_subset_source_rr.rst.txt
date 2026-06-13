@@ -1,0 +1,6 @@
+﻿calibrain.metric\_evaluation.get\_subset\_source\_rr
+====================================================
+
+.. currentmodule:: calibrain.metric_evaluation
+
+.. autofunction:: get_subset_source_rr

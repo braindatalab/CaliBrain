@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.402** total execution time for 3 files **from auto_tutorials**:
+**00:03.548** total execution time for 10 files **from auto_tutorials**:
 
 .. container::
 
@@ -32,12 +32,33 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``sensor_simulation_tutorial.py``)
-     - 00:01.818
+   * - :ref:`sphx_glr_auto_tutorials_05_source_estimation.py` (``05_source_estimation.py``)
+     - 00:00.978
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``source_simulation_tutorial.py``)
-     - 00:00.584
+   * - :ref:`sphx_glr_auto_tutorials_06_uncertainty_estimation.py` (``06_uncertainty_estimation.py``)
+     - 00:00.539
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py` (``visualization_tutorial.py``)
-     - 00:00.000
+   * - :ref:`sphx_glr_auto_tutorials_09_end_to_end_workflow.py` (``09_end_to_end_workflow.py``)
+     - 00:00.402
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_02_source_simulation.py` (``02_source_simulation.py``)
+     - 00:00.338
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_08_metric_evaluation.py` (``08_metric_evaluation.py``)
+     - 00:00.336
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_07_uncertainty_calibration.py` (``07_uncertainty_calibration.py``)
+     - 00:00.275
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_04_sensor_simulation.py` (``04_sensor_simulation.py``)
+     - 00:00.240
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_10_data_generator.py` (``10_data_generator.py``)
+     - 00:00.217
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_03_leadfield_building.py` (``03_leadfield_building.py``)
+     - 00:00.122
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_01_what_is_calibrain.py` (``01_what_is_calibrain.py``)
+     - 00:00.102
      - 0.0

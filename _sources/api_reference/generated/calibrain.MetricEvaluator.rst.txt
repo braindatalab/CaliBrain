@@ -1,0 +1,28 @@
+﻿calibrain.MetricEvaluator
+=========================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: MetricEvaluator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MetricEvaluator.calibration_curve
+      ~MetricEvaluator.calibration_metrics_4
+      ~MetricEvaluator.emd
+      ~MetricEvaluator.evaluate_all
+      ~MetricEvaluator.mae
+      ~MetricEvaluator.mean_posterior_std
+      ~MetricEvaluator.mse
+      ~MetricEvaluator.rmae
+      ~MetricEvaluator.rmse
+   
+   
+
+   
+   
+   

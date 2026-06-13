@@ -1,0 +1,6 @@
+﻿calibrain.BMN
+=============
+
+.. currentmodule:: calibrain
+
+.. autofunction:: BMN

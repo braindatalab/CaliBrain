@@ -1,0 +1,21 @@
+﻿calibrain.SensorSimulator
+=========================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: SensorSimulator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SensorSimulator.set_sensor_metadata
+      ~SensorSimulator.simulate
+   
+   
+
+   
+   
+   

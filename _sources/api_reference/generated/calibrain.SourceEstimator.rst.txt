@@ -1,0 +1,27 @@
+﻿calibrain.SourceEstimator
+=========================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: SourceEstimator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SourceEstimator.fit
+      ~SourceEstimator.get_metadata_routing
+      ~SourceEstimator.get_params
+      ~SourceEstimator.predict
+      ~SourceEstimator.score
+      ~SourceEstimator.set_fit_request
+      ~SourceEstimator.set_params
+      ~SourceEstimator.set_score_request
+   
+   
+
+   
+   
+   

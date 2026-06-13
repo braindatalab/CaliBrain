@@ -1,51 +1,21 @@
 :orphan:
 
-.. _tutorials:
+Executable Tutorials
+====================
 
-==========================
-Tutorials
-==========================
+These tutorials are executable Sphinx-Gallery scripts. They are stored in the
+repository-level ``tutorials`` directory and rendered into the documentation
+under ``docs/source/auto_tutorials`` during ``make html``.
 
-Here you will find step-by-step guides and practical examples to help you get started with CaliBrain. These tutorials are designed for users of all experience levels and cover a range of topics, from basic setup to advanced features.
+Each tutorial should be deterministic, lightweight, and runnable without
+paper-scale data unless it is explicitly marked as a large workflow tutorial.
+Use numeric filename prefixes, for example ``01_what_is_calibrain.py``, so the
+gallery presents tutorials in the intended reading order.
 
-Explore the tutorials below to enhance your understanding and make the most of CaliBrain.
 
-📚 **Interactive Gallery**: Check out the auto-generated tutorial gallery with all scripts converted to HTML with embedded plots and downloadable notebooks.
+.. raw:: html
 
-Available Tutorials
-===================
-
-All tutorials in this directory are automatically processed by Sphinx Gallery and available in multiple formats:
-
-**Overview Tutorial** (``overview.py``)
-   Complete introduction to CaliBrain's modular architecture and workflow:
-   
-   - Building forward models with LeadfieldBuilder
-   - Simulating brain source activity and sensor measurements  
-   - Solving inverse problems with multiple methods
-   - Quantifying uncertainty and evaluating performance
-   - Automated benchmarking workflows
-
-Tutorial Features
-=================
-
-Each tutorial includes:
-
-- **Python script** (`.py`) - Can be run directly from this directory
-- **HTML documentation** - Generated automatically with embedded plots
-- **Jupyter notebook** (`.ipynb`) - Available for download and interactive exploration
-- **Download options** - Get the source code and data
-
-Running Tutorials
-=================
-
-To run a tutorial script directly::
-
-    cd tutorials/
-    python overview.py
-
-All scripts in this directory are automatically converted to beautiful HTML documentation with embedded plots and made available as downloadable Jupyter notebooks through Sphinx Gallery.
-
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
 
 
 .. raw:: html
@@ -56,52 +26,171 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the SensorSimulator class to generate synthetic MEG/EEG sensor measurements from brain source activity. The SensorSimulator  projects source-level neural signals to sensor space using forward models and adds realistic noise, creating controlled datasets for testing source localization algorithms, validating analysis  pipelines, and benchmarking uncertainty quantification methods.">
+    <div class="sphx-glr-thumbcontainer" tooltip="CaliBrain studies whether posterior uncertainty estimates in M/EEG inverse source imaging are empirically calibrated. In a calibrated model, intervals requested at nominal coverage c should contain the true simulated source activity approximately c of the time.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_sensor_simulation_tutorial_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_01_what_is_calibrain_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py`
+  :doc:`/auto_tutorials/01_what_is_calibrain`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Sensor Data Simulation with SensorSimulator</div>
+      <div class="sphx-glr-thumbnail-title">01. Introduction</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use the SourceSimulator class to generate synthetic brain activity data for neuroimaging research (e.g., MEG/EEG  source simulation). The SourceSimulator creates event-related potential (ERP)-like  signals that can be used to test source localization algorithms, validate analysis  pipelines, and benchmark uncertainty quantification methods.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the SourceSimulator class. It demonstrates CaliBrain source-level simulation under several configurations. It creates sparse ERP-like source time courses for fixed orientation, free-orientation EEG, and free-orientation MEG, then visualizes the active sources.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_source_simulation_tutorial_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_02_source_simulation_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py`
+  :doc:`/auto_tutorials/02_source_simulation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Source Data Simulation with SourceSimulator</div>
+      <div class="sphx-glr-thumbnail-title">02. Source Simulation</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="TBC.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the LeadfieldBuilder class. It demonstrates the three leadfield retrieval modes used by LeadfieldBuilder:">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_visualization_tutorial_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_03_leadfield_building_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py`
+  :doc:`/auto_tutorials/03_leadfield_building`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Visualization Tutorial</div>
+      <div class="sphx-glr-thumbnail-title">03. Leadfield Construction</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the SensorSimulator class. It projects source activity through a leadfield, then adds Gaussian sensor noise with the alpha_SNR mixing rule implemented by SensorSimulator.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_04_sensor_simulation_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/04_sensor_simulation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">04. Sensor Simulation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the SourceEstimator class. It demonstrates the current CaliBrain source-estimation interface using the active inverse solvers that are still part of the pipeline:">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_05_source_estimation_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/05_source_estimation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">05. Source Estimation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the UncertaintyEstimator class. It demonstrates how UncertaintyEstimator converts source reconstruction outputs into calibration-ready uncertainty representations.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_06_uncertainty_estimation_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/06_uncertainty_estimation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">06. Uncertainty Estimation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the UncertaintyCalibrator class through the high-level UncertaintyCalibrator API and CaliBrain&#x27;s calibration modes.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_07_uncertainty_calibration_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/07_uncertainty_calibration`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">07. Calibration Methods</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the MetricEvaluator class. It demonstrates the high-level MetricEvaluator API for quantitative evaluation of uncertainty and calibration outputs.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_08_metric_evaluation_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/08_metric_evaluation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">08. Metric Evaluation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial ties together the main CaliBrain component classes in one small, runnable workflow:">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_09_end_to_end_workflow_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/09_end_to_end_workflow`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">09. End-to-End Workflow</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial mainly explains the high-level DataGenerator class.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_data_generator_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/10_data_generator`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">10. Data Generation</div>
     </div>
 
 
@@ -115,9 +204,16 @@ All scripts in this directory are automatically converted to beautiful HTML docu
 .. toctree::
    :hidden:
 
-   /auto_tutorials/sensor_simulation_tutorial
-   /auto_tutorials/source_simulation_tutorial
-   /auto_tutorials/visualization_tutorial
+   /auto_tutorials/01_what_is_calibrain
+   /auto_tutorials/02_source_simulation
+   /auto_tutorials/03_leadfield_building
+   /auto_tutorials/04_sensor_simulation
+   /auto_tutorials/05_source_estimation
+   /auto_tutorials/06_uncertainty_estimation
+   /auto_tutorials/07_uncertainty_calibration
+   /auto_tutorials/08_metric_evaluation
+   /auto_tutorials/09_end_to_end_workflow
+   /auto_tutorials/10_data_generator
 
 
 .. only:: html

@@ -1,0 +1,6 @@
+﻿calibrain.calibration\_dataset.concatenate\_summaries
+=====================================================
+
+.. currentmodule:: calibrain.calibration_dataset
+
+.. autofunction:: concatenate_summaries

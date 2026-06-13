@@ -1,0 +1,6 @@
+﻿calibrain.calibration\_dataset.filter\_summaries\_by\_metadata
+==============================================================
+
+.. currentmodule:: calibrain.calibration_dataset
+
+.. autofunction:: filter_summaries_by_metadata

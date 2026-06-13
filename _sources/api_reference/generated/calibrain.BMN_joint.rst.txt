@@ -1,0 +1,6 @@
+﻿calibrain.BMN\_joint
+====================
+
+.. currentmodule:: calibrain
+
+.. autofunction:: BMN_joint
