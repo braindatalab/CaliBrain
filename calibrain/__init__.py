@@ -1,15 +1,15 @@
 from calibrain.leadfield_builder import LeadfieldBuilder
 from calibrain.source_simulation import SourceSimulator
 from calibrain.sensor_simulation import SensorSimulator
-from calibrain.source_estimation import SourceEstimator, gamma_map, sflex_gamma_map, eloreta, BMN, sflex_gamma_lambda_map, SpatialCVSolver, TemporalCVSolver
+from calibrain.source_estimation import SourceEstimator, gamma_map_sflex, BMN, gamma_lambda_map_sflex, BMN_joint
 from calibrain.uncertainty_estimation import UncertaintyEstimator
 from calibrain.metric_evaluation import MetricEvaluator
 from calibrain.uncertainty_calibration import UncertaintyCalibrator
 from calibrain.visualization import Visualizer
-from calibrain.benchmark import Benchmark
+from calibrain.data_generation import DataGenerator
 
 __all__ = [
-    "Benchmark",
+    "DataGenerator",
     "LeadfieldBuilder",
     "SourceSimulator",
     "SensorSimulator",
@@ -18,13 +18,10 @@ __all__ = [
     "UncertaintyCalibrator",
     "MetricEvaluator",
     "Visualizer",
-    "eloreta",
-    "gamma_map",
-    "sflex_gamma_map",
+    "gamma_map_sflex",
     "BMN",
-    "SpatialCVSolver",
-    "TemporalCVSolver",
-    "sflex_gamma_lambda_map",
+    "BMN_joint",
+    "gamma_lambda_map_sflex",
 ]
 
-__version__ = "0.1.2"
+__version__ = "1.0.0"

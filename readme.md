@@ -1,101 +1,79 @@
-<!-- TODO: Convert this to readme.rst format: -->
 # CaliBrain
 
-## Uncertainty Calibration in Brain Source Imaging
+[![PyPI downloads: not published](https://img.shields.io/badge/PyPI%20downloads-not%20published-lightgrey)](https://github.com/braindatalab/CaliBrain)
+[![conda-forge downloads: not published](https://img.shields.io/badge/conda--forge%20downloads-not%20published-lightgrey)](https://github.com/braindatalab/CaliBrain)
 
-<img src="/docs/source/_static/caliBrain.png" alt="CaliBrain Logo" width="25%">
+CaliBrain is a scientific Python package for simulation-based uncertainty
+estimation and calibration in EEG/MEG inverse source imaging. It supports
+controlled source and sensor simulations, inverse source estimation, posterior
+uncertainty summaries, experiment-level calibration, and calibration figure
+generation.
 
-<!-- [![Latest Release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases/latest) -->
-<!-- [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/) -->
-<!-- [![Python Version](https://img.shields.io/pypi/pyversions/calibrain.svg)](https://pypi.org/project/calibrain/) -->
+## Current Workflow
 
-[![commits](https://badgen.net/github/commits/braindatalab/CaliBrain/main)](https://github.com/braindatalab/CaliBrain/commits/main?icon=github&color=green)
-[![Documentation (latest)](https://readthedocs.org/projects/calibrain/badge/?version=latest)](https://calibrain.readthedocs.io/en/latest/?badge=latest)
-<!-- [![Documentation (stable)](https://readthedocs.org/projects/calibrain/badge/?version=stable)](https://calibrain.readthedocs.io/en/stable/?badge=stable) -->
+The current analysis pipeline is organized around explicit workflow scripts and
+Python config files:
 
+1. `calibrain/workflows/data_generation.py` generates simulated runs, solves
+   inverse problems, writes per-run HDF5 posterior summaries, and updates a
+   manifest CSV.
+2. `calibrain/workflows/aggregation.py` reads the manifest, filters runs by
+   metadata, and writes calibration-ready NPZ datasets plus JSON sidecars.
+3. `calibrain/workflows/calibration.py` fits or evaluates isotonic
+   recalibration maps and writes calibration JSON summaries.
+4. `calibrain/workflows/plot_paper_calibration_figures.py` reads calibration
+   JSON outputs and generates paper-style figures.
 
----
+The workflow configs live in `configs/`. Inspect and edit those files before
+running large experiments, because they define solver grids, split definitions,
+data paths, and output locations.
 
-## Overview
+## Core Components
 
-**CaliBrain** is a Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
-
-It supports both:
-- **Regression** (continuous source estimates)
-- **Classification** (binary activation detection)
-
-**Key Features**:
-- Setup of source space, BEM model, forward solution, and leadfield matrices.
-- Simulation of source activity and sensor-level measurements with controllable noise and source orientation (fixed or free).
-- Solving the inverse problem and reconstructing source time courses.
-- Estimation and visualization of confidence intervals.
-- Calibration analysis by comparing expected vs. observed confidence levels.
-
-### Supported Inverse Methods
-- Gamma-MAP
-- eLORETA
-- Bayesian Minimum Norm
-
----
-
-## Calibration Tasks
-
-### 1. Regression (Confidence Interval Calibration)
-- Check if true simulated source currents fall within predicted confidence intervals.
-- Plot calibration curve (Expected vs. Observed coverage).
-- Well-calibrated models should follow the diagonal.
-
-### 2. Classification (Activation Calibration)
-- Assess if estimated activation probabilities match true activation frequencies.
-- Plot calibration curve for activation detection.
-- Ideal calibration follows the diagonal.
-
----
-
-## Main Parameters
-
-- **Estimator**: Gamma-MAP, eLORETA, Bayesian Minimum Norm
-- **Orientation**: Fixed or Free
-- **Noise Type**: Oracle, Baseline, Cross-Validation, Joint Learning
-- **SNR Level (α)**: Control regularization strength
-- **Active Sources (nnz)**: Number of nonzero sources
-
-<img src="/docs/images/un-ca-param.jpg" alt="un-ca-param" width="75%">
-
----
-
-## Outcomes
-
-- **Regression Calibration Curves** (confidence intervals)
-- **Classification Calibration Curves** (activation probabilities)
-- **Quantitative Calibration Metrics**
-
----
+- `LeadfieldBuilder`: load or construct leadfield data.
+- `SourceSimulator` and `SensorSimulator`: simulate source activity and sensor
+  measurements.
+- `gamma_map_sflex`, `gamma_lambda_map_sflex`, `BMN`, and `BMN_joint`:
+  inverse solvers.
+- `UncertaintyEstimator`: construct coverage curves for intervals, ellipses,
+  and ellipsoids.
+- `UncertaintyCalibrator`: fit isotonic nominal-coverage recalibration maps.
+- `MetricEvaluator`: compute calibration and source-space metrics.
+- `DataGenerator`: orchestrate simulation and posterior-summary generation.
 
 ## Installation
 
-Please see the [Installation Guide](docs/source/installation.rst).
+```bash
+git clone https://github.com/braindatalab/CaliBrain.git
+cd CaliBrain
+python -m pip install -e .
+```
 
----
+For documentation work:
 
-## Usage
+```bash
+python -m pip install -e ".[docs]"
+```
 
-Please see the [Usage Guide](docs/source/usage.rst).
+The package metadata defines the distribution name as `calibrain`. It is not
+currently published on PyPI or conda-forge, so installation is presently from a
+source checkout or a local environment specification such as `environment.yml`.
 
----
+## Build Documentation
 
-## Contributing
+```bash
+cd docs
+make html
+```
 
-We welcome contributions! Please see [CONTRIBUTING.md](docs/source/contributing.rst).
+The rendered site is written to `docs/build/html/index.html`.
 
----
+## Documentation
+
+The redesigned documentation is under `docs/source` and is based on the current
+source tree and workflow scripts. Executable tutorials in `tutorials/` are
+rendered with Sphinx-Gallery during `make html`.
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
-
----
-
-## Citation
-
-If you use CaliBrain, please cite relevant works in EEG/MEG source imaging and uncertainty quantification.
+CaliBrain is distributed under the BSD 3-Clause License. See `LICENSE`.

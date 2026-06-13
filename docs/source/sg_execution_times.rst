@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.413** total execution time for 5 files **from all galleries**:
+**00:02.760** total execution time for 10 files **from all galleries**:
 
 .. container::
 
@@ -32,18 +32,33 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_tutorials_sensor_simulation_tutorial.py` (``../../tutorials/sensor_simulation_tutorial.py``)
-     - 00:01.818
+   * - :ref:`sphx_glr_auto_tutorials_05_source_estimation.py` (``../../tutorials/05_source_estimation.py``)
+     - 00:00.752
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_source_simulation_tutorial.py` (``../../tutorials/source_simulation_tutorial.py``)
-     - 00:00.584
+   * - :ref:`sphx_glr_auto_tutorials_06_uncertainty_estimation.py` (``../../tutorials/06_uncertainty_estimation.py``)
+     - 00:00.411
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_leadfield_simulation_example.py` (``../../examples/leadfield_simulation_example.py``)
-     - 00:00.010
+   * - :ref:`sphx_glr_auto_tutorials_09_end_to_end_workflow.py` (``../../tutorials/09_end_to_end_workflow.py``)
+     - 00:00.319
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_run_experiments.py` (``../../examples/run_experiments.py``)
-     - 00:00.001
+   * - :ref:`sphx_glr_auto_tutorials_02_source_simulation.py` (``../../tutorials/02_source_simulation.py``)
+     - 00:00.265
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_visualization_tutorial.py` (``../../tutorials/visualization_tutorial.py``)
-     - 00:00.000
+   * - :ref:`sphx_glr_auto_tutorials_08_metric_evaluation.py` (``../../tutorials/08_metric_evaluation.py``)
+     - 00:00.255
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_07_uncertainty_calibration.py` (``../../tutorials/07_uncertainty_calibration.py``)
+     - 00:00.222
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_04_sensor_simulation.py` (``../../tutorials/04_sensor_simulation.py``)
+     - 00:00.189
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_10_data_generator.py` (``../../tutorials/10_data_generator.py``)
+     - 00:00.178
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_03_leadfield_building.py` (``../../tutorials/03_leadfield_building.py``)
+     - 00:00.095
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_01_what_is_calibrain.py` (``../../tutorials/01_what_is_calibrain.py``)
+     - 00:00.075
      - 0.0

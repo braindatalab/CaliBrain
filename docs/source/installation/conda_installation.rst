@@ -1,43 +1,27 @@
 Conda Installation
--------------------
+==================
 
-If you prefer to manage dependencies with **Conda**, you can create an isolated Conda environment using the provided `environment.yml` file.
-
-First, clone the repository:
+Create the environment from ``environment.yml``:
 
 .. code-block:: bash
 
-    git clone https://github.com/braindatalab/CaliBrain.git
-    cd CaliBrain
+   git clone https://github.com/braindatalab/CaliBrain.git
+   cd CaliBrain
+   conda env create -f environment.yml
+   conda activate calibrain
 
-Then create the environment:
-
-.. code-block:: bash
-
-    conda env create -f environment.yml
-
-Activate the environment:
+Install CaliBrain into the environment:
 
 .. code-block:: bash
 
-    conda activate calibrain
+   python -m pip install -e .
 
-Finally, install CaliBrain into the activated environment:
-
-.. code-block:: bash
-
-    pip install .
-
-This ensures that all Conda and pip dependencies are properly installed.
-
-----
-
-
-Optional Setup for Development
--------------------------------
-
-If you plan to contribute to CaliBrain or run experiments:
+For documentation work:
 
 .. code-block:: bash
 
-    pip install -e .[dev]
+   python -m pip install -e ".[docs]"
+
+Inspect ``configs/*.py`` before running workflows, because the default configs
+may write results to absolute paths on the local machine where the experiments
+were developed.

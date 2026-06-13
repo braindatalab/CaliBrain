@@ -26,23 +26,56 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable # For better colorbar pl
 from calibrain import LeadfieldBuilder
 from calibrain.utils import load_config
 
+
+# =============================================================================
+# Sensor simulator
+# =============================================================================
 class SensorSimulator:
-    """Simulates synthetic brain activity data for sensor-level measurements.
     """
-    def __init__(
-        self,
-        logger: Optional[logging.Logger] = None,
-    ):
+    Simulates synthetic sensor-level measurements from source-level activity.
+
+    This class performs two steps:
+      (1) Forward projection (clean signal): y_clean = L * x
+      (2) Additive Gaussian white noise with controlled SNR level:
+          y_noisy = y_clean + eta * eps, where eps ~ N(0, sigma^2 I)
+
+    Supported orientation conventions
+    ---------------------------------
+    Fixed orientation:
+
+      - x: (n_sources, n_times)              [nAm]
+      - L: (n_sensors, n_sources)            [sensor_unit / nAm]
+      - y: (n_sensors, n_times)              [sensor_unit]
+
+    Free orientation:
+
+      - x: (n_sources, K, n_times)           [nAm]  (3 components of dipole moment)
+      - L: (n_sensors, n_sources, K)         [sensor_unit / nAm]
+      - y: (n_sensors, n_times)              [sensor_unit]
+
+      with K = 2 for MEG (tangential components) and K = 3 for EEG (full 3D).
+
+    Units
+    -----
+    By default, metadata assumes MEG magnetometers:
+
+      - kind    = FIFFV_MEG_CH
+      - units   = FIFF_UNIT_T
+      - unitmult= FIFF_UNITM_F  (femto; 1e-15)
+
+    These are metadata fields; numerical outputs depend on your L units.
+    """
+
+    def __init__(self, logger: Optional[logging.Logger] = None):
         """
-        Initialize the SensorSimulator.
         Parameters
         ----------
-        logger : Optional[logging.Logger]
-            Logger instance for logging messages. If None, a default logger will be created.
+        logger : logging.Logger, optional
+            Logger instance. If None, uses module logger.
         """
         self.logger = logger if logger else logging.getLogger(__name__)
-        
-        # Default metadata: assume MEG magnetometers unless overridden
+
+        # Default metadata (MEG magnetometers unless overwritten elsewhere)
         self.kind: int = FIFF.FIFFV_MEG_CH
         self.units: int = FIFF.FIFF_UNIT_T
         self.unitmult: int = FIFF.FIFF_UNITM_F
@@ -50,7 +83,7 @@ class SensorSimulator:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['logger'] = None
+        state["logger"] = None
         return state
 
     def __setstate__(self, state):
@@ -75,182 +108,200 @@ class SensorSimulator:
             self.unitmult = unitmult
         if coil_type is not None:
             self.coil_type = coil_type
-                
-    def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray, orientation_type: str) -> np.ndarray:
+    
+    def _project_sources_to_sensors(self, x: np.ndarray, L: np.ndarray) -> np.ndarray:
         """
-        Project the source activity to the sensor space using the leadfield matrix.
+        Project source activity into sensor space using the leadfield.
 
         Parameters
         ----------
-        x : np.ndarray (nAm)
+        x : np.ndarray
             Source activity.
-            - 'fixed': Shape (n_sources, n_times).
-            - 'free': Shape (n_sources, 3, n_times).
+            - fixed: (n_sources, n_times)
+            - free : (n_sources, K, n_times)
+            with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
+            Typically measured in nAm for dipole moments.
+
         L : np.ndarray
-            Leadfield matrix (µV / nAm for EEG or ft / nAm for MEG).
-            - 'fixed': Shape (n_sensors, n_sources).
-            - 'free': Shape (n_sensors, n_sources, 3).            
-        orientation_type : str
-            Orientation type of the sources ('fixed' or 'free').
+            Leadfield mapping sources to sensors.
+            - fixed: (n_sensors, n_sources)
+            - free : (n_sensors, n_sources, K)
+            with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
+
+            Units depend on modality and how L is constructed, e.g.
+            - MEG: fT / nAm (or T / nAm with metadata scaling)
+            - EEG: µV / nAm
 
         Returns
         -------
-        np.ndarray
-            Sensor measurements (y_clean). Shape: (n_sensors, n_times). The units depends on the channel type:
-                - 'eeg': µV
-                - 'meg': fT
-        """
-        if orientation_type == "fixed":
-            # Matrix multiplication: (n_sensors, n_sources) @ (n_sources, n_times) -> (n_sensors, n_times)
-            y = L @ x
-        elif orientation_type == "free":
-            # Einstein summation: Sum over source index 'm' and orientation index 'r'
-            # (n_sensors, n_sources, 3) einsum (n_sources, 3, n_times) -> (n_sensors, n_times)
-            y = np.einsum("nmr,mrt->nt", L, x) # Corrected einsum indices
-        else:
-            raise ValueError(f"Unsupported orientation type: {orientation_type}")
+        y_clean : np.ndarray
+            Clean sensor signal (noiseless), shape (n_sensors, n_times).
 
-        return y
+        Notes (math)
+        -----------
+        Fixed orientation:
+            y(t) = L x(t)
 
-    def _add_noise(self, y_clean: np.ndarray, alpha_SNR: float = 0.5, sensor_white_noise_var: float = 1.0, noise_seed: int = 42) -> Tuple[np.ndarray, np.ndarray, float]:
+        Free orientation:
+            y_n(t) = sum_m sum_r L_{n,m,r} * x_{m,r}(t)
+            Implemented as: einsum("nmr,mrt->nt", L, x)
         """
-        Adds homoscedastic (uniform variance across channels) and uncorrelated (white) Gaussian noise to a clean signal based on a desired SNR level.
+        # fixed
+        if L.ndim == 2 and x.ndim == 2:
+            if L.shape[1] != x.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch: L has n_sources={L.shape[1]}, x has n_sources={x.shape[0]}"
+                )
+            return L @ x
+
+        # generic reduced/free (K=2 or K=3)
+        if L.ndim == 3 and x.ndim == 3:
+            if L.shape[1] != x.shape[0]:
+                raise ValueError(
+                    f"Dimension mismatch: L has n_sources={L.shape[1]}, x has n_sources={x.shape[0]}"
+                )
+            if L.shape[2] != x.shape[1]:
+                raise ValueError(
+                    f"Reduced dimension mismatch: L has K={L.shape[2]}, x has K={x.shape[1]}"
+                )
+            return np.einsum("mnk,nkt->mt", L, x)
+
+        raise ValueError(f"Incompatible shapes for projection: L{L.shape}, x{x.shape}")
+
+    def _add_noise(
+        self,
+        y_clean: np.ndarray,
+        alpha_SNR: float = 0.5,
+        sensor_white_noise_std: float = 1.0,
+        noise_seed: int = 42,
+    ) -> Tuple[np.ndarray, np.ndarray, float]:
+        """
+        Add homoscedastic (same variance for all sensors) white Gaussian noise
+        with a controlled SNR-like mixing parameter alpha_SNR.
+
+        Noise model
+        ----------
+        eps ~ N(0, sigma^2 I) with sigma = sensor_white_noise_std
+        y_noisy = y_clean + eta * eps
+
+        Scaling eta is chosen using Frobenius norms:
+            ||y_clean||_F and ||eps||_F
+
+        Interpretation of alpha_SNR
+        ---------------------------
+        alpha_SNR in [0, 1]:
+          - alpha_SNR = 1.0  => y_noisy = y_clean  (no noise)
+          - alpha_SNR = 0.0  => y_noisy = eta*eps  (pure noise scaled to match signal norm)
+          - otherwise:
+              eta = ((1 - alpha_SNR) / alpha_SNR) * (||y_clean||_F / ||eps||_F)
 
         Parameters
         ----------
         y_clean : np.ndarray
-            The clean signal array (e.g., channels x times).
+            Clean sensor signal, shape (n_sensors, n_times).
         alpha_SNR : float
-            Desired signal-to-noise ratio between 0 and 1.
-            - 0.0 means full noise, no signal.
-            - 1.0 means no noise, only signal.
-        sensor_white_noise_var : float
-            Standard deviation of the base Gaussian noise.
+            Mixing parameter in [0, 1].
+        sensor_white_noise_std : float
+            Standard deviation sigma of base Gaussian noise eps.
         noise_seed : int
-            Seed for the random number generator to ensure reproducibility.
+            Seed for reproducibility of eps.
 
         Returns
         -------
         y_noisy : np.ndarray
-            The noisy signal with added Gaussian noise.
+            Noisy sensor signal, shape (n_sensors, n_times).
         eps_scaled : np.ndarray
-            The noise added to the clean signal.
+            Added noise term (eta * eps), shape (n_sensors, n_times).
         eta : float
-            The scaling factor used for the noise (noise variance = eta^2 * sensor_white_noise_var^2).
+            Noise scaling factor.
         """
         if not (0.0 <= alpha_SNR <= 1.0):
             raise ValueError("alpha_SNR must be in [0, 1].")
 
-        noise_rng = np.random.RandomState(noise_seed)
+        noise_rng = np.random.RandomState(int(noise_seed))
 
         if alpha_SNR == 1.0:
             eps = np.zeros_like(y_clean)
             return y_clean.copy(), eps, 0.0
 
-        # Sample white Gaussian noise
-        eps = noise_rng.normal(loc=0.0, scale=sensor_white_noise_var, size=y_clean.shape)
+        # Base white Gaussian noise
+        eps = noise_rng.normal(
+            loc=0.0,
+            scale=float(sensor_white_noise_std),
+            size=y_clean.shape,
+        )
+        
+        # Frobenius norms
+        signal_norm = np.linalg.norm(y_clean, ord="fro")
+        eps_norm = np.linalg.norm(eps, ord="fro")
 
-        # Compute Frobenius norms
-        signal_norm = np.linalg.norm(y_clean, ord='fro')
-        eps_norm = np.linalg.norm(eps, ord='fro')
+        # Guard against degenerate eps (e.g., std=0)
+        if eps_norm < 1e-12:
+            return y_clean.copy(), np.zeros_like(y_clean), 0.0
 
         if alpha_SNR == 0.0:
-            # Pure noise with same norm as signal
+            # Pure noise scaled to have the same Frobenius norm as the signal
             eta = signal_norm / eps_norm
             eps_scaled = eta * eps
-            return eps_scaled.copy(), eps_scaled, eta
+            return eps_scaled.copy(), eps_scaled, float(eta)
 
-        # General alpha-SNR case
-        eta = ((1 - alpha_SNR) / alpha_SNR) * (signal_norm / eps_norm)
+        eta = ((1.0 - alpha_SNR) / alpha_SNR) * (signal_norm / eps_norm)
         eps_scaled = eta * eps
         y_noisy = y_clean + eps_scaled
 
-        return y_noisy, eps_scaled, eta
+        return y_noisy, eps_scaled, float(eta)
+
 
     def simulate(
         self,
-        x_trials: List[np.ndarray],
+        x: np.ndarray,
         L: np.ndarray,
-        orientation_type: str = "fixed",
         alpha_SNR: float = 0.5,
-        sensor_white_noise_var: float = 1.0,
-        n_trials: int = 1,
-        global_seed: int = 42,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        sensor_white_noise_std: float = 1.0,
+        seed: int = 42,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         """
-        Simulate sensor trials by projecting source data to sensor space and adding noise to the clean sensor data.
-        
+        Simulate sensor data by (1) forward projection and (2) noise addition.
+
         Parameters
         ----------
-        x_trials : List[np.ndarray]
-            List of source time courses for each trial. Each element should be an array of shape (n_sources, n_times) for fixed orientation or (n_sources, 3, n_times) for free orientation.
+        x : np.ndarray
+            Source activity:
+
+              - fixed: (n_sources, n_times)
+              - free : (n_sources, K, n_times), with K = 2 for MEG (tangential) and K = 3 for EEG (full 3D).
+
+              Typically in nAm for dipole moments.
         L : np.ndarray
-            Leadfield matrix (µV / nAm for EEG or fT / nAm for MEG).
-            - 'fixed': Shape (n_sensors, n_sources).
-            - 'free': Shape (n_sensors, 3, n_sources).
-        orientation_type : str
-            Orientation type of the sources ('fixed' or 'free').
+            Leadfield:
+
+              - fixed: (n_sensors, n_sources)
+              - free : (n_sensors, n_sources, K), with K = 2 for MEG and K = 3 for EEG.
+
+                Units depend on modality and construction, e.g. fT/nAm for MEG or µV/nAm for EEG.
         alpha_SNR : float
-            Desired signal-to-noise ratio between 0 and 1.
-            - 0.0 means full noise, no signal.
-            - 1.0 means no noise, only signal.
-        sensor_white_noise_var : float
-            Standard deviation of the noise to be added.
-        n_trials : int
-            Number of trials to simulate. Default is 1.
-        global_seed : int
-            Global seed for random number generation to ensure reproducibility across trials.
-            
+            Noise mixing parameter in [0, 1].
+        sensor_white_noise_std : float
+            Base noise standard deviation.
+        seed : int
+            Noise seed (used only for sensor noise).
+
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-            - y_clean_all_trials : np.ndarray
-                Clean sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - y_noisy_all_trials : np.ndarray
-                Noisy sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - noise_all_trials : np.ndarray
-                Noise added to the clean sensor data for all trials. Shape: (n_trials, n_sensors, n_times).
-            - noise_eta_all_trials : np.ndarray
-                Noise scaling factors for each trial. Shape: (n_trials,).
+        y_clean : np.ndarray
+            Noiseless sensor measurements, shape (n_sensors, n_times). Units depend on L and x, e.g. fT for MEG or µV for EEG.
+        y_noisy : np.ndarray
+            Noisy sensor measurements, shape (n_sensors, n_times). Units depend on L and x, e.g. fT for MEG or µV for EEG.
+        noise : np.ndarray
+            Added noise term (eta * eps), shape (n_sensors, n_times).
+        noise_eta : float
+            Noise scaling factor eta.
         """
-        noise_rng = np.random.RandomState(global_seed + 123456)
-        noise_seeds = noise_rng.randint(0, 2**32 - 1, size=n_trials)
-
-        y_clean_all_trials, y_noisy_all_trials = [], []
-        noise_all_trials, noise_eta_all_trials = [], []
-        
-        for i in range(n_trials):
-            x_trial = x_trials[i]  # Source time courses for this trial
-            noise_seed = noise_seeds[i]
-
-            self.logger.debug(f"[Trial {i+1}/{n_trials}] Adding noise with seed {noise_seed}")
-
-            # Generate source time courses for this trial
-            y_clean = self._project_sources_to_sensors(x=x_trial, L=L, orientation_type='fixed')
-
-            # Add noise to the clean sensor data for this trial
-            y_noisy, noise, noise_scaling_factor_eta = self._add_noise(y_clean, alpha_SNR, sensor_white_noise_var, noise_seed)
-
-            y_clean_all_trials.append(y_clean)
-            y_noisy_all_trials.append(y_noisy)
-            noise_all_trials.append(noise)
-            noise_eta_all_trials.append(noise_scaling_factor_eta)
-            
-        y_clean_all_trials = np.array(y_clean_all_trials) # (n_trials, n_channels, n_times)
-        x_trials = np.array(x_trials) # (n_trials, n_sources, [n_orient,] n_times)
-        y_noisy_all_trials = np.array(y_noisy_all_trials) # (n_trials, n_channels, n_times)
-        noise_all_trials = np.array(noise_all_trials) # (n_trials, n_channels, n_times)
-        noise_eta_all_trials = np.array(noise_eta_all_trials) # (n_trials,)
-
-        self.logger.debug(f"Noise addition complete.")
-        self.logger.debug(f"Shape of clean sensor data for all trials: {y_clean_all_trials.shape}")
-        self.logger.debug(f"Shape of noisy sensor data for all trials: {y_noisy_all_trials.shape}")
-        self.logger.debug(f"Shape of noise data for all trials: {noise_all_trials.shape}")
-        self.logger.debug(f"Shape of noise scaling factors for all trials: {noise_eta_all_trials.shape}")
-
-        # Reshape leadfield matrix for free orientation if needed by downstream estimators.
-        if orientation_type == "free":
-            self.logger.info("Reshaping free orientation leadfield from (sensors, sources, 3) to (sensors, sources*3)")
-            L = L.reshape(L.shape[0], -1)
-            
-        return y_clean_all_trials, y_noisy_all_trials, noise_all_trials, noise_eta_all_trials
+        y_clean = self._project_sources_to_sensors(x=x, L=L)
+        y_noisy, noise, noise_eta = self._add_noise(
+            y_clean=y_clean,
+            alpha_SNR=alpha_SNR,
+            sensor_white_noise_std=sensor_white_noise_std,
+            noise_seed=int(seed),
+        )
+        return y_clean, y_noisy, noise, noise_eta

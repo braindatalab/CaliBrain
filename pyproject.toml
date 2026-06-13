@@ -4,15 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrain"
-version = "0.1.2"
+version = "1.0.0"
 description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
+    {name = "Srikantan Nagarajan", email = "Srikantan.Nagarajan@ucsf.edu"},
     {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
 ]
-license = {text = "MIT"} # TODO
-readme = "README.md"
+license = {text = "BSD-3-Clause"}
+readme = "README.rst"
 requires-python = ">=3.6"
 
 dependencies = [
@@ -39,7 +40,6 @@ docs = [
     "sphinx-rtd-theme>=1.0.0",
     "pydata-sphinx-theme>=0.13.0",  # Add this
     "sphinx-autodoc-typehints>=1.19.0",
-    "myst-parser>=0.18.0",
     "sphinx-copybutton>=0.5.0",
     "sphinx-gallery>=0.19.0",
 ]

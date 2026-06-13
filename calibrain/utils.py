@@ -1,27 +1,39 @@
-from typing import Union, Optional
-import yaml
+from typing import Any, Dict, Union, Optional
 import logging
 from pathlib import Path
-import mne
 import os
+import runpy
+
+import mne
+import numpy as np
+import yaml
 
 
 def load_config(config_file: str, logger=None) -> dict:
     """
     Load the configuration from a YAML file.
 
-    Parameters:
-    - config_file (str): Path to the YAML configuration file.
-    - logger (logging.Logger, optional): Logger instance for logging messages.
+    Parameters
+    ----------
+    config_file : str
+        Path to the YAML configuration file.
+    logger : logging.Logger, optional
+        Logger instance for logging messages.
       If None, a default logger will be created.
 
-    Raises:
-    - FileNotFoundError: If the configuration file is not found.
-    - yaml.YAMLError: If there is an error parsing the YAML file.
-    - ValueError: If the configuration file is empty or invalid.
+    Raises
+    ------
+    FileNotFoundError
+        If the configuration file is not found.
+    yaml.YAMLError
+        If there is an error parsing the YAML file.
+    ValueError
+        If the configuration file is empty or invalid.
 
-    Returns:
-    - config (dict): The loaded configuration as a dictionary.
+    Returns
+    -------
+    config : dict
+        The loaded configuration as a dictionary.
     """
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file does not exist: {config_file}")
@@ -44,6 +56,14 @@ def load_config(config_file: str, logger=None) -> dict:
     except yaml.YAMLError as e:
         logger.error(f"Error parsing YAML file: {e}")
         raise
+
+
+def load_python_config(config_path: Path | str) -> Dict[str, Any]:
+    """Execute a Python config file and return its CONFIG dict."""
+    namespace = runpy.run_path(str(config_path))
+    if "CONFIG" not in namespace:
+        raise ValueError(f"Config {config_path} must define a CONFIG dict.")
+    return namespace["CONFIG"]
     
 
 def save_subjects_mne_info(subjects=["CC120166", "CC120264", "CC120309", "CC120313"], fwd_dir='examples/BSI-ZOO_forward_data'):
@@ -71,12 +91,17 @@ def inspect_object(obj, show_private=False):
     """
     Print attributes and methods of a Python object separately.
 
-    Parameters:
-    - obj: The object to inspect.
-    - show_private (bool): If True, include private attributes/methods (starting with '_').
+    Parameters
+    ----------
+    obj
+        The object to inspect.
+    show_private : bool
+        If True, include private attributes/methods (starting with '_').
 
-    Returns:
-    - dict with 'attributes' and 'methods' keys
+    Returns
+    -------
+    dict
+        Dictionary with 'attributes' and 'methods' keys.
     """
     def is_valid(name):
         return show_private or not name.startswith("_")
@@ -127,3 +152,46 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     data_path.mkdir(parents=True, exist_ok=True)
     
     return data_path
+
+
+def restrict_fwd_to_sources(
+    fwd,
+    n_keep=1284,
+    seed=None,
+):
+    """
+    Randomly reduce a forward solution to a subset of sources on both hemispheres.
+
+    Parameters
+    ----------
+    fwd : mne.Forward
+        Forward solution to restrict.
+    n_keep : int
+        Number of sources to keep per hemisphere.
+    seed : int | None
+        Random seed for selecting vertices.
+    """
+
+    if not isinstance(n_keep, int):
+        raise TypeError("n_keep must be an integer.")
+    if n_keep <= 0:
+        raise ValueError("n_keep must be positive.")
+
+    vertices = [np.array([], dtype=int), np.array([], dtype=int)]
+    rng = np.random.default_rng(seed)
+    data_segments = []
+
+    for hemi_idx in (0, 1):
+        hemi_vertices = fwd["src"][hemi_idx]["vertno"]
+        if n_keep > len(hemi_vertices):
+            hemi = "lh" if hemi_idx == 0 else "rh"
+            raise ValueError(f"Only {len(hemi_vertices)} sources in {hemi}")
+
+        sel = np.sort(rng.choice(len(hemi_vertices), size=n_keep, replace=False))
+        vertices[hemi_idx] = hemi_vertices[sel]
+        data_segments.append(np.ones((n_keep, 1)))
+
+    data = np.vstack(data_segments)
+    stc = mne.SourceEstimate(data, vertices=vertices, tmin=0.0, tstep=1.0)
+
+    return mne.forward.restrict_forward_to_stc(fwd, stc, on_missing="raise")
