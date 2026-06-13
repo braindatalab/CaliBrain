@@ -1,0 +1,6 @@
+﻿calibrain.run\_manifest.summaries\_from\_manifest
+=================================================
+
+.. currentmodule:: calibrain.run_manifest
+
+.. autofunction:: summaries_from_manifest

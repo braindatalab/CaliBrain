@@ -1,0 +1,30 @@
+﻿calibrain.Visualizer
+====================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: Visualizer
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Visualizer.plot_active_sources
+      ~Visualizer.plot_all
+      ~Visualizer.plot_calibration
+      ~Visualizer.plot_ci
+      ~Visualizer.plot_pointwise_coverage_map
+      ~Visualizer.plot_pre_post_calibration_curves
+      ~Visualizer.plot_reconstructed_active_sources
+      ~Visualizer.plot_sensor_signals
+      ~Visualizer.plot_source_and_sensors
+      ~Visualizer.plot_source_signals
+      ~Visualizer.plot_stc_3d_brain
+   
+   
+
+   
+   
+   

@@ -1,0 +1,23 @@
+﻿calibrain.UncertaintyCalibrator
+===============================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: UncertaintyCalibrator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UncertaintyCalibrator.apply_calibration
+      ~UncertaintyCalibrator.calibrate
+      ~UncertaintyCalibrator.evaluate_with_mapping
+      ~UncertaintyCalibrator.fit_mapping
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+﻿calibrain.workflows.aggregation.aggregate\_posteriors
+=====================================================
+
+.. currentmodule:: calibrain.workflows.aggregation
+
+.. autofunction:: aggregate_posteriors

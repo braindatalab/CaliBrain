@@ -1,0 +1,1560 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>calibrain.uncertainty_calibration &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/calibrain/uncertainty_calibration';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://braindatalab.github.io/CaliBrain/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">You are viewing CaliBrain v1.0.0 documentation</div>
+</aside>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api_reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api_reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">calibrain.uncertainty_calibration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for calibrain.uncertainty_calibration</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.isotonic</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsotonicRegression</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.io.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">FIFF</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">UncertaintyEstimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricEvaluator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">calibrain.uncertainty_estimation</span><span class="w"> </span><span class="kn">import</span> <span class="n">lift_reduced_sources_to_3d</span>
+
+<span class="n">EEG_COIL_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="n">FIFF</span><span class="o">.</span><span class="n">FIFFV_COIL_EEG</span><span class="p">}</span>
+<span class="n">MEG_COIL_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">FIFF</span><span class="o">.</span><span class="n">FIFFV_COIL_VV_MAG_T1</span><span class="p">,</span>
+    <span class="n">FIFF</span><span class="o">.</span><span class="n">FIFFV_COIL_VV_PLANAR_T1</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">ALLOWED_COIL_TYPES</span> <span class="o">=</span> <span class="n">EEG_COIL_TYPES</span> <span class="o">|</span> <span class="n">MEG_COIL_TYPES</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">orientation_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;fixed&quot;</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="n">orientation_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">normalized</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="s2">&quot;free&quot;</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported orientation_type &#39;</span><span class="si">{</span><span class="n">orientation_type</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">normalized</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_coil_type</span><span class="p">(</span><span class="n">coil_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">coil_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">coil_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALLOWED_COIL_TYPES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unsupported coil_type &#39;</span><span class="si">{</span><span class="n">coil_type</span><span class="si">}</span><span class="s2">&#39;. Expected one of &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ALLOWED_COIL_TYPES</span><span class="p">)</span><span class="si">}</span><span class="s2"> or None.&quot;</span>
+        <span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_fixed_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;fixed&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_free_eeg_orientation</span><span class="p">(</span>
+    <span class="n">orientation_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">coil_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;free&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">coil_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_validate_coil_type</span><span class="p">(</span><span class="n">coil_type</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coil_type</span> <span class="ow">in</span> <span class="n">EEG_COIL_TYPES</span>
+    <span class="k">return</span> <span class="n">n_components</span> <span class="o">==</span> <span class="mi">3</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_free_meg_orientation</span><span class="p">(</span>
+    <span class="n">orientation_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">coil_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;free&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">coil_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_validate_coil_type</span><span class="p">(</span><span class="n">coil_type</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coil_type</span> <span class="ow">in</span> <span class="n">MEG_COIL_TYPES</span>
+    <span class="k">return</span> <span class="n">n_components</span> <span class="o">==</span> <span class="mi">2</span>
+
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># UNCERTAINTY CALIBRATOR (NOMINAL RE-CALIBRATION)</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="UncertaintyCalibrator">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UncertaintyCalibrator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Uncertainty Calibrator</span>
+<span class="sd">    ======================</span>
+
+<span class="sd">    This class connects UncertaintyEstimator and MetricEvaluator with an</span>
+<span class="sd">    isotonic-regression based re-calibration of nominal coverages.</span>
+
+<span class="sd">    It uses:</span>
+<span class="sd">      - UncertaintyEstimator&#39;s aggregated membership/curve utilities to evaluate</span>
+<span class="sd">        empirical coverage for any nominal coverage level c.</span>
+<span class="sd">      - MetricEvaluator.calibration_metrics_4 (derived from the demos in</span>
+<span class="sd">        ``metric_evaluation.py``) to summarize AAD, ASD, etc. using the default</span>
+<span class="sd">        calibration metrics.</span>
+<span class="sd">      - Experiment-level train/test splits provided by the caller to avoid</span>
+<span class="sd">        overfitting entire sources.</span>
+
+<span class="sd">    Conceptual model</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    For each nominal coverage level c (e.g. 0.5, 0.9):</span>
+
+<span class="sd">        g(c) = empirical coverage when building CIs with nominal coverage c.</span>
+
+<span class="sd">    On the training experiments we learn g(c) via isotonic regression, then we</span>
+<span class="sd">    numerically invert this curve to obtain a re-calibrated nominal coverage</span>
+<span class="sd">    c_cal(c) ≈ g^{-1}(c). On a held-out evaluation split we build intervals</span>
+<span class="sd">    using c_cal(c) and measure empirical coverage again.</span>
+
+<span class="sd">    The final goal is that after recalibration the empirical coverage is</span>
+<span class="sd">    closer to the original nominal coverage grid defined in your</span>
+<span class="sd">    UncertaintyEstimator (self.nominal_coverages).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UncertaintyCalibrator.__init__">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">uncertainty_estimator</span><span class="p">:</span> <span class="n">UncertaintyEstimator</span><span class="p">,</span>
+                 <span class="n">metric_evaluator</span><span class="p">:</span> <span class="n">MetricEvaluator</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        uncertainty_estimator : UncertaintyEstimator</span>
+<span class="sd">            Your existing UncertaintyEstimator instance.</span>
+<span class="sd">        metric_evaluator : MetricEvaluator</span>
+<span class="sd">            Your existing MetricEvaluator instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span> <span class="o">=</span> <span class="n">uncertainty_estimator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span> <span class="o">=</span> <span class="n">metric_evaluator</span>
+
+        <span class="c1"># Nominal coverage grid c (what we want in the end)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span> <span class="o">=</span> <span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">nominal_coverages</span>
+
+        <span class="c1"># Will store final mapping nominal -&gt; recalibrated nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_calibrated</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="p">,</span> <span class="s2">&quot;nominal_coverages&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">nominal_coverages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_invert_isotonic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                          <span class="n">iso_model</span><span class="p">:</span> <span class="n">IsotonicRegression</span><span class="p">,</span>
+                          <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">grid_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2001</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Numerically invert a fitted isotonic regression model.</span>
+
+<span class="sd">        iso_model approximates the forward curve:</span>
+
+<span class="sd">            empirical = g(self.nominal_coveragesinal)</span>
+
+<span class="sd">        This function returns for each target t (typically t = self.nominal_coveragesinal) a</span>
+<span class="sd">        nominal coverage c_cal such that g(c_cal) ≈ t.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        iso_model : fitted IsotonicRegression</span>
+<span class="sd">        targets : array-like</span>
+<span class="sd">            Desired coverage values in [0, 1].</span>
+<span class="sd">        grid_size : int</span>
+<span class="sd">            Resolution of the inversion grid.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        c_calibrated : ndarray, same shape as targets</span>
+<span class="sd">            Recalibrated nominal coverages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">grid_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">grid_size</span><span class="p">)</span>
+        <span class="n">grid_emp</span> <span class="o">=</span> <span class="n">iso_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">grid_c</span><span class="p">)</span>  <span class="c1"># g(c) over a dense grid</span>
+        <span class="n">c_cal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">grid_emp</span><span class="p">,</span> <span class="n">grid_c</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">c_cal</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_orientation_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+        <span class="n">orientation_type</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;orientation_type&quot;</span><span class="p">)</span>
+        <span class="n">coil_type</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_type&quot;</span><span class="p">)</span>
+        <span class="n">n_components_full</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">n_components_reduced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">x_true</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x_true&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_true</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_true</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x_arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">n_components_full</span> <span class="o">=</span> <span class="n">x_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_components_full</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">n_components_reduced</span> <span class="o">=</span> <span class="n">n_components_full</span>
+        <span class="n">is_fixed</span> <span class="o">=</span> <span class="n">is_fixed_orientation</span><span class="p">(</span><span class="n">orientation_type</span><span class="p">)</span>
+        <span class="n">is_free_eeg</span> <span class="o">=</span> <span class="n">is_free_eeg_orientation</span><span class="p">(</span>
+            <span class="n">orientation_type</span><span class="p">,</span> <span class="n">coil_type</span><span class="p">,</span> <span class="n">n_components_full</span>
+        <span class="p">)</span>
+        <span class="n">is_free_meg</span> <span class="o">=</span> <span class="n">is_free_meg_orientation</span><span class="p">(</span>
+            <span class="n">orientation_type</span><span class="p">,</span> <span class="n">coil_type</span><span class="p">,</span> <span class="n">n_components_reduced</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">orientation_type</span><span class="p">,</span> <span class="n">coil_type</span><span class="p">,</span> <span class="n">is_fixed</span><span class="p">,</span> <span class="n">is_free_eeg</span><span class="p">,</span> <span class="n">is_free_meg</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reshape_free_mean</span><span class="p">(</span><span class="n">x_hat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_sources</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_hat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n_sources</span> <span class="ow">or</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n_components</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected mean shape (</span><span class="si">{</span><span class="n">n_sources</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">n_components</span><span class="si">}</span><span class="s2">,T); got </span><span class="si">{</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">arr</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Posterior means must be 2D or 3D arrays.&quot;</span><span class="p">)</span>
+        <span class="n">n_times</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="n">n_sources</span> <span class="o">*</span> <span class="n">n_components</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">expected</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Posterior mean first dimension must equal </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">; got </span><span class="si">{</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_components</span><span class="p">,</span> <span class="n">n_sources</span><span class="p">,</span> <span class="n">n_times</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_meg_tangent_basis</span><span class="p">(</span><span class="n">q_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_sources</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q_basis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">basis</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n_sources</span> <span class="ow">or</span> <span class="n">basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Q_basis must have shape (</span><span class="si">{</span><span class="n">n_sources</span><span class="si">}</span><span class="s2">,3,K); got </span><span class="si">{</span><span class="n">basis</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">basis</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Q_basis must provide at least two tangent vectors.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UncertaintyCalibrator.calibrate">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator.calibrate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calibrate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x_true</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">x_hat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">posterior_std</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">fit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">free_interval_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full_cov&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the full calibration procedure on the provided posterior statistics.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_true : np.ndarray, optional</span>
+<span class="sd">            Ground-truth sources used both for training and evaluation when</span>
+<span class="sd">            ``train_data`` is not supplied. Shape (n_sources, n_times) or</span>
+<span class="sd">            (n_sources,).</span>
+<span class="sd">        x_hat : np.ndarray, optional</span>
+<span class="sd">            Posterior mean estimates paired with ``x_true``.</span>
+<span class="sd">        posterior_std : np.ndarray, optional</span>
+<span class="sd">            Posterior standard deviation paired with ``x_true``.</span>
+<span class="sd">        train_data : dict, optional</span>
+<span class="sd">            Dictionary containing ``x_true``, ``x_hat``, and ``posterior_std``</span>
+<span class="sd">            arrays for the training experiments. When provided, the positional</span>
+<span class="sd">            arguments are ignored for training.</span>
+<span class="sd">        test_data : dict, optional</span>
+<span class="sd">            Dictionary containing ``x_true``, ``x_hat``, and ``posterior_std``</span>
+<span class="sd">            arrays for the evaluation experiments. If omitted, the training</span>
+<span class="sd">            data is also used for evaluation.</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            If True, print progress information.</span>
+<span class="sd">        fit : bool, optional</span>
+<span class="sd">            If False, skip isotonic regression fitting and report only the raw</span>
+<span class="sd">            (pre-calibration) coverage curve on the evaluation data. The</span>
+<span class="sd">            returned ``post_calibration`` block mirrors the pre-calibration</span>
+<span class="sd">            results with an identity mapping.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Dictionary containing:</span>
+<span class="sd">                - ``pre_calibration`` and ``post_calibration`` metadata</span>
+<span class="sd">                  (nominal coverages, empirical coverages, metrics, CI bounds).</span>
+<span class="sd">                - ``train_empirical_coverages`` for diagnosing how the</span>
+<span class="sd">                  calibration map behaves on the training split.</span>
+<span class="sd">                - ``calibration_metric_names`` listing the metrics evaluated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== UNCERTAINTY CALIBRATION (NOMINAL RECALIBRATION) ===&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fit</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">x_true</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">x_hat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">posterior_std</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Provide either &#39;train_data&#39; or raw arrays x_true, x_hat, posterior_std.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">x_hat</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;x_true and x_hat must have identical shapes.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">posterior_std</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;posterior_std must provide one value per source for fixed orientation.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">train_data</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;coil_type&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;x_true&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="p">,</span>
+                <span class="s2">&quot;x_hat&quot;</span><span class="p">:</span> <span class="n">x_hat</span><span class="p">,</span>
+                <span class="s2">&quot;posterior_std&quot;</span><span class="p">:</span> <span class="n">posterior_std</span><span class="p">,</span>
+                <span class="s2">&quot;n_sources&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;n_times&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">test_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x_true&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;test_data must include &#39;x_true&#39;.&quot;</span><span class="p">)</span>
+            <span class="n">eval_data</span> <span class="o">=</span> <span class="n">test_data</span>
+        <span class="k">elif</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x_true&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;train_data must include &#39;x_true&#39;.&quot;</span><span class="p">)</span>
+            <span class="n">eval_data</span> <span class="o">=</span> <span class="n">train_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">x_true</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">x_hat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">posterior_std</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Provide &#39;test_data&#39; (or raw arrays) when fit=False and no train_data is supplied.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">x_hat</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;x_true and x_hat must have identical shapes.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">posterior_std</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;posterior_std must provide one value per source for fixed orientation.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">eval_data</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;fixed&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;coil_type&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;x_true&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="p">,</span>
+                <span class="s2">&quot;x_hat&quot;</span><span class="p">:</span> <span class="n">x_hat</span><span class="p">,</span>
+                <span class="s2">&quot;posterior_std&quot;</span><span class="p">:</span> <span class="n">posterior_std</span><span class="p">,</span>
+                <span class="s2">&quot;n_sources&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;n_times&quot;</span><span class="p">:</span> <span class="n">x_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;  train sources = </span><span class="si">{</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;n_sources&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, train times = </span><span class="si">{</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;n_times&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  train sources = (skipped; fit=False)&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;  eval sources  = </span><span class="si">{</span><span class="n">eval_data</span><span class="p">[</span><span class="s1">&#39;n_sources&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, eval times  = </span><span class="si">{</span><span class="n">eval_data</span><span class="p">[</span><span class="s1">&#39;n_times&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">train_data_for_flags</span> <span class="o">=</span> <span class="n">train_data</span> <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">eval_data</span>
+
+        <span class="p">(</span>
+            <span class="n">train_orientation</span><span class="p">,</span>
+            <span class="n">train_coil</span><span class="p">,</span>
+            <span class="n">train_is_fixed</span><span class="p">,</span>
+            <span class="n">train_is_eeg</span><span class="p">,</span>
+            <span class="n">train_is_meg</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orientation_flags</span><span class="p">(</span><span class="n">train_data_for_flags</span><span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">eval_orientation</span><span class="p">,</span>
+            <span class="n">eval_coil</span><span class="p">,</span>
+            <span class="n">eval_is_fixed</span><span class="p">,</span>
+            <span class="n">eval_is_eeg</span><span class="p">,</span>
+            <span class="n">eval_is_meg</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orientation_flags</span><span class="p">(</span><span class="n">eval_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">free_interval_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;full_cov&quot;</span><span class="p">,</span> <span class="s2">&quot;marginal&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;free_interval_type must be &#39;full_cov&#39; or &#39;marginal&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">free_interval_type</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fit</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">train_is_fixed</span><span class="p">,</span>
+                <span class="n">train_is_eeg</span><span class="p">,</span>
+                <span class="n">train_is_meg</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">!=</span> <span class="p">(</span>
+                <span class="n">eval_is_fixed</span><span class="p">,</span>
+                <span class="n">eval_is_eeg</span><span class="p">,</span>
+                <span class="n">eval_is_meg</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Train and evaluation datasets must share the same orientation configuration.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="n">setting_label</span><span class="p">:</span> <span class="nb">str</span>
+
+        <span class="k">if</span> <span class="n">train_is_fixed</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;fixed&quot;</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_var&quot;</span> <span class="ow">in</span> <span class="n">eval_data</span><span class="p">:</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_var&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;posterior_std&quot;</span> <span class="ow">in</span> <span class="n">eval_data</span><span class="p">:</span>
+                <span class="n">eval_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_std&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">eval_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">eval_cov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Fixed-orientation datasets must include one of: posterior_var, posterior_std, posterior_cov.&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">posterior_variance_from_cov</span><span class="p">(</span><span class="n">eval_cov</span><span class="p">)</span>
+
+            <span class="n">pre_curve_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_intervals_aggregated</span><span class="p">(</span>
+                <span class="n">x_true</span><span class="o">=</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                <span class="n">posterior_var</span><span class="o">=</span><span class="n">eval_var</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">train_curve</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">fit</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;train_data is required when fit=True.&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;posterior_var&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                    <span class="n">train_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_var&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="s2">&quot;posterior_std&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                    <span class="n">train_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_std&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                    <span class="n">train_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">train_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_cov</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">train_cov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Fixed-orientation training datasets must include one of: posterior_var, posterior_std, posterior_cov.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">train_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">posterior_variance_from_cov</span><span class="p">(</span><span class="n">train_cov</span><span class="p">)</span>
+                <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_intervals_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                    <span class="n">posterior_var</span><span class="o">=</span><span class="n">train_var</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">eval_empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_interval_membership</span><span class="p">(</span>
+                        <span class="n">x_true</span><span class="o">=</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                        <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                        <span class="n">posterior_var</span><span class="o">=</span><span class="n">eval_var</span><span class="p">,</span>
+                        <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                    <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                <span class="p">]</span>
+
+        <span class="k">elif</span> <span class="n">train_is_eeg</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;eeg_free&quot;</span>
+            <span class="n">n_eval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">eval_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">eval_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">eval_data</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">pre_curve_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                    <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pre_curve_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipsoid_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                    <span class="n">posterior_cov</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">train_curve</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">fit</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;train_data is required when fit=True.&quot;</span><span class="p">)</span>
+                <span class="n">n_train</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">train_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+                <span class="n">train_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                    <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                    <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_eeg_free_aggregated</span><span class="p">(</span>
+                        <span class="n">x_true</span><span class="o">=</span><span class="n">train_true</span><span class="p">,</span>
+                        <span class="n">x_hat</span><span class="o">=</span><span class="n">train_hat</span><span class="p">,</span>
+                        <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipsoid_eeg_free_aggregated</span><span class="p">(</span>
+                        <span class="n">x_true</span><span class="o">=</span><span class="n">train_true</span><span class="p">,</span>
+                        <span class="n">x_hat</span><span class="o">=</span><span class="n">train_hat</span><span class="p">,</span>
+                        <span class="n">posterior_cov</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">eval_empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_componentwise_interval_membership_free</span><span class="p">(</span>
+                            <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                            <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                            <span class="n">n_orient</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+
+                <span class="k">return</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_ellipsoid_membership_eeg_free</span><span class="p">(</span>
+                        <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                        <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                        <span class="n">posterior_cov</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                        <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                    <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                <span class="p">]</span>
+
+
+        <span class="k">elif</span> <span class="n">train_is_meg</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;meg_free&quot;</span>
+            <span class="n">eval_basis</span> <span class="o">=</span> <span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Q_basis&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">eval_basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Free-orientation MEG datasets must include Q_basis.&quot;</span><span class="p">)</span>
+            <span class="n">n_eval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="n">eval_V_tan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_meg_tangent_basis</span><span class="p">(</span><span class="n">eval_basis</span><span class="p">,</span> <span class="n">n_eval</span><span class="p">)</span>
+
+            <span class="n">eval_hat_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">eval_true_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">eval_data</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">pre_curve_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_2d</span><span class="o">=</span><span class="n">eval_true_2d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_uncert_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_true_3d</span> <span class="o">=</span> <span class="n">lift_reduced_sources_to_3d</span><span class="p">(</span><span class="n">eval_true_2d</span><span class="p">,</span> <span class="n">eval_V_tan</span><span class="p">)</span>
+                <span class="n">pre_curve_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipse_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_3d</span><span class="o">=</span><span class="n">eval_true_3d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                    <span class="n">V_tan</span><span class="o">=</span><span class="n">eval_V_tan</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">train_curve</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">fit</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;train_data is required when fit=True.&quot;</span><span class="p">)</span>
+                <span class="n">train_basis</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Q_basis&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">train_basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Free-orientation MEG training datasets must include Q_basis.&quot;</span><span class="p">)</span>
+                <span class="n">n_train</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">train_V_tan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_meg_tangent_basis</span><span class="p">(</span><span class="n">train_basis</span><span class="p">,</span> <span class="n">n_train</span><span class="p">)</span>
+                <span class="n">train_hat_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">train_true_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                    <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                    <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_meg_free_aggregated</span><span class="p">(</span>
+                        <span class="n">x_true_2d</span><span class="o">=</span><span class="n">train_true_2d</span><span class="p">,</span>
+                        <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">train_hat_2d</span><span class="p">,</span>
+                        <span class="n">posterior_uncert_2d</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_true_3d</span> <span class="o">=</span> <span class="n">lift_reduced_sources_to_3d</span><span class="p">(</span><span class="n">train_true_2d</span><span class="p">,</span> <span class="n">train_V_tan</span><span class="p">)</span>
+                    <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipse_meg_free_aggregated</span><span class="p">(</span>
+                        <span class="n">x_true_3d</span><span class="o">=</span><span class="n">train_true_3d</span><span class="p">,</span>
+                        <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">train_hat_2d</span><span class="p">,</span>
+                        <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                        <span class="n">V_tan</span><span class="o">=</span><span class="n">train_V_tan</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">eval_empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_componentwise_interval_membership_free</span><span class="p">(</span>
+                            <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true_2d</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                            <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                            <span class="n">n_orient</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+
+                <span class="k">return</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_ellipse_membership_meg_free</span><span class="p">(</span>
+                        <span class="n">x_true_3d</span><span class="o">=</span><span class="n">eval_true_3d</span><span class="p">,</span>
+                        <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                        <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                        <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                        <span class="n">V_tan</span><span class="o">=</span><span class="n">eval_V_tan</span><span class="p">,</span>
+                    <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                <span class="p">]</span>
+
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported orientation/coil combination: </span><span class="si">{</span><span class="n">train_orientation</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">train_coil</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">empirical_before_eval</span> <span class="o">=</span> <span class="n">pre_curve_eval</span><span class="p">[</span><span class="s2">&quot;empirical_coverages&quot;</span><span class="p">]</span>
+        <span class="n">calibration_metrics_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">calibration_metrics_4</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pre_curve_eval</span><span class="p">[</span><span class="s2">&quot;nominal_coverages&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">empirical_before_eval</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">train_meta</span> <span class="o">=</span> <span class="n">train_data</span> <span class="k">if</span> <span class="n">train_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">eval_data</span>
+        <span class="n">split_metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;train_n_sources&#39;</span><span class="p">:</span> <span class="n">train_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n_sources&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;train_n_times&#39;</span><span class="p">:</span> <span class="n">train_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n_times&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;eval_n_sources&#39;</span><span class="p">:</span> <span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n_sources&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;eval_n_times&#39;</span><span class="p">:</span> <span class="n">eval_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n_times&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;uses_separate_eval_split&#39;</span><span class="p">:</span> <span class="n">test_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;orientation_type&#39;</span><span class="p">:</span> <span class="n">train_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;orientation_type&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;coil_type&#39;</span><span class="p">:</span> <span class="n">train_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;coil_type&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;setting&#39;</span><span class="p">:</span> <span class="n">setting_label</span><span class="p">,</span>
+            <span class="s1">&#39;interval_type&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interval_type&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;fit&#39;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">fit</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="n">pre_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;nominal_coverages&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="p">[</span><span class="s1">&#39;nominal_coverages&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;empirical_coverages&#39;</span><span class="p">:</span> <span class="n">empirical_before_eval</span><span class="p">,</span>
+            <span class="s1">&#39;calibration_metrics&#39;</span><span class="p">:</span> <span class="n">calibration_metrics_before</span><span class="p">,</span>
+            <span class="s1">&#39;ci_lowers&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ci_lowers&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ci_uppers&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ci_uppers&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ci_counts&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ci_counts&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;interval_type&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interval_type&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;split_metadata&#39;</span><span class="p">:</span> <span class="n">split_metadata</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fit</span><span class="p">:</span>
+            <span class="n">identity_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pre_curve_eval</span><span class="p">[</span><span class="s2">&quot;nominal_coverages&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">post_results</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;nominal_coverages&#39;</span><span class="p">:</span> <span class="n">identity_levels</span><span class="p">,</span>
+                <span class="s1">&#39;empirical_coverages&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">empirical_before_eval</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+                <span class="s1">&#39;calibration_metrics&#39;</span><span class="p">:</span> <span class="n">calibration_metrics_before</span><span class="p">,</span>
+                <span class="s1">&#39;recalibrated_nominal_coverages&#39;</span><span class="p">:</span> <span class="n">identity_levels</span><span class="p">,</span>
+                <span class="s1">&#39;interval_type&#39;</span><span class="p">:</span> <span class="n">pre_curve_eval</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interval_type&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;split_metadata&#39;</span><span class="p">:</span> <span class="n">split_metadata</span><span class="p">,</span>
+        <span class="p">}</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s1">&#39;pre_calibration&#39;</span><span class="p">:</span> <span class="n">pre_results</span><span class="p">,</span>
+                <span class="s1">&#39;post_calibration&#39;</span><span class="p">:</span> <span class="n">post_results</span><span class="p">,</span>
+                <span class="s1">&#39;train_empirical_coverages&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;calibration_metric_names&#39;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="p">,</span> <span class="s2">&quot;calibration_metrics&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">())</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">train_curve</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Internal error: train_curve missing despite fit=True.&quot;</span><span class="p">)</span>
+        <span class="n">empirical_train</span> <span class="o">=</span> <span class="n">train_curve</span><span class="p">[</span><span class="s2">&quot;empirical_coverages&quot;</span><span class="p">]</span>
+
+        <span class="n">iso</span> <span class="o">=</span> <span class="n">IsotonicRegression</span><span class="p">(</span><span class="n">increasing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">out_of_bounds</span><span class="o">=</span><span class="s2">&quot;clip&quot;</span><span class="p">)</span>
+        <span class="n">iso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span> <span class="n">empirical_train</span><span class="p">)</span>
+        <span class="n">c_recalibrated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invert_isotonic</span><span class="p">(</span><span class="n">iso</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># 3) Evaluate after calibration on evaluation split</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">empirical_after_eval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eval_empirical</span><span class="p">(</span><span class="n">c_recalibrated</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="n">calibration_metrics_after</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">calibration_metrics_4</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span>
+            <span class="n">empirical_after_eval</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># 4) Final mapping nominal -&gt; recalibrated nominal</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span> <span class="o">=</span> <span class="n">IsotonicRegression</span><span class="p">(</span>
+            <span class="n">increasing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">out_of_bounds</span><span class="o">=</span><span class="s2">&quot;clip&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span> <span class="n">c_recalibrated</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_calibrated</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">post_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;nominal_coverages&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span>
+            <span class="s1">&#39;empirical_coverages&#39;</span><span class="p">:</span> <span class="n">empirical_after_eval</span><span class="p">,</span>
+            <span class="s1">&#39;calibration_metrics&#39;</span><span class="p">:</span> <span class="n">calibration_metrics_after</span><span class="p">,</span>
+            <span class="s1">&#39;recalibrated_nominal_coverages&#39;</span><span class="p">:</span> <span class="n">c_recalibrated</span><span class="p">,</span>
+            <span class="s1">&#39;split_metadata&#39;</span><span class="p">:</span> <span class="n">split_metadata</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;pre_calibration&#39;</span><span class="p">:</span> <span class="n">pre_results</span><span class="p">,</span>
+            <span class="s1">&#39;post_calibration&#39;</span><span class="p">:</span> <span class="n">post_results</span><span class="p">,</span>
+            <span class="s1">&#39;train_empirical_coverages&#39;</span><span class="p">:</span> <span class="n">empirical_train</span><span class="p">,</span>
+            <span class="s1">&#39;calibration_metric_names&#39;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="p">,</span> <span class="s2">&quot;calibration_metrics&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">())</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">results</span></div>
+
+
+<div class="viewcode-block" id="UncertaintyCalibrator.fit_mapping">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator.fit_mapping">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_mapping</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">free_interval_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full_cov&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit an isotonic nominal-recalibration mapping from `train_data` only.</span>
+
+<span class="sd">        This is intended for experiments like &quot;post_fixed&quot;, where you fit once</span>
+<span class="sd">        (e.g., at the default setting) and reuse the same mapping over many</span>
+<span class="sd">        evaluation datasets (e.g., an SNR/NNZ sweep).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict with:</span>
+<span class="sd">          - train_curve: pre-calibration curve on the training split</span>
+<span class="sd">          - recalibrated_nominal_coverages: c_recalibrated on the nominal grid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x_true&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;train_data must include &#39;x_true&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">free_interval_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;full_cov&quot;</span><span class="p">,</span> <span class="s2">&quot;marginal&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;free_interval_type must be &#39;full_cov&#39; or &#39;marginal&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">free_interval_type</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="n">train_orientation</span><span class="p">,</span>
+            <span class="n">train_coil</span><span class="p">,</span>
+            <span class="n">train_is_fixed</span><span class="p">,</span>
+            <span class="n">train_is_eeg</span><span class="p">,</span>
+            <span class="n">train_is_meg</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orientation_flags</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">train_is_fixed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_var&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                <span class="n">train_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_var&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;posterior_std&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                <span class="n">train_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_std&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">train_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">train_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">train_cov</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">train_cov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Fixed-orientation training datasets must include one of: posterior_var, posterior_std, posterior_cov.&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">train_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">posterior_variance_from_cov</span><span class="p">(</span><span class="n">train_cov</span><span class="p">)</span>
+
+            <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_intervals_aggregated</span><span class="p">(</span>
+                <span class="n">x_true</span><span class="o">=</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                <span class="n">x_hat</span><span class="o">=</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                <span class="n">posterior_var</span><span class="o">=</span><span class="n">train_var</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">train_is_eeg</span><span class="p">:</span>
+            <span class="n">n_train</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">train_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">train_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">train_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">train_hat</span><span class="p">,</span>
+                    <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipsoid_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">train_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">train_hat</span><span class="p">,</span>
+                    <span class="n">posterior_cov</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">train_is_meg</span><span class="p">:</span>
+            <span class="n">train_basis</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Q_basis&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">train_basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Free-orientation MEG training datasets must include Q_basis.&quot;</span><span class="p">)</span>
+            <span class="n">n_train</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">train_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">train_V_tan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_meg_tangent_basis</span><span class="p">(</span><span class="n">train_basis</span><span class="p">,</span> <span class="n">n_train</span><span class="p">)</span>
+            <span class="n">train_hat_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">train_true_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_train</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">train_data</span><span class="p">:</span>
+                <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">train_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_2d</span><span class="o">=</span><span class="n">train_true_2d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">train_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_uncert_2d</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">train_true_3d</span> <span class="o">=</span> <span class="n">lift_reduced_sources_to_3d</span><span class="p">(</span><span class="n">train_true_2d</span><span class="p">,</span> <span class="n">train_V_tan</span><span class="p">)</span>
+                <span class="n">train_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipse_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_3d</span><span class="o">=</span><span class="n">train_true_3d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">train_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">train_cov</span><span class="p">,</span>
+                    <span class="n">V_tan</span><span class="o">=</span><span class="n">train_V_tan</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported orientation/coil combination: </span><span class="si">{</span><span class="n">train_orientation</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">train_coil</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">empirical_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">train_curve</span><span class="p">[</span><span class="s2">&quot;empirical_coverages&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">iso</span> <span class="o">=</span> <span class="n">IsotonicRegression</span><span class="p">(</span><span class="n">increasing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">out_of_bounds</span><span class="o">=</span><span class="s2">&quot;clip&quot;</span><span class="p">)</span>
+        <span class="n">iso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span> <span class="n">empirical_train</span><span class="p">)</span>
+        <span class="n">c_recalibrated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invert_isotonic</span><span class="p">(</span><span class="n">iso</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span> <span class="o">=</span> <span class="n">IsotonicRegression</span><span class="p">(</span>
+            <span class="n">increasing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">out_of_bounds</span><span class="o">=</span><span class="s2">&quot;clip&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span> <span class="n">c_recalibrated</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_calibrated</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;train_curve&quot;</span><span class="p">:</span> <span class="n">train_curve</span><span class="p">,</span>
+            <span class="s2">&quot;recalibrated_nominal_coverages&quot;</span><span class="p">:</span> <span class="n">c_recalibrated</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="UncertaintyCalibrator.evaluate_with_mapping">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator.evaluate_with_mapping">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate_with_mapping</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">free_interval_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full_cov&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate pre- and post-calibration curves on `test_data` using an</span>
+<span class="sd">        already-fitted mapping (from `fit_mapping`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_calibrated</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Call fit_mapping(...) before evaluate_with_mapping(...).&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;x_true&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;test_data must include &#39;x_true&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">free_interval_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;full_cov&quot;</span><span class="p">,</span> <span class="s2">&quot;marginal&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;free_interval_type must be &#39;full_cov&#39; or &#39;marginal&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">free_interval_type</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="n">orientation</span><span class="p">,</span>
+            <span class="n">coil_type</span><span class="p">,</span>
+            <span class="n">is_fixed</span><span class="p">,</span>
+            <span class="n">is_eeg</span><span class="p">,</span>
+            <span class="n">is_meg</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orientation_flags</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+
+        <span class="n">setting_label</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="k">if</span> <span class="n">is_fixed</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;fixed&quot;</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_var&quot;</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_var&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;posterior_std&quot;</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
+                <span class="n">eval_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_std&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">eval_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">eval_cov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Fixed-orientation datasets must include one of: posterior_var, posterior_std, posterior_cov.&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">eval_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">posterior_variance_from_cov</span><span class="p">(</span><span class="n">eval_cov</span><span class="p">)</span>
+
+            <span class="n">pre_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_intervals_aggregated</span><span class="p">(</span>
+                <span class="n">x_true</span><span class="o">=</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                <span class="n">x_hat</span><span class="o">=</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                <span class="n">posterior_var</span><span class="o">=</span><span class="n">eval_var</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_interval_membership</span><span class="p">(</span>
+                        <span class="n">x_true</span><span class="o">=</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span>
+                        <span class="n">x_hat</span><span class="o">=</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span>
+                        <span class="n">posterior_var</span><span class="o">=</span><span class="n">eval_var</span><span class="p">,</span>
+                        <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                    <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                <span class="p">]</span>
+
+        <span class="k">elif</span> <span class="n">is_eeg</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;eeg_free&quot;</span>
+            <span class="n">n_eval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">eval_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">eval_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">pre_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                    <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_componentwise_interval_membership_free</span><span class="p">(</span>
+                            <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                            <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                            <span class="n">n_orient</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pre_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipsoid_eeg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                    <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                    <span class="n">posterior_cov</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_ellipsoid_membership_eeg_free</span><span class="p">(</span>
+                            <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat</span><span class="p">,</span>
+                            <span class="n">posterior_cov</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+
+        <span class="k">elif</span> <span class="n">is_meg</span><span class="p">:</span>
+            <span class="n">setting_label</span> <span class="o">=</span> <span class="s2">&quot;meg_free&quot;</span>
+            <span class="n">eval_basis</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Q_basis&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">eval_basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Free-orientation MEG datasets must include Q_basis.&quot;</span><span class="p">)</span>
+            <span class="n">n_eval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">eval_V_tan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_meg_tangent_basis</span><span class="p">(</span><span class="n">eval_basis</span><span class="p">,</span> <span class="n">n_eval</span><span class="p">)</span>
+            <span class="n">eval_hat_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_hat&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">eval_true_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_free_mean</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;x_true&quot;</span><span class="p">],</span> <span class="n">n_eval</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;posterior_cov_blocks&quot;</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov_blocks&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;posterior_cov&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">free_interval_type</span> <span class="o">==</span> <span class="s2">&quot;marginal&quot;</span><span class="p">:</span>
+                <span class="n">pre_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_componentwise_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_2d</span><span class="o">=</span><span class="n">eval_true_2d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_uncert_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_componentwise_interval_membership_free</span><span class="p">(</span>
+                            <span class="n">x_true</span><span class="o">=</span><span class="n">eval_true_2d</span><span class="p">,</span>
+                            <span class="n">x_hat</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                            <span class="n">posterior_uncert</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                            <span class="n">n_orient</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eval_true_3d</span> <span class="o">=</span> <span class="n">lift_reduced_sources_to_3d</span><span class="p">(</span><span class="n">eval_true_2d</span><span class="p">,</span> <span class="n">eval_V_tan</span><span class="p">)</span>
+                <span class="n">pre_curve</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">calibration_curve_ellipse_meg_free_aggregated</span><span class="p">(</span>
+                    <span class="n">x_true_3d</span><span class="o">=</span><span class="n">eval_true_3d</span><span class="p">,</span>
+                    <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                    <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                    <span class="n">V_tan</span><span class="o">=</span><span class="n">eval_V_tan</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">empirical</span><span class="p">(</span><span class="n">levels</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty_estimator</span><span class="o">.</span><span class="n">aggregated_ellipse_membership_meg_free</span><span class="p">(</span>
+                            <span class="n">x_true_3d</span><span class="o">=</span><span class="n">eval_true_3d</span><span class="p">,</span>
+                            <span class="n">x_hat_2d</span><span class="o">=</span><span class="n">eval_hat_2d</span><span class="p">,</span>
+                            <span class="n">posterior_cov_2d</span><span class="o">=</span><span class="n">eval_cov</span><span class="p">,</span>
+                            <span class="n">nominal_coverage</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+                            <span class="n">V_tan</span><span class="o">=</span><span class="n">eval_V_tan</span><span class="p">,</span>
+                        <span class="p">)[</span><span class="s2">&quot;empirical_coverage&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">levels</span>
+                    <span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported orientation/coil combination: </span><span class="si">{</span><span class="n">orientation</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">coil_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">empirical_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pre_curve</span><span class="p">[</span><span class="s2">&quot;empirical_coverages&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">metrics_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">calibration_metrics_4</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pre_curve</span><span class="p">[</span><span class="s2">&quot;nominal_coverages&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+            <span class="n">empirical_before</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">c_recal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_calibration</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">)</span>
+        <span class="n">empirical_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">empirical</span><span class="p">(</span><span class="n">c_recal</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">metrics_after</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="o">.</span><span class="n">calibration_metrics_4</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span>
+            <span class="n">empirical_after</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">split_metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;train_n_sources&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;train_n_times&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;eval_n_sources&quot;</span><span class="p">:</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_sources&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;eval_n_times&quot;</span><span class="p">:</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_times&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;uses_separate_eval_split&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;orientation_type&quot;</span><span class="p">:</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;orientation_type&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;coil_type&quot;</span><span class="p">:</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_type&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;setting&quot;</span><span class="p">:</span> <span class="n">setting_label</span><span class="p">,</span>
+            <span class="s2">&quot;fit&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;interval_type&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;interval_type&quot;</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="n">pre_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;nominal_coverages&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="p">[</span><span class="s2">&quot;nominal_coverages&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;empirical_coverages&quot;</span><span class="p">:</span> <span class="n">empirical_before</span><span class="p">,</span>
+            <span class="s2">&quot;calibration_metrics&quot;</span><span class="p">:</span> <span class="n">metrics_before</span><span class="p">,</span>
+            <span class="s2">&quot;ci_lowers&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ci_lowers&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;ci_uppers&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ci_uppers&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;ci_counts&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ci_counts&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;interval_type&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;interval_type&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;split_metadata&quot;</span><span class="p">:</span> <span class="n">split_metadata</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">post_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;nominal_coverages&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_coverages</span><span class="p">,</span>
+            <span class="s2">&quot;empirical_coverages&quot;</span><span class="p">:</span> <span class="n">empirical_after</span><span class="p">,</span>
+            <span class="s2">&quot;calibration_metrics&quot;</span><span class="p">:</span> <span class="n">metrics_after</span><span class="p">,</span>
+            <span class="s2">&quot;recalibrated_nominal_coverages&quot;</span><span class="p">:</span> <span class="n">c_recal</span><span class="p">,</span>
+            <span class="s2">&quot;interval_type&quot;</span><span class="p">:</span> <span class="n">pre_curve</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;interval_type&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;split_metadata&quot;</span><span class="p">:</span> <span class="n">split_metadata</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;pre_calibration&quot;</span><span class="p">:</span> <span class="n">pre_results</span><span class="p">,</span>
+            <span class="s2">&quot;post_calibration&quot;</span><span class="p">:</span> <span class="n">post_results</span><span class="p">,</span>
+            <span class="s2">&quot;train_empirical_coverages&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;calibration_metric_names&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metric_evaluator</span><span class="p">,</span> <span class="s2">&quot;calibration_metrics&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">())</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="UncertaintyCalibrator.apply_calibration">
+<a class="viewcode-back" href="../../api_reference/generated/calibrain.UncertaintyCalibrator.html#calibrain.UncertaintyCalibrator.apply_calibration">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nominal_levels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply learned calibration to new nominal coverage levels.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nominal_levels : array-like</span>
+<span class="sd">            Original nominal coverage levels.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nominal_levels_recalibrated : ndarray</span>
+<span class="sd">            Recalibrated nominal coverage levels to use when constructing</span>
+<span class="sd">            credible intervals (i.e. in place of the original nominal levels).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_calibrated</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Calibrator must be fitted first using calibrate().&quot;</span><span class="p">)</span>
+        <span class="n">nominal_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nominal_levels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">nominal_levels</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

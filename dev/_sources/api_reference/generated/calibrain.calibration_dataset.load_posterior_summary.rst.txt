@@ -1,0 +1,6 @@
+﻿calibrain.calibration\_dataset.load\_posterior\_summary
+=======================================================
+
+.. currentmodule:: calibrain.calibration_dataset
+
+.. autofunction:: load_posterior_summary

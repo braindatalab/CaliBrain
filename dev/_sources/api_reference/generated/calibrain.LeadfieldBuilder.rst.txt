@@ -1,0 +1,27 @@
+﻿calibrain.LeadfieldBuilder
+==========================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: LeadfieldBuilder
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LeadfieldBuilder.get_leadfield
+      ~LeadfieldBuilder.handle_bem_model
+      ~LeadfieldBuilder.handle_forward_solution
+      ~LeadfieldBuilder.handle_info
+      ~LeadfieldBuilder.handle_leadfield
+      ~LeadfieldBuilder.handle_montage
+      ~LeadfieldBuilder.handle_source_space
+      ~LeadfieldBuilder.simulate
+   
+   
+
+   
+   
+   

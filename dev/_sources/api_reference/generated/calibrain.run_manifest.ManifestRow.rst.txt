@@ -1,0 +1,26 @@
+﻿calibrain.run\_manifest.ManifestRow
+===================================
+
+.. currentmodule:: calibrain.run_manifest
+
+.. autoclass:: ManifestRow
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ManifestRow.summary_path
+      ~ManifestRow.metadata
+   
+   

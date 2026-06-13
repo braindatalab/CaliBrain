@@ -1,0 +1,20 @@
+﻿calibrain.DataGenerator
+=======================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: DataGenerator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DataGenerator.run
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+﻿calibrain.workflows.plot\_paper\_calibration\_figures.main
+==========================================================
+
+.. currentmodule:: calibrain.workflows.plot_paper_calibration_figures
+
+.. autofunction:: main

@@ -1,0 +1,6 @@
+﻿calibrain.workflows.data\_generation.run\_data\_generation
+==========================================================
+
+.. currentmodule:: calibrain.workflows.data_generation
+
+.. autofunction:: run_data_generation

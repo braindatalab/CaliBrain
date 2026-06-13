@@ -1,0 +1,6 @@
+﻿calibrain.run\_manifest.load\_manifest\_csv
+===========================================
+
+.. currentmodule:: calibrain.run_manifest
+
+.. autofunction:: load_manifest_csv

@@ -1,0 +1,52 @@
+﻿calibrain.UncertaintyEstimator
+==============================
+
+.. currentmodule:: calibrain
+
+.. autoclass:: UncertaintyEstimator
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UncertaintyEstimator.aggregated_componentwise_interval_membership_free
+      ~UncertaintyEstimator.aggregated_ellipse_membership_meg_free
+      ~UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free
+      ~UncertaintyEstimator.aggregated_interval_membership
+      ~UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated
+      ~UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise
+      ~UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free
+      ~UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free
+      ~UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated
+      ~UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise
+      ~UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated
+      ~UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise
+      ~UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated
+      ~UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise
+      ~UncertaintyEstimator.calibration_curve_intervals_aggregated
+      ~UncertaintyEstimator.calibration_curve_intervals_pointwise
+      ~UncertaintyEstimator.componentwise_variance_from_uncert
+      ~UncertaintyEstimator.credible_intervals_normal
+      ~UncertaintyEstimator.lift_meg_2d_to_3d
+      ~UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated
+      ~UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise
+      ~UncertaintyEstimator.plot_fixed_interval_membership_aggregated
+      ~UncertaintyEstimator.plot_fixed_interval_membership_pointwise
+      ~UncertaintyEstimator.plot_meg_ellipse_membership_aggregated
+      ~UncertaintyEstimator.plot_meg_ellipse_membership_pointwise
+      ~UncertaintyEstimator.pointwise_componentwise_interval_membership_free
+      ~UncertaintyEstimator.pointwise_ellipse_membership_meg_free
+      ~UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free
+      ~UncertaintyEstimator.pointwise_interval_membership
+      ~UncertaintyEstimator.posterior_variance_from_cov
+      ~UncertaintyEstimator.precompute_meg_tangent_bases_svd
+      ~UncertaintyEstimator.project_meg_3d_to_2d
+      ~UncertaintyEstimator.reduce_meg_leadfield_svd
+   
+   
+
+   
+   
+   

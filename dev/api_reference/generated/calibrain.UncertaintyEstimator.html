@@ -1,0 +1,1323 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>calibrain.UncertaintyEstimator &#8212; CaliBrain Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=38cd5f79" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=4ebf8126"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_reference/generated/calibrain.UncertaintyEstimator';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://braindatalab.github.io/CaliBrain/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="calibrain.UncertaintyCalibrator" href="calibrain.UncertaintyCalibrator.html" />
+    <link rel="prev" title="calibrain.SourceEstimator" href="calibrain.SourceEstimator.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">You are viewing CaliBrain v1.0.0 documentation</div>
+</aside>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/caliBrain.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/caliBrain.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">CaliBrain</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installation/index.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../development/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/braindatalab/CaliBrain" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.LeadfieldBuilder.html">calibrain.LeadfieldBuilder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceSimulator.html">calibrain.SourceSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SensorSimulator.html">calibrain.SensorSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceEstimator.html">calibrain.SourceEstimator</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">calibrain.UncertaintyEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyCalibrator.html">calibrain.UncertaintyCalibrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.MetricEvaluator.html">calibrain.MetricEvaluator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.Visualizer.html">calibrain.Visualizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.DataGenerator.html">calibrain.DataGenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_map_sflex.html">calibrain.gamma_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_lambda_map_sflex.html">calibrain.gamma_lambda_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN.html">calibrain.BMN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN_joint.html">calibrain.BMN_joint</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Top-level public API</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.LeadfieldBuilder.html">calibrain.LeadfieldBuilder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceSimulator.html">calibrain.SourceSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SensorSimulator.html">calibrain.SensorSimulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.SourceEstimator.html">calibrain.SourceEstimator</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">calibrain.UncertaintyEstimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.UncertaintyCalibrator.html">calibrain.UncertaintyCalibrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.MetricEvaluator.html">calibrain.MetricEvaluator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.Visualizer.html">calibrain.Visualizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.DataGenerator.html">calibrain.DataGenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_map_sflex.html">calibrain.gamma_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.gamma_lambda_map_sflex.html">calibrain.gamma_lambda_map_sflex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN.html">calibrain.BMN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.BMN_joint.html">calibrain.BMN_joint</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.data_generation.run_data_generation.html">calibrain.workflows.data_generation.run_data_generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.aggregation.aggregate_posteriors.html">calibrain.workflows.aggregation.aggregate_posteriors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.run_calibration.html">calibrain.workflows.calibration.run_calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.build_uncertainty_components.html">calibrain.workflows.calibration.build_uncertainty_components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.plot_paper_calibration_figures.main.html">calibrain.workflows.plot_paper_calibration_figures.main</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Workflow entrypoints</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.data_generation.run_data_generation.html">calibrain.workflows.data_generation.run_data_generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.aggregation.aggregate_posteriors.html">calibrain.workflows.aggregation.aggregate_posteriors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.run_calibration.html">calibrain.workflows.calibration.run_calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.calibration.build_uncertainty_components.html">calibrain.workflows.calibration.build_uncertainty_components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.workflows.plot_paper_calibration_figures.main.html">calibrain.workflows.plot_paper_calibration_figures.main</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.ManifestRow.html">calibrain.run_manifest.ManifestRow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.load_manifest_csv.html">calibrain.run_manifest.load_manifest_csv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.summaries_from_manifest.html">calibrain.run_manifest.summaries_from_manifest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.PosteriorSummary.html">calibrain.calibration_dataset.PosteriorSummary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.load_posterior_summary.html">calibrain.calibration_dataset.load_posterior_summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.filter_summaries_by_metadata.html">calibrain.calibration_dataset.filter_summaries_by_metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.concatenate_summaries.html">calibrain.calibration_dataset.concatenate_summaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.save_calibration_record.html">calibrain.calibration_storage.save_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.load_calibration_record.html">calibrain.calibration_storage.load_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.iter_calibration_records.html">calibrain.calibration_storage.iter_calibration_records</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.stack_empirical_curves.html">calibrain.calibration_storage.stack_empirical_curves</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Data model helpers</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.ManifestRow.html">calibrain.run_manifest.ManifestRow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.load_manifest_csv.html">calibrain.run_manifest.load_manifest_csv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.run_manifest.summaries_from_manifest.html">calibrain.run_manifest.summaries_from_manifest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.PosteriorSummary.html">calibrain.calibration_dataset.PosteriorSummary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.load_posterior_summary.html">calibrain.calibration_dataset.load_posterior_summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.filter_summaries_by_metadata.html">calibrain.calibration_dataset.filter_summaries_by_metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_dataset.concatenate_summaries.html">calibrain.calibration_dataset.concatenate_summaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.save_calibration_record.html">calibrain.calibration_storage.save_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.load_calibration_record.html">calibrain.calibration_storage.load_calibration_record</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.iter_calibration_records.html">calibrain.calibration_storage.iter_calibration_records</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.calibration_storage.stack_empirical_curves.html">calibrain.calibration_storage.stack_empirical_curves</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.metric_evaluation.get_subset_source_rr.html">calibrain.metric_evaluation.get_subset_source_rr</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.uncertainty_estimation.lift_reduced_sources_to_3d.html">calibrain.uncertainty_estimation.lift_reduced_sources_to_3d</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.get_data_path.html">calibrain.utils.get_data_path</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_config.html">calibrain.utils.load_config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_python_config.html">calibrain.utils.load_python_config</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Metric and utility helpers</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="calibrain.metric_evaluation.get_subset_source_rr.html">calibrain.metric_evaluation.get_subset_source_rr</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.uncertainty_estimation.lift_reduced_sources_to_3d.html">calibrain.uncertainty_estimation.lift_reduced_sources_to_3d</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.get_data_path.html">calibrain.utils.get_data_path</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_config.html">calibrain.utils.load_config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibrain.utils.load_python_config.html">calibrain.utils.load_python_config</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">calibrain.UncertaintyEstimator</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="calibrain-uncertaintyestimator">
+<h1>calibrain.UncertaintyEstimator<a class="headerlink" href="#calibrain-uncertaintyestimator" title="Link to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibrain.</span></span><span class="sig-name descname"><span class="pre">UncertaintyEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nominal_coverages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator" title="Link to this definition">#</a></dt>
+<dd><p>Uncertainty estimator for fixed- and free-orientation source estimates.</p>
+<section id="supported-settings">
+<h2>Supported settings<a class="headerlink" href="#supported-settings" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>Fixed orientation (EEG or MEG):
+- pointwise marginal credible interval membership
+- aggregated-mean marginal credible interval membership</p></li>
+<li><p>Free orientation EEG:
+- pointwise 3D credible ellipsoid membership
+- aggregated-mean 3D credible ellipsoid membership</p></li>
+<li><p>Free orientation MEG (reduced rank-2 model):
+- pointwise 2D credible ellipse membership in reduced coordinates
+- aggregated-mean 2D credible ellipse membership in reduced coordinates</p></li>
+</ol>
+</section>
+<section id="modeling-convention">
+<h2>Modeling convention<a class="headerlink" href="#modeling-convention" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>posterior mean varies over time</p></li>
+<li><p>posterior covariance is static over time</p></li>
+<li><p>when aggregating by time-average, covariance is scaled by 1 / T</p></li>
+</ul>
+</section>
+<section id="important-meg-convention">
+<h2>Important MEG convention<a class="headerlink" href="#important-meg-convention" title="Link to this heading">#</a></h2>
+<p>For MEG, the inverse model is assumed to be built on a reduced 2-orientation
+leadfield obtained source-wise via SVD or, preferably, taken directly from
+the extractor as <cite>Q_basis</cite>. Therefore:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>truth can be represented in reduced coordinates a_true with shape (N,2,T)</p></li>
+<li><p>if needed, truth can be lifted to local 3D via Q_basis -&gt; shape (N,3,T)</p></li>
+<li><p>posterior mean is in reduced 2D coordinates, shape (N,2,T)</p></li>
+<li><p>posterior covariance is in reduced coordinates, shape (2N,2N)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="recommended-usage">
+<h2>Recommended usage<a class="headerlink" href="#recommended-usage" title="Link to this heading">#</a></h2>
+<p>Use the extractor-provided basis:</p>
+<blockquote>
+<div><p>V_tan = lf_free_meg[“Q_basis”]</p>
+</div></blockquote>
+<p>instead of recomputing a new basis inside the uncertainty step.</p>
+<p class="rubric">Methods</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.aggregated_componentwise_interval_membership_free" title="calibrain.UncertaintyEstimator.aggregated_componentwise_interval_membership_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregated_componentwise_interval_membership_free</span></code></a>(...)</p></td>
+<td><p>Temporally aggregated marginal (component-wise) CI membership.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.aggregated_ellipse_membership_meg_free" title="calibrain.UncertaintyEstimator.aggregated_ellipse_membership_meg_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregated_ellipse_membership_meg_free</span></code></a>(...)</p></td>
+<td><p>Aggregated 2D MEG credible ellipse membership in reduced coordinates.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free" title="calibrain.UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregated_ellipsoid_membership_eeg_free</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.aggregated_interval_membership" title="calibrain.UncertaintyEstimator.aggregated_interval_membership"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregated_interval_membership</span></code></a>(x_true, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_eeg_free_aggregated</span></code></a>(...)</p></td>
+<td><p>Aggregated marginal calibration curve for free-orientation EEG (K=3).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_eeg_free_pointwise</span></code></a>(...)</p></td>
+<td><p>Pointwise marginal calibration curve for free-orientation EEG (K=3).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_intervals_aggregated_free</span></code></a>(...)</p></td>
+<td><p>Calibration curve for marginal (component-wise) intervals (aggregated).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_intervals_pointwise_free</span></code></a>(...)</p></td>
+<td><p>Calibration curve for marginal (component-wise) intervals (pointwise).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_meg_free_aggregated</span></code></a>(...)</p></td>
+<td><p>Aggregated marginal calibration curve for reduced free-orientation MEG (K=2).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise" title="calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_componentwise_meg_free_pointwise</span></code></a>(...)</p></td>
+<td><p>Pointwise marginal calibration curve for reduced free-orientation MEG (K=2).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated" title="calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_ellipse_meg_free_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise" title="calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_ellipse_meg_free_pointwise</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated" title="calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_ellipsoid_eeg_free_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise" title="calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_ellipsoid_eeg_free_pointwise</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_aggregated" title="calibrain.UncertaintyEstimator.calibration_curve_intervals_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_intervals_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_pointwise" title="calibrain.UncertaintyEstimator.calibration_curve_intervals_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibration_curve_intervals_pointwise</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.componentwise_variance_from_uncert" title="calibrain.UncertaintyEstimator.componentwise_variance_from_uncert"><code class="xref py py-obj docutils literal notranslate"><span class="pre">componentwise_variance_from_uncert</span></code></a>(...[, ...])</p></td>
+<td><p>Extract per-source per-component marginal variances as an (N,K) array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.credible_intervals_normal" title="calibrain.UncertaintyEstimator.credible_intervals_normal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credible_intervals_normal</span></code></a>(mean, variance, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.lift_meg_2d_to_3d" title="calibrain.UncertaintyEstimator.lift_meg_2d_to_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lift_meg_2d_to_3d</span></code></a>(x_2d, V_tan)</p></td>
+<td><p>Lift reduced 2D MEG coordinates back to the retained local 3D basis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated" title="calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_eeg_ellipsoid_membership_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise" title="calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_eeg_ellipsoid_membership_pointwise</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_aggregated" title="calibrain.UncertaintyEstimator.plot_fixed_interval_membership_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fixed_interval_membership_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_pointwise" title="calibrain.UncertaintyEstimator.plot_fixed_interval_membership_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fixed_interval_membership_pointwise</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_aggregated" title="calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_aggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_meg_ellipse_membership_aggregated</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_pointwise" title="calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_pointwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_meg_ellipse_membership_pointwise</span></code></a>(...[, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.pointwise_componentwise_interval_membership_free" title="calibrain.UncertaintyEstimator.pointwise_componentwise_interval_membership_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pointwise_componentwise_interval_membership_free</span></code></a>(...)</p></td>
+<td><p>Pointwise marginal (component-wise) CI membership for free orientation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.pointwise_ellipse_membership_meg_free" title="calibrain.UncertaintyEstimator.pointwise_ellipse_membership_meg_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pointwise_ellipse_membership_meg_free</span></code></a>(...[, ...])</p></td>
+<td><p>Direct 2D MEG credible ellipse membership in reduced coordinates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free" title="calibrain.UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pointwise_ellipsoid_membership_eeg_free</span></code></a>(...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.pointwise_interval_membership" title="calibrain.UncertaintyEstimator.pointwise_interval_membership"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pointwise_interval_membership</span></code></a>(x_true, x_hat, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.posterior_variance_from_cov" title="calibrain.UncertaintyEstimator.posterior_variance_from_cov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">posterior_variance_from_cov</span></code></a>(posterior_cov, *)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.precompute_meg_tangent_bases_svd" title="calibrain.UncertaintyEstimator.precompute_meg_tangent_bases_svd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">precompute_meg_tangent_bases_svd</span></code></a>(L_free_Mx3N)</p></td>
+<td><p>Backward-compatible wrapper.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.project_meg_3d_to_2d" title="calibrain.UncertaintyEstimator.project_meg_3d_to_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project_meg_3d_to_2d</span></code></a>(x_3d, V_tan)</p></td>
+<td><p>Project 3D MEG truth/estimate onto the local reduced 2D coordinates.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#calibrain.UncertaintyEstimator.reduce_meg_leadfield_svd" title="calibrain.UncertaintyEstimator.reduce_meg_leadfield_svd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reduce_meg_leadfield_svd</span></code></a>(L_free_Mx3N)</p></td>
+<td><p>Fallback-only helper: build a source-wise SVD-reduced MEG leadfield.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nominal_coverages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.posterior_variance_from_cov">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">posterior_variance_from_cov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.posterior_variance_from_cov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.posterior_variance_from_cov" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.credible_intervals_normal">
+<span class="sig-name descname"><span class="pre">credible_intervals_normal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.credible_intervals_normal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.credible_intervals_normal" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.pointwise_interval_membership">
+<span class="sig-name descname"><span class="pre">pointwise_interval_membership</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.pointwise_interval_membership"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.pointwise_interval_membership" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.aggregated_interval_membership">
+<span class="sig-name descname"><span class="pre">aggregated_interval_membership</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.aggregated_interval_membership"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.aggregated_interval_membership" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_intervals_pointwise">
+<span class="sig-name descname"><span class="pre">calibration_curve_intervals_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_intervals_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_intervals_aggregated">
+<span class="sig-name descname"><span class="pre">calibration_curve_intervals_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_intervals_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free">
+<span class="sig-name descname"><span class="pre">pointwise_ellipsoid_membership_eeg_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free">
+<span class="sig-name descname"><span class="pre">aggregated_ellipsoid_membership_eeg_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise">
+<span class="sig-name descname"><span class="pre">calibration_curve_ellipsoid_eeg_free_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated">
+<span class="sig-name descname"><span class="pre">calibration_curve_ellipsoid_eeg_free_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.componentwise_variance_from_uncert">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">componentwise_variance_from_uncert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sources</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_orient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.componentwise_variance_from_uncert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.componentwise_variance_from_uncert" title="Link to this definition">#</a></dt>
+<dd><p>Extract per-source per-component marginal variances as an (N,K) array.</p>
+<p>Supports:
+- full covariance: (K*N, K*N), uses diag(…) and reshapes to (N,K)
+- block covariance: (N, K, K), uses diagonal blocks directly</p>
+<p>This utility underpins the <cite>interval_type=”marginal”</cite> diagnostic for free
+orientation, where directions/components are not evaluated separately but
+pooled (see <cite>calibration_curve_componentwise_intervals_*</cite>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.pointwise_componentwise_interval_membership_free">
+<span class="sig-name descname"><span class="pre">pointwise_componentwise_interval_membership_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_orient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.pointwise_componentwise_interval_membership_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.pointwise_componentwise_interval_membership_free" title="Link to this definition">#</a></dt>
+<dd><p>Pointwise marginal (component-wise) CI membership for free orientation.</p>
+<p>This implements the “direction-aggregated marginal” diagnostic from
+<cite>_temp/Component_CI_R1.py</cite>:
+:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+<ul class="simple">
+<li><p>Build scalar normal credible intervals per retained component using
+only marginal variances (diagonal of the covariance).</p></li>
+<li><p>Pool interval membership over sources, components, and time.</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Directions/components are <em>not</em> evaluated separately. They are pooled
+because local coordinate systems are arbitrary (EEG xyz axes depend on
+coordinate choice; MEG reduced components are voxel-dependent).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.aggregated_componentwise_interval_membership_free">
+<span class="sig-name descname"><span class="pre">aggregated_componentwise_interval_membership_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_orient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.aggregated_componentwise_interval_membership_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.aggregated_componentwise_interval_membership_free" title="Link to this definition">#</a></dt>
+<dd><p>Temporally aggregated marginal (component-wise) CI membership.</p>
+<p>This corresponds to building the diagnostic on time-averaged signals:
+:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+<ul class="simple">
+<li><p>Aggregate <cite>x_true</cite>/<cite>x_hat</cite> over time (mean over T).</p></li>
+<li><p>Scale marginal variances by 1/T (variance of the mean).</p></li>
+<li><p>Build scalar CIs per component and pool membership over sources and
+components.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_intervals_pointwise_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_orient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free" title="Link to this definition">#</a></dt>
+<dd><p>Calibration curve for marginal (component-wise) intervals (pointwise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<section id="summary">
+<h3>Summary<a class="headerlink" href="#summary" title="Link to this heading">#</a></h3>
+<p>Builds scalar normal credible intervals per component (using only
+marginal variances) and pools membership over sources, components, and
+time. This is the <cite>interval_type=”marginal”</cite> diagnostic for free
+orientation.</p>
+</section>
+<section id="shapes">
+<h3>Shapes<a class="headerlink" href="#shapes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>EEG free: <cite>n_orient=3</cite>, <cite>x_true/x_hat</cite> are (N,3,T)</p></li>
+<li><p>Reduced MEG free: <cite>n_orient=2</cite>, <cite>x_true/x_hat</cite> are (N,2,T)</p></li>
+<li><p><cite>posterior_uncert</cite>: either full (K*N,K*N) or per-source blocks (N,K,K)</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Components are not evaluated separately (pooled), because local
+coordinate labels are arbitrary.</p>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_intervals_aggregated_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_orient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free" title="Link to this definition">#</a></dt>
+<dd><p>Calibration curve for marginal (component-wise) intervals (aggregated).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<section id="id1">
+<h3>Summary<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<p>Temporally aggregated version of the <cite>interval_type=”marginal”</cite> free
+diagnostic:</p>
+<ol class="arabic simple">
+<li><p>average <cite>x_true</cite>/<cite>x_hat</cite> over time,</p></li>
+<li><p>scale marginal variances by 1/T,</p></li>
+<li><p>build scalar CIs per component,</p></li>
+<li><p>pool membership over sources and components.</p></li>
+</ol>
+<p>This is the mode used by <cite>workflows/calibration.py</cite>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Components are pooled (no direction-wise curves), because local
+coordinate systems are arbitrary.</p>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_eeg_free_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise" title="Link to this definition">#</a></dt>
+<dd><p>Pointwise marginal calibration curve for free-orientation EEG (K=3).</p>
+<p>Expected shapes:
+- <cite>x_true</cite>, <cite>x_hat</cite>: (N,3,T)
+- <cite>posterior_uncert</cite>: (3N,3N) or per-source blocks (N,3,3)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_eeg_free_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated" title="Link to this definition">#</a></dt>
+<dd><p>Aggregated marginal calibration curve for free-orientation EEG (K=3).</p>
+<p>Expected shapes:
+- <cite>x_true</cite>, <cite>x_hat</cite>: (N,3,T)
+- <cite>posterior_uncert</cite>: (3N,3N) or per-source blocks (N,3,3)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_meg_free_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert_2d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise" title="Link to this definition">#</a></dt>
+<dd><p>Pointwise marginal calibration curve for reduced free-orientation MEG (K=2).</p>
+<p>Expected shapes:
+- <cite>x_true_2d</cite>, <cite>x_hat_2d</cite>: (N,2,T)
+- <cite>posterior_uncert_2d</cite>: (2N,2N) or per-source blocks (N,2,2)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This diagnostic operates directly in reduced 2D coefficient coordinates:
+no 2D-&gt;3D lifting and no 3D-&gt;2D projection is performed here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated">
+<span class="sig-name descname"><span class="pre">calibration_curve_componentwise_meg_free_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_uncert_2d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated" title="Link to this definition">#</a></dt>
+<dd><p>Aggregated marginal calibration curve for reduced free-orientation MEG (K=2).</p>
+<p>Expected shapes:
+- <cite>x_true_2d</cite>, <cite>x_hat_2d</cite>: (N,2,T)
+- <cite>posterior_uncert_2d</cite>: (2N,2N) or per-source blocks (N,2,2)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This diagnostic operates directly in reduced 2D coefficient coordinates:
+no 2D-&gt;3D lifting and no 3D-&gt;2D projection is performed here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.reduce_meg_leadfield_svd">
+<span class="sig-name descname"><span class="pre">reduce_meg_leadfield_svd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.reduce_meg_leadfield_svd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.reduce_meg_leadfield_svd" title="Link to this definition">#</a></dt>
+<dd><p>Fallback-only helper: build a source-wise SVD-reduced MEG leadfield.</p>
+<dl class="simple">
+<dt>For each source i:</dt><dd><p>L_i = U_i S_i V_i^T,  with L_i in R^{M x 3}</p>
+</dd>
+<dt>keep the first two right singular vectors V_i(:, :2), and define</dt><dd><p>L_i_reduced = L_i &#64; V_i(:, :2)  in R^{M x 2}</p>
+</dd>
+</dl>
+<section id="id2">
+<h3>Recommended usage<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<p>In the current pipeline, prefer the extractor-provided basis</p>
+<blockquote>
+<div><p>Q_basis = lf_free_meg[“Q_basis”]</p>
+</div></blockquote>
+<p>rather than recomputing a new basis here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p>L_meg_Mx2N: reduced global leadfield, shape (M, 2N)</p></li>
+<li><p>V_tan: source-wise 3D-&gt;2D basis, shape (N, 3, 2)</p></li>
+<li><p>singular_values: shape (N, 2)</p></li>
+</ul>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict with</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.precompute_meg_tangent_bases_svd">
+<span class="sig-name descname"><span class="pre">precompute_meg_tangent_bases_svd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.precompute_meg_tangent_bases_svd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.precompute_meg_tangent_bases_svd" title="Link to this definition">#</a></dt>
+<dd><p>Backward-compatible wrapper.</p>
+<p>Returns source-wise local 3x2 reduction bases from the original free
+leadfield. Prefer passing the extractor basis directly whenever possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.project_meg_3d_to_2d">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">project_meg_3d_to_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.project_meg_3d_to_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.project_meg_3d_to_2d" title="Link to this definition">#</a></dt>
+<dd><p>Project 3D MEG truth/estimate onto the local reduced 2D coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_3d</strong> (<em>(</em><em>N</em><em>,</em><em>3</em><em>,</em><em>T</em><em>) or </em><em>(</em><em>N</em><em>,</em><em>3</em><em>)</em>)</p></li>
+<li><p><strong>V_tan</strong> (<em>(</em><em>N</em><em>,</em><em>3</em><em>,</em><em>2</em><em>)</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x_2d</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(N,2,T) or (N,2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.lift_meg_2d_to_3d">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lift_meg_2d_to_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.lift_meg_2d_to_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.lift_meg_2d_to_3d" title="Link to this definition">#</a></dt>
+<dd><p>Lift reduced 2D MEG coordinates back to the retained local 3D basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_2d</strong> (<em>(</em><em>N</em><em>,</em><em>2</em><em>,</em><em>T</em><em>) or </em><em>(</em><em>N</em><em>,</em><em>2</em><em>)</em>)</p></li>
+<li><p><strong>V_tan</strong> (<em>(</em><em>N</em><em>,</em><em>3</em><em>,</em><em>2</em><em>)</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x_3d_lifted</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(N,3,T) or (N,3)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.pointwise_ellipse_membership_meg_free">
+<span class="sig-name descname"><span class="pre">pointwise_ellipse_membership_meg_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.pointwise_ellipse_membership_meg_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.pointwise_ellipse_membership_meg_free" title="Link to this definition">#</a></dt>
+<dd><p>Direct 2D MEG credible ellipse membership in reduced coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Truth is provided in 3D and projected to reduced coordinates:</dt><dd><p>x_true_2d = V_tan^T x_true_3d</p>
+</dd>
+</dl>
+<p>Posterior mean and covariance are assumed to already come from the
+reduced 2D MEG inverse model.</p>
+<section id="id3">
+<h3>Recommended usage<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<p>Pass <cite>V_tan=Q_basis</cite> from the leadfield extractor to avoid recomputing
+a potentially sign-flipped basis.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.aggregated_ellipse_membership_meg_free">
+<span class="sig-name descname"><span class="pre">aggregated_ellipse_membership_meg_free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.aggregated_ellipse_membership_meg_free"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.aggregated_ellipse_membership_meg_free" title="Link to this definition">#</a></dt>
+<dd><p>Aggregated 2D MEG credible ellipse membership in reduced coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+<section id="id4">
+<h3>Recommended usage<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<p>Pass <cite>V_tan=Q_basis</cite> from the leadfield extractor.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise">
+<span class="sig-name descname"><span class="pre">calibration_curve_ellipse_meg_free_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov_2d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated">
+<span class="sig-name descname"><span class="pre">calibration_curve_ellipse_meg_free_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov_2d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_fixed_interval_membership_pointwise">
+<span class="sig-name descname"><span class="pre">plot_fixed_interval_membership_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(9.0,</span> <span class="pre">4.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_fixed_interval_membership_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_fixed_interval_membership_aggregated">
+<span class="sig-name descname"><span class="pre">plot_fixed_interval_membership_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">diag_fixed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(7.0,</span> <span class="pre">2.2)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_fixed_interval_membership_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise">
+<span class="sig-name descname"><span class="pre">plot_eeg_ellipsoid_membership_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(8.0,</span> <span class="pre">6.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">22.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">azim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-58.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated">
+<span class="sig-name descname"><span class="pre">plot_eeg_ellipsoid_membership_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">diag_eeg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(8.0,</span> <span class="pre">6.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">22.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">azim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-58.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_pointwise">
+<span class="sig-name descname"><span class="pre">plot_meg_ellipse_membership_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_true_3d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_cov_2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_free_Mx3N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_repair_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.5,</span> <span class="pre">6.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_meg_ellipse_membership_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_pointwise" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_aggregated">
+<span class="sig-name descname"><span class="pre">plot_meg_ellipse_membership_aggregated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">diag_meg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_idx</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.5,</span> <span class="pre">6.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/calibrain/uncertainty_estimation.html#UncertaintyEstimator.plot_meg_ellipse_membership_aggregated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_aggregated" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="calibrain.SourceEstimator.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">calibrain.SourceEstimator</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="calibrain.UncertaintyCalibrator.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">calibrain.UncertaintyCalibrator</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.__init__"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.posterior_variance_from_cov"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.posterior_variance_from_cov()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.credible_intervals_normal"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.credible_intervals_normal()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.pointwise_interval_membership"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.pointwise_interval_membership()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.aggregated_interval_membership"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.aggregated_interval_membership()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_intervals_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_intervals_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_intervals_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.pointwise_ellipsoid_membership_eeg_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.aggregated_ellipsoid_membership_eeg_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_ellipsoid_eeg_free_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.componentwise_variance_from_uncert"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.componentwise_variance_from_uncert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.pointwise_componentwise_interval_membership_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.pointwise_componentwise_interval_membership_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.aggregated_componentwise_interval_membership_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.aggregated_componentwise_interval_membership_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_intervals_pointwise_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_intervals_aggregated_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_eeg_free_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_eeg_free_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_meg_free_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_componentwise_meg_free_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.reduce_meg_leadfield_svd"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.reduce_meg_leadfield_svd()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.precompute_meg_tangent_bases_svd"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.precompute_meg_tangent_bases_svd()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.project_meg_3d_to_2d"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.project_meg_3d_to_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.lift_meg_2d_to_3d"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.lift_meg_2d_to_3d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.pointwise_ellipse_membership_meg_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.pointwise_ellipse_membership_meg_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.aggregated_ellipse_membership_meg_free"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.aggregated_ellipse_membership_meg_free()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_ellipse_meg_free_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.calibration_curve_ellipse_meg_free_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_fixed_interval_membership_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_fixed_interval_membership_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_fixed_interval_membership_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_eeg_ellipsoid_membership_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_eeg_ellipsoid_membership_aggregated()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_pointwise"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_meg_ellipse_membership_pointwise()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calibrain.UncertaintyEstimator.plot_meg_ellipse_membership_aggregated"><code class="docutils literal notranslate"><span class="pre">UncertaintyEstimator.plot_meg_ellipse_membership_aggregated()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/api_reference/generated/calibrain.UncertaintyEstimator.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
