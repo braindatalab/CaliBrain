@@ -36,7 +36,7 @@ How to Contribute
    
    .. code-block:: bash
    
-      conda create -n calibrain-dev python=3.9 -y
+      conda create -n calibrain-dev python=3.10 -y
       conda activate calibrain-dev
 
    Install the package in editable mode:
@@ -99,7 +99,7 @@ For a complete development setup:
    cd CaliBrain
    
    # Create development environment
-   conda create -n calibrain-dev python=3.9 -y
+   conda create -n calibrain-dev python=3.10 -y
    conda activate calibrain-dev
    
    # Install in development mode with all dependencies

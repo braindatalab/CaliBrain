@@ -1,44 +1,76 @@
-name: Build and Deploy Documentation
+name: Deploy Documentation
 
 on:
   push:
     branches:
       - main
-      - docs
+      - dev
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 concurrency:
-  group: pages
+  group: docs-deploy-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e .
-        pip install -r docs/requirements.txt
-    
-    - name: Build docs
-      env:
-        MPLBACKEND: Agg  # Use non-interactive matplotlib backend
-      run: |
-        cd docs
-        make html
-    
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/build/html
-        force_orphan: true
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Resolve docs target
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "DOCS_VERSION=${GITHUB_REF_NAME}" >> "${GITHUB_ENV}"
+            echo "DOCS_DESTINATION=${GITHUB_REF_NAME}" >> "${GITHUB_ENV}"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "DOCS_VERSION=stable" >> "${GITHUB_ENV}"
+            echo "DOCS_DESTINATION=." >> "${GITHUB_ENV}"
+          else
+            echo "DOCS_VERSION=dev" >> "${GITHUB_ENV}"
+            echo "DOCS_DESTINATION=dev" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r docs/requirements.txt
+
+      - name: Build docs
+        env:
+          DOCS_VERSION: ${{ env.DOCS_VERSION }}
+          MPLBACKEND: Agg
+        run: |
+          cd docs
+          make html
+
+      - name: Deploy stable docs
+        if: github.ref_name == 'main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          destination_dir: .
+          keep_files: true
+
+      - name: Deploy dev and release docs
+        if: github.ref_name != 'main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          destination_dir: ${{ env.DOCS_DESTINATION }}
+          keep_files: true

@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,7 @@ copyright = '2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan 
 author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
 release = calibrain.__version__
 version = release
-documentation_version = "dev"
+documentation_version = os.environ.get("DOCS_VERSION", "dev")
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -59,7 +60,7 @@ html_theme_options = {
 
     "announcement": f"You are viewing CaliBrain v{release} documentation",
     "switcher": {
-        "json_url": "_static/switcher.json",
+        "json_url": "https://braindatalab.github.io/CaliBrain/_static/switcher.json",
         "version_match": documentation_version,
     },
     

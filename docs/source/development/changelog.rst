@@ -39,6 +39,13 @@ Older methods such as ``gamma_map``, ``eLORETA``, and related cross-validation
 branches have been removed from the supported pipeline. These may still appear
 in historical changelog entries below but are no longer maintained or tested.
 
+Unreleased
+----------
+
+*   [BREAKING] Raised the supported Python version floor to ``>=3.10`` and aligned package metadata, documentation builds, and contributor setup instructions accordingly.
+*   [DOCS] Reworked documentation CI into separate build-check and deploy workflows for GitHub Actions.
+*   [DOCS] Fixed the documentation version switcher to use explicit ``stable``, ``dev``, and tagged release targets, with version-aware Sphinx configuration and versioned GitHub Pages deployment paths.
+
 
 Version 1.0.0 (2026-06-11)
 --------------------------

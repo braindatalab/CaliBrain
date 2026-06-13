@@ -3,7 +3,7 @@ Installation
 
 CaliBrain can be installed from source for development or installed into a
 standard Python environment for running workflows. The package metadata currently
-declares Python ``>=3.6``; in practice, the scientific Python dependencies used
+declares Python ``>=3.10``; in practice, the scientific Python dependencies used
 by the workflows are best managed with a recent conda or virtualenv environment.
 
 Dependencies
