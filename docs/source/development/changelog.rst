@@ -43,22 +43,16 @@ in historical changelog entries below but are no longer maintained or tested.
 Version 1.0.0 (2026-06-11)
 --------------------------
 
-*   [BREAKING] Consolidated the supported inverse workflow around
-    ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and
-    ``BMN_joint``.
-*   [FEATURE] Expanded the core simulation stack with stronger support for
-    source simulation, sensor simulation, and leadfield handling across fixed
-    and free-orientation settings.
-*   [FEATURE] Added and extended uncertainty estimation and calibration
-    capabilities, including componentwise uncertainty handling and the multiple calibration modes.
-*   [FEATURE] Added manifest workflow modules for data generation,
-    aggregation, calibration, and calibration-figure generation.
-*   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for
-    calibration, uncertainty, and spatial-performance metrics.
-*   [ENHANCEMENT] Improved ``DataGenerator`` orchestration for end-to-end
-    simulation and posterior-summary generation.
-*   [BUGFIX] Fixed unit handling and source/sensor projection consistency
-    across the simulation pipeline.
+*   [BREAKING] Consolidated the supported inverse workflow around     ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``.
+*   [BREAKING] Reworked calibration from within-subject, across-source fitting to pooled source datasets across subjects, with isotonic regression now fit on subject-level splits rather than a single subject at a time.
+*   [FEATURE] Introduce five calibration modes (``precal``, ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``) for evaluating calibration performance under different fitting conditions.
+*   [FEATURE] Expanded the core simulation stack with stronger support for source simulation, sensor simulation, and leadfield handling across fixed and free-orientation settings.
+*   [FEATURE] Added and extended uncertainty estimation and calibration capabilities, including ``pointwise`` and ``aggregated`` uncertainty modes, ``full_cov`` and ``marginal`` free-orientation interval types, componentwise uncertainty handling, and the multiple calibration modes.
+*   [FEATURE] Added manifest workflow modules for data generation, aggregation, calibration, and calibration-figure generation, and documented their main entry points and helper methods.
+*   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for ``mse``, ``mae``, ``rmse``, ``rmae``, ``mean_posterior_std``, ``emd``, ``mean_signed_deviation``, ``mean_absolute_deviation``, ``max_underconfidence_deviation``, and ``max_overconfidence_deviation``.
+*   [BREAKING] Removed the legacy benchmarking class and replaced it with ``DataGenerator``, which wraps solver grids, ``SourceSimulator``, ``SensorSimulator``, ``LeadfieldBuilder``, and posterior-summary generation in a single workflow abstraction.
+*   [BUGFIX] Fixed unit handling and source/sensor projection consistency across the simulation pipeline.
+
 
 
 Version 0.1.2 (2025-08-19)
