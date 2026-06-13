@@ -171,7 +171,7 @@ class MetricEvaluator:
             return np.inf
 
         # Load forward solution and extract source locations
-        fwd = read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+        fwd = read_forward_solution(f"{'1284src_' + fwd_path}/{subject}-fwd.fif")
         fwd = convert_forward_solution(fwd, force_fixed=True)
         src = fwd["src"]
 

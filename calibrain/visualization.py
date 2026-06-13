@@ -13,28 +13,95 @@ class Visualizer:
     _UNIT_BASE_LABELS = {
         FIFF.FIFF_UNIT_AM: "Am",
         FIFF.FIFF_UNIT_T: "T",
-        FIFF.FIFF_UNIT_T_M: "T/m",
         FIFF.FIFF_UNIT_V: "V",
     }
 
     _UNIT_PREFIXES = {
-        FIFF.FIFF_UNITM_E: "E",
-        FIFF.FIFF_UNITM_T: "T",
-        FIFF.FIFF_UNITM_GIG: "G",
-        FIFF.FIFF_UNITM_MEG: "M",
-        FIFF.FIFF_UNITM_K: "k",
-        FIFF.FIFF_UNITM_H: "h",
-        FIFF.FIFF_UNITM_DA: "da",
-        FIFF.FIFF_UNITM_NONE: "",
-        FIFF.FIFF_UNITM_D: "d",
-        FIFF.FIFF_UNITM_C: "c",
-        FIFF.FIFF_UNITM_M: "m",
         FIFF.FIFF_UNITM_MU: "µ",
         FIFF.FIFF_UNITM_N: "n",
-        FIFF.FIFF_UNITM_P: "p",
         FIFF.FIFF_UNITM_F: "f",
-        FIFF.FIFF_UNITM_A: "a",
     }
+
+    def __init__(self, base_save_path: str = "results/figures", logger: Optional[logging.Logger] = None):
+        self.base_save_path = Path(base_save_path)
+        self.logger = logger or logging.getLogger(__name__)
+
+    def plot_pointwise_coverage_map(self, x, ci_lower, ci_upper, nominal_coverages,
+                                    file_name='pointwise_coverage_map', 
+                                    save_path=None, show=False):
+        """
+        Plot spatial maps showing point-wise coverage for different confidence levels.
+        
+        Parameters
+        ----------
+        x : ndarray
+            True source activity, shape (n_sources,) or (n_sources, n_times).
+        ci_lower : ndarray
+            Lower confidence bounds, shape (n_coverages, n_sources).
+        ci_upper : ndarray
+            Upper confidence bounds, shape (n_coverages, n_sources).
+        nominal_coverages : ndarray
+            Nominal coverage levels.
+        """
+        # Ensure x is 1D (average over time if needed)
+        if x.ndim > 1:
+            x_avg = np.mean(x, axis=1)
+        else:
+            x_avg = x
+        
+        # Compute coverage for each confidence level
+        n_levels = len(nominal_coverages)
+        coverage_maps = []
+        
+        for i in range(n_levels):
+            ci_l = ci_lower[i]  # (n_sources,)
+            ci_u = ci_upper[i]  # (n_sources,)
+            
+            # Check if true value is within interval (1 = covered, 0 = not covered)
+            covered = ((x_avg >= ci_l) & (x_avg <= ci_u)).astype(float)
+            coverage_maps.append(covered)
+        
+        # Create subplot grid
+        n_cols = min(3, n_levels)
+        n_rows = int(np.ceil(n_levels / n_cols))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4*n_rows))
+        
+        if n_levels == 1:
+            axes = np.array([axes])
+        axes = axes.flatten()
+        
+        for i, (coverage, conf_level) in enumerate(zip(coverage_maps, nominal_coverages)):
+            ax = axes[i]
+            
+            # Compute empirical coverage
+            empirical_coverage = np.mean(coverage)
+            n_covered = np.sum(coverage)
+            n_not_covered = np.sum(1 - coverage)
+            
+            # Create bar plot
+            bars = ax.bar(['Covered', 'Not Covered'], 
+                         [n_covered, n_not_covered],
+                         color=['green', 'red'], alpha=0.7, edgecolor='black')
+            
+            ax.set_ylabel('Number of Sources')
+            ax.set_title(f'Nominal: {conf_level:.2f} | Empirical: {empirical_coverage:.2f}')
+            ax.grid(True, alpha=0.3, axis='y')
+            
+            # Add percentage text on bars
+            total = len(coverage)
+            for j, count in enumerate([n_covered, n_not_covered]):
+                pct = count / total * 100 if total > 0 else 0
+                height = bars[j].get_height()
+                ax.text(bars[j].get_x() + bars[j].get_width()/2., height,
+                       f'{pct:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Hide unused subplots
+        for i in range(n_levels, len(axes)):
+            axes[i].axis('off')
+        
+        fig.suptitle('Point-wise Coverage Analysis', fontsize=16, y=0.995)
+        plt.tight_layout()
+        self._handle_figure_output(fig, file_name, save_path, show)
 
     def _format_unit_label(self, units: Optional[Union[int, str]], unitmult: Optional[int]) -> str:
         if isinstance(units, np.ndarray):
@@ -51,9 +118,6 @@ class Visualizer:
             return "a.u."
         prefix = self._UNIT_PREFIXES.get(unitmult, "") if unitmult is not None else ""
         return f"{prefix}{base}"
-    def __init__(self, base_save_path: str = "results/figures", logger: Optional[logging.Logger] = None):
-        self.base_save_path = Path(base_save_path)
-        self.logger = logger or logging.getLogger(__name__)
 
     def _handle_figure_output(
         self,
@@ -83,26 +147,27 @@ class Visualizer:
     # --- Vizualisation for source and sensor data
     # --------------------------------------------
     # --- plot sources
-    def _plot_sources_single_trial(
+    def _plot_sources(
         self,
         ERP_config: dict,
-        x_trial: np.ndarray,
+        x: np.ndarray,
         active_indices: Optional[Sequence[int]],
         units: Optional[str],
-        trial_idx: int,
         title: str,
     ) -> plt.Figure:
-        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_trial.shape[-1])
+        """Plot source signals for a single dataset (no trial dimension)."""
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x.shape[-1])
 
-        x_plot = np.linalg.norm(x_trial, axis=1) if x_trial.ndim == 3 else x_trial
+        x_plot = np.linalg.norm(x, axis=1) if x.ndim == 3 else x
         if active_indices is None:
             active_indices = np.arange(x_plot.shape[0])
+        else:
+            active_indices = np.atleast_1d(np.asarray(active_indices))
 
         fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
-        colors = cm.viridis(np.linspace(0, 1, len(active_indices)))
 
         for i, src_idx in enumerate(active_indices):
-            ax.plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=1.5, color=colors[i])
+            ax.plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=1.5, alpha=0.8)
 
         ax.axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
         ax.axvline(x=tmin, linestyle=":", color="black", linewidth=1.0)
@@ -112,180 +177,80 @@ class Visualizer:
         ax.set_xticklabels([f"{tick:.2f}s" for tick in [tmin, stim_onset, tmax]])
         ax.set_xlabel("Time (s)")
         ax.set_ylabel(f"Amplitude ({units})")
-        ax.set_title(f"{title} (Trial {trial_idx + 1})")
+        ax.set_title(title)
         ax.grid(True, alpha=0.6)
         ax.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), borderaxespad=0., fontsize='small')
-        return fig
-
-    def _plot_sources_all_trials(
-        self,
-        ERP_config: dict,
-        x_trials: np.ndarray,
-        active_indices: Optional[Sequence[Sequence[int]]] = None,
-        units: Optional[str] = None,
-        title: str = "Source Signals"
-    ) -> plt.Figure:
-        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_trials.shape[-1])        
-        n_trials = x_trials.shape[0]
-
-        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True, sharey=True)
-        if n_trials == 1:
-            axes = [axes]
-
-        for i in range(n_trials):
-            ax = axes[i]
-            x_trial = x_trials[i]
-            x_plot = np.linalg.norm(x_trial, axis=1) if x_trial.ndim == 3 else x_trial
-            indices = active_indices[i] if active_indices is not None else np.arange(x_plot.shape[0])
-            colors = cm.viridis(np.linspace(0, 1, len(indices)))
-
-            for j, src_idx in enumerate(indices):
-                ax.plot(times, x_plot[src_idx], label=f"Source {src_idx}", linewidth=1.0, color=colors[j])
-
-            ax.axvline(x=stim_onset, linestyle="--", color="gray", label="Stimulus Onset")
-            ax.axvline(x=tmin, linestyle=":", color="black", linewidth=0.8)
-            ax.axvline(x=tmax, linestyle=":", color="black", linewidth=0.8)
-            ax.set_ylabel(f"Amplitude ({units})")
-            ax.set_title(f"{title} — Trial {i + 1}")
-            ax.grid(True, alpha=0.5)
-            ax.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), borderaxespad=0., fontsize='small')
-
-        axes[-1].set_xticks([tmin, stim_onset, tmax])
-        axes[-1].set_xticklabels([f"{tick:.2f}s" for tick in [tmin, stim_onset, tmax]])
-        axes[-1].set_xlabel("Time (s)")
-        fig.suptitle(title, fontsize=16)
-
         return fig
     
     def plot_source_signals(
         self,
         ERP_config: dict,
-        x_trials: np.ndarray,
-        x_active_indices: Optional[Union[np.ndarray, Sequence[Sequence[int]]]] = None,
+        x: np.ndarray,
+        x_active_indices: Optional[np.ndarray] = None,
         units: Optional[Union[str, int]] = None,
         unitmult: Optional[int] = None,
-        trial_idx: Optional[int] = None,
         title: Optional[str] = "Source Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
     ):
+        """
+        Plot source signals for a single dataset (no trial dimension).
+        
+        Parameters
+        ----------
+        ERP_config : dict
+            ERP configuration dictionary.
+        x : np.ndarray
+            Source activity. Shape (n_sources, n_times) for fixed orientation
+            or (n_sources, 3, n_times) for free orientation.
+        x_active_indices : np.ndarray, optional
+            Indices of active sources.
+        units : str or int, optional
+            Units for the source signals.
+        unitmult : int, optional
+            Unit multiplier.
+        title : str, optional
+            Title for the plot.
+        save_dir : str, optional
+            Directory to save the plot.
+        file_name : str, optional
+            Filename for the saved plot.
+        show : bool, optional
+            Whether to show the plot.
+        """
         unit_label = self._format_unit_label(units, unitmult)
-        x_scaled = x_trials
 
-        if trial_idx is not None:
-            indices = None
-            if x_active_indices is not None:
-                indices = x_active_indices[trial_idx] if isinstance(x_active_indices, (list, np.ndarray)) else x_active_indices
-
-            fig = self._plot_sources_single_trial(
-                ERP_config=ERP_config,
-                x_trial=x_scaled if x_scaled.ndim < 3 else x_scaled[trial_idx],
-                active_indices=indices,
-                units=unit_label,
-                trial_idx=trial_idx,
-                title=title,
-            )
-            file_name = file_name or f"source_signals_trial_{trial_idx + 1}"
-        else:
-            fig = self._plot_sources_all_trials(
-                ERP_config=ERP_config,
-                x_trials=x_scaled,
-                active_indices=x_active_indices,
-                units=unit_label,
-                title=title,
-            )
-            file_name = file_name or "source_signals_all_trials"
+        fig = self._plot_sources(
+            ERP_config=ERP_config,
+            x=x,
+            active_indices=x_active_indices,
+            units=unit_label,
+            title=title,
+        )
+        file_name = file_name or "source_signals"
 
         self._handle_figure_output(fig, file_name, save_dir, show)
 
     # --- plot sensors        
-    def _plot_sensors_single_trial(
+    def _plot_sensors_simple(
         self,
         ERP_config: dict,
         y: np.ndarray,
-        trial_idx: int,
         channels: Optional[Union[Sequence[int], str]],
         units: Optional[str],
         title: str,
-        save_dir: Optional[str],
-        file_name: Optional[str],
-        show: bool
-    ):
-        tmin, tmax, stim_onset, _, times= self._get_plot_params(ERP_config, y.shape[-1])
+    ) -> plt.Figure:
+        """Plot sensor signals for a single dataset (no trial dimension)."""
+        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, y.shape[-1])
         channels_to_plot = self._resolve_channels(y.shape[0], channels)
         
         fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
         self._plot_sensors(
             ax, y[channels_to_plot], times, stim_onset, tmin, tmax, channels_to_plot, units
         )
-        ax.set_title(f"{title} (Trial {trial_idx + 1})")
-        
-        self._handle_figure_output(fig, file_name or f"{title.lower().replace(' ', '_')}_trial_{trial_idx + 1}", save_dir, show)
-        
-    def _plot_sensors_all_trials(
-        self,
-        ERP_config: dict,
-        y_trials: np.ndarray,
-        channels: Optional[Union[Sequence[int], str]],
-        units: Optional[str],
-        title: str,
-        save_dir: Optional[str],
-        file_name: Optional[str],
-        show: bool
-    ):
-        n_trials = y_trials.shape[0]
-        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, y_trials.shape[-1])
-        channels_to_plot = self._resolve_channels(y_trials.shape[1], channels)
-
-        fig, axes = plt.subplots(nrows=n_trials, ncols=1, figsize=(12, 3 * n_trials), sharex=True, constrained_layout=True, sharey=True)
-        if n_trials == 1:
-            axes = [axes]
-
-        for i, ax in enumerate(axes):
-            self._plot_sensors(ax, y_trials[i, channels_to_plot], times, stim_onset, tmin, tmax, channels_to_plot, units)
-            ax.set_title(f"Trial {i + 1}")
-
-        axes[-1].set_xlabel("Time (s)")
-        fig.suptitle(title, fontsize=16)
-        self._handle_figure_output(fig, file_name or f"{title.lower().replace(' ', '_')}_all_trials", save_dir, show)
-
-    def _plot_concatenated_sensor_trials(
-        self,
-        y_trials: np.ndarray,
-        ERP_config: dict,
-        channels: Optional[Union[Sequence[int], str]],
-        units: Optional[str],
-        title: str,
-        save_dir: Optional[str],
-        file_name: Optional[str],
-        show: bool
-    ):
-        tmin, tmax, stim_onset, sfreq, _ = self._get_plot_params(ERP_config, y_trials.shape[-1])
-
-        n_trials, n_sensors, _ = y_trials.shape
-        trial_duration = tmax - tmin
-        times_single = np.arange(tmin, tmax, 1.0 / sfreq)
-        channels_to_plot = self._resolve_channels(n_sensors, channels)
-        
-        fig, ax = plt.subplots(figsize=(15, 6))
-        colors = cm.viridis(np.linspace(0, 1, len(channels_to_plot)))
-
-        for i in range(n_trials):
-            trial_times = times_single + i * trial_duration
-            for j, ch in enumerate(channels_to_plot):
-                label = f"Ch {ch}" if i == 0 else None
-                ax.plot(trial_times, y_trials[i, ch], color=colors[j], linewidth=1.2, alpha=0.85, label=label)
-            ax.axvline(i * trial_duration + stim_onset, linestyle="--", color="gray", linewidth=1.0)
-
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel(f"Amplitude ({units})")
         ax.set_title(title)
-        ax.grid(True, alpha=0.4)
-        if n_trials > 1 and len(channels_to_plot) <= 10:
-            ax.legend(loc="upper right", fontsize="small")
-
-        self._handle_figure_output(fig, file_name or f"{title.lower().replace(' ', '_')}_concatenated", save_dir, show)
+        return fig
 
     def _get_plot_params(self, ERP_config, n_times):
         tmin = ERP_config['tmin']
@@ -317,49 +282,46 @@ class Visualizer:
     def plot_sensor_signals(
         self,
         ERP_config: dict,
-        y_trials: np.ndarray,
-        trial_idx: Optional[int] = None,
+        y: np.ndarray,
         channels: Optional[Union[Sequence[int], str]] = None,
         units: Optional[Union[str, int]] = None,
         unitmult: Optional[int] = None,
-        mode: str = "stack",  # "stack" | "concatenate"
         title: str = "Sensor Signals",
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         show: bool = True,
     ):
-        if ERP_config is None:
-            ERP_config = {
-                "tmin": -0.5,
-                "tmax": 0.5,
-                "stim_onset": 0,
-                "sfreq": 250,
-                "fmin": 1,
-                "fmax": 5,
-                "amplitude": 20.0,
-                "random_erp_timing": True,
-                "erp_min_length": None,
-        }
+        """
+        Plot sensor signals for a single dataset (no trial dimension).
+        
+        Parameters
+        ----------
+        ERP_config : dict
+            ERP configuration dictionary.
+        y : np.ndarray
+            Sensor data. Shape (n_sensors, n_times).
+        channels : Sequence[int] or str, optional
+            Channel indices to plot, or "all".
+        units : str or int, optional
+            Units for the sensor signals.
+        unitmult : int, optional
+            Unit multiplier.
+        title : str, optional
+            Title for the plot.
+        save_dir : str, optional
+            Directory to save the plot.
+        file_name : str, optional
+            Filename for the saved plot.
+        show : bool, optional
+            Whether to show the plot.
+        """
         unit_label = self._format_unit_label(units, unitmult)
-        y_trials_scaled = y_trials
 
-        if mode == "stack":
-            self._plot_sensors_all_trials(
-                ERP_config, y_trials_scaled, channels, unit_label, title, save_dir, file_name, show
-            )
-        elif mode == "concatenate":
-            self._plot_concatenated_sensor_trials(
-                y_trials_scaled, ERP_config, channels, unit_label, title, save_dir, file_name, show
-            )
-        elif mode == "single":
-            if trial_idx is None:
-                trial_idx = 0
-                self.logger.warning("No trial index provided, defaulting to 0.")
-            self._plot_sensors_single_trial(
-                ERP_config, y_trials_scaled[trial_idx], trial_idx, channels, unit_label, title, save_dir, file_name, show
-            )
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
+        fig = self._plot_sensors_simple(
+            ERP_config, y, channels, unit_label, title
+        )
+        file_name = file_name or "sensor_signals"
+        self._handle_figure_output(fig, file_name, save_dir, show)
 
     def plot_stc_3d_brain(
         self,
@@ -389,10 +351,10 @@ class Visualizer:
         try:
             mne.viz.set_3d_backend('pyvistaqt')
             
-            tmin, tmax, stim_onset, sfreq, times = self._get_plot_params(ERP_config, x.shape[-1])
+            tmin, tmax, stim_onset, sfreq, times = self._get_plot_params(ERP_config, x_one_trial.shape[-1])
 
             # Load forward solution
-            fwd = mne.read_forward_solution(f"{fwd_path}/{subject}-fwd.fif")
+            fwd = mne.read_forward_solution(f"{'1284src_' + fwd_path}/{subject}-fwd.fif")
             vertices = [src_hemi['vertno'] for src_hemi in fwd['src']]
             
             # Create source estimates
@@ -642,7 +604,7 @@ class Visualizer:
             x_active_indices_orientations_flat = x_active_indices % 3
             # Create a map from original source index to its value for each orientation
             x_active_indices_map = [{} for _ in range(3)]
-            for idx, val in enumerate(x):
+            for idx, val in enumerate(x_one_trial_one_time):
                 if val != 0: # Only consider non-zero ground truth
                     orient = x_active_indices_orientations_flat[idx]
                     src_idx = x_active_indices_flat[idx]
@@ -652,7 +614,7 @@ class Visualizer:
             x_hat_active_indices_flat = x_hat_active_indices // 3
             x_hat_active_indices_orientations_flat = x_hat_active_indices % 3
             x_hat_active_indices_map = [{} for _ in range(3)]
-            for idx, val in enumerate(x_hat):
+            for idx, val in enumerate(x_hat_one_trial_one_time):
                 orient = x_hat_active_indices_orientations_flat[idx]
                 src_idx = x_hat_active_indices_flat[idx]
                 x_hat_active_indices_map[orient][src_idx] = val
@@ -703,16 +665,16 @@ class Visualizer:
         show: bool = False,
     ):
         """
-        Plot reconstructed source waveforms against ground truth for selected active indices.
+        Plot reconstructed source waveforms overlaid in a single plot.
+        
+        This is a convenience wrapper around plot_source_signals() for reconstructed sources.
 
         Parameters
         ----------
         ERP_config : dict
             ERP configuration dictionary to derive time axis.
-        x_trial : np.ndarray
-            Ground-truth source activity for a single trial (n_sources, n_times).
         x_hat_trial : np.ndarray
-            Reconstructed source activity for the same trial.
+            Reconstructed source activity (n_sources, n_times) or (n_sources, 3, n_times).
         x_active_indices : Sequence[int]
             Indices of ground-truth active sources to visualize.
         units : str | int, optional
@@ -721,34 +683,31 @@ class Visualizer:
             FIFF multiplier (e.g., FIFF_UNITM_N).
         max_sources : int, optional
             Maximum number of sources to display. Default 6.
+        save_dir : str, optional
+            Directory to save the plot.
+        file_name : str, optional
+            Filename for the saved plot.
+        show : bool, optional
+            Whether to show the plot.
         """
-        if x_hat_trial.ndim == 3:
-            x_hat_trial = np.linalg.norm(x_hat_trial, axis=1)
-
-        unit_label = self._format_unit_label(units, unitmult)
-        tmin, tmax, stim_onset, _, times = self._get_plot_params(ERP_config, x_hat_trial.shape[-1])
-
-        indices = list(x_active_indices[:max_sources]) if len(x_active_indices) > max_sources else list(x_active_indices)
-        if not indices:
-            self.logger.warning("No active indices provided for reconstructed source plot.")
-            return
-
-        n_plots = len(indices)
-        fig, axes = plt.subplots(n_plots, 1, figsize=(12, 3 * n_plots), sharex=True, constrained_layout=True)
-        if n_plots == 1:
-            axes = [axes]
-
-        for ax, src_idx in zip(axes, indices):
-            ax.plot(times, x_hat_trial[src_idx], label=f"Recon Source {src_idx}", color="tab:orange", linewidth=1.2)
-            ax.axvline(stim_onset, linestyle="--", color="gray", linewidth=0.9, label="Stimulus Onset")
-            ax.set_ylabel(f"Amplitude ({unit_label})")
-            ax.set_title(f"Active Source {src_idx}")
-            ax.grid(True, alpha=0.4)
-            ax.legend(loc="upper right", fontsize="small")
-
-        axes[-1].set_xlabel("Time (s)")
-        axes[-1].set_xlim(tmin, tmax)
-        self._handle_figure_output(fig, file_name or "reconstructed_active_sources", save_dir, show)
+        # Limit the number of sources to plot if necessary
+        if len(x_active_indices) > max_sources:
+            limited_indices = x_active_indices[:max_sources]
+        else:
+            limited_indices = x_active_indices
+        
+        # Use the general plot_source_signals method
+        self.plot_source_signals(
+            ERP_config=ERP_config,
+            x=x_hat_trial,
+            x_active_indices=limited_indices,
+            units=units,
+            unitmult=unitmult,
+            title="Reconstructed Active Source Signals",
+            save_dir=save_dir,
+            file_name=file_name or "reconstructed_active_sources",
+            show=show,
+        )
      
     def plot_ci(
         self,
@@ -777,8 +736,10 @@ class Visualizer:
     
         # Create grid of subplots for all confidence levels
         n_levels = len(confidence_levels)
-        n_cols = min(4, n_levels)
-        n_rows = int(np.ceil(n_levels / n_cols))
+        if n_levels == 0:
+            raise ValueError("confidence_levels must contain at least one entry.")
+        n_rows = 2 if n_levels > 1 else 1
+        n_cols = int(np.ceil(n_levels / n_rows))
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0], figsize[1]), squeeze=False, sharex=True, sharey=sharey)
         axes = axes.flatten()
         
@@ -856,20 +817,96 @@ class Visualizer:
         
         self._handle_figure_output(fig, file_name, save_path, show)
 
-    def plot_calibration(self, nominal_coverage, pre_empirical_coverage, post_empirical_coverage, file_name='calibration_curve', save_path=None, show=False):
+    def _summarize_calibration_curves(self, values, weights: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray], int]:
+        arr = np.asarray(values, dtype=float)
+        if arr.ndim == 1:
+            return arr, None, 1
+        if arr.ndim != 2:
+            raise ValueError("Calibration curves must be 1D or 2D (runs x levels).")
+        n_runs = arr.shape[0]
+        weight_arr = None
+        if weights is not None:
+            weight_arr = np.asarray(weights, dtype=float)
+            if weight_arr.shape[0] != n_runs:
+                raise ValueError("Weight vector must match the number of runs.")
+            weight_arr = np.clip(weight_arr, 0.0, None)
+            if not np.any(weight_arr):
+                weight_arr = None
+        if weight_arr is None:
+            mean = arr.mean(axis=0)
+            std = arr.std(axis=0)
+        else:
+            norm = float(np.sum(weight_arr))
+            normalized = weight_arr[:, None] / norm
+            mean = np.sum(arr * normalized, axis=0)
+            variance = np.sum(normalized * (arr - mean) ** 2, axis=0)
+            std = np.sqrt(np.maximum(variance, 0.0))
+        return mean, std, n_runs
+
+    def plot_calibration(
+        self,
+        nominal_coverage,
+        pre_empirical_coverage,
+        post_empirical_coverage,
+        pre_weights=None,
+        post_weights=None,
+        file_name='calibration_curve',
+        save_path=None,
+        show=False,
+    ):
         """
-        Plot calibration curves and errors
+        Plot calibration curves and errors. Accepts either a single curve or stacked
+        curves (runs x levels). When multiple curves are provided, the mean and
+        standard deviation across runs are displayed; optional weights can be used
+        to compute weighted statistics.
         
-        Parameters:
-        - nominal_coverage (ndarray): Array of nominal coverage levels (confidence levels).
-        - pre_empirical_coverage (ndarray): Empirical coverage before calibration.
-        - post_empirical_coverage (ndarray): Empirical coverage after calibration.
+        Parameters
+        ----------
+        nominal_coverage : ndarray
+            Array of nominal coverage levels (confidence levels).
+        pre_empirical_coverage : ndarray | ndarray runs x levels
+            Empirical coverage before calibration.
+        post_empirical_coverage : ndarray | ndarray runs x levels
+            Empirical coverage after calibration.
+        pre_weights : array-like, optional
+            Sample weights for the pre-calibration curves.
+        post_weights : array-like, optional
+            Sample weights for the post-calibration curves.
         """
+        nominal_arr = np.asarray(nominal_coverage, dtype=float)
+        pre_mean, pre_std, pre_count = self._summarize_calibration_curves(
+            pre_empirical_coverage,
+            None if pre_weights is None else np.asarray(pre_weights, dtype=float),
+        )
+        post_mean, post_std, post_count = self._summarize_calibration_curves(
+            post_empirical_coverage,
+            None if post_weights is None else np.asarray(post_weights, dtype=float),
+        )
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
         
         # Plot 1: Calibration curves
-        ax1.plot(nominal_coverage, pre_empirical_coverage, 'bo-', label='Pre-calibration', linewidth=2, markersize=6)
-        ax1.plot(nominal_coverage, post_empirical_coverage, 'ro-', label='Post-calibration', linewidth=2, markersize=6)
+        pre_label = 'Pre-calibration' if pre_count == 1 else f'Pre-calibration (n={pre_count})'
+        post_label = 'Post-calibration' if post_count == 1 else f'Post-calibration (n={post_count})'
+        ax1.plot(nominal_arr, pre_mean, 'bo-', label=pre_label, linewidth=2, markersize=6)
+        ax1.plot(nominal_arr, post_mean, 'ro-', label=post_label, linewidth=2, markersize=6)
+        if pre_std is not None:
+            ax1.fill_between(
+                nominal_arr,
+                np.clip(pre_mean - pre_std, 0.0, 1.0),
+                np.clip(pre_mean + pre_std, 0.0, 1.0),
+                color='blue',
+                alpha=0.15,
+                label='Pre ±1 std',
+            )
+        if post_std is not None:
+            ax1.fill_between(
+                nominal_arr,
+                np.clip(post_mean - post_std, 0.0, 1.0),
+                np.clip(post_mean + post_std, 0.0, 1.0),
+                color='red',
+                alpha=0.15,
+                label='Post ±1 std',
+            )
         ax1.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', linewidth=1, alpha=0.7)
         
         ax1.set_xlabel('Nominal Confidence Level')
@@ -880,8 +917,8 @@ class Visualizer:
         ax1.set_aspect('equal')
         
         # Plot 2: Calibration errors
-        pre_errors = np.abs(pre_empirical_coverage - nominal_coverage)
-        post_errors = np.abs(post_empirical_coverage - nominal_coverage)
+        pre_errors = np.abs(pre_mean - nominal_arr)
+        post_errors = np.abs(post_mean - nominal_arr)
         
         x_pos = np.arange(len(nominal_coverage))
         width = 0.35
@@ -893,7 +930,7 @@ class Visualizer:
         ax2.set_ylabel('Absolute Error')
         ax2.set_title('Calibration Errors')
         ax2.set_xticks(x_pos)
-        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_coverage])
+        ax2.set_xticklabels([f'{c:.1f}' for c in nominal_arr])
         ax2.legend()
         ax2.grid(True, alpha=0.3)
         
@@ -1104,13 +1141,12 @@ class Visualizer:
 
     def plot_all(
         self,
-        x_trials: np.ndarray,
-        x_active_indices_trials: np.ndarray,
-        x_hat_one_trial: np.ndarray,        
-        x_hat_active_indices_one_trial: np.ndarray,
-        y_clean_trials: np.ndarray,
-        y_noisy_trials: np.ndarray,
-        trial_idx: int = 0,
+        x: np.ndarray,
+        x_active_indices: np.ndarray,
+        x_hat: np.ndarray,        
+        x_hat_active_indices: np.ndarray,
+        y_clean: np.ndarray,
+        y_noisy: np.ndarray,
         n_sources: int = 1,
         subject: str = None,
         fwd_path: str = None,
@@ -1138,7 +1174,7 @@ class Visualizer:
         methods to create a complete set of plots for ERP source localization analysis.
         
         **Generated Visualizations:**
-        - Source signal plots (individual and all trials)
+        - Source signal plots
         - Sensor signal plots (stacked and concatenated)
         - 3D brain surface plots (if available)
         - Source-sensor comparison plots
@@ -1157,20 +1193,18 @@ class Visualizer:
         
         Parameters
         ----------
-        x_trials : np.ndarray
-            Source activity trials, shape (n_trials, n_sources, n_times)
-        x_active_indices_trials : np.ndarray
-            Active source indices per trial
-        x_hat_one_trial : np.ndarray
-            Estimated source activity for one trial
-        x_hat_active_indices_one_trial : np.ndarray
-            Estimated active source indices for one trial
-        y_clean_trials : np.ndarray
-            Clean sensor measurements, shape (n_trials, n_sensors, n_times)
-        y_noisy_trials : np.ndarray
-            Noisy sensor measurements, shape (n_trials, n_sensors, n_times)
-        trial_idx : int, optional
-            Trial index for single-trial visualizations, by default 0
+        x : np.ndarray
+            Ground truth source activity, shape (n_sources, n_times)
+        x_active_indices : np.ndarray
+            Active source indices
+        x_hat : np.ndarray
+            Estimated source activity
+        x_hat_active_indices : np.ndarray
+            Estimated active source indices
+        y_clean : np.ndarray
+            Clean sensor measurements, shape (n_sensors, n_times)
+        y_noisy : np.ndarray
+            Noisy sensor measurements, shape (n_sensors, n_times)
         n_sources : int, optional
             Total number of sources, by default 1
         subject : str, optional
@@ -1220,81 +1254,60 @@ class Visualizer:
         >>> viz.plot_all(
         ...     x_trials=x_trials,
         ...     x_active_indices_trials=active_indices,
-        ...     x_hat_one_trial=x_hat,
+        ...     x_hat=x_hat,
         ...     # ... other parameters
         ... )
         """
-        x_one_trial = x_trials[trial_idx]
-        x_active_indices_one_trial = x_active_indices_trials[trial_idx]
-        x_one_trial_avg_time = np.mean(x_one_trial, axis=1, keepdims=True)
-        x_hat_one_trial_avg_time = np.mean(x_hat_one_trial, axis=1, keepdims=True)
-        y_clean_one_trial = y_clean_trials[trial_idx]
-        y_noisy_one_trial = y_noisy_trials[trial_idx]
+        x_avg_time = np.mean(x, axis=1, keepdims=True)
+        x_hat_avg_time = np.mean(x_hat, axis=1, keepdims=True)
         
         # =========================
         # 1. Plot simulated data
         # =========================
         
-        # Plot sources (all trials)
+        # Plot sources
         self.plot_source_signals(
             ERP_config=ERP_config,
-            x_trials=x_trials,
-            x_active_indices=x_active_indices_trials,
+            x=x,
+            x_active_indices=x_active_indices,
             units=source_units,
             unitmult=source_unitmult,
-            trial_idx=None,
-            title="Source Trials (All)",
+            title="Source Signals",
             save_dir="data_simulation",
-            file_name="source_trials_all",
+            file_name="source_signals",
             show=False,
         )
 
-        # Plot sensors (all trials) with selected channels: y_noisy
+        # Plot sensors: y_noisy
         self.plot_sensor_signals(
             ERP_config=ERP_config,
-            y_trials=y_noisy_trials,
-            channels="all",  # or "all"
+            y=y_noisy,
+            channels="all",
             units=sensor_units,
             unitmult=sensor_unitmult,
-            mode="stack",
-            title="Sensor Signals (All Trials stacked)",
+            title="Sensor Signals (Noisy)",
             save_dir="data_simulation",
-            file_name="sensor_stack_trials_noisy",
+            file_name="sensor_signals_noisy",
             show=False
         )
 
-        # Concatenated trials: y_noisy
+        # Plot sensors: y_clean
         self.plot_sensor_signals(
             ERP_config=ERP_config,
-            y_trials=y_noisy_trials,
-            # channels=[0, 10],  # or "all"
+            y=y_clean,
+            channels="all",
             units=sensor_units,
             unitmult=sensor_unitmult,
-            mode="concatenate",
-            title="Sensor Signals (All trials concatenated)",
+            title="Sensor Signals (Clean)",
             save_dir="data_simulation",
-            file_name="sensor_concatenate_trials_noisy",
-            show=False
-        )
-
-        # Concatenated trials: y_clean
-        self.plot_sensor_signals(
-            ERP_config=ERP_config,
-            y_trials=y_clean_trials,
-            # channels=[0, 10],  # or "all"
-            units=sensor_units,
-            unitmult=sensor_unitmult,
-            mode="concatenate",
-            title="Sensor Signals (All trials concatenated)",
-            save_dir="data_simulation",
-            file_name="sensor_concatenate_trials_clean",
+            file_name="sensor_signals_clean",
             show=False
         )
 
         self.plot_stc_3d_brain(
             ERP_config=ERP_config,
-            x_one_trial=x_one_trial,
-            x_hat_one_trial=x_hat_one_trial,
+            x_one_trial=x,
+            x_hat_one_trial=x_hat,
             orientations=['lateral', 'medial', 'dorsal', 'ventral'],
             source_units=source_units,
             source_unitmult=source_unitmult,
@@ -1307,10 +1320,10 @@ class Visualizer:
         )
 
         self.plot_source_and_sensors(
-            x_one_trial=x_one_trial,
-            x_active_indices=x_active_indices_one_trial,
-            y_clean_one_trial=y_clean_one_trial,
-            y_noisy_one_trial=y_noisy_one_trial,
+            x_one_trial=x,
+            x_active_indices=x_active_indices,
+            y_clean_one_trial=y_clean,
+            y_noisy_one_trial=y_noisy,
             nnz=nnz,
             ERP_config=ERP_config,
             source_units=source_units,
@@ -1327,8 +1340,8 @@ class Visualizer:
 
         self.plot_reconstructed_active_sources(
             ERP_config=ERP_config,
-            x_hat_trial=x_hat_one_trial,
-            x_active_indices=x_active_indices_one_trial,
+            x_hat_trial=x_hat,
+            x_active_indices=x_active_indices,
             units=source_units,
             unitmult=source_unitmult,
             save_dir="data_simulation",
@@ -1341,10 +1354,10 @@ class Visualizer:
         # =========================
         # Plot active sources
         self.plot_active_sources(
-            x_one_trial_one_time=x_one_trial_avg_time,
-            x_hat_one_trial_one_time=x_hat_one_trial_avg_time,
-            x_active_indices=x_active_indices_one_trial,
-            x_hat_active_indices=x_hat_active_indices_one_trial,
+            x_one_trial_one_time=x_avg_time,
+            x_hat_one_trial_one_time=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
             n_sources=n_sources,
             source_units=source_units,
             source_unitmult=source_unitmult,
@@ -1355,10 +1368,10 @@ class Visualizer:
         )
         # Plot confidence intervals - unshared y-axis
         self.plot_ci(
-            x_one_trial_one_time=x_one_trial_avg_time,
-            x_hat_one_trial_one_time=x_hat_one_trial_avg_time,
-            x_active_indices=x_active_indices_one_trial,
-            x_hat_active_indices=x_hat_active_indices_one_trial,
+            x_one_trial_one_time=x_avg_time,
+            x_hat_one_trial_one_time=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
             n_sources=n_sources,
             source_units=source_units,
             source_unitmult=source_unitmult,
@@ -1375,10 +1388,10 @@ class Visualizer:
 
         # Plot confidence intervals - shared y-axis
         self.plot_ci(
-            x_one_trial_one_time=x_one_trial_avg_time,
-            x_hat_one_trial_one_time=x_hat_one_trial_avg_time,
-            x_active_indices=x_active_indices_one_trial,
-            x_hat_active_indices=x_hat_active_indices_one_trial,
+            x_one_trial_one_time=x_avg_time,
+            x_hat_one_trial_one_time=x_hat_avg_time,
+            x_active_indices=x_active_indices,
+            x_hat_active_indices=x_hat_active_indices,
             n_sources=n_sources,
             source_units=source_units,
             source_unitmult=source_unitmult,
@@ -1392,7 +1405,7 @@ class Visualizer:
             show=False,
             figsize=(18, 13)
         )
-        
+        # old
         # plot calibration curve - active sources
         # self.plot_calibration_curve(
         #     confidence_levels=confidence_levels,
@@ -1402,6 +1415,7 @@ class Visualizer:
         #     save_path='uncertainty_analysis',
         #     show=False,
         # )
+             
         self.plot_calibration(
             nominal_coverage=nominal_coverages,
             pre_empirical_coverage=empirical_coverages,
@@ -1410,7 +1424,8 @@ class Visualizer:
             save_path='uncertainty_analysis',
             show=False,
         )
-        
+
+        # old
         # self.plot_pre_post_calibration_curves(
         #     confidence_levels=confidence_levels,
         #     nominal_coverages=nominal_coverages,
@@ -1420,6 +1435,18 @@ class Visualizer:
         #     save_path='uncertainty_analysis',
         #     show=False,
         # )
+        
+        # Plot point-wise coverage maps
+        if ci_lower is not None and ci_upper is not None:
+            self.plot_pointwise_coverage_map(
+                x=x_avg_time,
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+                nominal_coverages=nominal_coverages,
+                file_name='pointwise_coverage_map',
+                save_path='uncertainty_analysis',
+                show=False
+            )
 
 
 

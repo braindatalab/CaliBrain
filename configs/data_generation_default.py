@@ -1,0 +1,76 @@
+from copy import deepcopy
+
+
+RUN_PARAMS = {
+    "nruns": 10 + 25,
+    "generation_n_jobs": 10,
+    "random_state": 42,
+}
+ORIENTATION_TYPE = "free"
+
+PATHS = {
+    "log_dir": f"/data/orabem/calibrain/results/logs/{ORIENTATION_TYPE}",
+    "posterior_dir": f"/data/orabem/calibrain/results/posterior_summaries/{ORIENTATION_TYPE}",
+    "manifest_path": f"/data/orabem/calibrain/results/run_manifest/{ORIENTATION_TYPE}.csv",
+}
+
+UNCERTAINTY = {
+    "nominal_coverages": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "save_posterior_stats": True,
+}
+
+ERP_CONFIG = {
+    "tmin": -0.5,
+    "tmax": 0.5,
+    "stim_onset": 0.0,
+    "sfreq": 250,
+    "fmin": 1,
+    "fmax": 5,
+    "amplitude_distribution": {
+        "median": 20.0,
+        "sigma": 0.2,
+        "clip": [2.5, 50.0],
+    },
+    "random_erp_timing": True,
+    "erp_min_length": None,
+}
+
+COMMON_DATA_GRID = {
+    "subject": ["CC120166", "CC120264", "CC120309", "CC120313"],
+    "nnz": [1, 3, 5, 10, 100],
+    "orientation_type": [ORIENTATION_TYPE],
+    "alpha_SNR": [0.1, 0.3, 0.5, 0.7, 0.9],
+    "sensor_white_noise_std": [0.001],
+}
+
+ORACLE_NOISE = {"noise_type": ["oracle"]}
+BASELINE_NOISE = {"noise_type": ["baseline"]}
+ADAPTIVE_NOISE = {"noise_type": ["adaptive_joint_learning"]}
+
+def _estimator(solver: str, solver_params: dict, noise_grid: dict) -> dict:
+    return {
+        "solver": solver,
+        "solver_params": solver_params,
+        "data_param_grid": deepcopy(COMMON_DATA_GRID),
+        "noise_param_grid": deepcopy(noise_grid),
+    }
+
+
+ESTIMATORS = [
+    # sigma = [0.005, 0.01, 0.02]
+    _estimator("BMN", {"max_iter": [300], "normalization": [True]}, ORACLE_NOISE),
+    _estimator("BMN", {"max_iter": [300], "normalization": [True]}, BASELINE_NOISE),
+    _estimator("BMN_joint", {"max_iter": [300], "learn_noise":[True]}, ADAPTIVE_NOISE),
+    _estimator("gamma_map_sflex", {"sigma": [0.01], "max_iter": [1000]}, ORACLE_NOISE),
+    _estimator("gamma_map_sflex", {"sigma": [0.01], "max_iter": [1000]}, BASELINE_NOISE),
+    _estimator("gamma_lambda_map_sflex", {"learn_lambda": [True], "max_iter": [1000]}, ADAPTIVE_NOISE),
+]
+
+
+CONFIG = {
+    **RUN_PARAMS,
+    **PATHS,
+    **UNCERTAINTY,
+    "ERP_config": ERP_CONFIG,
+    "estimators": ESTIMATORS,
+}

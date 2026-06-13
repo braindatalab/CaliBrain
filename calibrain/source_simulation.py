@@ -31,33 +31,60 @@ from calibrain.utils import load_config
 
 
 class SourceSimulator:
-    """Simulates synthetic brain activity data for source-level measurements.
+    """
+    Simulate synthetic source coefficients for three settings:
+
+    1) fixed orientation (MEG and EEG):
+         s shape = (N, T)
+         One scalar coefficient per source location.
+
+    2) free orientation (EEG):
+         x shape = (N, 3, T)
+         General 3D coefficient process in the retained local 3D source basis.
+
+    3) free orientation (MEG):
+         a shape = (N, 2, T)
+         General reduced 2D coefficient process in the MEG-sensitive local subspace.
     """
     def __init__(
         self,
         ERP_config: Optional[Dict[str, Any]] = None,
         logger: Optional[logging.Logger] = None,
     ):
-        """Initialize the SourceSimulator with parameters for simulating dipole sources.
-        
+        """
         Parameters
         ----------
-        ERP_config : Optional[Dict[str, Any]]
-            Configuration dictionary for the ERP simulation parameters. If None, default values are used.
-            Default values include:
-            
-            - tmin: -0.5 (start time of the ERP segment in seconds)
-            - tmax: 0.5 (end time of the ERP segment in seconds)
-            - stim_onset: 0.0 (time of stimulus onset in seconds, relative to the start of the ERP segment)
-            - sfreq: 250 (sampling frequency in Hz)
-            - fmin: 1 (minimum frequency for the bandpass filter in Hz)
-            - fmax: 5 (maximum frequency for the bandpass filter in Hz)
-            - amplitude_distribution: parameters for the log-normal dipole-moment distribution (nAm)
-            - random_erp_timing: True (if True, the exact start time and duration of the ERP waveform within the post-stimulus window are randomized)
-            - erp_min_length : Optional[int] (minimum length of the ERP waveform in samples; if None, a default value is used)
-        logger : Optional[logging.Logger], optional
-            Logger instance, by default None.
+        ERP_config : dict, optional
+            ERP simulation configuration. If None, defaults are used.
+
+            Required/used keys (with defaults):
+
+            - tmin : float, default -0.5
+                Start time (s) of the epoch.
+            - tmax : float, default  0.5
+                End time (s) of the epoch.
+            - stim_onset : float, default 0.0
+                Stimulus onset time (s) within [tmin, tmax].
+            - sfreq : float, default 250
+                Sampling frequency (Hz).
+            - fmin, fmax : float, default 1, 5
+                Bandpass limits (Hz) for ERP-like waveform shaping.
+            - amplitude_distribution : dict
+                Log-normal amplitude distribution in nAm:
+
+                * median : float, default 20.0
+                * sigma  : float, default 0.2
+                * clip   : (low, high), default (2.5, 50.0)
+
+            - random_erp_timing : bool, default True
+                If True, randomize ERP segment duration and start offset after stim_onset.
+            - erp_min_length : int or None, default None
+                Minimum ERP segment length in samples; if None, uses internal default (82).
+
+        logger : logging.Logger, optional
+            Logger instance. If None, uses module logger.
         """
+        # --- Draft-default config (kept unchanged) ---
         self.ERP_config = ERP_config if ERP_config else {
             "tmin": -0.5,
             "tmax": 0.5,
@@ -66,16 +93,16 @@ class SourceSimulator:
             "fmin": 1,
             "fmax": 5,
             "amplitude_distribution": {
-                "median": 10.0,   # nAm
-                "sigma": 0.35,
-                "clip": (2.5, 50.0),
+                "median": 20.0, # peak dipole moment (nAm)
+                "sigma": 0.2, # std of the underlying normal distribution
+                "clip": (2.5, 50.0),  # (min, max) bounds in nAm for peak absolute amplitude clipping
             },
             "random_erp_timing": True,
             "erp_min_length": None,
         }
-        
+
         self.logger = logger if logger else logging.getLogger(__name__)
-        
+
         # Default units for ERP simulation
         self.kind: int = FIFF.FIFFV_DIPOLE_WAVE # Dipole time curve. Encoded into "1000"
         self.units: str = FIFF.FIFF_UNIT_AM # Amperes (Am)
@@ -83,7 +110,7 @@ class SourceSimulator:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['logger'] = None
+        state["logger"] = None
         return state
 
     def __setstate__(self, state):
@@ -91,19 +118,34 @@ class SourceSimulator:
         if self.logger is None:
             self.logger = logging.getLogger(self.__class__.__name__)
 
-
+    def _get_times(self) -> np.ndarray:
+        tmin = self.ERP_config["tmin"]
+        tmax = self.ERP_config["tmax"]
+        sfreq = self.ERP_config["sfreq"]
+        return np.arange(tmin, tmax, 1.0 / sfreq)
+    
+    # -------------------------
+    # Amplitude sampling (nAm)
+    # -------------------------
     def _sample_source_amplitude(self, rng: np.random.RandomState) -> float:
         """
-        Sample a dipole moment amplitude (in nAm) from the configured distribution.
+        Sample a peak dipole moment (nAm) from a clipped log-normal distribution.
+
+        Math:
+        - Draw A ~ LogNormal(mu, sigma)
+          with mu = log(median) so that median(A)=median parameter.
+        - Clip A into [low, high] if clip bounds provided.
         """
-        base_amplitude = 10.0
+        base_amplitude = 20.0
         dist_cfg = self.ERP_config.get("amplitude_distribution")
         if not dist_cfg:
-            return max(base_amplitude, 0.0)
+            return float(max(base_amplitude, 0.0))
 
         clip_bounds = dist_cfg.get("clip")
         median = float(dist_cfg.get("median", base_amplitude))
-        sigma = float(dist_cfg.get("sigma", 0.35))
+        sigma = float(dist_cfg.get("sigma", 0.2))
+
+        # Draft choice (kept): allow very small medians without log(0)
         safe_median = max(median, 1e-6)
         mu = np.log(safe_median)
         amplitude = rng.lognormal(mean=mu, sigma=sigma)
@@ -112,329 +154,196 @@ class SourceSimulator:
             low, high = clip_bounds
             amplitude = float(np.clip(amplitude, low, high))
 
-        return amplitude
+        return float(amplitude)
 
-    def _simulate_erp_waveform(
-        self,
-        source_seed: int = 512,
-    ) -> np.ndarray:
+    # -------------------------
+    # ERP waveform simulation
+    # -------------------------
+    def _simulate_erp_waveform(self, source_seed: int = 512) -> np.ndarray:
         """
-        Generate a smoothed ERP-like waveform for a single source.
+        Generate one ERP-like waveform of length n_times.
 
-        This method creates an ERP-like signal segment using bandpass-filtered white noise, applies a Hanning window, normalizes and scales by a dipole moment sampled from a configurable distribution, and places the segment at a randomized or fixed position after the stimulus onset within the time course.
-        
-        Parameters
-        ----------
-        source_seed : int
-            Seed for the random number generator to ensure reproducibility of the ERP waveform generation. Default is 512.
-        
-        Returns
-        -------
-        np.ndarray
-            The generated ERP signal of length n_times.
-        
-        Notes
-        -----
-            - The output signal is zero-padded before the `stim_onset` to ensure it starts with zeros, simulating the pre-stimulus baseline.
-            - If `random_erp_timing` is True, the exact start time
-            (offset from `stim_onset`) and duration of the ERP waveform within the
-            post-`stim_onset` window are randomized. The ERP will still be contained
-            entirely within the `stim_onset` to `n_times` interval.
-            - If `random_erp_timing` is False, the ERP waveform
-            spans the entire duration from `stim_onset` to `n_times`.
+        Steps (math/ops):
+        1) Choose ERP segment length L (>= min length) and start index after stim_onset (optional randomization).
+        2) Draw white noise w ~ N(0, I_L).
+        3) Bandpass filter: y = filtfilt(BP, w).
+        4) Apply Hann window: y <- y * hann(L).
+        5) Normalize to unit peak: y <- y / max(|y|).
+        6) Scale by sampled amplitude A (nAm): y <- A * y.
+        7) Place y into the full epoch waveform x(t), with zeros elsewhere.
         """
-        # Extract ERP configuration parameters
-        tmin = self.ERP_config['tmin']
-        tmax = self.ERP_config['tmax']
-        stim_onset = self.ERP_config['stim_onset']
-        sfreq = self.ERP_config['sfreq']
-        fmin = self.ERP_config['fmin']
-        fmax = self.ERP_config['fmax']
-        random_erp_timing = self.ERP_config['random_erp_timing']
-        erp_min_length = self.ERP_config['erp_min_length']
+        tmin = self.ERP_config["tmin"]
+        tmax = self.ERP_config["tmax"]
+        stim_onset = self.ERP_config["stim_onset"]
+        sfreq = self.ERP_config["sfreq"]
+        fmin = self.ERP_config["fmin"]
+        fmax = self.ERP_config["fmax"]
+        random_erp_timing = self.ERP_config["random_erp_timing"]
+        erp_min_length = self.ERP_config["erp_min_length"]
 
-        # Ensure stim_onset is within [tmin, tmax]
         if stim_onset < tmin or stim_onset > tmax:
-            raise ValueError(f"stim_onset ({stim_onset}) is outside the time range [{tmin}, {tmax}]")
+            raise ValueError(f"stim_onset ({stim_onset}) is outside [{tmin}, {tmax}]")
+
+        # Draft RNG choice (kept): waveform RNG depends only on source_seed
+        rng = np.random.RandomState(int(source_seed))
         
-        source_duration_rng = np.random.RandomState(source_seed)
-        
-        # For filter stability (filtfilt butter order 4) & meaningful Hanning window
+        # Draft default (kept): ensures filter stability + meaningful windowing
         _DEFAULT_MIN_ERP_LEN = 82
 
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
+        times = self._get_times()
         n_times = len(times)
 
-        # Determine the index for stimulus onset
+        # First sample index at/after stimulus onset
         stim_indices = np.where(times >= stim_onset)[0]
-        if len(stim_indices) == 0:
-            # Stimulus onset is at or after tmax, effectively no ERP in this epoch
-            stim_onset_samples = n_times
-        else:
-            stim_onset_samples = stim_indices[0]
+        stim_onset_samples = stim_indices[0] if len(stim_indices) > 0 else n_times
 
         waveform = np.zeros(n_times)
-        current_min_erp_len = erp_min_length if erp_min_length is not None else _DEFAULT_MIN_ERP_LEN
-
-        # Maximum available duration for ERP activity after stim_onset_samples
-        max_available_post_stim_duration = n_times - stim_onset_samples
-
-        if max_available_post_stim_duration < current_min_erp_len:
-            # Not enough samples in the post-stimulus window for a meaningful ERP
-            return waveform
-
-        actual_placement_start_sample: int
-        erp_duration_samples: int
-
-        if random_erp_timing:
-            # Randomize ERP duration: from current_min_erp_len up to max_available_post_stim_duration (inclusive)
-            actual_erp_duration = source_duration_rng.randint(low=current_min_erp_len, high=max_available_post_stim_duration + 1)
-            self.logger.debug(f"Randomized ERP duration: {actual_erp_duration} samples")
-            
-            # Randomize ERP start offset within the available post-stimulus window
-            # Max possible start offset (from stim_onset_samples) for the chosen actual_erp_duration
-            max_start_offset_from_onset = max_available_post_stim_duration - actual_erp_duration
-            start_offset_from_onset = source_duration_rng.randint(0, max_start_offset_from_onset + 1)
-            
-            self.logger.debug(f"Randomized ERP start offset from onset: {start_offset_from_onset} samples")
-                
-            actual_placement_start_sample = stim_onset_samples + start_offset_from_onset
-            erp_duration_samples = actual_erp_duration
-        else:
-            # ERP spans the entire available post-stimulus duration
-            erp_duration_samples = max_available_post_stim_duration
-            actual_placement_start_sample = stim_onset_samples
-
-        # Safeguard, though preceding logic should ensure this
-        if erp_duration_samples < current_min_erp_len:
-            return waveform
-
-        # Generate noise only for the determined duration of the ERP activity
-        white_noise_for_erp = source_duration_rng.randn(erp_duration_samples)
-        self.logger.debug(f"Generated white noise for ERP with {erp_duration_samples} samples.")
+        current_min_erp_len = (
+            erp_min_length if erp_min_length is not None else _DEFAULT_MIN_ERP_LEN
+        )
         
-        # Design a Butterworth bandpass filter
-        low = fmin / (sfreq / 2)
-        high = fmax / (sfreq / 2)
+        # Max available duration after stimulus onset
+        max_post = n_times - stim_onset_samples
+        if max_post < current_min_erp_len:
+            return waveform  # Not enough post-stim samples to form ERP
 
-        epsilon = 1e-9
-        low = max(epsilon, low)
-        high = min(1.0 - epsilon, high)
+        # Randomize ERP length and placement *within* post-stim window (draft logic kept)
+        if random_erp_timing:
+            erp_len = rng.randint(low=current_min_erp_len, high=max_post + 1)
+            max_start = max_post - erp_len
+            start_offset = rng.randint(0, max_start + 1)
+            start_sample = stim_onset_samples + start_offset
+        else:
+            erp_len = max_post
+            start_sample = stim_onset_samples
+
+        if erp_len < current_min_erp_len:
+            return waveform
+
+        # White noise segment for the ERP portion
+        white = rng.randn(erp_len)
+
+        # Butterworth bandpass design
+        low = fmin / (sfreq / 2.0)
+        high = fmax / (sfreq / 2.0)
+
+        eps = 1e-9
+        low = max(eps, low)
+        high = min(1.0 - eps, high)
         if low >= high:
-            return waveform # Invalid frequency band
+            return waveform
 
         try:
-            b, a = butter(4, [low, high], btype='band')
-        except ValueError as e:
-            return waveform # Filter design failed
-
-        # Filter the noise segment
-        erp_segment = filtfilt(b, a, white_noise_for_erp)
-        
-        # Apply Hanning window over the ERP segment
-        erp_segment *= np.hanning(erp_duration_samples) 
-        
-        # ---
-        # OLD NORMALIZATION APPROACHES (kept for reference)
-        # std_erp_segment = np.std(erp_segment)
-        # if std_erp_segment < 1e-9:
-        #     return waveform
-        # erp_segment /= std_erp_segment
-        #
-        # erp_peak = np.max(np.abs(erp_segment))
-        # if erp_peak < 1e-9:
-        #     return waveform
-        # erp_segment /= erp_peak
-        # ---
-
-        # Normalize by peak so that sampled amplitudes correspond to physical peak moments
-        erp_peak = np.max(np.abs(erp_segment))
-        if erp_peak < 1e-9:
+            b, a = butter(4, [low, high], btype="band")
+        except ValueError:
             return waveform
 
-        erp_segment /= erp_peak
+        # Zero-phase filtering + windowing
+        seg = filtfilt(b, a, white)
+        seg *= np.hanning(erp_len)
 
-        # Draw a dipole moment from the configured distribution (nAm)
-        sampled_amplitude = self._sample_source_amplitude(source_duration_rng)
-        erp_segment *= sampled_amplitude
+        # Normalize by peak so amplitude corresponds to physical peak dipole moment
+        peak = float(np.max(np.abs(seg)))
+        if peak < 1e-9:
+            return waveform
+        seg /= peak
 
-        # --- 
-        # OLD: convert unit from nAm to Am
-        # if self.units == FIFF.FIFF_UNIT_AM:
-        # erp_segment *= 1e-9
-        # NEW: Do not scale as the units are already in nAm and we will work with nAm based on units and unitmult
-        # ---
-        
-        # Place the generated ERP segment into the output signal at the determined start
-        end_sample_for_erp_segment = actual_placement_start_sample + len(erp_segment)
-        
-        # Ensure placement is within bounds (should be guaranteed by earlier logic)
-        if actual_placement_start_sample < n_times and end_sample_for_erp_segment <= n_times:
-            waveform[actual_placement_start_sample : end_sample_for_erp_segment] = erp_segment
+        # Scale by sampled dipole-moment amplitude (nAm)
+        seg *= self._sample_source_amplitude(rng)
 
-        self.logger.debug(f"ERP waveform generated with shape: {waveform.shape}")
-        
+        # Place ERP segment into the full waveform
+        end_sample = start_sample + seg.size
+        if start_sample < n_times and end_sample <= n_times:
+            waveform[start_sample:end_sample] = seg
+
         return waveform
-
-    def _simulate_source_time_courses(
+    
+    def _simulate_fixed(
         self,
-        orientation_type: str = "fixed",
-        n_sources: int = 100,
-        nnz: int = 5,
-        trial_seed: int = 256,
+        n_sources: int,
+        nnz: int,
+        trial_seed: int,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Generate simulated source time courses for a single trial.
+        if nnz > n_sources:
+            raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
 
-        This method creates ERP-like signals for a subset of active sources, determined by `nnz`. For each active source, an ERP waveform is generated using a bandpass-filtered noise segment, optionally randomized in onset and duration, and scaled by an amplitude sampled from the log-normal distribution. The ERP waveform is placed at the appropriate time index based on `stim_onset`.
+        trial_rng = np.random.RandomState(int(trial_seed))
+        seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
 
-        Parameters
-        ----------
-        orientation_type : str
-            Orientation of the sources, either "fixed" or "free". Default is "fixed".
-        n_sources : int
-            Total number of sources to simulate. Default is 100.
-        nnz : int
-            Number of non-zero (active) sources in the trial. Must be less than or equal to `n_sources`. Default is 5.
-        trial_seed : int
-            Seed for the random number generator to ensure reproducibility of the source activity. Default is 256.
+        active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_times))
 
-        Returns
-        -------
-        x : np.ndarray
-            Simulated source activity array.
-            - Shape (n_sources, n_times) for "fixed" orientation.
-            - Shape (n_sources, n_orient, n_times) for "free" orientation.
-        active_indices : np.ndarray
-            Indices of the sources that were activated in this trial.
-            
-        Notes
-        -------
-        - For "fixed" orientation, each active source has a single time course.
-        - For "free" orientation, each active source has three orientation components, with random orientation coefficients.
-        """
-        trial_rng = np.random.RandomState(trial_seed)
-        
-        tmin = self.ERP_config['tmin']
-        tmax = self.ERP_config['tmax']
-        sfreq = self.ERP_config['sfreq']
+        for src_idx in active_indices:
+            source_seed = int(trial_rng.randint(0, seed_high))
+            x[src_idx, :] = self._simulate_erp_waveform(source_seed=source_seed)
 
-        times = np.arange(tmin, tmax, 1.0 / sfreq)
-        n_times = len(times)
-        
-        if orientation_type == "fixed":
-            # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
-            x = np.zeros((n_sources, n_times))
-            for i, src_idx in enumerate(active_indices):
-                # Generate ERP signal with specified onset
-                source_seed = trial_rng.randint(low=0, high=2**32 -1) # Derive a new seed for this source
-                
-                self.logger.debug(f"Generating ERP for source index {src_idx} with seed {source_seed}")
-                        
-                erp_waveform = self._simulate_erp_waveform(source_seed=source_seed)
-                x[src_idx, :] = erp_waveform # Assign the full waveform (includes leading zeros)
-                
-        elif orientation_type == "free":
-            # TODO: +++ THIS IS A TEMPORARY FIX. A NEW APPROACH IS NEEDED TO HANDLE +++
-            n_orient = 3 # TODO: Make this configurable
-            # active_indices = np.sort(rng.choice(self.n_sources, size=self.nnz, replace=False))
-            active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
-            x = np.zeros((n_sources, n_orient, n_times))
-            for i, src_idx in enumerate(active_indices):
-                source_seed = trial_rng.randint(0, 2**32 -1)
-                erp_waveform = self._simulate_erp_waveform(
-                    source_seed,
-                )
-                orient_coeffs = trial_rng.randn(n_orient)
-                norm_orient = np.linalg.norm(orient_coeffs)
-                if norm_orient < 1e-9: # Avoid division by zero
-                    orient_coeffs = np.array([1.0, 0.0, 0.0]) # Default orientation
-                else:
-                    orient_coeffs /= norm_orient
-
-                for j_orient in range(n_orient):
-                    x[src_idx, j_orient, :] = orient_coeffs[j_orient] * erp_waveform
-
-                # Alternatively, if we want to assign the same waveform to all orientations
-                # for j_orient in range(n_orientations_free):
-                #     x[src_idx, j_orient, :] = erp_waveform
-        else:
-            raise ValueError("Invalid orientation_type. Choose 'fixed' or 'free'.")
-
-        self.logger.debug(f"Simulated source time courses with shape: {x.shape}")
-        self.logger.debug(f"Active source indices: {active_indices}")
-        
         return x, active_indices
 
+    def _simulate_multicomponent(
+        self,
+        n_sources: int,
+        nnz: int,
+        n_comp: int,
+        trial_seed: int,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        if nnz > n_sources:
+            raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
+
+        trial_rng = np.random.RandomState(int(trial_seed))
+        seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
+
+        active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_comp, n_times))
+
+        # deterministic component offsets
+        prime_offset = 104729
+
+        for src_idx in active_indices:
+            base_seed = int(trial_rng.randint(0, seed_high))
+            for k in range(n_comp):
+                comp_seed = int((base_seed + k * prime_offset) % seed_high)
+                x[src_idx, k, :] = self._simulate_erp_waveform(source_seed=comp_seed)
+
+        return x, active_indices
+
+    # -----------------------------
+    # Source time course simulation
+    # -----------------------------
+    
     def simulate(
         self,
-        orientation_type: str = "fixed",
-        n_sources: int = 100,
+        n_sources: int = 1284,
         nnz: int = 5,
-        n_trials: int = 1,
-        global_seed: int = 42,
+        orientation_type: str = "fixed",
+        coil_type: str = FIFF.FIFFV_COIL_EEG, # 1 (eeg) default coil type for simulation
+        seed: int = 42,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Simulate multiple trials of source time courses.
 
-        This function generates synthetic source activity for `n_trials` trials using 
-        ERP-like signals. Each trial uses a unique random seed derived from the 
-        provided `global_seed` for reproducibility.
-
-        Parameters
-        ----------
-        orientation_type : str
-            Orientation of the sources, either "fixed" or "free". Default is "fixed".
-        n_sources : int
-            Total number of sources to simulate. Default is 100.
-        nnz : int
-            Number of non-zero (active) sources in each trial. Must be less than or equal to `n_sources`. Default is 5.
-        n_trials : int
-            Number of trials to simulate. Default is 1.
-        global_seed : int
-            Seed for the random number generator to ensure reproducibility across trials. Default is 42.
-
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            - x_all_trials : np.ndarray
-                Array of shape (n_trials, ...) containing simulated source time courses.
-                Shape depends on source orientation: 
-                - fixed: (n_trials, n_sources, n_times)
-                - free:  (n_trials, n_sources, 3, n_times)
-            - active_indices_all_trials : np.ndarray
-                Array of shape (n_trials, nnz) containing indices of active sources per trial.
-        """
-        source_rng = np.random.RandomState(global_seed)
-        source_seeds = source_rng.randint(0, 2**32 - 1, size=n_trials)
-
-        x_all_trials = []
-        active_indices_all_trials = []
-
-        for i, seed in enumerate(source_seeds):
-            self.logger.debug(f"Simulating trial {i + 1}/{n_trials} with seed {seed}")
-            x, active_indices = self._simulate_source_time_courses(
-                orientation_type=orientation_type,
+        if orientation_type == "fixed":
+            return self._simulate_fixed(
                 n_sources=n_sources,
                 nnz=nnz,
-                trial_seed=seed,
+                trial_seed=int(seed),
             )
-            x_all_trials.append(x)
-            active_indices_all_trials.append(active_indices)
 
-        # Convert lists to numpy arrays
-        x_all_trials = np.array(x_all_trials)
-        active_indices_all_trials = np.array(active_indices_all_trials)
-        
-        # Log the shapes of the results
-        self.logger.debug(f"Completed simulating source time courses for {n_trials} trials.")
-        self.logger.debug(f"Shape of source time courses of all trials {n_trials} trials: {x_all_trials.shape}")
-        self.logger.debug(f"Shape of active indices for all {n_trials} trials: {active_indices_all_trials.shape}")
+        elif orientation_type == "free" and coil_type == FIFF.FIFFV_COIL_EEG: # 1 (eeg)
+            # general 3D coefficient process in the retained local 3D basis
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=3,
+                trial_seed=int(seed),
+            )
 
-        # Print active indices for all trials, each trial on a new line
-        # self.logger.info("Active indices for all trials:")
-        # for i, indices in enumerate(active_indices_all_trials):
-        #     self.logger.info(f"  Trial {i+1}: {indices}")
+        elif orientation_type == "free" and coil_type in [FIFF.FIFFV_COIL_VV_MAG_T1, FIFF.FIFFV_COIL_VV_PLANAR_T1]: # 3022 (mag), 3012 (grad)
+            # general reduced 2D coefficient process in the MEG-sensitive local subspace
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=2,
+                trial_seed=int(seed),
+            )
 
-        return x_all_trials, active_indices_all_trials
+        raise ValueError("orientation_type must be 'fixed' or 'free' with appropriate coil_type for MEG/EEG")
