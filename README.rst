@@ -89,6 +89,9 @@ The redesigned documentation is under ``docs/source`` and is based on the
 current source tree and workflow scripts. Executable tutorials in
 ``tutorials/`` are rendered with Sphinx-Gallery during ``make html``.
 
+The canonical published documentation is hosted on Read the Docs:
+https://calibrain.readthedocs.io/
+
 License
 -------
 

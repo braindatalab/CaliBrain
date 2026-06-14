@@ -43,8 +43,8 @@ Unreleased
 ----------
 
 *   [BREAKING] Raised the supported Python version floor to ``>=3.10`` and aligned package metadata, documentation builds, and contributor setup instructions accordingly.
-*   [DOCS] Reworked documentation CI into separate build-check and deploy workflows for GitHub Actions.
-*   [DOCS] Fixed the documentation version switcher to use explicit ``stable``, ``dev``, and tagged release targets, with version-aware Sphinx configuration and versioned GitHub Pages deployment paths.
+*   [DOCS] Reworked documentation CI so GitHub Actions validates documentation builds while Read the Docs remains the canonical published documentation host.
+*   [DOCS] Fixed the documentation version switcher to use explicit Read the Docs ``latest``, ``stable``, and tagged release targets.
 
 
 Version 1.0.0 (2026-06-11)

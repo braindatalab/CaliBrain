@@ -1,17 +1,17 @@
 [
   {
-    "name": "dev",
-    "version": "dev",
-    "url": "https://braindatalab.github.io/CaliBrain/dev/"
+    "name": "latest",
+    "version": "latest",
+    "url": "https://calibrain.readthedocs.io/latest/"
   },
   {
     "name": "stable",
     "version": "stable",
-    "url": "https://braindatalab.github.io/CaliBrain/"
+    "url": "https://calibrain.readthedocs.io/stable/"
   },
   {
     "name": "v1.0.0",
     "version": "v1.0.0",
-    "url": "https://braindatalab.github.io/CaliBrain/v1.0.0/"
+    "url": "https://calibrain.readthedocs.io/v1.0.0/"
   }
 ]
