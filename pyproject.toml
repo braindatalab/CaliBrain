@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrain"
-version = "1.0.0"
+version = "1.0.1"
 description = "Simulation-based evaluation of uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
@@ -41,7 +41,7 @@ dev = [
 
 docs = [
     "sphinx>=5.0.0,<8.0.0",
-    "sphinx-rtd-theme>=1.0.0",
+    "sphinx-rtd-theme>=1.0.1",
     "pydata-sphinx-theme>=0.13.0",  # Add this
     "sphinx-autodoc-typehints>=1.19.0",
     "sphinx-copybutton>=0.5.0",
