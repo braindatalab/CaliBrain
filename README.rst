@@ -2,18 +2,38 @@ CaliBrain
 =========
 
 .. image:: https://img.shields.io/badge/PyPI%20downloads-not%20published-lightgrey
-   :target: https://github.com/braindatalab/CaliBrain
-   :alt: PyPI downloads: not published
+   :target: https://pypi.org/project/calibrain/
+   :alt: PyPI version
 
-.. image:: https://img.shields.io/badge/conda--forge%20downloads-not%20published-lightgrey
-   :target: https://github.com/braindatalab/CaliBrain
-   :alt: conda-forge downloads: not published
+.. image:: https://img.shields.io/pypi/pyversions/calibrain.svg
+   :target: https://pypi.org/project/calibrain/
+   :alt: Supported Python versions
 
-CaliBrain is a scientific Python package for simulation-based uncertainty
-estimation and calibration in EEG/MEG inverse source imaging. It supports
-controlled source and sensor simulations, inverse source estimation, posterior
-uncertainty summaries, experiment-level calibration, and calibration figure
-generation.
+.. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
+   :target: https://calibrain.readthedocs.io/en/latest/
+   :alt: Documentation status
+
+.. image:: https://github.com/braindatalab/CaliBrain/actions/workflows/docs-check.yml/badge.svg
+   :target: https://github.com/braindatalab/CaliBrain/actions/workflows/docs-check.yml
+   :alt: Documentation build
+
+.. image:: https://img.shields.io/pypi/l/calibrain.svg
+   :target: https://github.com/braindatalab/CaliBrain/blob/main/LICENSE
+   :alt: License
+
+.. image:: https://img.shields.io/github/v/release/braindatalab/CaliBrain
+   :target: https://github.com/braindatalab/CaliBrain/releases
+   :alt: Latest GitHub release
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.20703249.svg
+   :target: https://doi.org/10.5281/zenodo.20703249
+   :alt: DOI
+
+CaliBrain is a Python package for simulation-based evaluation of uncertainty
+estimation and calibration in EEG/MEG inverse source imaging. It combines
+source and sensor simulation, inverse modeling, posterior uncertainty
+extraction, and isotonic recalibration into a reproducible workflow for
+comparing methods under controlled conditions.
 
 Current workflow
 ----------------
@@ -91,6 +111,13 @@ current source tree and workflow scripts. Executable tutorials in
 
 The canonical published documentation is hosted on Read the Docs:
 https://calibrain.readthedocs.io/
+
+Citation
+--------
+
+If you use CaliBrain in academic work, please cite the software archive:
+
+``Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. (2026). CaliBrain (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.20703249``
 
 License
 -------

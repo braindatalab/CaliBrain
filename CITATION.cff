@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use CaliBrain, please cite this software."
+title: "CaliBrain"
+version: "1.0.0"
+date-released: 2026-06-11
+type: software
+license: "BSD-3-Clause"
+doi: 10.5281/zenodo.20703249
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.20703249
+authors:
+  - family-names: "Orabe"
+    given-names: "Mohammad"
+    email: "orabe.mhd@gmail.com"
+    orcid: "https://orcid.org/0009-0004-7177-799X"
+  - family-names: "Huseynov"
+    given-names: "Ismail T."
+    email: "ismailhuseynov6666@gmail.com"
+    orcid: "https://orcid.org/0000-0002-4141-3544"
+  - family-names: "Nagarajan"
+    given-names: "Srikantan"
+    email: "Srikantan.Nagarajan@ucsf.edu"
+    orcid: "https://orcid.org/0000-0001-7209-3857"
+  - family-names: "Haufe"
+    given-names: "Stefan"
+    email: "haufe@tu-berlin.de"
+    orcid: "https://orcid.org/0000-0003-1470-9195"
+repository-code: "https://github.com/braindatalab/CaliBrain"
+url: "https://calibrain.readthedocs.io/"
+abstract: "CaliBrain is a Python package for simulation-based evaluation of uncertainty estimation and calibration in EEG/MEG inverse source imaging. It combines source and sensor simulation, inverse modeling, posterior uncertainty extraction, and isotonic recalibration into a reproducible workflow for comparing methods under controlled conditions."
+keywords:
+  - EEG
+  - MEG
+  - uncertainty estimation
+  - calibration
+  - inverse source imaging
