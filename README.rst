@@ -117,7 +117,7 @@ Citation
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-``Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. (2026). CaliBrain (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.20703249``
+``Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. (2026). CaliBrain (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20703249``
 
 License
 -------
