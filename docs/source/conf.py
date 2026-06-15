@@ -21,6 +21,11 @@ copyright = '2025, Mohammad Orabe, Ismail Huseynov'
 author = 'Mohammad Orabe, Ismail Huseynov'
 print(f"DEBUG: calibrain.__version__ = {calibrain.__version__}")
 release = calibrain.__version__
+documentation_version = os.environ.get(
+    "READTHEDOCS_VERSION",
+    os.environ.get("DOCS_VERSION", f"v{release}"),
+)
+switcher_json_url = "https://calibrain.readthedocs.io/en/latest/_static/switcher.json"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -51,9 +56,8 @@ html_theme_options = {
     
     # VERSION CONFIGURATION
     "switcher": {
-        # "json_url": "https://braindatalab.github.io/CaliBrain/_static/switcher.json",
-        "json_url": "_static/switcher.json",  # Use local path for testing
-        "version_match": f"v{release}",  # Current version
+        "json_url": switcher_json_url,
+        "version_match": documentation_version,
     },
     
     # SIDEBAR CONFIGURATION - These are key for PyData theme
