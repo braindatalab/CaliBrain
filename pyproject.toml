@@ -7,7 +7,7 @@ name = "calibrain"
 version = "0.1.1"
 description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
-    {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"}
+    {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
 ]
 license = "MIT"  #TODO
