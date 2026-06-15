@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,11 @@ copyright = '2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan 
 author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
 release = calibrain.__version__
 version = release
-documentation_version = "dev"
+documentation_version = os.environ.get(
+    "READTHEDOCS_VERSION",
+    os.environ.get("DOCS_VERSION", "latest"),
+)
+switcher_json_url = "https://calibrain.readthedocs.io/en/latest/_static/switcher.json"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -59,7 +64,7 @@ html_theme_options = {
 
     "announcement": f"You are viewing CaliBrain v{release} documentation",
     "switcher": {
-        "json_url": "_static/switcher.json",
+        "json_url": switcher_json_url,
         "version_match": documentation_version,
     },
     
