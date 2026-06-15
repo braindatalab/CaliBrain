@@ -10,6 +10,11 @@
     "url": "https://calibrain.readthedocs.io/en/stable/"
   },
   {
+    "name": "v1.0.0",
+    "version": "v1.0.0",
+    "url": "https://calibrain.readthedocs.io/en/v1.0.0/"
+  },
+  {
     "name": "v0.1.2",
     "version": "v0.1.2",
     "url": "https://calibrain.readthedocs.io/en/v0.1.2/"
