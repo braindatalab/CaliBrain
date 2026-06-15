@@ -1,56 +1,35 @@
 Changelog
 =========
 
-This document records notable changes to the CaliBrain project.
+This document records notable changes to the CaliBrain package.
 
 .. note::
+    This page summarizes notable package, workflow, and documentation changes.
 
-   This page is kept as a historical record. Older entries describe earlier
-   package states and may mention methods or workflow paths that are no longer
-   part of the current supported pipeline.
-
-Current status
---------------
-
-Version 1.0.0 marks a major consolidation of the CaliBrain package around a
-stable, production-ready workflow. The package is now centered on simulation-based
-uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
-robust support for fixed and free-orientation source models.
-
-Supported inverse solvers
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The current supported workflow pipeline is built around the following inverse
-solvers:
-
-* ``gamma_map_sflex`` — Sparse Flexible Gamma MAP
-* ``gamma_lambda_map_sflex`` — Joint Gamma-Lambda MAP
-* ``BMN`` — Bayesian Minimum Norm
-* ``BMN_joint`` — Bayesian Minimum Norm with joint noise learning
-
-Each solver supports both fixed-orientation and free-orientation source
-configurations, with unit-aware handling of EEG/MEG signal scaling and posterior
-uncertainty summaries.
-
-Deprecated and removed methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Older methods such as ``gamma_map``, ``eLORETA``, and related cross-validation
-branches have been removed from the supported pipeline. These may still appear
-in historical changelog entries below but are no longer maintained or tested.
-
-Unreleased
-----------
+Version 1.0.1 (2026-06-16)
+--------------------------
 
 *   [BREAKING] Raised the supported Python version floor to ``>=3.10`` and aligned package metadata, documentation builds, and contributor setup instructions accordingly.
 *   [DOCS] Reworked documentation CI so GitHub Actions validates documentation builds while Read the Docs remains the canonical published documentation host.
 *   [DOCS] Fixed the documentation version switcher to use explicit Read the Docs ``latest``, ``stable``, and tagged release targets.
+*   [BUGFIX] Completed package dependency declarations for wheel-based installation and clean-environment imports.
+*   [FEATURE] Added Publishing GitHub Actions workflow for PyPI releases triggered from version tags.
+*   [FEATURE] Added Zenodo DOI citation metadata and surfaced the software DOI throughout the package documentation.
+*   [FEATURE] Added a root ``CITATION.cff`` file with author metadata, ORCID identifiers, release metadata, and Zenodo DOI information.
+*   [DOCS] Added Read the Docs, PyPI, license, release, workflow, and DOI badges to the README and documentation landing page.
+*   [DOCS] Consolidated the root project README around ``README.rst`` and removed the duplicate Markdown copy.
+*   [ENHANCEMENT] Refined the package description across metadata, citation metadata, README, and docs landing pages.
 
 
 Version 1.0.0 (2026-06-11)
 --------------------------
 
-*   [BREAKING] Consolidated the supported inverse workflow around     ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``.
+*   Version 1.0.0 marks a major consolidation of the CaliBrain package around a
+stable, production-ready workflow. The package is now centered on simulation-based
+uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
+robust support for fixed and free-orientation source models.
+*   [BREAKING] Consolidated the supported inverse workflow around     ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``. Older methods such as ``gamma_map``, ``eLORETA``, and related cross-validation
+branches have been removed from the supported pipeline.
 *   [BREAKING] Reworked calibration from within-subject, across-source fitting to pooled source datasets across subjects, with isotonic regression now fit on subject-level splits rather than a single subject at a time.
 *   [FEATURE] Introduce five calibration modes (``precal``, ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``) for evaluating calibration performance under different fitting conditions.
 *   [FEATURE] Expanded the core simulation stack with stronger support for source simulation, sensor simulation, and leadfield handling across fixed and free-orientation settings.
@@ -59,7 +38,6 @@ Version 1.0.0 (2026-06-11)
 *   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for ``mse``, ``mae``, ``rmse``, ``rmae``, ``mean_posterior_std``, ``emd``, ``mean_signed_deviation``, ``mean_absolute_deviation``, ``max_underconfidence_deviation``, and ``max_overconfidence_deviation``.
 *   [BREAKING] Removed the legacy benchmarking class and replaced it with ``DataGenerator``, which wraps solver grids, ``SourceSimulator``, ``SensorSimulator``, ``LeadfieldBuilder``, and posterior-summary generation in a single workflow abstraction.
 *   [BUGFIX] Fixed unit handling and source/sensor projection consistency across the simulation pipeline.
-
 
 
 Version 0.1.2 (2025-08-19)
