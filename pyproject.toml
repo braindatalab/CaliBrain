@@ -28,6 +28,10 @@ dependencies = [
     "ipywidgets", # for interactive widgets in 3D brain surface plotting
     "PyQt5", # for creating the GUI
     "scipy",
+    "h5py",
+    "matplotlib",
+    "joblib",
+    "myst-parser",
 ]
 
 [project.optional-dependencies]
