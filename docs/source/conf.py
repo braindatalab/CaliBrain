@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 import calibrain
 
 project = 'CaliBrain'
-copyright = '2025, Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
+copyright = '2026, Mohammad Orabe'
 author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
 release = calibrain.__version__
 version = release

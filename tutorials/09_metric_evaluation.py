@@ -1,5 +1,5 @@
 """
-08. Metric Evaluation
+09. Metric Evaluation
 =====================
 
 This tutorial mainly explains the ``MetricEvaluator`` class. It demonstrates
@@ -29,7 +29,11 @@ It covers:
 #
 # ``MetricEvaluator`` is the high-level class that summarizes these quantities.
 # It wraps ``UncertaintyEstimator`` and exposes workflow-facing evaluation
-# methods.
+# methods. This is intentionally more general than the named calibration modes
+# such as ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and
+# ``post_fixed``: those modes define common recalibration workflows, whereas
+# evaluation can be performed in multiple ways once predictions and uncertainty
+# summaries are available.
 
 import matplotlib.pyplot as plt
 import numpy as np
