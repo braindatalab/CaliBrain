@@ -29,9 +29,7 @@ CaliBrain
    :target: https://doi.org/10.5281/zenodo.20703249
    :alt: DOI
 
-CaliBrain is a Python framework for uncertainty estimation and calibration in
-EEG/MEG inverse source imaging.
-
+A Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
 Overview
 --------
 

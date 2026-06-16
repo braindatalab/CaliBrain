@@ -38,14 +38,3 @@ BibTeX
      url = {https://doi.org/10.5281/zenodo.20703249}
    }
 
-What to report
---------------
-
-For scientific reproducibility, report:
-
-- CaliBrain version or git commit hash.
-- Python version and key dependency versions.
-- Workflow configs used for data generation, aggregation, and calibration.
-- Dataset or leadfield source.
-- Calibration mode, solver, orientation type, noise type, SNR, NNZ, and split
-  definition.

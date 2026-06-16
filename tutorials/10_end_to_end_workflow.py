@@ -1,5 +1,5 @@
 """
-09. End-to-End Workflow
+10. End-to-End Workflow
 =======================
 
 This tutorial ties together the main CaliBrain component classes in one small,
@@ -34,7 +34,12 @@ conceptual order as the current fixed-orientation calibration workflow.
 #    matched eval split.
 #
 # This tutorial demonstrates that full chain with the current high-level class
-# interfaces and an active fixed-orientation solver.
+# interfaces and an active fixed-orientation solver. The concrete example below
+# follows the logic of ``post_oracle``. Other documented workflow examples such
+# as ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed`` change the
+# split construction, not the underlying recalibration mechanism. Evaluation can
+# then be extended beyond this one example with the tools shown in
+# :doc:`metric evaluation </auto_tutorials/09_metric_evaluation>`.
 
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -101,9 +106,10 @@ sensor_simulator.set_sensor_metadata(
 # Step 2: build a deterministic synthetic leadfield with ``LeadfieldBuilder``
 # ---------------------------------------------------------------------------
 #
-# In paper-scale analyses, ``LeadfieldBuilder`` usually loads a precomputed
-# subject-specific leadfield. Here we use its lightweight ``random`` mode and
-# pair it with synthetic source coordinates for the sFLEX solver.
+# In larger simulation studies, ``LeadfieldBuilder`` usually loads a
+# precomputed subject-specific leadfield. Here we use its lightweight
+# ``random`` mode and pair it with synthetic source coordinates for the sFLEX
+# solver.
 
 leadfield_builder = LeadfieldBuilder(leadfield_dir="unused_demo_leadfields")
 leadfield_data = leadfield_builder.get_leadfield(
