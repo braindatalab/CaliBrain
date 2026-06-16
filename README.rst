@@ -9,6 +9,10 @@ CaliBrain
    :target: https://pypi.org/project/calibrain/
    :alt: Supported Python versions
 
+.. image:: https://static.pepy.tech/badge/calibrain
+   :target: https://pepy.tech/projects/calibrain
+   :alt: Total downloads
+
 .. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
    :target: https://calibrain.readthedocs.io/en/latest/
    :alt: Documentation status
@@ -17,7 +21,7 @@ CaliBrain
    :target: https://github.com/braindatalab/CaliBrain/actions/workflows/docs-check.yml
    :alt: Documentation build
 
-.. image:: https://img.shields.io/pypi/l/calibrain.svg
+.. image:: https://img.shields.io/github/license/braindatalab/CaliBrain
    :target: https://github.com/braindatalab/CaliBrain/blob/main/LICENSE
    :alt: License
 
@@ -56,7 +60,7 @@ Citation
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-``Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. (2026). CaliBrain: Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20703249``
+``Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20703249``
 
 Workflow
 --------
