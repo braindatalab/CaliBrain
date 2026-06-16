@@ -177,6 +177,6 @@ fig.tight_layout()
 # - ``simulate``: full MNE forward-model construction in production;
 # - ``load``: standard workflow mode for precomputed leadfield datasets.
 #
-# For paper-scale workflows, use ``get_data_path`` to locate the local dataset
+# For larger workflow runs, use ``get_data_path`` to locate the local dataset
 # root and point ``LeadfieldBuilder`` to the directory containing
 # ``*_fixed_leadfield.npz`` or ``*_free_leadfield.npz`` files.

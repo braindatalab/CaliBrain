@@ -7,13 +7,13 @@ maintenance conventions.
 Project architecture
 --------------------
 
-The repository has three main layers:
+.. The repository has three main layers:
 
-* ``calibrain/``: importable package code.
-* ``calibrain/workflows/``: reproducible scripts for data generation,
-  aggregation, calibration, and paper figure plotting.
-* ``configs/``: Python configuration files defining workflow inputs, filters,
-  and output paths.
+.. * ``calibrain/``: importable package code.
+.. * ``calibrain/workflows/``: reproducible scripts for data generation,
+..   aggregation, calibration, and figure plotting.
+.. * ``configs/``: Python configuration files defining workflow inputs, filters,
+..   and output paths.
 
 Important implementation modules:
 
@@ -78,8 +78,7 @@ A complete CI setup should include:
 * optional workflow smoke tests on very small synthetic grids.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Development topics
+   :hidden:
 
    contributing
    changelog

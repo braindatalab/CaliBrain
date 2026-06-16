@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:02.760** total execution time for 10 files **from all galleries**:
+**00:00.434** total execution time for 11 files **from all galleries**:
 
 .. container::
 
@@ -32,33 +32,36 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_tutorials_05_source_estimation.py` (``../../tutorials/05_source_estimation.py``)
-     - 00:00.752
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_06_uncertainty_estimation.py` (``../../tutorials/06_uncertainty_estimation.py``)
-     - 00:00.411
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_09_end_to_end_workflow.py` (``../../tutorials/09_end_to_end_workflow.py``)
-     - 00:00.319
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_02_source_simulation.py` (``../../tutorials/02_source_simulation.py``)
-     - 00:00.265
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_08_metric_evaluation.py` (``../../tutorials/08_metric_evaluation.py``)
-     - 00:00.255
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_07_uncertainty_calibration.py` (``../../tutorials/07_uncertainty_calibration.py``)
-     - 00:00.222
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_04_sensor_simulation.py` (``../../tutorials/04_sensor_simulation.py``)
-     - 00:00.189
-     - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_10_data_generator.py` (``../../tutorials/10_data_generator.py``)
-     - 00:00.178
+   * - :ref:`sphx_glr_auto_tutorials_10_end_to_end_workflow.py` (``../../tutorials/10_end_to_end_workflow.py``)
+     - 00:00.322
      - 0.0
    * - :ref:`sphx_glr_auto_tutorials_03_leadfield_building.py` (``../../tutorials/03_leadfield_building.py``)
-     - 00:00.095
+     - 00:00.112
      - 0.0
-   * - :ref:`sphx_glr_auto_tutorials_01_what_is_calibrain.py` (``../../tutorials/01_what_is_calibrain.py``)
-     - 00:00.075
+   * - :ref:`sphx_glr_auto_tutorials_00_motivation.py` (``../../tutorials/00_motivation.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_01_quick_start.py` (``../../tutorials/01_quick_start.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_02_source_simulation.py` (``../../tutorials/02_source_simulation.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_04_sensor_simulation.py` (``../../tutorials/04_sensor_simulation.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_05_data_generator.py` (``../../tutorials/05_data_generator.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_06_source_estimation.py` (``../../tutorials/06_source_estimation.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_07_uncertainty_estimation.py` (``../../tutorials/07_uncertainty_estimation.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_08_uncertainty_calibration.py` (``../../tutorials/08_uncertainty_calibration.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_09_metric_evaluation.py` (``../../tutorials/09_metric_evaluation.py``)
+     - 00:00.000
      - 0.0
