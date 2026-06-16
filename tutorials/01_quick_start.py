@@ -1,6 +1,6 @@
 """
-01. Introduction
-================
+01. Quick Start
+===============
 
 CaliBrain studies whether posterior uncertainty estimates in M/EEG inverse
 source imaging are empirically calibrated. In a calibrated model, intervals
@@ -45,8 +45,8 @@ rng = np.random.default_rng(RANDOM_SEED)
 # -------------------------------------------------
 #
 # The source matrix has shape ``(n_sources, n_times)``. Most sources are zero;
-# a small subset contains ERP-like activity. Later tutorials replace this toy
-# construction with ``SourceSimulator`` and full workflow outputs.
+# a small subset contains ERP-like activity. The full source-simulation setup is
+# explained in :doc:`Source simulation </auto_tutorials/02_source_simulation>`.
 
 n_sources = 48
 n_times = 80
@@ -63,8 +63,10 @@ x_true[active_sources] = rng.normal(1.0, 0.2, size=(5, 1)) * erp_waveform
 #
 # In real workflows, inverse solvers such as ``gamma_map_sflex``
 # or ``BMN`` produce posterior means and
-# covariance estimates. This first tutorial uses controlled synthetic posterior
-# statistics so the calibration concept is isolated from solver details.
+# covariance estimates. Those steps are covered in
+# :doc:`Source estimation </auto_tutorials/06_source_estimation>`. This quick
+# start uses controlled synthetic posterior statistics so the calibration
+# concept is isolated from solver details.
 
 posterior_var = np.full(n_sources, 0.06**2)
 x_hat = x_true + rng.normal(
@@ -80,7 +82,8 @@ x_hat = x_true + rng.normal(
 # ``UncertaintyEstimator`` constructs intervals over a nominal coverage grid and
 # reports the empirical fraction of source values covered by those intervals.
 # The aggregated method averages over time before evaluating source-level
-# intervals.
+# intervals. The uncertainty representations used in the workflow are explained
+# in :doc:`Uncertainty estimation </auto_tutorials/07_uncertainty_estimation>`.
 
 nominal_coverages = np.linspace(0.0, 1.0, 11)
 uncertainty = UncertaintyEstimator(nominal_coverages=nominal_coverages)
@@ -98,7 +101,9 @@ print(np.round(curve["empirical_coverages"], 3))
 #
 # The dashed diagonal is perfect calibration. Points below the diagonal indicate
 # undercoverage, i.e. overconfident uncertainty. Points above the diagonal
-# indicate overcoverage, i.e. underconfident uncertainty.
+# indicate overcoverage, i.e. underconfident uncertainty. Post-calibration
+# variants of this analysis are covered in
+# :doc:`Calibration methods </auto_tutorials/08_uncertainty_calibration>`.
 
 fig, ax = plt.subplots(figsize=(5, 5))
 ax.plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
@@ -118,11 +123,3 @@ ax.set_aspect("equal", adjustable="box")
 ax.grid(True, linestyle="--", alpha=0.4)
 ax.legend()
 fig.tight_layout()
-
-# %%
-# Summary
-# -------
-#
-# Production workflows use the same scientific objects but persist them as H5
-# posterior summaries, manifest CSV files, aggregated NPZ datasets, calibration
-# JSON summaries, and publication figures.
