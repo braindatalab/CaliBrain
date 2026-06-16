@@ -28,7 +28,7 @@ authors:
     orcid: "https://orcid.org/0000-0003-1470-9195"
 repository-code: "https://github.com/braindatalab/CaliBrain"
 url: "https://calibrain.readthedocs.io/"
-abstract: "CaliBrain is a Python package for simulation-based evaluation of uncertainty estimation and calibration in EEG/MEG inverse source imaging. It combines source and sensor simulation, inverse modeling, posterior uncertainty extraction, and isotonic recalibration into a reproducible workflow for comparing methods under controlled conditions."
+abstract: "CaliBrain is a Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging."
 keywords:
   - EEG
   - MEG

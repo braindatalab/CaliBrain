@@ -25,11 +25,13 @@ Version 1.0.0 (2026-06-11)
 --------------------------
 
 *   Version 1.0.0 marks a major consolidation of the CaliBrain package around a
-stable, production-ready workflow. The package is now centered on simulation-based
-uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
-robust support for fixed and free-orientation source models.
-*   [BREAKING] Consolidated the supported inverse workflow around     ``gamma_map_sflex``, ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``. Older methods such as ``gamma_map``, ``eLORETA``, and related cross-validation
-branches have been removed from the supported pipeline.
+    stable, production-ready workflow. The package is now centered on simulation-based
+    uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
+    robust support for fixed and free-orientation source models.
+*   [BREAKING] Consolidated the supported inverse workflow around ``gamma_map_sflex``,
+    ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``. Older methods such as
+    ``gamma_map``, ``eLORETA``, and related cross-validation branches have been
+    removed from the supported pipeline.
 *   [BREAKING] Reworked calibration from within-subject, across-source fitting to pooled source datasets across subjects, with isotonic regression now fit on subject-level splits rather than a single subject at a time.
 *   [FEATURE] Introduce five calibration modes (``precal``, ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``) for evaluating calibration performance under different fitting conditions.
 *   [FEATURE] Expanded the core simulation stack with stronger support for source simulation, sensor simulation, and leadfield handling across fixed and free-orientation settings.
