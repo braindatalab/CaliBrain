@@ -9,17 +9,13 @@ CaliBrain
    :target: https://pypi.org/project/calibrain/
    :alt: Supported Python versions
 
-.. image:: https://static.pepy.tech/badge/calibrain
-   :target: https://pepy.tech/projects/calibrain
-   :alt: Total downloads
-
-.. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
-   :target: https://calibrain.readthedocs.io/en/latest/
-   :alt: Documentation status
-
-.. image:: https://github.com/braindatalab/CaliBrain/actions/workflows/docs-check.yml/badge.svg
-   :target: https://github.com/braindatalab/CaliBrain/actions/workflows/docs-check.yml
-   :alt: Documentation build
+.. .. image:: https://static.pepy.tech/badge/calibrain
+..    :target: https://pepy.tech/projects/calibrain
+..    :alt: Total downloads
+.. 
+.. .. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
+..    :target: https://calibrain.readthedocs.io/en/latest/
+..    :alt: Documentation status
 
 .. image:: https://img.shields.io/github/license/braindatalab/CaliBrain
    :target: https://github.com/braindatalab/CaliBrain/blob/main/LICENSE
