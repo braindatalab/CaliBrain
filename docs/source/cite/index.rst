@@ -11,7 +11,7 @@ Cite CaliBrain as software:
 
 .. code-block:: text
 
-   Orabe, M., Huseynov, I., Nagarajan, S., & Haufe, S. (2026).
+   Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026).
    CaliBrain: Python framework for uncertainty estimation and calibration in
    EEG/MEG inverse source imaging (v1.0.1). Zenodo.
    https://doi.org/10.5281/zenodo.20703249
