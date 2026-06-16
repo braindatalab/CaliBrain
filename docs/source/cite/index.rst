@@ -13,7 +13,7 @@ Cite CaliBrain as software:
 
    Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026).
    CaliBrain: Python framework for uncertainty estimation and calibration in
-   EEG/MEG inverse source imaging (v1.0.1). Zenodo.
+   EEG/MEG inverse source imaging (v1.0.2). Zenodo.
    https://doi.org/10.5281/zenodo.20703249
 
 If you use another release, replace the version with the exact version used for
@@ -31,10 +31,9 @@ BibTeX
    @software{calibrain,
      title = {CaliBrain: Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging},
      author = {Orabe, Mohammad and Huseynov, Ismail and Nagarajan, Srikantan and Haufe, Stefan},
-     version = {1.0.1},
+     version = {1.0.2},
      year = {2026},
      publisher = {Zenodo},
      doi = {10.5281/zenodo.20703249},
      url = {https://doi.org/10.5281/zenodo.20703249}
    }
-

@@ -6,6 +6,13 @@ This document records notable changes to the CaliBrain package.
 .. note::
     This page summarizes notable package, workflow, and documentation changes.
 
+Version 1.0.2 (2026-06-16)
+--------------------------
+
+*   [DOCS] Reworked the installation documentation into separate beginner-oriented PyPI, pip, and conda guides with clearer step-by-step instructions.
+*   [DOCS] Refined the tutorial and documentation structure around the current workflow, conceptual overview, glossary, datasets, and runnable gallery pages.
+*   [DOCS] Added manual ``Examples using calibrain.XXX`` sections to API reference pages so core classes and workflow entry points link directly to relevant tutorials.
+
 Version 1.0.1 (2026-06-16)
 --------------------------
 
