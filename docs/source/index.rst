@@ -4,21 +4,21 @@
 CaliBrain
 =========
 
-.. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
-   :target: https://calibrain.readthedocs.io/en/latest/
-   :alt: Documentation status
-
 .. image:: https://img.shields.io/pypi/v/calibrain.svg
    :target: https://pypi.org/project/calibrain/
    :alt: PyPI version
+
+.. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
+   :target: https://calibrain.readthedocs.io/en/latest/
+   :alt: Documentation status
 
 .. image:: https://img.shields.io/pypi/pyversions/calibrain.svg
    :target: https://pypi.org/project/calibrain/
    :alt: Supported Python versions
 
-.. image:: https://static.pepy.tech/badge/calibrain
-   :target: https://pepy.tech/projects/calibrain
-   :alt: Total downloads
+.. .. image:: https://static.pepy.tech/badge/calibrain
+..    :target: https://pepy.tech/projects/calibrain
+..    :alt: Total downloads
 
 .. image:: https://img.shields.io/github/license/braindatalab/CaliBrain
    :target: https://github.com/braindatalab/CaliBrain/blob/main/LICENSE
