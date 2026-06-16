@@ -1,5 +1,5 @@
 """
-06. Uncertainty Estimation
+07. Uncertainty Estimation
 ==========================
 
 This tutorial mainly explains the ``UncertaintyEstimator`` class. It

@@ -1,5 +1,5 @@
 """
-07. Calibration Methods
+08. Calibration Methods
 =======================
 
 This tutorial mainly explains the ``UncertaintyCalibrator`` class through the
@@ -17,6 +17,11 @@ and demonstrates two of them concretely:
 
 - ``precal``: evaluate raw empirical coverage without fitting a recalibration map;
 - ``post_oracle``: fit on a matched train split and evaluate on a matched eval split.
+
+The remaining post-calibration modes are presented as workflow examples with
+different split definitions. They all use the same recalibration mechanism.
+More general evaluation questions are handled separately by
+``MetricEvaluator``.
 """
 
 
@@ -31,7 +36,7 @@ and demonstrates two of them concretely:
 # on a training split and then evaluates the corrected nominal coverages on a
 # held-out evaluation split.
 #
-# The workflow-level calibration modes are:
+# The workflow-level calibration modes used in the documentation are:
 #
 # - ``precal``: no fit, evaluate raw empirical coverage only;
 # - ``post_oracle``: fit and evaluate on matched conditions;
@@ -39,8 +44,10 @@ and demonstrates two of them concretely:
 # - ``post_pooled_mismatch``: fit on mismatched pooled conditions, evaluate on target data;
 # - ``post_fixed``: fit once at a reference setting and reuse that mapping across a sweep.
 #
-# This tutorial demonstrates the first two modes with the current high-level
-# API: ``UncertaintyCalibrator.calibrate(...)``.
+# These names refer to benchmark-style train/evaluation configurations around a
+# common isotonic recalibration step; they are not five different calibration
+# algorithms. This tutorial demonstrates two representative cases with the
+# current high-level API: ``UncertaintyCalibrator.calibrate(...)``.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -245,6 +252,10 @@ print("post_oracle recalibrated nominal coverages:", post_oracle_results["post_c
 # - ``post_fixed``: one reference train split, reused across many eval splits.
 #
 # They still rely on the same high-level calibration logic demonstrated above.
+# Evaluation itself can then be carried out in several ways: by inspecting raw
+# and recalibrated coverage curves, by computing summary calibration metrics, or
+# by comparing transfer behavior across conditions. Those broader evaluation
+# choices are covered in :doc:`metric evaluation </auto_tutorials/09_metric_evaluation>`.
 
 # %%
 # Plot ``precal`` and ``post_oracle``

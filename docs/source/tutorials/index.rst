@@ -1,18 +1,14 @@
 Tutorials
 =========
 
-The tutorials page is the main runnable learning surface of the documentation.
-It follows a deliberate progression:
+This tutorial gallery introduces the main CaliBrain workflows step by step.
+Each tutorial combines short explanation with runnable code and focuses on one
+part of the package at a time.
 
-1. scientific motivation and calibration concepts;
-2. source, leadfield, and sensor simulation;
-3. inverse source estimation;
-4. uncertainty estimation and calibration;
-5. metric evaluation, end-to-end calibration, and workflow orchestration.
-
-The first tutorials therefore form a coherent path from simulation inputs to
-calibration outputs before introducing the higher-level ``DataGenerator``
-workflow wrapper.
+The tutorials are ordered progressively. They begin with the uncertainty
+calibration problem itself, then move through simulation, source estimation,
+uncertainty estimation, calibration, evaluation, and finally the combined
+workflow.
 
 .. raw:: html
 
@@ -22,23 +18,39 @@ workflow wrapper.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Scientific motivation, calibration concepts, and the minimal objects needed for an empirical coverage curve.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Provides the theoretical background for the forward model, posterior uncertainty, empirical coverage, and isotonic recalibration used throughout the documentation.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_01_what_is_calibrain_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_00_motivation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/01_what_is_calibrain`
+  :doc:`/auto_tutorials/00_motivation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">01. Introduction</div>
+      <div class="sphx-glr-thumbnail-title">00. Motivation</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Source-level simulation for fixed orientation, free-orientation EEG, and free-orientation MEG.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Defines the uncertainty-calibration problem and constructs the minimal objects needed for an empirical coverage curve.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_01_quick_start_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/01_quick_start`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">01. Quick Start</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses SourceSimulator to generate sparse ERP-like source activity for fixed orientation and free-orientation EEG/MEG settings.">
 
 .. only:: html
 
@@ -54,7 +66,7 @@ workflow wrapper.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Leadfield retrieval in random, simulate, and load modes, with unit-aware interpretation.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses LeadfieldBuilder in random, simulate, and load modes and explains how source and sensor units relate through the forward model.">
 
 .. only:: html
 
@@ -70,7 +82,7 @@ workflow wrapper.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Projection from source activity to noisy sensor measurements and the workflow noise-variance modes used downstream.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses SensorSimulator to project sources to sensors, add Gaussian noise, and interpret the oracle, baseline, and adaptive joint-learning noise modes.">
 
 .. only:: html
 
@@ -86,98 +98,98 @@ workflow wrapper.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Current active inverse solvers: gamma_map_sflex, gamma_lambda_map_sflex, BMN, and BMN_joint.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses DataGenerator as the batch orchestration layer across simulation, leadfield loading, sensor generation, source estimation, and run-wise metadata collection.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_05_source_estimation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_05_data_generator_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/05_source_estimation`
+  :doc:`/auto_tutorials/05_data_generator`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">05. Source Estimation</div>
+      <div class="sphx-glr-thumbnail-title">05. Data Generation</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Convert posterior means and covariance summaries into calibration-ready marginal intervals and full-covariance ellipsoids.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses SourceEstimator with the currently active inverse solvers: gamma_map_sflex, gamma_lambda_map_sflex, BMN, and BMN_joint.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_06_uncertainty_estimation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_06_source_estimation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/06_uncertainty_estimation`
+  :doc:`/auto_tutorials/06_source_estimation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">06. Uncertainty Estimation</div>
+      <div class="sphx-glr-thumbnail-title">06. Source Estimation</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Calibration modes and isotonic recalibration using the high-level UncertaintyCalibrator API.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses UncertaintyEstimator to derive fixed-orientation variances, free-orientation marginal intervals, and free-orientation full_cov ellipsoids.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_07_uncertainty_calibration_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_07_uncertainty_estimation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/07_uncertainty_calibration`
+  :doc:`/auto_tutorials/07_uncertainty_estimation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">07. Calibration Methods</div>
+      <div class="sphx-glr-thumbnail-title">07. Uncertainty Estimation</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Quantitative evaluation of calibration curves, summary metrics, source error, and posterior uncertainty.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses UncertaintyCalibrator to explain precal, post_oracle, post_pooled, post_pooled_mismatch, and post_fixed, with runnable matched-split examples.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_08_metric_evaluation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_08_uncertainty_calibration_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/08_metric_evaluation`
+  :doc:`/auto_tutorials/08_uncertainty_calibration`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">08. Metric Evaluation</div>
+      <div class="sphx-glr-thumbnail-title">08. Calibration Methods</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A full runnable chain from source simulation through leadfield building, sensor simulation, source estimation, uncertainty estimation, and post-calibration evaluation.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Uses MetricEvaluator to compute calibration curves, summary calibration metrics, source error summaries, and uncertainty summaries.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_09_end_to_end_workflow_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_09_metric_evaluation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/09_end_to_end_workflow`
+  :doc:`/auto_tutorials/09_metric_evaluation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">09. End-to-End Workflow</div>
+      <div class="sphx-glr-thumbnail-title">09. Metric Evaluation</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="High-level workflow orchestration across source simulation, leadfield loading, sensor simulation, source estimation, and posterior-summary persistence.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Runs a complete in-memory workflow from SourceSimulator through UncertaintyCalibrator, including pre- and post-calibration evaluation.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_data_generator_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_end_to_end_workflow_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/10_data_generator`
+  :doc:`/auto_tutorials/10_end_to_end_workflow`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">10. Data Generation</div>
+      <div class="sphx-glr-thumbnail-title">10. End-to-End Workflow</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -189,13 +201,14 @@ workflow wrapper.
 .. toctree::
   :hidden:
 
-  /auto_tutorials/01_what_is_calibrain
+  /auto_tutorials/00_motivation
+  /auto_tutorials/01_quick_start
   /auto_tutorials/02_source_simulation
   /auto_tutorials/03_leadfield_building
   /auto_tutorials/04_sensor_simulation
-  /auto_tutorials/05_source_estimation
-  /auto_tutorials/06_uncertainty_estimation
-  /auto_tutorials/07_uncertainty_calibration
-  /auto_tutorials/08_metric_evaluation
-  /auto_tutorials/09_end_to_end_workflow
-  /auto_tutorials/10_data_generator
+  /auto_tutorials/05_data_generator
+  /auto_tutorials/06_source_estimation
+  /auto_tutorials/07_uncertainty_estimation
+  /auto_tutorials/08_uncertainty_calibration
+  /auto_tutorials/09_metric_evaluation
+  /auto_tutorials/10_end_to_end_workflow

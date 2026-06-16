@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrain"
-version = "1.0.0"
-description = "Uncertainty estimation and calibration in EEG/MEG inverse source imaging"
+version = "1.0.2"
+description = "Python framework for uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
@@ -28,6 +28,10 @@ dependencies = [
     "ipywidgets", # for interactive widgets in 3D brain surface plotting
     "PyQt5", # for creating the GUI
     "scipy",
+    "h5py",
+    "matplotlib",
+    "joblib",
+    "myst-parser",
 ]
 
 [project.optional-dependencies]
@@ -37,7 +41,7 @@ dev = [
 
 docs = [
     "sphinx>=5.0.0,<8.0.0",
-    "sphinx-rtd-theme>=1.0.0",
+    "sphinx-rtd-theme>=1.0.1",
     "pydata-sphinx-theme>=0.13.0",  # Add this
     "sphinx-autodoc-typehints>=1.19.0",
     "sphinx-copybutton>=0.5.0",

@@ -1,5 +1,5 @@
 """
-10. Data Generation
+05. Data Generation
 ===================
 
 This tutorial mainly explains the high-level ``DataGenerator`` class.
