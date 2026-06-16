@@ -1,5 +1,5 @@
 """
-05. Source Estimation
+06. Source Estimation
 =====================
 
 This tutorial mainly explains the ``SourceEstimator`` class. It demonstrates

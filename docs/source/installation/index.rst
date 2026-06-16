@@ -1,100 +1,39 @@
 Installation
 ============
 
-CaliBrain can be installed from source for development or installed into a
-standard Python environment for running workflows. The package metadata currently
-declares Python ``>=3.10``; in practice, the scientific Python dependencies used
-by the workflows are best managed with a recent conda or virtualenv environment.
+Choose one installation method and follow it from start to finish.
 
-Dependencies
+Requirements
 ------------
 
-Core dependencies are declared in ``pyproject.toml`` and include:
+Before installing CaliBrain, make sure that:
 
-* ``numpy``
-* ``pandas``
-* ``scipy``
-* ``scikit-learn``
-* ``mne``
-* ``POT``
-* ``nibabel``
-* ``pyyaml``
-* ``matplotlib`` and visualization dependencies
+- you have Python ``3.10`` or newer;
+- you have ``pip`` if you want to install from PyPI or from a local checkout;
+- you have ``conda`` if you want to create the repository environment.
 
-Documentation dependencies are declared in the optional ``docs`` extra.
-
-Source installation
--------------------
-
-From a local checkout:
-
-.. code-block:: bash
-
-   git clone https://github.com/braindatalab/CaliBrain.git
-   cd CaliBrain
-   python -m pip install -e .
-
-For documentation builds:
-
-.. code-block:: bash
-
-   python -m pip install -e ".[docs]"
-
-Conda environment
------------------
-
-The repository includes ``environment.yml``. Use it when you want conda to
-create the scientific Python environment:
-
-.. code-block:: bash
-
-   conda env create -f environment.yml
-   conda activate calibrain
-   python -m pip install -e .
-
-Pip requirements
-----------------
-
-For a pip-only setup:
-
-.. code-block:: bash
-
-   python -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-   python -m pip install -r requirements.txt
-   python -m pip install -e .
-
-Data directory
---------------
-
-Workflow examples expect precomputed forward solutions and leadfields. By
-default, CaliBrain uses the repository ``data/`` directory. To use another data
-location, set:
-
-.. code-block:: bash
-
-   export CALIBRAIN_DATA=/path/to/calibrain/data
-
-The workflow configs also contain explicit paths for results, posterior
-summaries, run manifests, aggregation outputs, and calibration outputs. Inspect
-``configs/*.py`` before running large experiments.
-
-Building the documentation
+Which method should I use?
 --------------------------
 
-From the repository root:
+- :doc:`PyPI <pypi_installation>` if you want the latest released package and
+  do not need to modify the source code.
+- :doc:`pip <pip_installation>` if you want to install CaliBrain from a local
+  repository checkout.
+- :doc:`conda <conda_installation>` if you want to create the environment
+  defined by the repository ``environment.yml`` file.
 
-.. code-block:: bash
+Installation methods
+--------------------
 
-   cd docs
-   make html
+CaliBrain is documented through three installation paths:
 
-The rendered site is written to ``docs/build/html/index.html``.
+- :doc:`PyPI <pypi_installation>` for installing a published release into an existing Python environment;
+- :doc:`pip <pip_installation>` for installing directly from a local source checkout;
+- :doc:`conda <conda_installation>` for creating the repository environment defined in ``environment.yml``.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Installation topics
+   :hidden:
 
+   pypi_installation
    pip_installation
    conda_installation

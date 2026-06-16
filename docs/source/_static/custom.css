@@ -47,3 +47,20 @@
     background-color: #007bff;
     color: white;
 }
+
+/* Use warm note boxes instead of the default blue */
+.bd-content .admonition.note,
+.bd-content details.note {
+    border-left: 0.2rem solid #d4a017;
+}
+
+.bd-content .admonition.note .admonition-title,
+.bd-content details.note summary {
+    background-color: #fff3cd;
+    color: #5c4500;
+}
+
+.bd-content .admonition.note > *:not(.admonition-title),
+.bd-content details.note > *:not(summary) {
+    background-color: #fffdf5;
+}
