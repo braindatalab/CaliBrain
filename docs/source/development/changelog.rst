@@ -13,12 +13,13 @@ Version 1.0.1 (2026-06-16)
 *   [DOCS] Reworked documentation CI so GitHub Actions validates documentation builds while Read the Docs remains the canonical published documentation host.
 *   [DOCS] Fixed the documentation version switcher to use explicit Read the Docs ``latest``, ``stable``, and tagged release targets.
 *   [BUGFIX] Completed package dependency declarations for wheel-based installation and clean-environment imports.
-*   [FEATURE] Added Publishing GitHub Actions workflow for PyPI releases triggered from version tags.
+*   [FEATURE] Added Publishing GitHub Actions workflow for PyPI releases triggered from published GitHub releases, with manual dispatch retained as a fallback.
 *   [FEATURE] Added Zenodo DOI citation metadata and surfaced the software DOI throughout the package documentation.
 *   [FEATURE] Added a root ``CITATION.cff`` file with author metadata, ORCID identifiers, release metadata, and Zenodo DOI information.
-*   [DOCS] Added Read the Docs, PyPI, license, release, workflow, and DOI badges to the README and documentation landing page.
+*   [DOCS] Added Read the Docs, PyPI, downloads, license, release, workflow, and DOI badges to the README and documentation landing page.
 *   [DOCS] Consolidated the root project README around ``README.rst`` and removed the duplicate Markdown copy.
-*   [ENHANCEMENT] Refined the package description across metadata, citation metadata, README, and docs landing pages.
+*   [DOCS] Standardized software citation text across the README, documentation landing page, and citation page using full author names and Zenodo DOI-based software references.
+*   [ENHANCEMENT] Refined the package description and synchronized the README and docs landing page around the current package scope and workflow summary.
 
 
 Version 1.0.0 (2026-06-11)
