@@ -1,8 +1,8 @@
 Conceptual Overview
 ===================
 
-CaliBrain is a simulation-based framework for studying uncertainty calibration
-in EEG/MEG inverse source imaging. The package is intended for settings in
+CaliBrain is a simulation-based toolbox for studying uncertainty calibration in
+EEG/MEG inverse source imaging. The toolbox is intended for settings in
 which source activity is known by construction, sensor measurements are
 generated through a specified forward model, and inverse solvers return both a
 posterior mean and a posterior uncertainty summary. The central question is not
@@ -124,8 +124,8 @@ Implemented methods
 Research use
 ------------
 
-CaliBrain is intended for methodological studies rather than routine source
-analysis. Typical uses include:
+CaliBrain is intended for controlled workflow studies and benchmark-style
+evaluation rather than routine source analysis. Typical uses include:
 
 - comparing inverse solvers under controlled source sparsity and signal-to-noise
   conditions;

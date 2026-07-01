@@ -6,6 +6,15 @@ This document records notable changes to the CaliBrain package.
 .. note::
     This page summarizes notable package, workflow, and documentation changes.
 
+Unreleased
+----------
+
+*   [TEST] Added an initial automated test suite covering ``UncertaintyEstimator``, ``UncertaintyCalibrator``, ``MetricEvaluator``, ``SourceSimulator``, ``SensorSimulator``, ``DataGenerator``, and EEG free-orientation uncertainty paths.
+*   [CI] Added a dedicated GitHub Actions test workflow running ``pytest`` on the repository test suite.
+*   [DOCS] Added a test-status badge to the README and expanded the related-software positioning text for MNE-Python, CUQIpy, and Uncertainty Toolbox.
+*   [DOCS] Added repository-level community files required for external review workflows, including ``CODE_OF_CONDUCT.md`` and ``CONTRIBUTING.md``.
+*   [DOCS] Updated the repository, citation page, and documentation landing page to use the current Zenodo DOI ``10.5281/zenodo.20721580``.
+
 Version 1.0.2 (2026-06-16)
 --------------------------
 
@@ -24,7 +33,7 @@ Version 1.0.1 (2026-06-16)
 *   [FEATURE] Added Zenodo DOI citation metadata and surfaced the software DOI throughout the package documentation.
 *   [FEATURE] Added a root ``CITATION.cff`` file with author metadata, ORCID identifiers, release metadata, and Zenodo DOI information.
 *   [DOCS] Added Read the Docs, PyPI, downloads, license, release, workflow, and DOI badges to the README and documentation landing page.
-*   [DOCS] Consolidated the root project README around ``README.rst`` and removed the duplicate Markdown copy.
+*   [DOCS] Consolidated the root project README around ``README.md`` and removed the duplicate reStructuredText copy.
 *   [DOCS] Standardized software citation text across the README, documentation landing page, and citation page using full author names and Zenodo DOI-based software references.
 *   [ENHANCEMENT] Refined the package description and synchronized the README and docs landing page around the current package scope and workflow summary.
 
