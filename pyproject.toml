@@ -12,6 +12,12 @@ authors = [
     {name = "Srikantan Nagarajan", email = "Srikantan.Nagarajan@ucsf.edu"},
     {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
 license = {text = "BSD-3-Clause"}
 readme = "README.md"
 requires-python = ">=3.10"
