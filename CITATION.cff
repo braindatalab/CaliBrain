@@ -5,10 +5,10 @@ version: "1.0.2"
 date-released: 2026-06-16
 type: software
 license: "BSD-3-Clause"
-doi: 10.5281/zenodo.20703249
+doi: 10.5281/zenodo.20721580
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.20703249
+    value: 10.5281/zenodo.20721580
 authors:
   - family-names: "Orabe"
     given-names: "Mohammad"
