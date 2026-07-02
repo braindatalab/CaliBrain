@@ -1,27 +1,22 @@
 """
-08. Calibration Methods
+10. Calibration Methods
 =======================
 
-This tutorial mainly explains the ``UncertaintyCalibrator`` class through the
-high-level ``UncertaintyCalibrator`` API and CaliBrain's calibration modes.
+This tutorial explains CaliBrain's calibration step through the high-level
+``UncertaintyCalibrator`` API.
 
-It covers all implemented modes conceptually:
+All implemented calibration modes use the same recalibration mechanism:
+isotonic regression on empirical coverage curves. What changes from one mode
+to another is the train/evaluation split used to fit and test that map.
 
-- ``precal``
-- ``post_oracle``
-- ``post_pooled``
-- ``post_pooled_mismatch``
-- ``post_fixed``
+The tutorial demonstrates:
 
-and demonstrates two of them concretely:
+- ``precal``: evaluate the raw coverage curve without fitting a map;
+- ``post_oracle``: fit on a matched training split and evaluate on a matched
+  held-out split.
 
-- ``precal``: evaluate raw empirical coverage without fitting a recalibration map;
-- ``post_oracle``: fit on a matched train split and evaluate on a matched eval split.
-
-The remaining post-calibration modes are presented as workflow examples with
-different split definitions. They all use the same recalibration mechanism.
-More general evaluation questions are handled separately by
-``MetricEvaluator``.
+The remaining modes are then interpreted relative to the same logic:
+``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``.
 """
 
 
@@ -30,24 +25,35 @@ More general evaluation questions are handled separately by
 # Scientific motivation
 # ---------------------
 #
-# ``UncertaintyEstimator`` gives pre-calibration empirical coverage curves, but
-# these curves are often misaligned with the nominal coverage grid. CaliBrain's
-# calibration step uses isotonic regression to fit a monotone recalibration map
-# on a training split and then evaluates the corrected nominal coverages on a
-# held-out evaluation split.
+# ``UncertaintyEstimator`` returns a pre-calibration empirical coverage curve
+# on a nominal grid :math:`c \in [0, 1]`. If that curve is
+# :math:`g(c) \neq c`, the posterior uncertainty is miscalibrated.
+#
+# CaliBrain uses isotonic regression to fit a monotone approximation of
+# :math:`g(c)` on training runs and then numerically inverts that fitted curve.
+# The result is a recalibrated nominal coverage grid that is evaluated on a
+# held-out split.
 #
 # The workflow-level calibration modes used in the documentation are:
 #
 # - ``precal``: no fit, evaluate raw empirical coverage only;
 # - ``post_oracle``: fit and evaluate on matched conditions;
-# - ``post_pooled``: fit on pooled heads, evaluate on one head;
-# - ``post_pooled_mismatch``: fit on mismatched pooled conditions, evaluate on target data;
-# - ``post_fixed``: fit once at a reference setting and reuse that mapping across a sweep.
+# - ``post_pooled``: fit on pooled matched conditions and evaluate on one
+#   target condition;
+# - ``post_pooled_mismatch``: fit on intentionally mismatched pooled
+#   conditions and evaluate on a target condition;
+# - ``post_fixed``: fit once at a reference condition and reuse that mapping
+#   across a sweep.
 #
 # These names refer to benchmark-style train/evaluation configurations around a
 # common isotonic recalibration step; they are not five different calibration
-# algorithms. This tutorial demonstrates two representative cases with the
-# current high-level API: ``UncertaintyCalibrator.calibrate(...)``.
+# algorithms.
+#
+# Just as important: calibration mode does **not** change the underlying
+# uncertainty representation. Fixed orientation still uses marginal intervals;
+# free orientation still uses either ``marginal`` or ``full_cov`` depending on
+# the diagnostic being evaluated. Calibration acts on the coverage curve built
+# from those objects; it does not redefine the objects themselves.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -241,21 +247,74 @@ print("post_oracle post empirical coverages:", post_oracle_results["post_calibra
 print("post_oracle recalibrated nominal coverages:", post_oracle_results["post_calibration"]["recalibrated_nominal_coverages"])
 
 # %%
+# Inspect the learned recalibration map
+# -------------------------------------
+#
+# The fitted isotonic model is learned on the training empirical curve. The
+# returned ``recalibrated_nominal_coverages`` are the inverse-mapped nominal
+# levels used when the evaluation split is rechecked after calibration.
+
+fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.0))
+
+axes[0].plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
+axes[0].plot(
+    post_oracle_results["pre_calibration"]["nominal_coverages"],
+    post_oracle_results["train_empirical_coverages"],
+    "o-",
+    color="#4c72b0",
+    label="training empirical curve",
+)
+axes[0].set(
+    xlabel="Nominal coverage",
+    ylabel="Empirical coverage",
+    title="Curve fitted by isotonic regression",
+)
+axes[0].legend(loc="lower right")
+axes[0].grid(True, linestyle="--", alpha=0.35)
+
+axes[1].plot([0, 1], [0, 1], "--", color="0.5", label="identity mapping")
+axes[1].plot(
+    post_oracle_results["post_calibration"]["nominal_coverages"],
+    post_oracle_results["post_calibration"]["recalibrated_nominal_coverages"],
+    "o-",
+    color="#c44e52",
+    label="learned nominal remapping",
+)
+axes[1].set(
+    xlabel="Target nominal coverage",
+    ylabel="Recalibrated nominal coverage",
+    title="Inverse map used on the eval split",
+)
+axes[1].legend(loc="lower right")
+axes[1].grid(True, linestyle="--", alpha=0.35)
+
+fig.tight_layout()
+
+# %%
 # The other workflow modes
 # ------------------------
 #
-# The remaining modes differ only in how the workflow constructs ``train_data``
-# and ``test_data`` from aggregated datasets:
+# The remaining modes differ only in how the workflow constructs
+# ``train_data`` and ``test_data``:
 #
-# - ``post_pooled``: pooled train split across heads, matched eval condition;
-# - ``post_pooled_mismatch``: pooled train split from mismatched condition;
-# - ``post_fixed``: one reference train split, reused across many eval splits.
+# - ``post_pooled``:
+#   pool several matched training conditions before fitting one map;
+# - ``post_pooled_mismatch``:
+#   fit on pooled training conditions that intentionally differ from the target
+#   evaluation condition;
+# - ``post_fixed``:
+#   fit one reference map once and reuse it across a parameter sweep.
 #
-# They still rely on the same high-level calibration logic demonstrated above.
-# Evaluation itself can then be carried out in several ways: by inspecting raw
-# and recalibrated coverage curves, by computing summary calibration metrics, or
-# by comparing transfer behavior across conditions. Those broader evaluation
-# choices are covered in :doc:`metric evaluation </auto_tutorials/09_metric_evaluation>`.
+# In all three cases:
+#
+# - the uncertainty representation is unchanged;
+# - the same isotonic-regression mechanism is used;
+# - only the split logic changes.
+#
+# This is what lets the workflows study recalibration transfer across
+# conditions rather than mixing up transfer effects with a different
+# calibration algorithm. Broader evaluation choices are covered in
+# :doc:`Metric Evaluation </auto_tutorials/11_metric_evaluation>`.
 
 # %%
 # Plot ``precal`` and ``post_oracle``
@@ -331,6 +390,8 @@ print("post_oracle post metrics:", post_oracle_results["post_calibration"]["cali
 # - ``precal`` evaluated raw empirical coverage without fitting a map;
 # - ``post_oracle`` fitted isotonic recalibration on a matched train split and
 #   evaluated the recalibrated curve on a matched eval split;
+# - the learned map was inspected both as a fitted training curve and as an
+#   inverse nominal remapping;
 # - ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed`` were
 #   explained as workflow-level variations in how the train/eval splits are
 #   constructed.

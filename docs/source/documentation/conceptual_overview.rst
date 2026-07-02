@@ -1,137 +1,243 @@
 Conceptual Overview
 ===================
 
-CaliBrain is a simulation-based toolbox for studying uncertainty calibration in
-EEG/MEG inverse source imaging. The toolbox is intended for settings in
-which source activity is known by construction, sensor measurements are
-generated through a specified forward model, and inverse solvers return both a
-posterior mean and a posterior uncertainty summary. The central question is not
-only whether an inverse method reconstructs the source signal accurately, but
-whether its reported uncertainty has valid empirical coverage under controlled
-experimental conditions.
+CaliBrain is a simulation-based toolbox for uncertainty quantification and
+uncertainty calibration in Bayesian M/EEG source imaging. Its scope is
+deliberately specific: it studies inverse methods that provide closed-form
+Gaussian posterior summaries, and it asks whether the reported posterior
+credibility agrees with empirical coverage under controlled experimental
+conditions.
 
-Scientific background
----------------------
+The scientific target is therefore not only source reconstruction accuracy, but
+also the reliability of posterior uncertainty. A posterior covariance is useful
+only if the credible regions derived from it have interpretable nominal levels.
 
-In EEG/MEG source imaging, a sensor measurement matrix
-:math:`Y \in \mathbb{R}^{M \times T}` is modeled as
+Scientific setting
+------------------
 
-.. math::
-
-   Y = L X + E,
-
-
-where :math:`L` is the leadfield, :math:`X` is source activity, :math:`E` is
-sensor noise, :math:`M` is the number of sensors, and :math:`T` is the number
-of time samples. The inverse problem is ill-posed: distinct source
-configurations can induce similar sensor patterns, and uncertainty is therefore
-an intrinsic part of the inference problem. In CaliBrain, inverse methods are
-evaluated as posterior procedures. Each method produces a point estimate
-:math:`\hat{X}` together with a posterior covariance or a reduced uncertainty
-representation derived from it.
-
-CaliBrain focuses on coverage calibration. For a nominal coverage level
-:math:`c`,
-the package constructs credible intervals or ellipsoids and estimates empirical
-coverage,
+The forward model is
 
 .. math::
 
-   \hat{g}(c) =
+   y(t) = L x(t) + e(t),
+
+where :math:`y(t)` is the sensor measurement, :math:`L` is the leadfield,
+:math:`x(t)` is the source vector, and :math:`e(t)` is additive sensor noise.
+Over :math:`T` time samples, CaliBrain works with the stacked model
+
+.. math::
+
+   Y = L X + E.
+
+Because the M/EEG inverse problem is ill-posed, posterior uncertainty is not a
+secondary diagnostic; it is part of the inference problem itself. CaliBrain
+therefore evaluates Bayesian inverse solvers as posterior procedures that
+return:
+
+- a posterior mean;
+- a posterior covariance;
+- solver-specific hyperparameters or diagnostics.
+
+Orientation-aware source models
+-------------------------------
+
+The framework unifies three source-model settings through the local source
+dimension :math:`d_i`:
+
+- fixed orientation: :math:`d_i = 1`;
+- reduced free-orientation MEG: :math:`d_i = 2`;
+- free-orientation EEG: :math:`d_i = 3`.
+
+This distinction determines the uncertainty object associated with each source
+location:
+
+- fixed orientation uses one-dimensional credible intervals;
+- reduced free-MEG uses two-dimensional credible ellipses in the local
+  tangential plane;
+- free-orientation EEG uses three-dimensional credible ellipsoids.
+
+The point of this formulation is not cosmetic. It makes calibration comparable
+across modalities and source models while preserving the correct local
+geometry.
+
+Posterior uncertainty representation
+------------------------------------
+
+The framework starts from the full Gaussian posterior and then uses local
+marginal blocks for uncertainty analysis. For each source location
+:math:`i`, CaliBrain works with the local posterior block
+:math:`\Sigma_{ii}` rather than with only a scalar global summary.
+
+Since the implemented calibration workflow is based on temporally aggregated
+posterior summaries, the uncertainty analysis is performed on
+
+.. math::
+
+   \bar{x} = \frac{1}{T} \sum_{t=1}^{T} x(t),
+
+with aggregated posterior
+
+.. math::
+
+   \bar{x}_i \mid Y \sim \mathcal{N}(\bar{\mu}_i, \bar{\Sigma}_{ii}).
+
+Under the current model used in the package, the local covariance is static
+over time, so the aggregated covariance scales by :math:`1/T`.
+
+For nominal credibility level :math:`c \in (0, 1)`, CaliBrain defines the
+source-wise credible region
+
+.. math::
+
+   \mathcal{C}_i(c)
+   =
+   \left\{
+   z \in \mathbb{R}^{d_i}
+   :
+   (z - \bar{\mu}_i)^\top \bar{\Sigma}_{ii}^{-1} (z - \bar{\mu}_i)
+   \le \chi^2_{d_i}(c)
+   \right\}.
+
+This quadratic-form construction yields the interval/ellipse/ellipsoid cases
+as dimension-matched specializations of the same definition.
+
+Why CaliBrain distinguishes dense and sparse Bayesian solvers
+-------------------------------------------------------------
+
+The toolbox focuses on two structurally different Type-II Bayesian solver
+families:
+
+- ``BMN`` and ``BMN_joint`` as dense shared-variance models;
+- ``gamma_map_sflex`` and ``gamma_lambda_map_sflex`` as sparse source-wise
+  variance models with sFLEX support expansion.
+
+This distinction matters scientifically because sparse Bayesian learning can
+prune sources so aggressively that posterior variances collapse toward zero at
+inactive locations. Without additional structure, this can make credible-region
+construction degenerate or ill-defined.
+
+CaliBrain addresses that issue by using sparse basis field expansions
+(``sFLEX``), which impose sparsity in coefficient space while restoring full
+source-space support. The result is a source-space posterior covariance that
+remains usable for uncertainty quantification and calibration.
+
+Calibration target
+------------------
+
+For a nominal credibility level :math:`c`, CaliBrain evaluates whether the
+aggregated ground-truth source block falls inside the corresponding credible
+region. The empirical coverage is
+
+.. math::
+
+   \hat{g}(c)
+   =
    \frac{1}{N}
    \sum_{i=1}^{N}
-   \mathbf{1}\left[x_i^{\mathrm{true}} \in C_i(c)\right].
+   \mathbf{1}\!\left[\bar{x}^{\mathrm{true}}_i \in \mathcal{C}_i(c)\right].
 
+The calibration curve is the graph of :math:`\hat{g}(c)` against :math:`c`.
 
-A calibrated uncertainty model satisfies :math:`\hat{g}(c) \approx c` over the
-nominal coverage grid.
+- a curve above the diagonal indicates underconfidence;
+- a curve below the diagonal indicates overconfidence.
 
-In practice, CaliBrain evaluates both pre-calibration and post-calibration
-behavior. Pre-calibration curves quantify how the raw posterior uncertainty
-behaves. Post-calibration curves quantify how that behavior changes after
-learning a monotone recalibration map, typically by isotonic regression on a
-training split and evaluating it on a held-out split.
+This definition is shared across fixed orientation, reduced free-MEG, and
+free-EEG settings; what changes is only the local uncertainty geometry.
 
-Workflow
---------
+Post-hoc recalibration
+----------------------
 
-The current CaliBrain workflow is organized around the following stages:
+When nominal credibility and empirical coverage disagree systematically,
+CaliBrain applies post-hoc isotonic recalibration. The procedure is:
 
-1. ``SourceSimulator`` generates source-level ground truth.
-2. ``LeadfieldBuilder`` loads or constructs a leadfield.
-3. ``SensorSimulator`` projects sources to sensors and adds noise.
-4. ``SourceEstimator`` applies an active inverse solver:
+1. estimate empirical calibration curves on training runs;
+2. fit a monotone isotonic regression map;
+3. invert that fitted map numerically;
+4. evaluate the recalibrated nominal levels on held-out runs.
 
-   - ``gamma_map_sflex``
-   - ``gamma_lambda_map_sflex``
-   - ``BMN``
-   - ``BMN_joint``
+This recalibration does not change the posterior mean, posterior covariance, or
+uncertainty representation. It changes only the mapping from nominal
+credibility to evaluated coverage.
 
+The workflow modes implemented in the package differ only in how the training
+and evaluation runs are chosen around this common recalibration step:
+
+- ``precal`` evaluates raw empirical coverage without fitting a map;
+- ``post_oracle`` fits and evaluates under matched conditions;
+- ``post_pooled`` fits on pooled matched conditions and evaluates on a target
+  condition;
+- ``post_pooled_mismatch`` fits on intentionally mismatched pooled conditions;
+- ``post_fixed`` fits once at a reference condition and reuses that map across a
+  sweep of evaluation settings.
+
+Current workflow
+----------------
+
+The current workflow is organized around these high-level stages:
+
+1. ``SourceSimulator`` generates ground-truth source activity.
+2. ``LeadfieldBuilder`` provides a leadfield.
+3. ``SensorSimulator`` projects sources to sensors and adds Gaussian noise.
+4. ``SourceEstimator`` runs a Bayesian inverse solver.
 5. ``UncertaintyEstimator`` converts posterior summaries into calibration-ready
-   intervals or ellipsoids.
-6. ``UncertaintyCalibrator`` fits and evaluates isotonic recalibration maps.
-7. Workflow scripts batch these operations across runs, then aggregate and
-   calibrate on disk.
+   uncertainty objects.
+6. ``UncertaintyCalibrator`` evaluates pre-calibration curves and, if
+   requested, fits and applies isotonic recalibration.
 
-This separation is deliberate. Data generation produces simulation outputs and
-posterior summaries. Aggregation reduces those outputs into calibration-ready
-representations. Calibration then operates on the aggregated summaries rather
-than rerunning the inverse solvers. This design supports controlled benchmark
-studies across source models, noise regimes, and calibration strategies.
+In larger studies, workflow scripts repeat these steps across runs and
+conditions so that reconstruction accuracy, posterior uncertainty magnitude,
+and calibration can be compared separately.
 
-Implemented methods
--------------------
+Implemented scope
+-----------------
 
-- Source models
+The current codebase implements:
+
+- source models
 
   - fixed orientation
-  - free-orientation EEG
   - reduced free-orientation MEG
+  - free-orientation EEG
 
-- Inverse solvers
+- solver families
 
   - ``gamma_map_sflex``
   - ``gamma_lambda_map_sflex``
   - ``BMN``
   - ``BMN_joint``
 
-- Noise-variance strategies
+- noise-variance strategies
 
   - ``oracle``
   - ``baseline``
   - ``adaptive_joint_learning``
 
-- Uncertainty representations
+- uncertainty summaries
 
-  - fixed-orientation marginal variances
-  - free-orientation ``marginal`` intervals
-  - free-orientation ``full_cov`` ellipsoids
+  - fixed-orientation scalar marginal intervals
+  - free-orientation ``marginal`` componentwise intervals
+  - free-orientation ``full_cov`` local ellipsoidal diagnostics
 
-- Calibration methods
+- calibration outputs
 
-  - Recalibration model
+  - empirical coverage curves
+  - MAD, MSD, MUD, and MOD summary metrics
+  - isotonic post-hoc recalibration under multiple split designs
 
-    - isotonic regression for monotone recalibration of nominal coverage
+Interpretation
+--------------
 
-  - Evaluation modes
+The main scientific distinction in CaliBrain is that uncertainty magnitude and
+uncertainty calibration are different objects.
 
-    - ``precal``: evaluate raw empirical coverage without fitting a recalibration map
-    - ``post_oracle``: fit on a matched training split and evaluate on a matched evaluation split
-    - ``post_pooled``: fit on pooled training data and evaluate on a target evaluation split
-    - ``post_pooled_mismatch``: fit on pooled but intentionally mismatched training conditions and evaluate on the target split
-    - ``post_fixed``: fit one recalibration map at a reference condition and reuse it across a sweep of evaluation conditions
+- posterior mean and posterior covariance determine reconstruction error and
+  uncertainty size;
+- calibration evaluates whether nominal posterior credibility is empirically
+  reliable;
+- post-hoc recalibration can improve the nominal interpretation of the same
+  posterior summaries without changing the underlying reconstruction.
 
-Research use
-------------
-
-CaliBrain is intended for controlled workflow studies and benchmark-style
-evaluation rather than routine source analysis. Typical uses include:
-
-- comparing inverse solvers under controlled source sparsity and signal-to-noise
-  conditions;
-- studying whether posterior uncertainty is under-confident or over-confident;
-- evaluating whether recalibration learned under one condition transfers to
-  another;
-- comparing fixed and free-orientation uncertainty representations;
-- producing calibration figures and benchmark summaries from simulation
-  experiments.
+This is the conceptual role of CaliBrain: it provides a unified framework for
+studying reconstruction, posterior uncertainty, and empirical calibration
+together, rather than treating uncertainty as an informal by-product of source
+estimation.
