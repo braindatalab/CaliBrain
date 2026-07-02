@@ -22,6 +22,54 @@ source activity, propagating it through forward models, reconstructing
 posterior source estimates, quantifying empirical coverage, and evaluating
 recalibration maps under controlled experimental conditions.
 
+## Example
+
+The example below simulates one inverse problem, reconstructs sources, and
+computes the empirical coverage curve from the posterior covariance.
+
+Simulate source activity:
+
+```python
+import numpy as np
+
+from calibrain import BMN, LeadfieldBuilder, SensorSimulator, SourceEstimator, SourceSimulator, UncertaintyEstimator
+
+x_true, _ = SourceSimulator().simulate(n_sources=64, nnz=4, seed=0)
+```
+
+Build a leadfield, simulate sensors, and estimate sources:
+
+```python
+L = LeadfieldBuilder(leadfield_dir="unused").get_leadfield(
+    retrieve_mode="random",
+    orientation_type="fixed",
+    n_sensors=20,
+    n_sources=x_true.shape[0],
+)
+_, y_noisy, noise, _ = SensorSimulator().simulate(x_true, L, seed=0)
+result = SourceEstimator(solver=BMN, noise_var=float(np.var(noise))).fit(L, y_noisy).predict()
+```
+
+Compute the calibration curve:
+
+```python
+uncertainty = UncertaintyEstimator(nominal_coverages=np.linspace(0.0, 1.0, 11))
+import matplotlib.pyplot as plt
+
+plt.plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
+curve = uncertainty.calibration_curve_intervals_aggregated(
+    x_true=x_true,
+    x_hat=result["posterior_mean"],
+    posterior_var=uncertainty.posterior_variance_from_cov(result["posterior_cov"]),
+)
+plt.plot(curve["nominal_coverages"], curve["empirical_coverages"], "o-", label="empirical coverage")
+plt.xlabel("Nominal coverage")
+plt.ylabel("Empirical coverage")
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
 ## Documentation
 
 The documentation is hosted on Read the Docs:
