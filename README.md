@@ -1,5 +1,16 @@
 # CaliBrain
 
+<p align="center">
+  <img src="docs/source/_static/caliBrain.png" alt="CaliBrain logo" width="220">
+</p>
+
+[![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/calibrain.svg)](https://pypi.org/project/calibrain/)
+[![Tests](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml/badge.svg)](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml)
+[![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
+[![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20721580.svg)](https://doi.org/10.5281/zenodo.20721580)
+
 A Python toolbox for uncertainty estimation and calibration workflows in EEG/MEG inverse source imaging.
 
 ## Overview
@@ -13,8 +24,6 @@ recalibration maps under controlled experimental conditions.
 
 ## Documentation
 
-[![Tests](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml/badge.svg)](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml)
-
 The documentation is hosted on Read the Docs:
 https://calibrain.readthedocs.io/
 
@@ -27,8 +36,6 @@ Contribution guidelines are available in `CONTRIBUTING.md`.
 The full development guide is also available in the documentation.
 
 ## Citation
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20721580.svg)](https://doi.org/10.5281/zenodo.20721580)
 
 If you use CaliBrain in academic work, please cite the software archive:
 
@@ -64,10 +71,6 @@ coverage analysis, and recalibration across controlled evaluation conditions.
 
 ## Installation
 
-[![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/calibrain.svg)](https://pypi.org/project/calibrain/)
-[![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
-
 From PyPI:
 
 ```bash
@@ -83,7 +86,5 @@ python -m pip install -e .
 ```
 
 ## License
-
-[![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
 
 CaliBrain is distributed under the BSD 3-Clause License. See `LICENSE`.
