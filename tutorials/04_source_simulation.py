@@ -1,5 +1,5 @@
 """
-02. Source Simulation
+04. Source Simulation
 =====================
 
 This tutorial mainly explains the ``SourceSimulator`` class. It demonstrates
@@ -60,6 +60,25 @@ RANDOM_SEED = 13
 # - ``amplitude_distribution``: log-normal peak amplitude distribution in nAm;
 # - ``random_erp_timing``: whether ERP duration/onset varies across sources;
 # - ``erp_min_length``: minimum ERP segment length in samples.
+#
+# More concretely:
+#
+# - ``tmin=-0.1`` and ``tmax=0.8`` define a 900 ms epoch from 100 ms before
+#   to 800 ms after stimulus onset;
+# - ``stim_onset=0.0`` means the event is aligned to time zero;
+# - ``sfreq=100`` gives one sample every 10 ms;
+# - ``fmin=2`` and ``fmax=8`` shape the ERP-like waveform toward a smooth
+#   low-frequency transient rather than fast oscillatory activity;
+# - ``amplitude_distribution["median"]`` controls the typical peak dipole
+#   moment;
+# - ``amplitude_distribution["sigma"]`` controls between-source variability in
+#   amplitude on the log scale;
+# - ``amplitude_distribution["clip"]`` truncates unrealistically small or large
+#   amplitudes;
+# - ``random_erp_timing=False`` keeps all active sources aligned in time for an
+#   easier first demonstration;
+# - ``erp_min_length=20`` ensures that each simulated ERP segment spans at
+#   least 20 samples, i.e. 200 ms at ``sfreq=100``.
 
 base_erp_config = {
     "tmin": -0.1,
@@ -100,6 +119,19 @@ print("source unit multiplier:", simulator.unitmult)
 #
 # The MEG free-orientation reduction reflects that magnetometer/gradiometer
 # leadfields are represented in the two-dimensional MEG-sensitive subspace.
+#
+# The simulation call itself uses these arguments:
+#
+# - ``n_sources``: total number of candidate source locations;
+# - ``nnz``: number of active source locations;
+# - ``orientation_type``: whether each source has one coefficient (fixed) or
+#   multiple local components (free);
+# - ``coil_type``: used only for free orientation to choose the EEG 3-component
+#   or reduced MEG 2-component convention;
+# - ``seed``: fixes the random draw of active locations and ERP-like waveforms.
+#
+# In this tutorial, ``n_sources=40`` and ``nnz=4`` mean that only 4 out of 40
+# candidate sources are active in each simulated dataset.
 
 source_configs = {
     "fixed": {

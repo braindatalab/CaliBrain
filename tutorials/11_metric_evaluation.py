@@ -1,5 +1,5 @@
 """
-09. Metric Evaluation
+11. Metric Evaluation
 =====================
 
 This tutorial mainly explains the ``MetricEvaluator`` class. It demonstrates

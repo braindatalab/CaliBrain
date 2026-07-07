@@ -1,5 +1,5 @@
 """
-10. End-to-End Workflow
+12. End-to-End Workflow
 =======================
 
 This tutorial ties together the main CaliBrain component classes in one small,
@@ -13,7 +13,8 @@ runnable workflow:
 - ``UncertaintyCalibrator`` for post-calibration isotonic recalibration.
 
 It is intentionally lightweight and fully synthetic, but it follows the same
-conceptual order as the current fixed-orientation calibration workflow.
+scientific order as the current fixed-orientation calibration workflow:
+simulation, inversion, uncertainty representation, and calibration.
 """
 
 
@@ -23,15 +24,16 @@ conceptual order as the current fixed-orientation calibration workflow.
 # ---------------------
 #
 # CaliBrain studies whether posterior uncertainty from inverse source imaging is
-# empirically calibrated. An end-to-end run therefore needs all upstream pieces:
+# empirically calibrated. An end-to-end run therefore needs all upstream pieces
+# that define the coverage curve:
 #
 # 1. simulate source activity ``x_true``;
 # 2. obtain a leadfield ``L``;
 # 3. project to noisy sensors ``y_noisy``;
 # 4. reconstruct posterior mean and covariance;
-# 5. derive uncertainty intervals and empirical coverage;
-# 6. optionally fit a recalibration map on a train split and evaluate it on a
-#    matched eval split.
+# 5. derive an uncertainty representation and empirical coverage;
+# 6. fit a recalibration map on a train split and evaluate it on a held-out
+#    split.
 #
 # This tutorial demonstrates that full chain with the current high-level class
 # interfaces and an active fixed-orientation solver. The concrete example below
@@ -39,9 +41,8 @@ conceptual order as the current fixed-orientation calibration workflow.
 # as ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed`` change the
 # split construction, not the underlying recalibration mechanism. Evaluation can
 # then be extended beyond this one example with the tools shown in
-# :doc:`metric evaluation </auto_tutorials/09_metric_evaluation>`.
+# :doc:`Metric Evaluation </auto_tutorials/11_metric_evaluation>`.
 
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from mne.io.constants import FIFF
@@ -60,7 +61,6 @@ from calibrain import (
 
 RANDOM_SEED = 91
 
-# %%
 # Step 1: define a compact fixed-orientation simulation setting
 # -------------------------------------------------------------
 #
@@ -103,8 +103,8 @@ sensor_simulator.set_sensor_metadata(
 )
 
 # %%
-# Step 2: build a deterministic synthetic leadfield with ``LeadfieldBuilder``
-# ---------------------------------------------------------------------------
+# Step 2: build a deterministic synthetic leadfield
+# -------------------------------------------------
 #
 # In larger simulation studies, ``LeadfieldBuilder`` usually loads a
 # precomputed subject-specific leadfield. Here we use its lightweight
@@ -138,6 +138,7 @@ print("source coordinates shape:", src_coords.shape)
 #
 # We keep the condition family fixed and change only the random seed. This
 # corresponds to the logic of ``post_oracle`` in the workflow documentation.
+
 x_true_train, active_sources_train = source_simulator.simulate(
     n_sources=n_sources,
     nnz=nnz,
@@ -245,12 +246,16 @@ print("pre empirical coverages:", np.round(pre_curve["empirical_coverages"], 3))
 print("pre calibration metrics:", pre_metrics)
 
 # %%
-# Step 5: fit and evaluate post-calibration with ``UncertaintyCalibrator``
-# ------------------------------------------------------------------------
+# Step 5: fit and evaluate post-calibration
+# -----------------------------------------
 #
 # ``UncertaintyCalibrator`` consumes the same dataset structure used by the
 # workflow. Here we fit on the train split and evaluate on the matched eval
 # split. This is the high-level class API corresponding to ``post_oracle``.
+#
+# The crucial point is that calibration changes the nominal coverage values used
+# to build intervals on the evaluation split. It does not change the posterior
+# mean, posterior covariance, or uncertainty type.
 
 calibrator = UncertaintyCalibrator(uncertainty_estimator, metric_evaluator)
 calibration_result = calibrator.calibrate(
@@ -270,7 +275,51 @@ print(
 )
 
 # %%
-# Step 6: visualize the full end-to-end result
+# Step 6: inspect the learned recalibration map
+# ---------------------------------------------
+#
+# The training empirical curve is what isotonic regression fits. The learned
+# inverse map is then used to choose recalibrated nominal levels on the held-out
+# split.
+
+fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.0))
+
+axes[0].plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
+axes[0].plot(
+    pre_curve["nominal_coverages"],
+    calibration_result["train_empirical_coverages"],
+    "o-",
+    color="#4c72b0",
+    label="training empirical curve",
+)
+axes[0].set(
+    xlabel="Nominal coverage",
+    ylabel="Empirical coverage",
+    title="Curve fitted on the train split",
+)
+axes[0].legend(loc="lower right")
+axes[0].grid(True, linestyle="--", alpha=0.35)
+
+axes[1].plot([0, 1], [0, 1], "--", color="0.5", label="identity mapping")
+axes[1].plot(
+    post_block["nominal_coverages"],
+    post_block["recalibrated_nominal_coverages"],
+    "o-",
+    color="#c44e52",
+    label="learned nominal remapping",
+)
+axes[1].set(
+    xlabel="Target nominal coverage",
+    ylabel="Recalibrated nominal coverage",
+    title="Inverse mapping used on eval",
+)
+axes[1].legend(loc="lower right")
+axes[1].grid(True, linestyle="--", alpha=0.35)
+
+fig.tight_layout()
+
+# %%
+# Step 9: visualize the full end-to-end result
 # --------------------------------------------
 #
 # The figure summarizes three stages of the workflow:
@@ -355,9 +404,10 @@ fig.tight_layout()
 # - ``LeadfieldBuilder`` supplied a leadfield and source coordinates;
 # - ``SensorSimulator`` generated noisy sensor measurements;
 # - ``SourceEstimator`` produced posterior means and covariance;
-# - ``UncertaintyEstimator`` computed pre-calibration empirical coverage;
-# - ``UncertaintyCalibrator`` fitted and evaluated a post-calibration mapping.
+# - ``UncertaintyEstimator`` turned that posterior summary into an aggregated
+#   interval-based coverage curve;
+# - ``UncertaintyCalibrator`` fitted and evaluated an isotonic recalibration
+#   mapping on matched train/eval splits.
 #
-# For larger experiments, the workflow scripts automate the same logic across
-# many runs, then write manifest entries, aggregated datasets, and calibration
-# summaries on disk.
+# The same sequence underlies the larger workflow scripts. What changes there is
+# scale and split construction, not the scientific role of each stage.

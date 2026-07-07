@@ -1,149 +1,130 @@
 Contributing
 ============
 
-CaliBrain is maintained by a community of scientists and research labs.
-We welcome contributions in many forms, including:
+This page describes how to contribute to CaliBrain development. For the
+repository-level entry point used by GitHub and package reviewers, see
+``CONTRIBUTING.md`` in the repository root.
 
-- Bug reports and fixes
-- Feature requests and additions
-- Code improvements
-- Documentation enhancements
+Ways to contribute
+------------------
 
-Getting Started
----------------
+Contributions are welcome in several forms:
 
-- Open an **Issue** on GitHub to propose a change or report a bug.
-- For general usage questions, use the repository issue tracker unless a
-  dedicated discussion forum is enabled.
+- bug reports and bug fixes;
+- documentation improvements;
+- tests for core package functionality;
+- workflow and API improvements;
+- packaging and release infrastructure improvements.
 
-How to Contribute
+Before you start
+----------------
+
+Before opening a pull request:
+
+- check whether a related issue already exists;
+- open an issue first for substantial changes;
+- keep changes focused on one problem or one feature;
+- update documentation when user-facing behavior changes.
+
+Development setup
 -----------------
 
-1. **Fork the Repository**
-   
-   Go to the `CaliBrain` GitHub page and click **Fork** to create your own copy.
-
-2. **Set up your Development Environment**
-   
-   Clone your fork:
-   
-   .. code-block:: bash
-   
-      git clone https://github.com/your-username/CaliBrain.git
-      cd CaliBrain
-
-   (Optional) Create and activate a virtual environment:
-   
-   .. code-block:: bash
-   
-      conda create -n calibrain-dev python=3.10 -y
-      conda activate calibrain-dev
-
-   Install the package in editable mode:
-   
-   .. code-block:: bash
-   
-      pip install -e .[dev]
-
-3. **Create a New Branch**
-   
-   Create a branch for your feature or bug fix:
-   
-   .. code-block:: bash
-   
-      git checkout -b feature/your-feature-name
-
-4. **Make Your Changes**
-   
-   - Implement your feature or bug fix.
-   - Follow the existing code style (PEP8 and NumPy-style docstrings).
-   - Add or update documentation and tests where necessary.
-
-5. **Test Your Changes**
-   
-   - Make sure the code runs correctly.
-   - Add unit tests if appropriate.
-
-6. **Commit and Push**
-   
-   Write clear and descriptive commit messages.
-   Push your branch to your GitHub fork:
-   
-   .. code-block:: bash
-   
-      git push origin feature/your-feature-name
-
-7. **Submit a Pull Request**
-   
-   - Go to the original repository.
-   - Open a Pull Request (PR) from your branch.
-   - Fill in the PR template and describe your changes clearly.
-
-Code Style and Quality
-----------------------
-
-- Follow `PEP8` coding standards.
-- Use meaningful variable and function names.
-- Write docstrings for all public functions and classes using **NumPy docstring format**.
-- Add type hints where appropriate.
-
-Development Setup
------------------
-
-For a complete development setup:
+Clone the repository:
 
 .. code-block:: bash
 
-   # Clone the repository
    git clone https://github.com/braindatalab/CaliBrain.git
    cd CaliBrain
-   
-   # Create development environment
-   conda create -n calibrain-dev python=3.10 -y
-   conda activate calibrain-dev
-   
-   # Install in development mode with all dependencies
-   pip install -e ".[dev,docs]"
-   
-   # Install optional tooling if the project adds a pre-commit config.
-   # pre-commit install
 
-Running Tests
--------------
+Create and activate an isolated environment. Either a virtual environment or a
+conda environment is fine. One minimal ``venv``-based setup is:
 
 .. code-block:: bash
 
-   # Run all tests if a tests/ directory is present
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+
+Install CaliBrain in editable mode with development and documentation extras:
+
+.. code-block:: bash
+
+   python -m pip install -e ".[dev,docs]"
+
+Create a working branch
+-----------------------
+
+Create a branch for your change:
+
+.. code-block:: bash
+
+   git checkout -b feature/short-description
+
+Use a separate branch for each independent change.
+
+Coding expectations
+-------------------
+
+Contributions should follow the current package conventions:
+
+- keep changes small and targeted;
+- preserve the current public workflow unless the change is explicitly intended
+  to modify it;
+- use clear names for variables, functions, and classes;
+- write NumPy-style docstrings for public functions and classes;
+- add type hints when they improve clarity;
+- prefer deterministic examples and fixed random seeds in tutorials and tests.
+
+Testing
+-------
+
+Run the relevant tests for the code you changed. As the test suite expands,
+prefer running the smallest relevant subset first and then the broader suite.
+
+When a ``tests/`` suite is present, typical commands are:
+
+.. code-block:: bash
+
    pytest tests/
-   
-   # Run with coverage
    pytest tests/ --cov=calibrain
 
-Building Documentation
-----------------------
+If you add or change public behavior, add or update tests when practical.
+
+Documentation
+-------------
+
+If you change public APIs, workflows, or tutorials, update the documentation in
+the same pull request.
+
+Build the documentation locally with:
 
 .. code-block:: bash
 
-   # Build documentation
    cd docs
-   make clean
    make html
-   
-   # Or call Sphinx directly
-   sphinx-build -b html docs/source docs/build/html
 
-Code Review Guidelines
-----------------------
+If Sphinx-Gallery examples are affected, ensure that the relevant tutorial
+scripts still execute successfully.
 
-When reviewing pull requests, we look for:
+Submitting a pull request
+-------------------------
 
-- **Functionality**: Does the code work as intended?
-- **Code Quality**: Is the code readable and well-structured?
-- **Documentation**: Are docstrings and comments adequate?
-- **Tests**: Are there appropriate tests for new functionality?
-- **Compatibility**: Does it work with supported Python versions?
+Before opening a pull request:
 
-Thank You!
-----------
+- make sure your branch is up to date with the target branch;
+- write a clear commit history;
+- summarize what changed and why;
+- mention any limitations, follow-up work, or known issues.
 
-Thank you for contributing to CaliBrain! Your efforts help make this tool better for the entire neuroimaging community.
+In the pull request description, include:
+
+- the problem being addressed;
+- the approach taken;
+- any user-facing changes;
+- any documentation or test updates.
+
+Code of conduct
+---------------
+
+By participating in this project, you agree to follow the repository
+``CODE_OF_CONDUCT.md``.

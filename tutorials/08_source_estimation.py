@@ -1,10 +1,11 @@
 """
-06. Source Estimation
+08. Source Estimation
 =====================
 
-This tutorial mainly explains the ``SourceEstimator`` class. It demonstrates
-the current CaliBrain source-estimation interface using the active inverse
-solvers that are still part of the pipeline:
+This tutorial explains the ``SourceEstimator`` class.
+
+It demonstrates the current CaliBrain source-estimation interface using the
+active inverse solvers that are part of the pipeline:
 
 - ``gamma_map_sflex`` for sparse Bayesian estimation with an sFLEX basis;
 - ``gamma_lambda_map_sflex`` for the sFLEX variant with joint noise learning;
@@ -26,25 +27,20 @@ The examples cover:
 # Scientific motivation
 # ---------------------
 #
-# Source estimation in CaliBrain reconstructs latent source activity ``x`` from
-# sensor measurements ``y`` and a leadfield ``L``:
+# ``SourceEstimator`` is the stage that converts sensor data and a leadfield
+# into posterior source summaries. In CaliBrain, that stage does not stand on
+# its own: its outputs are passed directly to uncertainty estimation and then to
+# calibration.
 #
-# ``y = L x + noise``
-#
-# The output is not only a point estimate. Current solvers return posterior
-# summaries that are later consumed by uncertainty estimation and calibration:
+# The important outputs are:
 #
 # - ``posterior_mean``: reconstructed source time courses;
 # - ``posterior_cov``: posterior covariance in coefficient space;
 # - solver-specific diagnostics such as active sets, learned hyperparameters,
 #   or learned noise levels.
 #
-# Units remain consistent across the workflow:
-#
-# - source amplitudes are simulated in ``nAm``;
-# - EEG leadfields are interpreted as ``µV / nAm``;
-# - source coordinates for sFLEX are in ``m``;
-# - resulting sensor traces are therefore in ``µV``.
+# This means source estimation is not only about recovering a signal. It also
+# determines the uncertainty object that downstream tutorials will evaluate.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -63,7 +59,6 @@ from calibrain import (
 
 RANDOM_SEED = 41
 
-# %%
 # Build a lightweight simulation setup
 # ------------------------------------
 #
@@ -81,6 +76,12 @@ RANDOM_SEED = 41
 # For the sFLEX solvers we also need source coordinates. Here they are small
 # synthetic positions in meters. ``sigma=0.01`` therefore means a spatial scale
 # of ``10 mm``.
+#
+# In this tutorial:
+#
+# - the synthetic EEG leadfield is interpreted in ``µV / nAm``;
+# - the simulated sensor data are therefore in ``µV``;
+# - posterior means stay in source-amplitude units, i.e. ``nAm``.
 
 erp_config = {
     "tmin": -0.1,
@@ -169,17 +170,12 @@ print("baseline noise variance:", baseline_noise_var)
 print("adaptive joint learning noise variance:", None)
 
 # %%
-# Workflow noise modes
-# --------------------
+# Fixed orientation: compare solver families and noise modes
+# ----------------------------------------------------------
 #
-# The active workflow uses three named noise modes:
-#
-# - ``oracle``: use ``var(noise)`` from the injected sensor noise;
-# - ``baseline``: estimate variance from the pre-stimulus sensor segment;
-# - ``adaptive_joint_learning``: pass ``noise_var=None`` and let the solver
-#   learn a common noise level jointly from the data.
-#
-# The code below uses these names directly in the solver comparison.
+# The sparse gamma-MAP family and the dense minimum-norm family can produce
+# different posterior structures even when fitted to the same data. This is one
+# reason why later uncertainty and calibration behavior can differ by solver.
 
 solver_outputs = {}
 solver_specs = [
@@ -249,7 +245,7 @@ for name, result in solver_outputs.items():
 #
 # A useful first check is whether the reconstructed activity on a true active
 # source follows the simulated ERP, and how the source-wise posterior variance
-# differs across sparse and minimum-norm estimators under different noise modes.
+# differs across solver families and noise modes.
 
 fixed_source_idx = int(np.atleast_1d(active_fixed)[0])
 source_energy_true = np.linalg.norm(x_true_fixed, axis=1)
@@ -280,7 +276,7 @@ for name in plot_order:
 axes[1].set(
     xlabel="Source index",
     ylabel="Energy / variance",
-    title="Fixed orientation: posterior variance summary across noise modes",
+    title="Fixed orientation: posterior variance summary",
 )
 axes[1].legend(loc="upper right", ncol=2)
 fig.tight_layout()
@@ -364,8 +360,8 @@ for name, result in free_solver_outputs.items():
 print("free EEG eta:", free_eta)
 
 # %%
-# Plot vector norms for one free-orientation source
-# -------------------------------------------------
+# Compare vector-norm summaries for one free-orientation source
+# -------------------------------------------------------------
 #
 # For free orientation, a source has a 3-component time series. A simple scalar
 # summary is the Euclidean norm across orientation components.
@@ -398,7 +394,7 @@ for name, result in free_solver_outputs.items():
 axes[1].set(
     xlabel="Source index",
     ylabel="Norm across time",
-    title="Free EEG orientation: source-wise norm summary across noise modes",
+    title="Free EEG orientation: source-wise norm summary",
 )
 axes[1].legend(loc="best")
 fig.tight_layout()
@@ -409,8 +405,7 @@ fig.tight_layout()
 #
 # ``SourceEstimator`` is the main reconstruction wrapper used in the current
 # CaliBrain pipeline. It standardizes solver invocation and returns posterior
-# summaries that later feed uncertainty estimation, aggregation, and
-# calibration.
+# summaries that later feed uncertainty estimation and calibration.
 #
 # In practice:
 #
@@ -420,5 +415,10 @@ fig.tight_layout()
 #   pre-stimulus sensor segment;
 # - use ``adaptive_joint_learning`` when the solver should learn a common noise
 #   level jointly from the data;
-# - pair those modes with ``gamma_map_sflex``, ``gamma_lambda_map_sflex``,
-#   ``BMN``, and ``BMN_joint`` according to the active workflow config.
+# - compare sparse and dense solver families not only by reconstruction, but
+#   also by the posterior covariance they hand to the next stage.
+#
+# The next tutorial takes these posterior outputs and turns them into the
+# uncertainty representations that are actually calibrated:
+#
+# - :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>`

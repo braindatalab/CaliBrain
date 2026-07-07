@@ -1,5 +1,5 @@
 """
-03. Leadfield Construction
+05. Leadfield Construction
 ==========================
 
 This tutorial mainly explains the ``LeadfieldBuilder`` class. It demonstrates
@@ -32,6 +32,12 @@ same ``get_leadfield(..., retrieve_mode="simulate")`` interface.
 # - source amplitudes are represented in ``nAm``;
 # - MEG magnetometer leadfields are typically reported in ``fT / nAm``;
 # - EEG leadfields are typically reported in ``µV / nAm``.
+# - source coordinates associated with the leadfield are represented in ``m``.
+#
+# This means:
+#
+# - ``(fT / nAm) × nAm = fT`` at MEG sensors;
+# - ``(µV / nAm) × nAm = µV`` at EEG sensors.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -147,25 +153,6 @@ loaded = temp_builder.get_leadfield(
 
 print("loaded shape:", loaded.leadfield.shape)
 print("loaded equals simulate-like:", np.allclose(loaded.leadfield, simulated_leadfield))
-
-# %%
-# Visualize leadfield magnitudes
-# ------------------------------
-#
-# A simple quality-control plot is the per-source leadfield norm. Large
-# deviations can indicate scaling, orientation, or file-loading problems.
-
-fig, ax = plt.subplots(figsize=(7, 3.5))
-ax.plot(np.linalg.norm(random_fixed.leadfield, axis=0), label="random fixed")
-ax.plot(np.linalg.norm(simulated_leadfield, axis=0), label="simulate-like fixed")
-ax.plot(np.linalg.norm(loaded.leadfield, axis=0), "--", label="loaded fixed")
-ax.set(
-    xlabel="Source index",
-    ylabel="Leadfield column norm",
-    title="Leadfield magnitude check",
-)
-ax.legend(loc="best")
-fig.tight_layout()
 
 # %%
 # Summary

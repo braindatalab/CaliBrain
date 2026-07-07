@@ -1,5 +1,5 @@
 """
-04. Sensor Simulation
+06. Sensor Simulation
 =====================
 
 This tutorial mainly explains the ``SensorSimulator`` class. It projects
@@ -61,6 +61,10 @@ RANDOM_SEED = 31
 #
 # - if ``L`` is in ``fT / nAm``, then sensor outputs are in ``fT``;
 # - if ``L`` is in ``µV / nAm``, then sensor outputs are in ``µV``.
+# - source coordinates, when needed later by sFLEX-based solvers, are in ``m``.
+#
+# In other words, ``SensorSimulator`` does not invent a new unit system; it
+# preserves the physical units implied by the source amplitudes and leadfield.
 
 erp_config = {
     "tmin": -0.1,

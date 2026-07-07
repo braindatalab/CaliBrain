@@ -64,3 +64,18 @@
 .bd-content details.note > *:not(summary) {
     background-color: #fffdf5;
 }
+
+.bd-content .tutorial-gallery-section {
+    margin-top: 2.2rem;
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid var(--pst-color-border);
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.bd-content .tutorial-gallery-section + p {
+    margin-bottom: 1rem;
+    color: var(--pst-color-text-muted);
+}
