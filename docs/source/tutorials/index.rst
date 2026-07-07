@@ -220,14 +220,14 @@ converted into the uncertainty objects that CaliBrain evaluates.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_13_orientation_and_uncertainty_representations_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_orientation_and_uncertainty_representations_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/13_orientation_and_uncertainty_representations`
+  :doc:`/auto_tutorials/10_orientation_and_uncertainty_representations`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">13. Orientation and Uncertainty Representations</div>
+      <div class="sphx-glr-thumbnail-title">10. Orientation and Uncertainty Representations</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -337,4 +337,4 @@ This tutorial combines the main stages into one compact runnable workflow.
   /auto_tutorials/10_uncertainty_calibration
   /auto_tutorials/11_metric_evaluation
   /auto_tutorials/12_end_to_end_workflow
-  /auto_tutorials/13_orientation_and_uncertainty_representations
+  /auto_tutorials/10_orientation_and_uncertainty_representations

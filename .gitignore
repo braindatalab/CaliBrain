@@ -92,6 +92,7 @@ docs/source/sg_execution_times.rst
 docs/source/generated/
 !docs/source/_static/caliBrain.png
 !docs/source/_static/caliBrain.svg
+!docs/source/_static/calibrain_pipeline.jpg
 
 # Local/generated project artifacts
 results/
