@@ -1,7 +1,8 @@
-# CaliBrain
+<!-- # CaliBrain -->
+<!--  width="220" -->
 
 <p align="center">
-  <img src="docs/source/_static/caliBrain.png" alt="CaliBrain logo" width="220">
+  <img src="docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
 </p>
 
 [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
