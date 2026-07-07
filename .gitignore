@@ -90,6 +90,8 @@ docs/source/auto_tutorials/
 docs/source/auto_examples/
 docs/source/sg_execution_times.rst
 docs/source/generated/
+!docs/source/_static/caliBrain.png
+!docs/source/_static/caliBrain.svg
 
 # Local/generated project artifacts
 results/

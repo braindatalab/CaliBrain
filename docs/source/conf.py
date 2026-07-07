@@ -130,5 +130,9 @@ intersphinx_mapping = {
     'mne': ('https://mne.tools/stable/', None),
 }
 
+html_meta = {
+    "google-site-verification": "U4j0wnWaoGzIzJ5_ThCD3I8YLlSSrcOoIeECjL2nPuk",
+}
+
 html_title = "CaliBrain Documentation"
 html_short_title = "CaliBrain"
