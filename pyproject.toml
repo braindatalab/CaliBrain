@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "calibrain"
 version = "1.0.2"
-description = "Python toolbox for uncertainty estimation and calibration workflows in EEG/MEG inverse source imaging"
+description = "CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},

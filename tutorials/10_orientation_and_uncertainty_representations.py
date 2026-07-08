@@ -1,5 +1,5 @@
 """
-13. Orientation and Uncertainty Representations
+10. Orientation and Uncertainty Representations
 ===============================================
 
 This tutorial compares the uncertainty representations used in CaliBrain for

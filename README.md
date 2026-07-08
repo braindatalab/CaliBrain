@@ -1,7 +1,8 @@
-# CaliBrain
+<!-- # CaliBrain -->
+<!--  width="220" -->
 
 <p align="center">
-  <img src="docs/source/_static/caliBrain.png" alt="CaliBrain logo" width="220">
+  <img src="docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
 </p>
 
 [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
@@ -11,35 +12,47 @@
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20721580.svg)](https://doi.org/10.5281/zenodo.20721580)
 
-A Python toolbox for uncertainty estimation and calibration workflows in EEG/MEG inverse source imaging.
+CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
 
 ## Overview
 
-CaliBrain addresses a specific reliability problem in EEG/MEG inverse source
-imaging: a posterior estimate is only useful if its uncertainty is
-well-calibrated. The toolbox provides simulation-based workflows for generating
-source activity, propagating it through forward models, reconstructing
-posterior source estimates, quantifying empirical coverage, and evaluating
-recalibration maps under controlled experimental conditions.
+Inverse source imaging is an ill-posed problem: different source
+configurations can explain the same sensor data. CaliBrain addresses a central
+question in Bayesian source imaging: are posterior uncertainty estimates
+empirically reliable? The toolbox provides simulation-based workflows for
+generating source activity, propagating it through forward models,
+reconstructing posterior source estimates, quantifying empirical coverage, and
+evaluating recalibration maps under controlled experimental conditions.
+
+<p align="center">
+  <img src="docs/source/_static/calibrain_pipeline.jpg" alt="CaliBrain pipeline overview" width="900">
+</p>
 
 ## Example
 
 The example below simulates one inverse problem, reconstructs sources, and
-computes the empirical coverage curve from the posterior covariance.
+plots empirical coverage before and after isotonic recalibration.
 
 Simulate source activity:
 
 ```python
+import matplotlib.pyplot as plt
 import numpy as np
 
-from calibrain import BMN, LeadfieldBuilder, SensorSimulator, SourceEstimator, SourceSimulator, UncertaintyEstimator
+from calibrain import (
+    BMN,
+    LeadfieldBuilder,
+    SensorSimulator,
+    SourceEstimator,
+    SourceSimulator,
+    UncertaintyCalibrator,
+    UncertaintyEstimator,
+)
 
+# Simulate a small fixed-orientation inverse problem.
 x_true, _ = SourceSimulator().simulate(n_sources=64, nnz=4, seed=0)
-```
 
-Build a leadfield, simulate sensors, and estimate sources:
-
-```python
+# Build a random leadfield, simulate sensor data, and reconstruct sources.
 L = LeadfieldBuilder(leadfield_dir="unused").get_leadfield(
     retrieve_mode="random",
     orientation_type="fixed",
@@ -48,27 +61,44 @@ L = LeadfieldBuilder(leadfield_dir="unused").get_leadfield(
 )
 _, y_noisy, noise, _ = SensorSimulator().simulate(x_true, L, seed=0)
 result = SourceEstimator(solver=BMN, noise_var=float(np.var(noise))).fit(L, y_noisy).predict()
-```
 
-Compute the calibration curve:
+# Compute calibration curves before and after isotonic recalibration.
+nominal_coverages = np.linspace(0.0, 1.0, 11)
+uncertainty = UncertaintyEstimator(nominal_coverages=nominal_coverages)
+calibrator = UncertaintyCalibrator(nominal_coverages=nominal_coverages)
+posterior_var = uncertainty.posterior_variance_from_cov(result["posterior_cov"])
 
-```python
-uncertainty = UncertaintyEstimator(nominal_coverages=np.linspace(0.0, 1.0, 11))
-import matplotlib.pyplot as plt
-
-plt.plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
-curve = uncertainty.calibration_curve_intervals_aggregated(
+pre_curve = uncertainty.calibration_curve_intervals_aggregated(
     x_true=x_true,
     x_hat=result["posterior_mean"],
-    posterior_var=uncertainty.posterior_variance_from_cov(result["posterior_cov"]),
+    posterior_var=posterior_var,
 )
-plt.plot(curve["nominal_coverages"], curve["empirical_coverages"], "o-", label="empirical coverage")
+mapping = calibrator.fit_mapping(
+    x_true=x_true,
+    x_hat=result["posterior_mean"],
+    posterior_var=posterior_var,
+)
+post_curve = calibrator.evaluate_with_mapping(
+    x_true=x_true,
+    x_hat=result["posterior_mean"],
+    posterior_var=posterior_var,
+    mapping=mapping,
+)
+
+# Plot nominal vs empirical coverage.
+plt.plot([0, 1], [0, 1], "--", color="0.5", label="perfect calibration")
+plt.plot(pre_curve["nominal_coverages"], pre_curve["empirical_coverages"], "o-", label="before calibration")
+plt.plot(post_curve["nominal_coverages"], post_curve["empirical_coverages"], "o-", label="after calibration")
 plt.xlabel("Nominal coverage")
 plt.ylabel("Empirical coverage")
 plt.legend()
 plt.tight_layout()
 plt.show()
 ```
+
+<p align="center">
+  <img src="docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
+</p>
 
 ## Documentation
 
@@ -87,7 +117,7 @@ The full development guide is also available in the documentation.
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-`Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: Python toolbox for uncertainty estimation and calibration workflows in EEG/MEG inverse source imaging (v1.0.2). Zenodo. https://doi.org/10.5281/zenodo.20721580`
+`Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.2). Zenodo. https://doi.org/10.5281/zenodo.20721580`
 
 ## Workflow
 
