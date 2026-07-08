@@ -13,7 +13,7 @@ import calibrain
 
 project = 'CaliBrain'
 copyright = '2026, Mohammad Orabe'
-author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
+author = 'Mohammad Orabe, Srikantan Nagarajan, Stefan Haufe, Ismail Huseynov'
 release = calibrain.__version__
 version = release
 documentation_version = os.environ.get(
