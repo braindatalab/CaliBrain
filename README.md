@@ -12,7 +12,7 @@
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21261767.svg)](https://doi.org/10.5281/zenodo.21261767)
 
-CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
+CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging.
 
 ## Overview
 
@@ -40,7 +40,7 @@ documentation on Read the Docs.
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-`Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767`
+`Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026). CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767`
 
 ## Example
 
@@ -138,7 +138,7 @@ uncertainty-calibration toolkits, and standard inverse-solver workflows rather
 than replacing them.
 
 Its scope is narrower and more specific: CaliBrain focuses on simulation-based
-uncertainty estimation and calibration for EEG/MEG inverse source imaging,
+uncertainty quantification and calibration for EEG/MEG inverse source imaging,
 including source-level intervals, local covariance-based ellipsoids, empirical
 coverage analysis, and recalibration across controlled evaluation conditions.
 
