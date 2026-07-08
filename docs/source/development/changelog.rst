@@ -6,14 +6,14 @@ This document records notable changes to the CaliBrain package.
 .. note::
     This page summarizes notable package, workflow, and documentation changes.
 
-Unreleased
-----------
-
+Version 1.0.3 (2026-07-08)
+--------------------------
+*   [FEATURE] Added a new tutorials for ``UncertaintyEstimator``.
 *   [TEST] Added an initial automated test suite covering ``UncertaintyEstimator``, ``UncertaintyCalibrator``, ``MetricEvaluator``, ``SourceSimulator``, ``SensorSimulator``, ``DataGenerator``, and EEG free-orientation uncertainty paths.
 *   [CI] Added a dedicated GitHub Actions test workflow running ``pytest`` on the repository test suite.
 *   [DOCS] Added a test-status badge to the README and expanded the related-software positioning text for MNE-Python, CUQIpy, and Uncertainty Toolbox.
 *   [DOCS] Added repository-level community files required for external review workflows, including ``CODE_OF_CONDUCT.md`` and ``CONTRIBUTING.md``.
-*   [DOCS] Updated the repository, citation page, and documentation landing page to use the current Zenodo DOI ``10.5281/zenodo.20721580``.
+*   [DOCS] Updated the repository, citation page, and documentation landing page to use the current Zenodo DOI.
 
 Version 1.0.2 (2026-06-16)
 --------------------------

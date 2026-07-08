@@ -5,13 +5,18 @@
     "url": "https://calibrain.readthedocs.io/en/dev/"
   },
   {
-    "name": "v1.0.2 (stable)",
-    "version": "stable",
-    "url": "https://calibrain.readthedocs.io/en/stable/"
+    "name": "v1.0.3 (latest)",
+    "version": "latest",
+    "url": "https://calibrain.readthedocs.io/en/latest/"
+  },  
+  {
+    "name": "v1.0.2",
+    "version": "v1.0.2",
+    "url": "https://calibrain.readthedocs.io/en/v1.0.2/"
   },  
   {
     "name": "v1.0.1",
-    "version": "stable",
+    "version": "v1.0.1",
     "url": "https://calibrain.readthedocs.io/en/v1.0.1/"
   },
   {

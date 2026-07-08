@@ -10,7 +10,7 @@
 [![Tests](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml/badge.svg)](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20721580.svg)](https://doi.org/10.5281/zenodo.20721580)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21261767.svg)](https://doi.org/10.5281/zenodo.21261767)
 
 CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
 
@@ -27,6 +27,20 @@ evaluating recalibration maps under controlled experimental conditions.
 <p align="center">
   <img src="docs/source/_static/calibrain_pipeline.jpg" alt="CaliBrain pipeline overview" width="900">
 </p>
+
+## Documentation
+
+The documentation is hosted on Read the Docs:
+https://calibrain.readthedocs.io/
+
+For runnable end-to-end examples, see the tutorials and workflow
+documentation on Read the Docs.
+
+## Citation
+
+If you use CaliBrain in academic work, please cite the software archive:
+
+`Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767`
 
 ## Example
 
@@ -100,25 +114,6 @@ plt.show()
   <img src="docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
 </p>
 
-## Documentation
-
-The documentation is hosted on Read the Docs:
-https://calibrain.readthedocs.io/
-
-For runnable end-to-end examples, see the tutorials and workflow
-documentation on Read the Docs.
-
-## Contributing
-
-Contribution guidelines are available in `CONTRIBUTING.md`.
-The full development guide is also available in the documentation.
-
-## Citation
-
-If you use CaliBrain in academic work, please cite the software archive:
-
-`Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.2). Zenodo. https://doi.org/10.5281/zenodo.20721580`
-
 ## Workflow
 
 The package follows this workflow:
@@ -162,6 +157,11 @@ git clone https://github.com/braindatalab/CaliBrain.git
 cd CaliBrain
 python -m pip install -e .
 ```
+
+## Contributing
+
+Contribution guidelines are available in `CONTRIBUTING.md`.
+The full development guide is also available in the documentation.
 
 ## License
 
