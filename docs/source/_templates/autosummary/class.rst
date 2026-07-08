@@ -55,7 +55,7 @@
 - :doc:`/auto_tutorials/03_quick_start`
 - :doc:`/auto_tutorials/09_uncertainty_estimation`
 - :doc:`/auto_tutorials/12_end_to_end_workflow`
-- :doc:`/auto_tutorials/13_orientation_and_uncertainty_representations`
+- :doc:`/auto_tutorials/10_orientation_and_uncertainty_representations`
 
 {% elif fullname == "calibrain.UncertaintyCalibrator" %}
 
