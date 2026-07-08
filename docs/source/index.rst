@@ -28,7 +28,7 @@ CaliBrain
    :target: https://doi.org/10.5281/zenodo.21261767
    :alt: DOI
 
-CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
+CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging.
 
 Overview
 --------
@@ -56,7 +56,7 @@ Citation
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-``Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767``
+``Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026). CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767``
 
 Workflow
 --------

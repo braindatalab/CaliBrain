@@ -43,7 +43,7 @@ Version 1.0.0 (2026-06-11)
 
 *   Version 1.0.0 marks a major consolidation of the CaliBrain package around a
     stable, production-ready workflow. The package is now centered on simulation-based
-    uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
+    uncertainty quantification and calibration in EEG/MEG inverse source imaging, with
     robust support for fixed and free-orientation source models.
 *   [BREAKING] Consolidated the supported inverse workflow around ``gamma_map_sflex``,
     ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``. Older methods such as
@@ -52,7 +52,7 @@ Version 1.0.0 (2026-06-11)
 *   [BREAKING] Reworked calibration from within-subject, across-source fitting to pooled source datasets across subjects, with isotonic regression now fit on subject-level splits rather than a single subject at a time.
 *   [FEATURE] Introduce five calibration modes (``precal``, ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``) for evaluating calibration performance under different fitting conditions.
 *   [FEATURE] Expanded the core simulation stack with stronger support for source simulation, sensor simulation, and leadfield handling across fixed and free-orientation settings.
-*   [FEATURE] Added and extended uncertainty estimation and calibration capabilities, including ``pointwise`` and ``aggregated`` uncertainty modes, ``full_cov`` and ``marginal`` free-orientation interval types, componentwise uncertainty handling, and the multiple calibration modes.
+*   [FEATURE] Added and extended uncertainty quantification and calibration capabilities, including ``pointwise`` and ``aggregated`` uncertainty modes, ``full_cov`` and ``marginal`` free-orientation interval types, componentwise uncertainty handling, and the multiple calibration modes.
 *   [FEATURE] Added manifest workflow modules for data generation, aggregation, calibration, and calibration-figure generation, and documented their main entry points and helper methods.
 *   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for ``mse``, ``mae``, ``rmse``, ``rmae``, ``mean_posterior_std``, ``emd``, ``mean_signed_deviation``, ``mean_absolute_deviation``, ``max_underconfidence_deviation``, and ``max_overconfidence_deviation``.
 *   [BREAKING] Removed the legacy benchmarking class and replaced it with ``DataGenerator``, which wraps solver grids, ``SourceSimulator``, ``SensorSimulator``, ``LeadfieldBuilder``, and posterior-summary generation in a single workflow abstraction.
