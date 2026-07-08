@@ -1,14 +1,14 @@
 cff-version: 1.2.0
 message: "If you use CaliBrain, please cite this software."
 title: "CaliBrain"
-version: "1.0.2"
-date-released: 2026-06-16
+version: "1.0.3"
+date-released: 2026-07-08
 type: software
 license: "BSD-3-Clause"
-doi: 10.5281/zenodo.20721580
+doi: 10.5281/zenodo.21261767
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.20721580
+    value: 10.5281/zenodo.21261767
 authors:
   - family-names: "Orabe"
     given-names: "Mohammad"
