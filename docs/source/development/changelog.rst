@@ -6,8 +6,8 @@ This document records notable changes to the CaliBrain package.
 .. note::
     This page summarizes notable package, workflow, and documentation changes.
 
-Unreleased
-----------
+Version 1.0.3 (2026-07-08)
+--------------------------
 
 *   [TEST] Added an initial automated test suite covering ``UncertaintyEstimator``, ``UncertaintyCalibrator``, ``MetricEvaluator``, ``SourceSimulator``, ``SensorSimulator``, ``DataGenerator``, and EEG free-orientation uncertainty paths.
 *   [CI] Added a dedicated GitHub Actions test workflow running ``pytest`` on the repository test suite.
