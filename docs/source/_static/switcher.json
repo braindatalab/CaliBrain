@@ -5,9 +5,9 @@
     "url": "https://calibrain.readthedocs.io/en/dev/"
   },
   {
-    "name": "v1.0.3 (stable)",
-    "version": "stable",
-    "url": "https://calibrain.readthedocs.io/en/stable/"
+    "name": "v1.0.3 (latest)",
+    "version": "latest",
+    "url": "https://calibrain.readthedocs.io/en/latest/"
   },  
   {
     "name": "v1.0.2",
