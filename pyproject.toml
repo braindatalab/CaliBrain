@@ -8,8 +8,8 @@ version = "1.0.3"
 description = "CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
-    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
     {name = "Srikantan Nagarajan", email = "Srikantan.Nagarajan@ucsf.edu"},
+    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
     {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
 ]
 classifiers = [
