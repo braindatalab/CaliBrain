@@ -1,0 +1,577 @@
+"""
+source_simulation.py
+Module for simulating synthetic brain activity data for source-level measurements.
+
+Specifically simulating event-related potential (ERP)-like signals for use in 
+neuroimaging research (e.g., MEG/EEG source simulation). It supports flexible 
+configuration of ERP waveform properties, source orientation (fixed or free), 
+and trial-based simulation with reproducible randomization.
+"""
+
+import os
+from pathlib import Path
+import logging
+from typing import Optional, Tuple, Union, Dict, List, Any
+
+import numpy as np
+from numpy.random import Generator
+from scipy.stats import wishart
+from scipy.signal import butter, filtfilt
+import mne
+from mne.io.constants import FIFF
+
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm  # Import colormap functionality
+from matplotlib.lines import Line2D  # Import for custom legend
+import matplotlib.gridspec as gridspec
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # For better colorbar placement
+
+from calibrain.utils import load_config
+
+
+class SourceSimulator:
+    """
+    Simulate synthetic source coefficients for three settings:
+
+    1) fixed orientation (MEG and EEG):
+         s shape = (N, T)
+         One scalar coefficient per source location. The cortical-normal
+         orientation is encoded implicitly in the fixed leadfield.
+
+    2) free orientation (EEG):
+         x shape = (N, 3, T)
+         One scalar waveform per active source location, multiplied by
+         the cortical-normal direction in the local 3D source basis.
+
+    3) free orientation (MEG):
+         a shape = (N, 2, T)
+         One scalar waveform per active source location, multiplied by
+         the projection of the cortical-normal direction into the reduced
+         2D MEG SVD basis.
+    """
+
+    def __init__(
+        self,
+        ERP_config: Optional[Dict[str, Any]] = None,
+        logger: Optional[logging.Logger] = None,
+    ):
+        """
+        Parameters
+        ----------
+        ERP_config : dict, optional
+            ERP simulation configuration. If None, defaults are used.
+
+            Required/used keys with defaults:
+
+            - tmin : float, default -0.5
+                Start time (s) of the epoch.
+            - tmax : float, default 0.5
+                End time (s) of the epoch.
+            - stim_onset : float, default 0.0
+                Stimulus onset time (s) within [tmin, tmax].
+            - sfreq : float, default 250
+                Sampling frequency (Hz).
+            - fmin, fmax : float, default 1, 5
+                Bandpass limits (Hz) for ERP-like waveform shaping.
+            - amplitude_distribution : dict
+                Log-normal amplitude distribution in nAm:
+
+                * median : float, default 20.0
+                * sigma  : float, default 0.2
+                * clip   : (low, high), default (2.5, 50.0)
+
+            - random_erp_timing : bool, default True
+                If True, randomize ERP segment duration and start offset
+                after stim_onset.
+            - erp_min_length : int or None, default None
+                Minimum ERP segment length in samples. If None, uses
+                internal default 82.
+
+        logger : logging.Logger, optional
+            Logger instance. If None, uses module logger.
+        """
+        self.ERP_config = ERP_config if ERP_config else {
+            "tmin": -0.5,
+            "tmax": 0.5,
+            "stim_onset": 0.0,
+            "sfreq": 250,
+            "fmin": 1,
+            "fmax": 5,
+            "amplitude_distribution": {
+                "median": 20.0,  # peak dipole moment (nAm)
+                "sigma": 0.2,  # std of the underlying normal distribution
+                "clip": (2.5, 50.0),  # bounds in nAm
+            },
+            "random_erp_timing": True,
+            "erp_min_length": None,
+        }
+
+        self.logger = logger if logger else logging.getLogger(__name__)
+
+        # Default units for ERP simulation
+        self.kind: int = FIFF.FIFFV_DIPOLE_WAVE
+        self.units: str = FIFF.FIFF_UNIT_AM
+        self.unitmult: int = FIFF.FIFF_UNITM_N
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["logger"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if self.logger is None:
+            self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _get_times(self) -> np.ndarray:
+        tmin = self.ERP_config["tmin"]
+        tmax = self.ERP_config["tmax"]
+        sfreq = self.ERP_config["sfreq"]
+        return np.arange(tmin, tmax, 1.0 / sfreq)
+
+    # -------------------------
+    # Amplitude sampling (nAm)
+    # -------------------------
+    def _sample_source_amplitude(self, rng: np.random.RandomState) -> float:
+        """
+        Sample a peak dipole moment in nAm from a clipped log-normal distribution.
+
+        Math:
+        - Draw A ~ LogNormal(mu, sigma), where mu = log(median).
+        - Clip A into [low, high] if clip bounds are provided.
+        """
+        base_amplitude = 20.0
+        dist_cfg = self.ERP_config.get("amplitude_distribution")
+
+        if not dist_cfg:
+            return float(max(base_amplitude, 0.0))
+
+        clip_bounds = dist_cfg.get("clip")
+        median = float(dist_cfg.get("median", base_amplitude))
+        sigma = float(dist_cfg.get("sigma", 0.2))
+
+        safe_median = max(median, 1e-6)
+        mu = np.log(safe_median)
+
+        amplitude = rng.lognormal(mean=mu, sigma=sigma)
+
+        if clip_bounds is not None:
+            low, high = clip_bounds
+            amplitude = float(np.clip(amplitude, low, high))
+
+        return float(amplitude)
+
+    # -------------------------
+    # ERP waveform simulation
+    # -------------------------
+    def _simulate_erp_waveform(self, source_seed: int = 512) -> np.ndarray:
+        """
+        Generate one ERP-like waveform of length n_times.
+
+        Steps:
+        1) Choose ERP segment length and start index after stimulus onset.
+        2) Draw white noise.
+        3) Bandpass filter it.
+        4) Apply a Hann window.
+        5) Normalize to unit peak.
+        6) Scale by sampled amplitude in nAm.
+        7) Place the segment into the full epoch waveform.
+        """
+        tmin = self.ERP_config["tmin"]
+        tmax = self.ERP_config["tmax"]
+        stim_onset = self.ERP_config["stim_onset"]
+        sfreq = self.ERP_config["sfreq"]
+        fmin = self.ERP_config["fmin"]
+        fmax = self.ERP_config["fmax"]
+        random_erp_timing = self.ERP_config["random_erp_timing"]
+        erp_min_length = self.ERP_config["erp_min_length"]
+
+        if stim_onset < tmin or stim_onset > tmax:
+            raise ValueError(
+                f"stim_onset ({stim_onset}) is outside [{tmin}, {tmax}]"
+            )
+
+        rng = np.random.RandomState(int(source_seed))
+
+        _DEFAULT_MIN_ERP_LEN = 82
+
+        times = self._get_times()
+        n_times = len(times)
+
+        stim_indices = np.where(times >= stim_onset)[0]
+        stim_onset_samples = stim_indices[0] if len(stim_indices) > 0 else n_times
+
+        waveform = np.zeros(n_times)
+
+        current_min_erp_len = (
+            erp_min_length if erp_min_length is not None else _DEFAULT_MIN_ERP_LEN
+        )
+
+        max_post = n_times - stim_onset_samples
+
+        if max_post < current_min_erp_len:
+            return waveform
+
+        if random_erp_timing:
+            erp_len = rng.randint(low=current_min_erp_len, high=max_post + 1)
+            max_start = max_post - erp_len
+            start_offset = rng.randint(0, max_start + 1)
+            start_sample = stim_onset_samples + start_offset
+        else:
+            erp_len = max_post
+            start_sample = stim_onset_samples
+
+        if erp_len < current_min_erp_len:
+            return waveform
+
+        white = rng.randn(erp_len)
+
+        low = fmin / (sfreq / 2.0)
+        high = fmax / (sfreq / 2.0)
+
+        eps = 1e-9
+        low = max(eps, low)
+        high = min(1.0 - eps, high)
+
+        if low >= high:
+            return waveform
+
+        try:
+            b, a = butter(4, [low, high], btype="band")
+        except ValueError:
+            return waveform
+
+        seg = filtfilt(b, a, white)
+        seg *= np.hanning(erp_len)
+
+        peak = float(np.max(np.abs(seg)))
+
+        if peak < 1e-9:
+            return waveform
+
+        seg /= peak
+        seg *= self._sample_source_amplitude(rng)
+
+        end_sample = start_sample + seg.size
+
+        if start_sample < n_times and end_sample <= n_times:
+            waveform[start_sample:end_sample] = seg
+
+        return waveform
+
+    # -------------------------
+    # Orientation helpers
+    # -------------------------
+    def _normalize_vector(self, v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+        """
+        Normalize a single vector to unit Euclidean norm.
+        """
+        v = np.asarray(v, dtype=float).reshape(-1)
+        v_norm = float(np.linalg.norm(v))
+
+        if v_norm < eps:
+            raise ValueError("Cannot normalize a vector with near-zero norm.")
+
+        return v / v_norm
+
+    def _get_cortical_normal(
+        self,
+        cortical_normals: np.ndarray,
+        src_idx: int,
+        n_sources: int,
+    ) -> np.ndarray:
+        """
+        Extract the cortical-normal direction for source src_idx.
+
+        Accepted shapes:
+            - (N, 3)
+            - (3, N)
+
+        The vector must be expressed in the same source-component coordinate
+        system as the leadfield columns.
+        """
+        normals = np.asarray(cortical_normals, dtype=float)
+
+        if normals.shape == (n_sources, 3):
+            n_i = normals[src_idx, :]
+        elif normals.shape == (3, n_sources):
+            n_i = normals[:, src_idx]
+        else:
+            raise ValueError(
+                "cortical_normals must have shape (N, 3) or (3, N). "
+                f"Got shape {normals.shape}, with N={n_sources}."
+            )
+
+        return self._normalize_vector(n_i)
+
+    def _get_local_Q_basis(
+        self,
+        Q_basis: np.ndarray,
+        src_idx: int,
+        n_sources: int,
+    ) -> np.ndarray:
+        """
+        Extract local SVD basis Q_i for source src_idx.
+
+        Accepted shapes:
+            - (N, 3, 2)
+            - (3, 2, N)
+            - block-diagonal (3N, 2N)
+        """
+        Q = np.asarray(Q_basis, dtype=float)
+
+        if Q.shape == (n_sources, 3, 2):
+            Q_i = Q[src_idx, :, :]
+        elif Q.shape == (3, 2, n_sources):
+            Q_i = Q[:, :, src_idx]
+        elif Q.shape == (3 * n_sources, 2 * n_sources):
+            row_start = 3 * src_idx
+            col_start = 2 * src_idx
+            Q_i = Q[
+                row_start:row_start + 3,
+                col_start:col_start + 2,
+            ]
+        else:
+            raise ValueError(
+                "Q_basis must have shape (N, 3, 2), (3, 2, N), "
+                "or block-diagonal shape (3N, 2N). "
+                f"Got shape {Q.shape}, with N={n_sources}."
+            )
+
+        if Q_i.shape != (3, 2):
+            raise ValueError(
+                f"Local Q_i must have shape (3, 2). Got {Q_i.shape}."
+            )
+
+        return Q_i
+
+    def _get_multicomponent_orientation(
+        self,
+        src_idx: int,
+        n_sources: int,
+        n_comp: int,
+        cortical_normals: np.ndarray,
+        Q_basis: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """
+        Return the source orientation vector used in multicomponent simulation.
+
+        Free EEG:
+            q_i = n_i in R^3.
+
+        Reduced free MEG:
+            q_i = Q_i.T @ n_i in R^2.
+
+        In both cases, the local source signal is rank-one:
+
+            x_i(t) = q_i * s_i(t),
+
+        where s_i(t) is one scalar ERP/ERF waveform.
+        """
+        n_i = self._get_cortical_normal(
+            cortical_normals=cortical_normals,
+            src_idx=src_idx,
+            n_sources=n_sources,
+        )
+
+        if n_comp == 3:
+            return n_i
+
+        if n_comp == 2:
+            if Q_basis is None:
+                raise ValueError(
+                    "Q_basis must be provided for reduced MEG free-orientation "
+                    "source simulation."
+                )
+
+            Q_i = self._get_local_Q_basis(
+                Q_basis=Q_basis,
+                src_idx=src_idx,
+                n_sources=n_sources,
+            )
+
+            q_2d = Q_i.T @ n_i
+
+            return q_2d
+
+        raise ValueError(f"n_comp must be 2 or 3. Got n_comp={n_comp}.")
+
+    # -----------------------------
+    # Fixed-orientation simulation
+    # -----------------------------
+    def _simulate_fixed(
+        self,
+        n_sources: int,
+        nnz: int,
+        trial_seed: int,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Simulate fixed-orientation source activity.
+
+        Output shape:
+            x.shape == (N, T)
+
+        The cortical-normal orientation is implicit in the fixed leadfield.
+        """
+        if nnz > n_sources:
+            raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
+
+        trial_rng = np.random.RandomState(int(trial_seed))
+        seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
+
+        active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_times))
+
+        for src_idx in active_indices:
+            source_seed = int(trial_rng.randint(0, seed_high))
+            x[src_idx, :] = self._simulate_erp_waveform(source_seed=source_seed)
+
+        return x, active_indices
+
+    # -----------------------------
+    # Free-orientation simulation
+    # -----------------------------
+    def _simulate_multicomponent(
+        self,
+        n_sources: int,
+        nnz: int,
+        n_comp: int,
+        trial_seed: int,
+        cortical_normals: np.ndarray,
+        Q_basis: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Simulate free-orientation source activity.
+
+        Output shapes:
+            - free EEG: x.shape == (N, 3, T)
+            - free MEG: x.shape == (N, 2, T)
+
+        Each active source has one scalar waveform s_i(t). The local vector
+        source is then built as:
+
+            x_i(t) = q_i * s_i(t),
+
+        where q_i is either the cortical-normal vector n_i or its projection
+        Q_i.T @ n_i into the reduced MEG 2D basis.
+        """
+        if nnz > n_sources:
+            raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
+
+        trial_rng = np.random.RandomState(int(trial_seed))
+        seed_high = np.iinfo(np.int32).max
+        n_times = len(self._get_times())
+
+        active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
+        x = np.zeros((n_sources, n_comp, n_times))
+
+        for src_idx in active_indices:
+            source_seed = int(trial_rng.randint(0, seed_high))
+            waveform = self._simulate_erp_waveform(source_seed=source_seed)
+
+            q = self._get_multicomponent_orientation(
+                src_idx=int(src_idx),
+                n_sources=n_sources,
+                n_comp=n_comp,
+                cortical_normals=cortical_normals,
+                Q_basis=Q_basis,
+            )
+
+            x[src_idx, :, :] = q[:, None] * waveform[None, :]
+
+        return x, active_indices
+
+    # -----------------------------
+    # Public simulation API
+    # -----------------------------
+    def simulate(
+        self,
+        n_sources: int = 1284,
+        nnz: int = 5,
+        orientation_type: str = "fixed",
+        coil_type: str = FIFF.FIFFV_COIL_EEG,
+        seed: int = 42,
+        cortical_normals: Optional[np.ndarray] = None,
+        Q_basis: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Simulate source time courses.
+
+        Parameters
+        ----------
+        n_sources : int
+            Number of source locations.
+
+        nnz : int
+            Number of active source locations.
+
+        orientation_type : str
+            Either "fixed" or "free".
+
+        coil_type : int
+            FIFF coil type. Used to distinguish EEG from MEG in the free case.
+
+        seed : int
+            Random seed for selecting active sources and waveform seeds.
+
+        cortical_normals : array, optional
+            Cortical-normal vectors. Required for free-orientation simulation.
+
+        Q_basis : array, optional
+            Local MEG SVD basis. Required for reduced free MEG simulation.
+
+        Returns
+        -------
+        x : array
+            Simulated source activity.
+
+            - fixed: shape (N, T)
+            - free EEG: shape (N, 3, T)
+            - free MEG: shape (N, 2, T)
+
+        active_indices : array
+            Indices of active source locations.
+        """
+        if orientation_type == "fixed":
+            return self._simulate_fixed(
+                n_sources=n_sources,
+                nnz=nnz,
+                trial_seed=int(seed),
+            )
+
+        if orientation_type == "free" and cortical_normals is None:
+            raise ValueError(
+                "cortical_normals must be provided for free-orientation "
+                "source simulation."
+            )
+
+        if orientation_type == "free" and coil_type == FIFF.FIFFV_COIL_EEG:
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=3,
+                trial_seed=int(seed),
+                cortical_normals=cortical_normals,
+                Q_basis=None,
+            )
+
+        if orientation_type == "free" and coil_type in [
+            FIFF.FIFFV_COIL_VV_MAG_T1,
+            FIFF.FIFFV_COIL_VV_PLANAR_T1,
+        ]:
+            return self._simulate_multicomponent(
+                n_sources=n_sources,
+                nnz=nnz,
+                n_comp=2,
+                trial_seed=int(seed),
+                cortical_normals=cortical_normals,
+                Q_basis=Q_basis,
+            )
+
+        raise ValueError(
+            "orientation_type must be 'fixed' or 'free' with appropriate "
+            "coil_type for MEG/EEG."
+        )
+```
