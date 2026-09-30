@@ -1,3 +1,6 @@
+.. meta::
+   :description: Citation guidance and BibTeX metadata for referencing CaliBrain software releases in academic work.
+
 How to Cite CaliBrain
 =====================
 
@@ -7,9 +10,7 @@ project, cite the archived software release used for the analysis.
 Recommended citation
 --------------------
 
-Cite CaliBrain as software:
-
-.. code-block:: text
+.. code-block:: bibtex
 
    Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
    CaliBrain: A Python toolbox for uncertainty quantification and calibration in

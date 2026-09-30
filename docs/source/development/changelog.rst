@@ -1,3 +1,6 @@
+.. meta::
+   :description: Release history and notable changes to the CaliBrain package, workflows, tests, and documentation.
+
 Changelog
 =========
 

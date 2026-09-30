@@ -1,3 +1,6 @@
+.. meta::
+   :description: Install CaliBrain from PyPI, a local source checkout, or the repository's Conda environment.
+
 Installation
 ============
 

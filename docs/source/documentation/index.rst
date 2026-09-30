@@ -1,3 +1,6 @@
+.. meta::
+   :description: Explore CaliBrain concepts, workflows, tutorials, datasets, and terminology for EEG/MEG uncertainty calibration.
+
 Documentation overview
 ======================
 

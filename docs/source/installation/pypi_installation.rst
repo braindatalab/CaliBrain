@@ -1,3 +1,6 @@
+.. meta::
+   :description: Install the latest or a specific released version of CaliBrain from the Python Package Index.
+
 PyPI Installation
 =================
 

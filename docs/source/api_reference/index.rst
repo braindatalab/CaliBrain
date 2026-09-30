@@ -1,3 +1,6 @@
+.. meta::
+   :description: Reference documentation for CaliBrain's public Python API, estimators, simulators, metrics, and workflows.
+
 API Reference
 =============
 

@@ -1,3 +1,6 @@
+.. meta::
+   :description: Runnable CaliBrain tutorials covering source simulation, inverse estimation, uncertainty, calibration, and evaluation.
+
 Tutorials
 =========
 

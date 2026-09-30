@@ -1,3 +1,6 @@
+.. meta::
+   :description: Definitions of CaliBrain, uncertainty-calibration, inverse-imaging, and EEG/MEG terminology.
+
 Glossary
 ========
 
