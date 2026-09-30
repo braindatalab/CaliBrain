@@ -1,5 +1,8 @@
 .. CaliBrain documentation master file
 
+.. meta::
+   :description: CaliBrain is a Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging.
+
 =========
 CaliBrain
 =========
@@ -8,17 +11,17 @@ CaliBrain
    :target: https://pypi.org/project/calibrain/
    :alt: PyPI version
 
-.. image:: https://readthedocs.org/projects/calibrain/badge/?version=latest
-   :target: https://calibrain.readthedocs.io/en/latest/
+.. image:: https://readthedocs.org/projects/calibrain/badge/?version=stable
+   :target: https://calibrain.readthedocs.io/stable/
    :alt: Documentation status
 
 .. image:: https://img.shields.io/pypi/pyversions/calibrain.svg
    :target: https://pypi.org/project/calibrain/
    :alt: Supported Python versions
 
-.. .. image:: https://static.pepy.tech/badge/calibrain
-..    :target: https://pepy.tech/projects/calibrain
-..    :alt: Total downloads
+.. image:: https://static.pepy.tech/badge/calibrain
+   :target: https://pepy.tech/projects/calibrain
+   :alt: Total downloads
 
 .. image:: https://img.shields.io/github/license/braindatalab/CaliBrain
    :target: https://github.com/braindatalab/CaliBrain/blob/main/LICENSE

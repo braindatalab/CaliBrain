@@ -18,9 +18,13 @@ release = calibrain.__version__
 version = release
 documentation_version = os.environ.get(
     "READTHEDOCS_VERSION",
-    os.environ.get("DOCS_VERSION", "latest"),
+    os.environ.get("DOCS_VERSION", "stable"),
 )
-switcher_json_url = "https://calibrain.readthedocs.io/en/latest/_static/switcher.json"
+switcher_json_url = "https://calibrain.readthedocs.io/stable/_static/switcher.json"
+html_baseurl = os.environ.get(
+    "READTHEDOCS_CANONICAL_URL",
+    "https://calibrain.readthedocs.io/stable/",
+)
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -128,10 +132,6 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'sklearn': ('https://scikit-learn.org/stable/', None),
     'mne': ('https://mne.tools/stable/', None),
-}
-
-html_meta = {
-    "google-site-verification": "U4j0wnWaoGzIzJ5_ThCD3I8YLlSSrcOoIeECjL2nPuk",
 }
 
 html_title = "CaliBrain Documentation"
