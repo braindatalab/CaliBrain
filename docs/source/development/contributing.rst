@@ -1,3 +1,6 @@
+.. meta::
+   :description: Learn how to contribute code, tests, documentation, bug reports, and workflow improvements to CaliBrain.
+
 Contributing
 ============
 

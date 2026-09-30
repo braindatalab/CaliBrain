@@ -1,3 +1,6 @@
+.. meta::
+   :description: Licensing and usage notice for third-party datasets used with CaliBrain documentation and examples.
+
 Dataset Notice
 ==============
 

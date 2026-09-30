@@ -1,3 +1,6 @@
+.. meta::
+   :description: Install CaliBrain with pip from a local repository checkout for development or testing.
+
 Pip Installation
 ================
 

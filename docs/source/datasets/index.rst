@@ -1,3 +1,6 @@
+.. meta::
+   :description: Configure the local example data and forward-model files used by CaliBrain simulation and calibration workflows.
+
 Example Dataset
 ===============
 

@@ -40,7 +40,24 @@ documentation on Read the Docs.
 
 If you use CaliBrain in academic work, please cite the software archive:
 
-`Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026). CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767`
+```text
+Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
+CaliBrain: A Python toolbox for uncertainty quantification and calibration in
+EEG/MEG inverse source imaging (v1.0.3). Zenodo.
+https://doi.org/10.5281/zenodo.21261767
+```
+
+```bibtex
+@software{calibrain,
+  title = {CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging},
+  author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail T.},
+  version = {1.0.3},
+  year = {2026},
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.21261767},
+  url = {https://doi.org/10.5281/zenodo.21261767}
+}
+```
 
 ## Example
 

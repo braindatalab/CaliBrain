@@ -1,3 +1,6 @@
+.. meta::
+   :description: CaliBrain development guide covering package architecture, coding conventions, tests, and documentation maintenance.
+
 Development Guide
 =================
 

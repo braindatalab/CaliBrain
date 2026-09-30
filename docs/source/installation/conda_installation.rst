@@ -1,3 +1,6 @@
+.. meta::
+   :description: Create a CaliBrain development environment from the repository's Conda environment file.
+
 Conda Installation
 ==================
 
