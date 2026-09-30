@@ -2,41 +2,46 @@
   {
     "name": "dev",
     "version": "dev",
-    "url": "https://calibrain.readthedocs.io/en/dev/"
+    "url": "https://calibrain.readthedocs.io/dev/"
   },
   {
-    "name": "v1.0.3 (latest)",
-    "version": "latest",
-    "url": "https://calibrain.readthedocs.io/en/latest/"
-  },  
+    "name": "stable",
+    "version": "stable",
+    "url": "https://calibrain.readthedocs.io/stable/"
+  },
+  {
+    "name": "v1.0.3",
+    "version": "v1.0.3",
+    "url": "https://calibrain.readthedocs.io/v1.0.3/"
+  },
   {
     "name": "v1.0.2",
     "version": "v1.0.2",
-    "url": "https://calibrain.readthedocs.io/en/v1.0.2/"
+    "url": "https://calibrain.readthedocs.io/v1.0.2/"
   },  
   {
     "name": "v1.0.1",
     "version": "v1.0.1",
-    "url": "https://calibrain.readthedocs.io/en/v1.0.1/"
+    "url": "https://calibrain.readthedocs.io/v1.0.1/"
   },
   {
     "name": "v1.0.0",
     "version": "v1.0.0",
-    "url": "https://calibrain.readthedocs.io/en/v1.0.0/"
+    "url": "https://calibrain.readthedocs.io/v1.0.0/"
   },
   {
     "name": "v0.1.2",
     "version": "v0.1.2",
-    "url": "https://calibrain.readthedocs.io/en/v0.1.2/"
+    "url": "https://calibrain.readthedocs.io/v0.1.2/"
   },
   {
     "name": "v0.1.1",
     "version": "v0.1.1",
-    "url": "https://calibrain.readthedocs.io/en/v0.1.1/"
+    "url": "https://calibrain.readthedocs.io/v0.1.1/"
   },
   {
     "name": "v0.1.0",
     "version": "v0.1.0",
-    "url": "https://calibrain.readthedocs.io/en/v0.1.0/"
+    "url": "https://calibrain.readthedocs.io/v0.1.0/"
   }
 ]
