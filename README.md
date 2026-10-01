@@ -25,7 +25,7 @@ reconstructing posterior source estimates, quantifying empirical coverage, and
 evaluating recalibration maps under controlled experimental conditions.
 
 <p align="center">
-  <img src="docs/source/_static/calibrain_pipeline.jpg" alt="CaliBrain pipeline overview" width="900">
+  <img src="docs/source/_static/calibrain_pipeline.jpg" alt="CaliBrain pipeline overview">
 </p>
 
 ## Documentation
