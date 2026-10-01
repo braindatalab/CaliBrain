@@ -121,6 +121,7 @@ master_doc = 'index'
 html_static_path = ['_static']
 html_css_files = ['custom.css']
 templates_path = ['_templates']
+epub_exclude_files = ['_static/switcher.json']
 html_sidebars = {
     "**": ["sidebar-nav-bs.html"],
 }
