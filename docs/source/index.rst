@@ -44,7 +44,7 @@ generating source activity, propagating it through forward models,
 reconstructing posterior source estimates, quantifying empirical coverage, and
 evaluating recalibration maps under controlled experimental conditions.
 
-.. image:: _static/calibrain_pipeline.jpg
+.. image:: _static/calibrain_pipeline.png
    :alt: CaliBrain pipeline overview
    :align: center
 
