@@ -368,12 +368,21 @@ class DataGenerator:
         source_seed = seed
         sensor_seed = (seed * 26544) % (2**32)
 
+        if orientation_type == "free" and leadfield_data.cortical_normals is None:
+            raise ValueError(
+                f"Leadfield for subject '{data_params['subject']}' has no 'cortical_normals'. "
+                "Free-orientation simulation needs them; regenerate the leadfield with "
+                "calibrain/extract_leadfield.py."
+            )
+
         x, x_active_indices = self.source_simulator.simulate(
             n_sources=n_sources,
             nnz=data_params['nnz'],
             orientation_type=orientation_type,
             coil_type=leadfield_data.coil_type,
             seed=source_seed,
+            cortical_normals=leadfield_data.cortical_normals,
+            Q_basis=leadfield_data.Q_basis,
         )
         source_units = self.source_simulator.units
         source_unitmult = self.source_simulator.unitmult
