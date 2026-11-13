@@ -79,9 +79,12 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:
             print("Forward solution orientation is already free")
         elif fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
-            print("Forward solution orientation is fixed, converting to free orientation")
-            fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
-            assert fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI, "Failed to convert to free orientation"
+            # A fixed-only forward does not retain the missing 3D components.
+            raise ValueError(
+                "Free extraction requires an original free-orientation forward. "
+                "A fixed-only forward cannot recover the missing 3D components."
+            )
+            
               
     # Filter channels by type
     if coil_name == 'mag':
@@ -107,10 +110,20 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     if orientation_type == 'fixed':
         cortical_normals = np.array(fwd['source_nn'], dtype=float, copy=True)
     else:
+        # Cortical-normal free simulation requires a surface source space.
+        if any(src["type"] != "surf" for src in fwd["src"]):
+            raise ValueError(
+                "Cortical-normal free simulation requires surface source spaces."
+            )
         fwd_fixed = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=True, verbose='error')
         cortical_normals = np.array(fwd_fixed['source_nn'], dtype=float, copy=True)
     if cortical_normals.shape != (fwd['nsource'], 3):
         raise ValueError(f"Unexpected cortical normals shape {cortical_normals.shape}")
+
+    # Check lengths before division to avoid zero or invalid normalization.
+    normal_lengths = np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+    if not np.all(np.isfinite(normal_lengths)) or np.any(normal_lengths < 1e-12):
+        raise ValueError("Each cortical normal must have a finite, nonzero norm.")
     cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
 
     if orientation_type == 'fixed':
