@@ -53,6 +53,13 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     `Q_basis` is:
     - identity for free_eeg, as an API-consistent placeholder in the retained 3D basis
     - the local 3x2 SVD basis for free_meg
+
+    `cortical_normals` has shape (sources, 3) and holds the unit cortical normals
+    that MNE uses to build the fixed-orientation leadfield (``source_nn`` of the
+    fixed-converted forward, i.e. cortical-patch-statistics normals). They are
+    expressed in the same 3D source basis as the *free* leadfield columns (before
+    any MEG SVD reduction) and follow the same source order. The free-orientation
+    source simulation needs them to generate activity along the normal.
     """
     fwd_path = f"{fwd_datapath}/{subject}-fwd.fif"
     print(f"Loading forward solution from {fwd_path}")
@@ -93,6 +100,18 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         raise ValueError(f"Unknown channel type: {coil_name}")
 
     fwd = fwd.pick_channels(mag_channels)
+
+    # Cortical normals in the original (pre-reduction) 3D source basis. The free
+    # forward is stored with surf_ori=False, so its columns are in the head x/y/z
+    # frame; MNE's fixed conversion yields the matching unit normals in that frame.
+    if orientation_type == 'fixed':
+        cortical_normals = np.array(fwd['source_nn'], dtype=float, copy=True)
+    else:
+        fwd_fixed = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=True, verbose='error')
+        cortical_normals = np.array(fwd_fixed['source_nn'], dtype=float, copy=True)
+    if cortical_normals.shape != (fwd['nsource'], 3):
+        raise ValueError(f"Unexpected cortical normals shape {cortical_normals.shape}")
+    cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
 
     if orientation_type == 'fixed':
         Q_basis = None
@@ -189,6 +208,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         'sensor_kind': first_ch.get('kind'),
         'sensor_units': first_ch.get('unit'),
         'sensor_unitmult': first_ch.get('unit_mul'),
+        'cortical_normals': cortical_normals,  # (sources, 3), unit normals in the free 3D source basis.
         'Q_basis': Q_basis,  # (sources, 3, 2) for free MEG, identity (3, 3) for free eeg, None for fixed (MEG and EEG).
     }
     file_name = f"{subject}_{orientation_type}_leadfield.npz"
