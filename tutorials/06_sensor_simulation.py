@@ -113,6 +113,14 @@ leadfield_free_meg = rng.normal(scale=4.0, size=(n_sensors, n_sources, 2))
 # ------------------------
 #
 # The three source arrays match the three leadfield conventions used below.
+# Free-orientation simulation places activity along each source's cortical
+# normal, so it needs ``cortical_normals`` (and ``Q_basis`` for reduced MEG).
+# In a real workflow these are loaded with the leadfield; here they are
+# synthetic.
+
+cortical_normals = rng.normal(size=(n_sources, 3))
+cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+Q_basis = np.stack([np.linalg.qr(rng.normal(size=(3, 2)))[0] for _ in range(n_sources)])
 
 x_fixed, active_fixed = source_simulator.simulate(
     n_sources=n_sources,
@@ -127,6 +135,7 @@ x_free_eeg, active_free_eeg = source_simulator.simulate(
     orientation_type="free",
     coil_type=FIFF.FIFFV_COIL_EEG,
     seed=RANDOM_SEED,
+    cortical_normals=cortical_normals,
 )
 
 x_free_meg, active_free_meg = source_simulator.simulate(
@@ -135,6 +144,8 @@ x_free_meg, active_free_meg = source_simulator.simulate(
     orientation_type="free",
     coil_type=FIFF.FIFFV_COIL_VV_MAG_T1,
     seed=RANDOM_SEED,
+    cortical_normals=cortical_normals,
+    Q_basis=Q_basis,
 )
 
 print("fixed source shape:", x_fixed.shape)
