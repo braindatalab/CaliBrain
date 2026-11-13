@@ -114,8 +114,10 @@ print("source unit multiplier:", simulator.unitmult)
 # number of non-zero locations. ``orientation_type`` controls the output shape:
 #
 # - fixed orientation: one scalar coefficient per source;
-# - free EEG orientation: three local components per source;
-# - free MEG orientation: two local components per source.
+# - free EEG orientation: three local components per source, with one scalar
+#   waveform along the cortical normal (local blocks have rank one);
+# - free MEG orientation: two local components per source, with the same scalar
+#   waveform along the cortical normal projected into the MEG-sensitive basis.
 #
 # The MEG free-orientation reduction reflects that magnetometer/gradiometer
 # leadfields are represented in the two-dimensional MEG-sensitive subspace.
@@ -128,6 +130,10 @@ print("source unit multiplier:", simulator.unitmult)
 #   multiple local components (free);
 # - ``coil_type``: used only for free orientation to choose the EEG 3-component
 #   or reduced MEG 2-component convention;
+# - ``cortical_normals`` (keyword-only, shape ``(n_sources, 3)``): required for
+#   free orientation; they are normalized to unit length internally;
+# - ``Q_basis`` (keyword-only, shape ``(n_sources, 3, 2)``): required only for
+#   reduced free MEG; the normal is projected through it without renormalizing;
 # - ``seed``: fixes the random draw of active locations and ERP-like waveforms.
 #
 # In this tutorial, ``n_sources=40`` and ``nnz=4`` mean that only 4 out of 40
@@ -156,6 +162,17 @@ source_configs = {
         "seed": RANDOM_SEED,
     },
 }
+# Free-orientation simulation places activity along each source's cortical
+# normal, so it needs the normals. In a real workflow they are loaded with the
+# leadfield (``LeadfieldData.cortical_normals`` and ``LeadfieldData.Q_basis``).
+# Here we create synthetic unit normals and orthonormal MEG bases instead.
+
+rng = np.random.default_rng(RANDOM_SEED)
+n_sources = source_configs["free_eeg"]["n_sources"]
+cortical_normals = rng.normal(size=(n_sources, 3))
+cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+Q_basis = np.stack([np.linalg.qr(rng.normal(size=(3, 2)))[0] for _ in range(n_sources)])
+
 x_fixed, active_fixed = simulator.simulate(
     n_sources=source_configs["fixed"]["n_sources"],
     nnz=source_configs["fixed"]["nnz"],
@@ -170,6 +187,7 @@ x_free_eeg, active_free_eeg = simulator.simulate(
     orientation_type=source_configs["free_eeg"]["orientation_type"],
     coil_type=source_configs["free_eeg"]["coil_type"],
     seed=source_configs["free_eeg"]["seed"],
+    cortical_normals=cortical_normals,
 )
 print(f"{'free_eeg':>11} shape: {x_free_eeg.shape}; active sources: {active_free_eeg}")
 
@@ -179,6 +197,8 @@ x_free_meg, active_free_meg = simulator.simulate(
     orientation_type=source_configs["free_meg"]["orientation_type"],
     coil_type=source_configs["free_meg"]["coil_type"],
     seed=source_configs["free_meg"]["seed"],
+    cortical_normals=cortical_normals,
+    Q_basis=Q_basis,
 )
 print(f"{'free_meg':>11} shape: {x_free_meg.shape}; active sources: {active_free_meg}")
 
@@ -214,9 +234,20 @@ fig.tight_layout()
 # components. For EEG, CaliBrain uses three components. For MEG magnetometers
 # or gradiometers, it uses two components in the MEG-sensitive subspace.
 #
-# For free orientation, plotting every component can be visually crowded. A
-# compact summary is the Euclidean norm across orientation components for each
-# active source.
+# Each active source carries one scalar waveform along its cortical normal, so
+# every local block ``x[i]`` has rank one. We check this below. Plotting every
+# component can be visually crowded, so a compact summary is the Euclidean norm
+# across orientation components, which for a rank-one block equals the absolute
+# scalar waveform scaled by the direction length.
+
+print(
+    "local block ranks (EEG):",
+    [int(np.linalg.matrix_rank(x_free_eeg[i])) for i in active_free_eeg],
+)
+print(
+    "local block ranks (MEG):",
+    [int(np.linalg.matrix_rank(x_free_meg[i])) for i in active_free_meg],
+)
 
 free_eeg_norm = np.linalg.norm(x_free_eeg, axis=1)
 free_meg_norm = np.linalg.norm(x_free_meg, axis=1)
@@ -249,8 +280,9 @@ fig.tight_layout()
 #
 # - fixed orientation: ``x`` with shape ``(n_sources, n_times)``, in nAm;
 # - free EEG orientation: ``x`` with shape ``(n_sources, 3, n_times)``, in nAm
-#   per local component;
+#   per local component, rank one per active source (along the cortical normal);
 # - free MEG orientation: ``x`` with shape ``(n_sources, 2, n_times)``, in nAm
-#   per retained MEG-sensitive component.
+#   per retained MEG-sensitive component, rank one per active source (normal
+#   projected through ``Q_basis``).
 #
 # The next step is leadfield generation/loading, followed by sensor simulation.

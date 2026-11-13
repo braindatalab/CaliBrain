@@ -295,12 +295,19 @@ fig.tight_layout()
 # ``oracle`` and ``baseline``, and ``BMN_joint`` with
 # ``adaptive_joint_learning``.
 
+# Free-orientation simulation places activity along each source's cortical
+# normal, so it needs ``cortical_normals`` (loaded with the leadfield in a real
+# workflow; synthetic here).
+cortical_normals = rng.normal(size=(n_sources, 3))
+cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+
 x_true_free, active_free = source_simulator.simulate(
     n_sources=n_sources,
     nnz=4,
     orientation_type="free",
     coil_type=FIFF.FIFFV_COIL_EEG,
     seed=RANDOM_SEED + 1,
+    cortical_normals=cortical_normals,
 )
 
 y_free_clean, y_free_noisy, free_noise, free_eta = sensor_simulator.simulate(

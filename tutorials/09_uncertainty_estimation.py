@@ -225,12 +225,19 @@ print("fixed interval_type:", fixed_curve["interval_type"])
 # This distinction is scientifically important. These are not two labels for
 # the same object; they define different coverage questions.
 
+# Free-orientation simulation places activity along each source's cortical
+# normal, so it needs ``cortical_normals`` (loaded with the leadfield in a real
+# workflow; synthetic here).
+cortical_normals = rng.normal(size=(n_sources, 3))
+cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+
 x_true_free, active_free = source_simulator.simulate(
     n_sources=n_sources,
     nnz=4,
     orientation_type="free",
     coil_type=FIFF.FIFFV_COIL_EEG,
     seed=RANDOM_SEED + 1,
+    cortical_normals=cortical_normals,
 )
 
 y_free_clean, y_free_noisy, free_noise, _ = sensor_simulator.simulate(
@@ -425,6 +432,8 @@ x_true_meg_reduced, active_meg = source_simulator.simulate(
     orientation_type="free",
     coil_type=FIFF.FIFFV_COIL_VV_MAG_T1,
     seed=RANDOM_SEED + 2,
+    cortical_normals=cortical_normals,
+    Q_basis=q_basis_meg,
 )
 x_true_meg_3d = np.einsum("nck,nkt->nct", q_basis_meg, x_true_meg_reduced)
 

@@ -27,6 +27,16 @@ class LeadfieldData:
     coil_type: Optional[int] = None
     src_coords: Optional[np.ndarray] = None
     Q_basis: Optional[np.ndarray] = None
+    cortical_normals: Optional[np.ndarray] = None  # (N, 3), free 3D source basis
+
+def _none_if_empty(value):
+    """np.savez stores None as a 0-d object array; map it back to None."""
+    if value is None:
+        return None
+    arr = np.asarray(value)
+    if arr.dtype == object and arr.ndim == 0 and arr.item() is None:
+        return None
+    return value
 
 class LeadfieldBuilder:
     """
@@ -687,7 +697,8 @@ class LeadfieldBuilder:
                         sensor_unitmult=data.get("sensor_unitmult"),
                         coil_type=data.get("coil_type"),
                         src_coords=data.get("src_coords"),
-                        Q_basis=data.get("Q_basis"),
+                        Q_basis=_none_if_empty(data.get("Q_basis")),
+                        cortical_normals=_none_if_empty(data.get("cortical_normals")),
                     )
                     
                     leadfield = self._scale_leadfield(leadfield, metadata=metadata)
@@ -728,6 +739,7 @@ class LeadfieldBuilder:
                     coil_type=L_simulator.coil_type,
                     src_coords=getattr(L_simulator, "src_coords", None),
                     Q_basis=getattr(L_simulator, "Q_basis", None),
+                    cortical_normals=getattr(L_simulator, "cortical_normals", None),
                 )
 
                 if orientation_type == "free":
