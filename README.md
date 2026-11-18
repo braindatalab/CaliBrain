@@ -167,13 +167,15 @@ From PyPI:
 python -m pip install calibrain
 ```
 
-From a local checkout:
+3D brain plotting needs extra GUI packages, which are optional:
 
 ```bash
-git clone https://github.com/braindatalab/CaliBrain.git
-cd CaliBrain
-python -m pip install -e .
+python -m pip install "calibrain[viz]"
 ```
+
+For installing from a source checkout, using conda, and providing the example
+data, see the
+[installation guide](https://calibrain.readthedocs.io/stable/installation/index.html).
 
 ## Contributing
 

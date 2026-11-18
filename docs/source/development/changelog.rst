@@ -28,6 +28,7 @@ Version 1.0.4 (unreleased)
 *   [BUGFIX] Removed the duplicate repository-root ``__init__.py``, which could prevent ``pytest`` from collecting the test suite.
 *   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, the posterior-summary files, and package metadata.
 *   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.
+*   [DOCS] Expanded the installation guides (conda, Windows, optional extras, upgrading) and documented the ``CALIBRAIN_DATA`` data directory.
 *   [DOCS] Added Documentation and Citation sections to the README, switched the pipeline images to PNG, updated the wording and author order for uncertainty quantification, and made the documentation default to the ``stable`` version.
 *   [CI] Read the Docs builds now fail on warnings and install the ``docs`` extra.
 *   [CI] The tests now run on Python 3.10 to 3.14 and with the lowest allowed dependency versions, a ``ruff`` check was added, the tests run before a release is uploaded to PyPI, and Dependabot checks the dependencies and GitHub Actions monthly.

@@ -89,13 +89,8 @@ From PyPI:
 
    python -m pip install calibrain
 
-From a local checkout:
-
-.. code-block:: bash
-
-   git clone https://github.com/braindatalab/CaliBrain.git
-   cd CaliBrain
-   python -m pip install -e .
+See :doc:`Installation <installation/index>` for installing from a source
+checkout, using conda, and the optional 3D plotting packages.
 
 License
 -------

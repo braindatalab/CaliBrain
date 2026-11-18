@@ -32,6 +32,30 @@ The local data root is expected to contain precomputed forward solutions and
 leadfield matrices. In practice, the workflow configuration should point to the
 directories that contain those files.
 
+The example data are not part of the PyPI package or the git repository, so you
+have to provide them yourself. CaliBrain resolves the data root with
+``calibrain.utils.get_data_path``:
+
+- If the ``CALIBRAIN_DATA`` environment variable is set, that directory is used.
+- Otherwise, the ``data`` directory next to the package is used. In a source
+  checkout this is ``<repository>/data``. For a PyPI installation it is a
+  directory inside the Python environment, so set ``CALIBRAIN_DATA`` to a
+  location of your choice instead.
+
+.. code-block:: bash
+
+   # Linux and macOS
+   export CALIBRAIN_DATA=/path/to/calibrain_data
+
+.. code-block:: powershell
+
+   # Windows (PowerShell)
+   $env:CALIBRAIN_DATA = "C:\path\to\calibrain_data"
+
+To regenerate the leadfield files from the forward solutions, run
+``python -m calibrain.extract_leadfield``. It reads ``<data>/1284src_fwd`` and
+writes ``<data>/1284src_leadfield``.
+
 Available local example data
 ----------------------------
 

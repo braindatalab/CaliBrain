@@ -16,6 +16,23 @@ Install CaliBrain from PyPI:
 
    python -m pip install calibrain
 
+Upgrade to a newer release
+--------------------------
+
+.. code-block:: bash
+
+   python -m pip install --upgrade calibrain
+
+Install the optional 3D plotting packages
+-----------------------------------------
+
+3D brain plotting needs a GUI toolkit (``PyQt5``, ``pyvistaqt``, and
+``ipywidgets``). They are optional, so install them with the ``viz`` extra:
+
+.. code-block:: bash
+
+   python -m pip install "calibrain[viz]"
+
 Install a specific version
 --------------------------
 
@@ -40,7 +57,9 @@ Optional: use a virtual environment
 -----------------------------------
 
 If you do not want to install into the system Python environment, create and
-activate a virtual environment first:
+activate a virtual environment first.
+
+On Linux and macOS:
 
 .. code-block:: bash
 
@@ -48,3 +67,19 @@ activate a virtual environment first:
    source .venv/bin/activate
    python -m pip install --upgrade pip
    python -m pip install calibrain
+
+On Windows (PowerShell):
+
+.. code-block:: powershell
+
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   python -m pip install --upgrade pip
+   python -m pip install calibrain
+
+Next steps
+----------
+
+The example forward-model and leadfield files are not part of the package.
+See :doc:`../datasets/index` for how to provide them, and the ``CALIBRAIN_DATA``
+environment variable described there.
