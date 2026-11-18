@@ -1,3 +1,4 @@
+import importlib.util
 import logging
 import os
 from pathlib import Path
@@ -345,6 +346,13 @@ class Visualizer:
             self.logger.debug("Skipping 3D brain visualization (show=False)")
             return
         
+        if importlib.util.find_spec("pyvistaqt") is None:
+            self.logger.error(
+                '3D brain plotting needs the optional "viz" extra: '
+                'python -m pip install "calibrain[viz]"'
+            )
+            return
+
         # Only do 3D plotting when show=True
         original_backend = mne.viz.get_3d_backend()
         
