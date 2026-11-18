@@ -22,6 +22,7 @@ Version 1.0.4 (unreleased)
 *   [ENHANCEMENT] The figure scripts in ``viz/`` no longer need ``seaborn``. They use matplotlib and draw the same figures.
 *   [ENHANCEMENT] ``python -m calibrain.extract_leadfield`` and ``python -m calibrain.reduce_fwd`` run the data preparation scripts from an installed package.
 *   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
+*   [BUGFIX] ``extract_leadfield`` no longer stores local file paths (user and machine names) in the leadfield files it writes. Regenerate existing files before sharing them.
 *   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
 *   [BUGFIX] ``extract_leadfield.py`` and ``reduce_fwd.py`` no longer run their batch jobs, which overwrite data files, when they are imported.
 *   [BUGFIX] Fixed an undefined ``STRIP_SIZE`` in ``viz/plot_overview_by_nnz.py``.

@@ -4,7 +4,7 @@ import mne
 import numpy as np
 from mne.io.constants import FIFF
 
-from calibrain.utils import get_data_path
+from calibrain.utils import get_data_path, strip_local_paths
 
 def _canonicalize_basis_columns(Q: np.ndarray) -> np.ndarray:
     """
@@ -197,9 +197,9 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
             break
             
             
-    # update working directory info to fwd['info']
-    with fwd["info"]._unlock():
-        fwd["info"]["working_dir"] = str(fwd_datapath)
+    # Do not store local paths in the saved file: they would leak user and machine
+    # names into every file that is shared.
+    strip_local_paths(fwd["info"])
     
     print(f"Number of channels after picking: {len(fwd['info']['chs'])}")
 
