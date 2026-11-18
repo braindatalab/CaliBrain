@@ -40,7 +40,8 @@ Clone the repository:
    cd CaliBrain
 
 Create and activate an isolated environment. Either a virtual environment or a
-conda environment is fine. One minimal ``venv``-based setup is:
+conda environment is fine. One minimal ``venv``-based setup is (on Windows,
+activate with ``.venv\Scripts\Activate.ps1``):
 
 .. code-block:: bash
 
@@ -78,20 +79,21 @@ Contributions should follow the current package conventions:
 - add type hints when they improve clarity;
 - prefer deterministic examples and fixed random seeds in tutorials and tests.
 
-Testing
--------
+Testing and linting
+-------------------
 
-Run the relevant tests for the code you changed. As the test suite expands,
-prefer running the smallest relevant subset first and then the broader suite.
-
-When a ``tests/`` suite is present, typical commands are:
+Run the relevant tests for the code you changed. Prefer running the smallest
+relevant subset first and then the whole suite:
 
 .. code-block:: bash
 
-   pytest tests/
-   pytest tests/ --cov=calibrain
+   python -m pytest tests/
+   python -m pytest tests/ --cov=calibrain
+   ruff check .
 
-If you add or change public behavior, add or update tests when practical.
+Tests that need the example forward-model files (see :doc:`../datasets/index`)
+are skipped when the files are not available. If you add or change public
+behavior, add or update tests.
 
 Documentation
 -------------
@@ -112,9 +114,9 @@ scripts still execute successfully.
 Submitting a pull request
 -------------------------
 
-Before opening a pull request:
+Open pull requests against the ``dev`` branch. Before opening a pull request:
 
-- make sure your branch is up to date with the target branch;
+- make sure your branch is up to date with ``dev``;
 - write a clear commit history;
 - summarize what changed and why;
 - mention any limitations, follow-up work, or known issues.
@@ -131,3 +133,28 @@ Code of conduct
 
 By participating in this project, you agree to follow the repository
 ``CODE_OF_CONDUCT.md``.
+
+Releasing (maintainers)
+-----------------------
+
+A release is permanent: the GitHub release is archived by Zenodo and uploaded to
+PyPI, and neither can be changed afterwards. Go through this checklist before
+publishing:
+
+1. Check that the :doc:`changelog <changelog>` lists every change since the last
+   release, and replace ``(unreleased)`` with the release date.
+2. Update the version in ``calibrain/__init__.py`` (the only place the package
+   reads it from), in ``CITATION.cff`` (``version`` and ``date-released``), and
+   add the new version to ``docs/source/_static/switcher.json``.
+3. Run ``python -m pytest tests/`` and ``ruff check .``, and build the
+   documentation.
+4. Check what will be archived: look through ``git ls-files`` for unpublished,
+   private, or large files. Anything tracked in the tagged commit ends up in the
+   Zenodo archive.
+5. Tag the release commit ``vX.Y.Z`` and publish a GitHub release. Publishing
+   runs the tests and uploads the package to PyPI, and Zenodo archives the
+   release automatically.
+6. When Zenodo has created the new version, update the DOI in ``CITATION.cff``,
+   ``README.md``, ``docs/source/cite/index.rst``, and ``docs/source/index.rst``.
+7. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
+   check the Read the Docs ``stable`` build and the Zenodo record.

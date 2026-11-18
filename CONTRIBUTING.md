@@ -22,7 +22,8 @@ git clone https://github.com/braindatalab/CaliBrain.git
 cd CaliBrain
 ```
 
-Create and activate an isolated environment:
+Create and activate an isolated environment (on Windows, activate with
+`.venv\Scripts\Activate.ps1`):
 
 ```bash
 python -m venv .venv
@@ -51,15 +52,18 @@ Expected contribution practices:
 - update relevant documentation;
 - add or update tests when practical.
 
-## Tests
+## Tests and linting
 
-When the test suite is present, run the relevant tests before opening a pull
-request:
+Run the tests and the linter before opening a pull request:
 
 ```bash
-pytest tests/
-pytest tests/ --cov=calibrain
+python -m pytest tests/
+python -m pytest tests/ --cov=calibrain
+ruff check .
 ```
+
+Tests that need the example forward-model files are skipped when the files are
+not available.
 
 ## Documentation
 
@@ -72,7 +76,7 @@ make html
 
 ## Pull requests
 
-In your pull request, describe:
+Open pull requests against the `dev` branch. In your pull request, describe:
 
 - what changed;
 - why it changed;
