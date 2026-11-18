@@ -233,21 +233,23 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     np.savez(save_path, **leadfield_data)
     print(f"Leadfield saved to {save_path}")
 
-# full sources in fwd
-# fwd_datapath = get_data_path() / 'fwd'
-# save_path = get_data_path() / 'leadfield' 
 
-# reduced sources in fwd
-fwd_datapath = get_data_path() / '1284src_fwd'
-save_path = get_data_path() / '1284src_leadfield' 
+if __name__ == "__main__":
+    # full sources in fwd
+    # fwd_datapath = get_data_path() / 'fwd'
+    # save_path = get_data_path() / 'leadfield' 
 
-subjects_map = {
-    'eeg': ['fsaverage'],
-    'mag': ['CC120166', 'CC120264', 'CC120309', 'CC120313'],
-}
+    # reduced sources in fwd
+    fwd_datapath = get_data_path() / '1284src_fwd'
+    save_path = get_data_path() / '1284src_leadfield' 
 
-for coil_name, subjects in subjects_map.items():
-    for subject in subjects:
-        print(f"\nExtracting leadfield (fixed & free) for subject: {subject}, coil_name: {coil_name}")
-        extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='fixed', save_path=save_path)
-        extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='free', save_path=save_path)
+    subjects_map = {
+        'eeg': ['fsaverage'],
+        'mag': ['CC120166', 'CC120264', 'CC120309', 'CC120313'],
+    }
+
+    for coil_name, subjects in subjects_map.items():
+        for subject in subjects:
+            print(f"\nExtracting leadfield (fixed & free) for subject: {subject}, coil_name: {coil_name}")
+            extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='fixed', save_path=save_path)
+            extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='free', save_path=save_path)
