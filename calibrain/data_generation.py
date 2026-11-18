@@ -405,6 +405,8 @@ class DataGenerator:
                 "unitmult": leadfield_data.sensor_unitmult,
             },
             "Q_basis": leadfield_data.Q_basis,
+            # Keep the normals in the same source order as x and Q_basis.
+            "cortical_normals": leadfield_data.cortical_normals,
             "x": x,
             "x_active_indices": x_active_indices,
             "y_clean": y_clean,
@@ -663,6 +665,13 @@ class DataGenerator:
                     "posterior_cov": posterior_cov,
                     "Q_basis": np.asarray(prepared_data.get("Q_basis"), dtype=float),
                 }
+
+                # Preserve available normals; fixed simulations may have none.
+                cortical_normals = prepared_data.get("cortical_normals")
+                if cortical_normals is not None:
+                    summary_arrays["cortical_normals"] = np.asarray(
+                        cortical_normals, dtype=float
+                    )
 
                 summary_metadata = {
                     "global_run_id": global_run_id,
