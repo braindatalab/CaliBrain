@@ -20,6 +20,8 @@ Every figure subtitle states explicitly what the distribution is computed over
 Individual data points are overlaid wherever the plot type allows it.
 """
 
+import colorsys
+
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -28,7 +30,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
-import seaborn as sns
 from pathlib import Path
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -94,8 +95,43 @@ METRIC_LABELS = {
     **{f"improvement_{b}": f"Δ {b.replace('_', ' ').title()} (%)" for b in CAL_BASE_METRICS},
 }
 
-sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.1)
+# Plot style (matplotlib settings equivalent to seaborn's "whitegrid" style and
+# "paper" context with font_scale=1.1).
+plt.rcParams.update({
+    "axes.axisbelow": True,
+    "axes.edgecolor": ".8",
+    "axes.grid": True,
+    "axes.labelcolor": ".15",
+    "axes.labelsize": 10.56,
+    "axes.linewidth": 1.0,
+    "axes.titlesize": 10.56,
+    "font.sans-serif": ["Arial", "DejaVu Sans", "Liberation Sans", "Bitstream Vera Sans", "sans-serif"],
+    "font.size": 10.56,
+    "grid.color": ".8",
+    "legend.fontsize": 9.68,
+    "legend.title_fontsize": 10.56,
+    "lines.linewidth": 1.2,
+    "lines.markersize": 4.8,
+    "lines.solid_capstyle": "round",
+    "patch.edgecolor": "w",
+    "patch.force_edgecolor": True,
+    "patch.linewidth": 0.8,
+    "text.color": ".15",
+    "xtick.bottom": False,
+    "xtick.color": ".15",
+    "xtick.labelsize": 9.68,
+    "xtick.major.size": 4.8,
+    "xtick.major.width": 1.0,
+    "xtick.minor.size": 3.2,
+    "xtick.minor.width": 0.8,
+    "ytick.color": ".15",
+    "ytick.labelsize": 9.68,
+    "ytick.left": False,
+    "ytick.major.size": 4.8,
+    "ytick.major.width": 1.0,
+    "ytick.minor.size": 3.2,
+    "ytick.minor.width": 0.8,
+})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -250,6 +286,69 @@ def _make_nnz_subj_maps(df: pd.DataFrame):
     nnz_color   = {v: NNZ_PALETTE[i % len(NNZ_PALETTE)]    for i, v in enumerate(nnz_vals)}
     subj_marker = {s: SUBJ_MARKERS[i % len(SUBJ_MARKERS)]  for i, s in enumerate(subj_vals)}
     return nnz_color, subj_marker
+
+
+def _desaturate(color, prop=0.75):
+    """Return ``color`` with its saturation multiplied by ``prop``."""
+    r, g, b = matplotlib.colors.to_rgb(color)
+    h, l, sat = colorsys.rgb_to_hls(r, g, b)
+    return colorsys.hls_to_rgb(h, l, min(1.0, sat * prop))
+
+
+def _boxplot(data, x, y, order, ax, hue=None, hue_order=None, palette=None, width=0.8):
+    """Draw (grouped) box plots with matplotlib.
+
+    Replaces ``seaborn.boxplot`` and draws the same figure. One box is drawn per
+    entry of ``order`` at the integer positions ``0 .. len(order) - 1``. With
+    ``hue``, the boxes of ``hue_order`` are placed side by side inside each
+    position and share ``width`` (0.8 is seaborn's default). ``palette`` is a dict (group -> colour) or a
+    list of colours in group order; without ``hue`` the groups are the ``order``
+    entries. Outliers are not drawn (the individual data points are drawn
+    separately by ``_scatter_pts``), but they are included in the axis limits.
+    """
+    groups = list(hue_order) if hue is not None else list(order)
+    n_hue = len(hue_order) if hue is not None else 1
+    box_width = width / n_hue
+
+    def group_colour(i, key):
+        return palette[key] if isinstance(palette, dict) else palette[i]
+
+    boxes = []
+    for x_idx, x_val in enumerate(order):
+        in_group = data[x] == x_val
+        for h_idx in range(n_hue):
+            if hue is None:
+                colour_idx, key, selected = x_idx, x_val, in_group
+            else:
+                colour_idx, key = h_idx, groups[h_idx]
+                selected = in_group & (data[hue] == key)
+            values = data.loc[selected, y].dropna().to_numpy(dtype=float)
+            if values.size:
+                position = x_idx + (h_idx - (n_hue - 1) / 2) * box_width
+                boxes.append((position, values, _desaturate(group_colour(colour_idx, key))))
+    if not boxes:
+        return
+
+    # Edge colour: a gray that is darker than the lightest box.
+    lightest = min(colorsys.rgb_to_hls(*colour)[1] for _, _, colour in boxes)
+    gray = (lightest * 0.6,) * 3
+    line_props = dict(color=gray, linewidth=1.0)
+    for position, values, colour in boxes:
+        ax.boxplot(
+            values, positions=[position], widths=box_width, patch_artist=True,
+            manage_ticks=False,
+            boxprops=dict(facecolor=colour, edgecolor=gray, linewidth=1.0),
+            medianprops=line_props, whiskerprops=line_props, capprops=line_props,
+            # Outliers are invisible, but they still count for the axis limits.
+            flierprops=dict(marker="", alpha=0),
+        )
+
+    ax.set_xticks(range(len(order)))
+    ax.set_xticklabels(order)
+    ax.set_xlim(-0.5, len(order) - 0.5)
+    ax.xaxis.grid(False)
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
 
 
 def _scatter_pts(ax, data: pd.DataFrame, x_pos, y_col: str,
@@ -438,12 +537,11 @@ def fig_solver_comparison(df: pd.DataFrame, metrics: list, out: Path):
                 var_name="_c", value_name="value",
             )
             melted["Phase"] = melted["_c"].map({pre_col: "Pre", post_col: "Post"})
-            sns.boxplot(
+            _boxplot(
                 data=melted, x="solver", y="value",
                 hue="Phase", hue_order=["Pre", "Post"],
                 order=solvers, palette=phase_palette,
-                width=0.55, dodge=True, legend=False,
-                flierprops=dict(marker="", alpha=0), ax=ax,
+                width=0.55, ax=ax,
             )
             # Scatter: pre left (-0.14), post right (+0.14) within each solver tick
             for s_idx, solver in enumerate(solvers):
@@ -452,11 +550,9 @@ def fig_solver_comparison(df: pd.DataFrame, metrics: list, out: Path):
                     _scatter_pts(ax, sub, s_idx, "value", nnz_color, subj_marker,
                                  jitter_scale=0.08, dodge_offset=offset)
         else:
-            sns.boxplot(
+            _boxplot(
                 data=df, x="solver", y=cols,
-                order=solvers, hue="solver", hue_order=solvers,
-                palette=solver_palette, legend=False,
-                flierprops=dict(marker="", alpha=0), ax=ax,
+                order=solvers, palette=solver_palette, ax=ax,
             )
             for s_idx, solver in enumerate(solvers):
                 sub = df[df["solver"] == solver][[cols, "nnz", "subject"]].rename(columns={cols: "value"})
@@ -535,11 +631,11 @@ def fig_noise_type_comparison(df: pd.DataFrame, metrics: list, out: Path):
             )
             melted["Phase"]   = melted["_c"].map({pre_col: "Pre", post_col: "Post"})
             melted["x_label"] = melted["noise_type"] + "\n" + melted["Phase"]
-            sns.boxplot(
+            _boxplot(
                 data=melted, x="x_label", y="value",
                 hue="solver", hue_order=solvers,
                 order=x_order_paired, palette=palette,
-                width=0.55, ax=ax, flierprops=dict(marker="", alpha=0),
+                width=0.55, ax=ax,
             )
             for x_idx, x_lbl in enumerate(x_order_paired):
                 nt, ph = x_lbl.split("\n")
@@ -555,11 +651,10 @@ def fig_noise_type_comparison(df: pd.DataFrame, metrics: list, out: Path):
                 ax.axvline(i * 2 - 0.5, color="gray", linewidth=0.8,
                            linestyle=":", alpha=0.6)
         else:
-            sns.boxplot(
+            _boxplot(
                 data=df, x="noise_type", y=cols,
                 hue="solver", order=noise_types, hue_order=solvers,
                 palette=palette, width=0.55, ax=ax,
-                flierprops=dict(marker="", alpha=0),
             )
             for x_idx, nt in enumerate(noise_types):
                 for s_idx, solver in enumerate(solvers):
@@ -901,11 +996,11 @@ def fig_subject_variability(df: pd.DataFrame, metrics: list, out: Path):
             )
             melted["Phase"]   = melted["_c"].map({pre_col: "Pre", post_col: "Post"})
             melted["x_label"] = melted["subject"] + "\n" + melted["Phase"]
-            sns.boxplot(
+            _boxplot(
                 data=melted, x="x_label", y="value",
                 hue="solver", hue_order=solvers,
                 order=x_order_paired, palette=palette,
-                width=0.55, ax=ax, flierprops=dict(marker="", alpha=0),
+                width=0.55, ax=ax,
             )
             for x_idx, x_lbl in enumerate(x_order_paired):
                 subj, ph = x_lbl.split("\n")
@@ -921,11 +1016,11 @@ def fig_subject_variability(df: pd.DataFrame, metrics: list, out: Path):
                 ax.axvline(i * 2 - 0.5, color="gray", linewidth=0.8,
                            linestyle=":", alpha=0.6)
         else:
-            sns.boxplot(
+            _boxplot(
                 data=df, x="subject", y=cols,
                 hue="solver", hue_order=solvers,
                 order=subjects, palette=palette,
-                width=0.55, ax=ax, flierprops=dict(marker="", alpha=0),
+                width=0.55, ax=ax,
             )
             for x_idx, subj in enumerate(subjects):
                 for s_idx, solver in enumerate(solvers):
@@ -1022,11 +1117,10 @@ def fig_pre_post_by_group(df: pd.DataFrame, out: Path):
             else:
                 order = sorted(plot_df[gvar].unique())
 
-            sns.boxplot(
+            _boxplot(
                 data=plot_df, x=gvar, y="value",
                 hue="phase", order=order, hue_order=phase_order,
                 palette=phase_palette, width=0.55, ax=ax,
-                flierprops=dict(marker="", alpha=0),
             )
             for x_idx, x_val in enumerate(order):
                 for ph_idx, ph in enumerate(phase_order):

@@ -19,6 +19,7 @@ Version 1.0.4 (unreleased)
 *   [ENHANCEMENT] ``PyQt5``, ``pyvistaqt``, and ``ipywidgets`` are no longer required dependencies. 3D brain plotting now needs the optional extra, ``pip install "calibrain[viz]"``, and logs an install hint when it is missing.
 *   [ENHANCEMENT] The package version is now defined only in ``calibrain/__init__.py``, and ``pyproject.toml`` reads it from there.
 *   [ENHANCEMENT] The dependencies are now defined only in ``pyproject.toml``, with lower version bounds. ``requirements.txt`` and ``docs/requirements.txt`` were removed, ``environment.yml`` only defines Python and ``pip``, and the unused ``myst-parser`` requirement was dropped. The ``docs`` and ``dev`` extras were updated (``dev`` now includes ``pytest-cov`` and ``ruff``).
+*   [ENHANCEMENT] The figure scripts in ``viz/`` no longer need ``seaborn``. They use matplotlib and draw the same figures.
 *   [ENHANCEMENT] ``python -m calibrain.extract_leadfield`` and ``python -m calibrain.reduce_fwd`` run the data preparation scripts from an installed package.
 *   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
 *   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
