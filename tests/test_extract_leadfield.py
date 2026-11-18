@@ -138,3 +138,11 @@ def test_zero_cortical_normal_raises(tmp_path, monkeypatch, orientation):
 
     with pytest.raises(ValueError, match="finite, nonzero"):
         extract_leadfield(FWD_DIR, "fsaverage", "eeg", orientation, tmp_path)
+
+
+def test_importing_reduce_fwd_does_not_run_the_batch_reduction():
+    import calibrain.reduce_fwd as module
+
+    assert callable(module.restrict_fwd_to_sources)
+    assert not hasattr(module, "subjects_map")
+    assert not hasattr(module, "save_path")

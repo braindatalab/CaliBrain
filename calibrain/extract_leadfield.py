@@ -234,7 +234,12 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     print(f"Leadfield saved to {save_path}")
 
 
-if __name__ == "__main__":
+def main():
+    """Extract fixed and free leadfields for all example subjects.
+
+    Run with ``python -m calibrain.extract_leadfield``. Reads the forward solutions
+    from ``<data>/1284src_fwd`` and writes to ``<data>/1284src_leadfield``.
+    """
     # full sources in fwd
     # fwd_datapath = get_data_path() / 'fwd'
     # save_path = get_data_path() / 'leadfield' 
@@ -253,3 +258,7 @@ if __name__ == "__main__":
             print(f"\nExtracting leadfield (fixed & free) for subject: {subject}, coil_name: {coil_name}")
             extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='fixed', save_path=save_path)
             extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='free', save_path=save_path)
+
+
+if __name__ == "__main__":
+    main()

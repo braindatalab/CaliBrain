@@ -14,14 +14,15 @@ Version 1.0.4 (unreleased)
 
 *   [BREAKING] Free-orientation source simulation now generates one waveform per active source along its cortical normal (rank-one source blocks) instead of an independent waveform per orientation component. Results from earlier free-orientation runs are not comparable.
 *   [BREAKING] ``SourceSimulator.simulate`` now requires the keyword-only argument ``cortical_normals`` for free-orientation simulations, plus ``Q_basis`` for reduced free MEG. Fixed-orientation simulation is unchanged.
-*   [BREAKING] Existing free-orientation leadfield files must be regenerated with ``calibrain/extract_leadfield.py``, because older files do not contain ``cortical_normals``.
+*   [BREAKING] Existing free-orientation leadfield files must be regenerated with ``python -m calibrain.extract_leadfield``, because older files do not contain ``cortical_normals``.
 *   [FEATURE] Leadfield files, ``LeadfieldBuilder``, and ``DataGenerator`` now carry ``cortical_normals`` (and ``Q_basis`` for MEG). ``LeadfieldBuilder`` computes them for free leadfields built from a forward solution and stores them in cached files, and ``DataGenerator`` saves the normals in the posterior-summary H5 files.
 *   [ENHANCEMENT] ``PyQt5``, ``pyvistaqt``, and ``ipywidgets`` are no longer required dependencies. 3D brain plotting now needs the optional extra: ``pip install "calibrain[viz]"``.
 *   [ENHANCEMENT] The package version is now defined only in ``calibrain/__init__.py``, and ``pyproject.toml`` reads it from there.
 *   [ENHANCEMENT] The dependencies are now defined only in ``pyproject.toml``, with lower version bounds. ``requirements.txt`` and ``docs/requirements.txt`` were removed, ``environment.yml`` only defines Python and ``pip``, and the unused ``myst-parser`` requirement was dropped. The ``docs`` and ``dev`` extras were updated (``dev`` now includes ``pytest-cov`` and ``ruff``).
+*   [ENHANCEMENT] ``python -m calibrain.extract_leadfield`` and ``python -m calibrain.reduce_fwd`` run the data preparation scripts from an installed package.
 *   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
 *   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
-*   [BUGFIX] ``extract_leadfield.py`` no longer runs its batch extraction, and overwrites data files, when it is imported.
+*   [BUGFIX] ``extract_leadfield.py`` and ``reduce_fwd.py`` no longer run their batch jobs, which overwrite data files, when they are imported.
 *   [BUGFIX] Fixed the repository-root ``__init__.py``, which prevented ``pytest`` from collecting the test suite.
 *   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, and the posterior-summary files.
 *   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.

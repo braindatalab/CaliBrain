@@ -372,7 +372,7 @@ class DataGenerator:
             raise ValueError(
                 f"Leadfield for subject '{data_params['subject']}' has no 'cortical_normals'. "
                 "Free-orientation simulation needs them; regenerate the leadfield with "
-                "calibrain/extract_leadfield.py."
+                "`python -m calibrain.extract_leadfield`."
             )
 
         x, x_active_indices = self.source_simulator.simulate(

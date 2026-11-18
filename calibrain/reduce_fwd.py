@@ -48,7 +48,12 @@ def restrict_fwd_to_sources(
     return mne.forward.restrict_forward_to_stc(fwd, stc, on_missing="raise")
 
 
-if __name__ == "__main__":
+def main():
+    """Reduce the example forward solutions to 1284 sources.
+
+    Run with ``python -m calibrain.reduce_fwd``. Reads ``<data>/fwd`` and writes
+    to ``<data>/1284src_fwd``.
+    """
     n_keep_per_hemi = 642
 
     fwd_datapath = get_data_path() / 'fwd'
@@ -80,3 +85,7 @@ if __name__ == "__main__":
         
             out_path = save_path / f"{subject}-fwd.fif"
             mne.write_forward_solution(str(out_path), fwd_subset)
+
+
+if __name__ == "__main__":
+    main()
