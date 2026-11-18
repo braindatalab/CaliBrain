@@ -9,6 +9,22 @@ This document records notable changes to the CaliBrain package.
 .. note::
     This page summarizes notable package, workflow, and documentation changes.
 
+Version 1.0.4 (unreleased)
+--------------------------
+
+*   [BREAKING] Free-orientation source simulation now generates one waveform per active source along its cortical normal (rank-one source blocks) instead of an independent waveform per orientation component. Results from earlier free-orientation runs are not comparable.
+*   [BREAKING] ``SourceSimulator.simulate`` now requires the keyword-only argument ``cortical_normals`` for free-orientation simulations, plus ``Q_basis`` for reduced free MEG. Fixed-orientation simulation is unchanged.
+*   [BREAKING] Existing free-orientation leadfield files must be regenerated with ``calibrain/extract_leadfield.py``, because older files do not contain ``cortical_normals``.
+*   [FEATURE] Leadfield files, ``LeadfieldBuilder``, and ``DataGenerator`` now carry ``cortical_normals`` (and ``Q_basis`` for MEG). ``LeadfieldBuilder`` computes them for free leadfields built from a forward solution and stores them in cached files, and ``DataGenerator`` saves the normals in the posterior-summary H5 files.
+*   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
+*   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
+*   [BUGFIX] ``extract_leadfield.py`` no longer runs its batch extraction, and overwrites data files, when it is imported.
+*   [BUGFIX] Fixed the repository-root ``__init__.py``, which prevented ``pytest`` from collecting the test suite.
+*   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, and the posterior-summary files.
+*   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.
+*   [DOCS] Added Documentation and Citation sections to the README, switched the pipeline images to PNG, updated the wording and author order for uncertainty quantification, and made the documentation default to the ``stable`` version.
+*   [CI] Read the Docs builds now fail on warnings.
+
 Version 1.0.3 (2026-07-08)
 --------------------------
 *   [FEATURE] Added a new tutorials for ``UncertaintyEstimator``.
