@@ -36,6 +36,7 @@ FACE_COLOR = "#F7F7F7"
 GRID_COLOR = "#D8D8D8"
 RNG = np.random.default_rng(2026)
 
+STRIP_SIZE = 18  # size of jittered strip points (same as plot_overview_by_snr.py)
 VIOLIN_WIDTH = 0.32
 VIOLIN_OFFSET = 0.18
 BOX_WIDTH = 0.08

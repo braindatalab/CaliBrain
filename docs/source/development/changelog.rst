@@ -23,6 +23,7 @@ Version 1.0.4 (unreleased)
 *   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
 *   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
 *   [BUGFIX] ``extract_leadfield.py`` and ``reduce_fwd.py`` no longer run their batch jobs, which overwrite data files, when they are imported.
+*   [BUGFIX] Fixed an undefined ``STRIP_SIZE`` in ``viz/plot_overview_by_nnz.py``.
 *   [BUGFIX] Removed the duplicate repository-root ``__init__.py``, which could prevent ``pytest`` from collecting the test suite.
 *   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, the posterior-summary files, and package metadata.
 *   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.
