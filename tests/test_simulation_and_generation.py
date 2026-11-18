@@ -367,3 +367,77 @@ def test_data_generator_prepare_run_data_free_requires_cortical_normals(tmp_path
 
     with pytest.raises(ValueError, match="cortical_normals"):
         generator._prepare_run_data(_RUN_PARAMS, seed=5)
+
+
+def _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, orientation_type):
+    import h5py
+    from unittest.mock import MagicMock
+
+    # Replace the solver wrapper so the run reaches the H5 summary without a real solver.
+    n_sources = leadfield_data.leadfield.shape[1]
+    k = 1 if orientation_type == "fixed" else leadfield_data.leadfield.shape[2]
+    x_hat_shape = (n_sources, 250) if k == 1 else (n_sources, k, 250)
+    estimator = MagicMock()
+    estimator.return_value.predict.return_value = {
+        "posterior_mean_reshaped": np.zeros(x_hat_shape),
+        "active_indices": np.arange(2),
+        "posterior_cov": np.eye(n_sources * k),
+        "noise_var": 1.0,
+        "gamma": np.ones(n_sources),
+    }
+    monkeypatch.setattr("calibrain.data_generation.SourceEstimator", estimator)
+    generator = _make_generator_with_leadfield(tmp_path, leadfield_data)
+    generator.save_posterior_stats = True
+    generator.solver = lambda **kwargs: None
+
+    result = generator._execute_single_run(
+        run_id=1, nruns=1, total_runs=1,
+        solver_params={"solver_name": "dummy_solver"},
+        data_params={**_RUN_PARAMS, "orientation_type": orientation_type},
+        noise_params={"noise_type": "oracle"},
+        seed=5, fig_path=str(tmp_path / "figures"),
+        global_run_id=1, global_total_runs=1,
+    )
+    assert "posterior_summary" in result, result
+    with h5py.File(result["posterior_summary"], "r") as handle:
+        return {name: handle[name][()] for name in handle.keys()}
+
+
+def test_posterior_summary_stores_cortical_normals_for_free_runs(tmp_path, monkeypatch):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    n_sources, n_sensors = 6, 8
+    normals = _make_normals(n_sources)
+    rng = np.random.RandomState(0)
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(n_sensors, n_sources, 3),
+        sensor_kind=2, sensor_units=107, sensor_unitmult=0,
+        coil_type=FIFF.FIFFV_COIL_EEG, src_coords=rng.randn(n_sources, 3),
+        Q_basis=np.repeat(np.eye(3)[None], n_sources, axis=0), cortical_normals=normals,
+    )
+
+    summary = _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, "free")
+
+    assert "cortical_normals" in summary
+    assert summary["cortical_normals"].shape == (n_sources, 3)
+    # Same source order as the other per-source arrays in the file.
+    assert summary["cortical_normals"].shape[0] == summary["x_true"].shape[0]
+    assert summary["cortical_normals"].shape[0] == summary["Q_basis"].shape[0]
+    np.testing.assert_allclose(summary["cortical_normals"], normals)
+
+
+def test_posterior_summary_has_no_cortical_normals_for_fixed_runs(tmp_path, monkeypatch):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    rng = np.random.RandomState(0)
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(8, 6),
+        sensor_kind=2, sensor_units=107, sensor_unitmult=0,
+        coil_type=FIFF.FIFFV_COIL_EEG, src_coords=rng.randn(6, 3),
+        Q_basis=None, cortical_normals=None,
+    )
+
+    summary = _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, "fixed")
+
+    assert "cortical_normals" not in summary
+    assert {"x_true", "x_hat", "posterior_cov", "Q_basis"} <= set(summary)
