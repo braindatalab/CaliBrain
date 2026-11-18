@@ -54,6 +54,16 @@ def test_free_eeg_extraction_saves_unit_normals_and_identity_basis(tmp_path):
 
 
 @needs_fwd
+def test_saved_leadfield_does_not_contain_a_local_path(tmp_path):
+    extract_leadfield(FWD_DIR, "fsaverage", "eeg", "free", tmp_path)
+
+    with np.load(tmp_path / "fsaverage_free_leadfield.npz", allow_pickle=True) as f:
+        assert f["info"].item()["working_dir"] == ""
+    # The forward directory must not appear anywhere in the saved file either.
+    assert str(FWD_DIR).encode() not in (tmp_path / "fsaverage_free_leadfield.npz").read_bytes()
+
+
+@needs_fwd
 def test_fixed_eeg_extraction_saves_unit_normals_and_no_basis(tmp_path):
     out = _extract(tmp_path, "fsaverage", "eeg", "fixed")
 

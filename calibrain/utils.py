@@ -1,7 +1,9 @@
 from typing import Any, Dict, Union, Optional
+import contextlib
 import logging
 from pathlib import Path
 import os
+import re
 import runpy
 
 import mne
@@ -121,6 +123,36 @@ def inspect_object(obj, show_private=False):
         print(f"  - {method}")
     
     return {"attributes": attributes, "methods": methods}
+
+
+# An absolute path: "/dir/file" or "C:\\dir\\file" (at least one directory level).
+_LOCAL_PATH = re.compile(r"(?:[A-Za-z]:\\|/)(?:[^\s,;()<>\"'\\/]+[\\/])+[^\s,;()<>\"'\\/]*")
+
+
+def strip_local_paths(info):
+    """Remove local file paths from an MNE info (or forward info), in place.
+
+    MNE stores the directory a file was made in (``working_dir``) and the paths of
+    the files it was computed from (``mri_file``, ``meas_file``, ``command_line``).
+    They contain user and machine names, so they must not end up in shared files.
+    ``working_dir`` is emptied and the other fields keep only the file names.
+
+    Parameters
+    ----------
+    info : mne.Info or dict
+        The info to clean. It is modified in place.
+    """
+    unlock = info._unlock() if hasattr(info, "_unlock") else contextlib.nullcontext()
+    with unlock:
+        if "working_dir" in info:
+            info["working_dir"] = ""
+        for key in ("mri_file", "meas_file", "command_line"):
+            value = info.get(key)
+            if isinstance(value, str) and value:
+                info[key] = _LOCAL_PATH.sub(
+                    lambda m: m.group(0).replace("\\", "/").rstrip("/").split("/")[-1], value
+                )
+    return info
 
 
 def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
