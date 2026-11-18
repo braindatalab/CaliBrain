@@ -30,6 +30,7 @@ Version 1.0.4 (unreleased)
 *   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.
 *   [DOCS] Added Documentation and Citation sections to the README, switched the pipeline images to PNG, updated the wording and author order for uncertainty quantification, and made the documentation default to the ``stable`` version.
 *   [CI] Read the Docs builds now fail on warnings and install the ``docs`` extra.
+*   [CI] The tests now run on Python 3.10 to 3.14 and with the lowest allowed dependency versions, a ``ruff`` check was added, the tests run before a release is uploaded to PyPI, and Dependabot checks the dependencies and GitHub Actions monthly.
 
 Version 1.0.3 (2026-07-08)
 --------------------------
