@@ -84,6 +84,7 @@ class LeadfieldBuilder:
         FileNotFoundError
             If `data_path` or `subjects_dir` specified in the config do not exist.
         """
+        self.logger = logger if logger else logging.getLogger(__name__)
         self.config = config
         if self.config:
             data_cfg = config["data"]
@@ -100,7 +101,6 @@ class LeadfieldBuilder:
                 self.logger.info(f"Save path does not exist. Creating: {self.save_path}")
                 self.save_path.mkdir(parents=True, exist_ok=True)
                 
-        self.logger = logger if logger else logging.getLogger(__name__)
         self.leadfield_dir = Path(leadfield_dir)
         
         # Parameters describing the simulated/loaded sensors
@@ -435,11 +435,18 @@ class LeadfieldBuilder:
                     self.logger.info(f"Loading forward solution from file: {load_path}")
                     fwd = mne.read_forward_solution(load_path)
                     self._store_sensor_metadata_from_info(fwd["info"])
-                    # Optional: Check if loaded orientation matches config
+                    # Apply the requested orientation to loaded forwards too.
                     loaded_ori = "fixed" if fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI else "free"
                     if loaded_ori != orientation_type:
-                         self.logger.warning(f"Loaded forward solution orientation ('{loaded_ori}') does not match config ('{orientation_type}'). Using loaded orientation.")
-                         orientation_type = loaded_ori # Update based on loaded file
+                        if orientation_type == "fixed":
+                            fwd = mne.convert_forward_solution(
+                                fwd,
+                                surf_ori=forward_solution_cfg.get("surf_ori", True),
+                                force_fixed=forward_solution_cfg.get("force_fixed", True),
+                            )
+                        else:
+                            # The existing exception handler will build a new forward.
+                            raise ValueError("Cannot recover free orientations from a fixed-only forward.")
                     return fwd
                 except Exception as e:
                     self.logger.warning(f"Failed to load forward solution from file: {e}. Proceeding to create it.")
@@ -507,7 +514,8 @@ class LeadfieldBuilder:
         -------
         np.ndarray
             The leadfield matrix. Shape is (n_sensors, n_sources) for fixed
-            orientation or (n_sensors, n_sources, 3) for free orientation.
+            orientation, (n_sensors, n_sources, 3) for free EEG, or
+            (n_sensors, n_sources, 2) for reduced free MEG.
 
         Raises
         ------
@@ -523,15 +531,25 @@ class LeadfieldBuilder:
             if load_path.exists():
                 try:
                     self.logger.debug(f"Loading leadfield matrix from file: {load_path}")
-                    with np.load(load_path) as data:
+                    with np.load(load_path, allow_pickle=True) as data:
                         if "leadfield" not in data:
                             raise ValueError(f"Invalid .npz file: 'leadfield' key not found in {load_path}")
                         leadfield = data["leadfield"]
+                        self.src_coords = _none_if_empty(data.get("src_coords"))
+                        self.Q_basis = _none_if_empty(data.get("Q_basis"))
+                        self.cortical_normals = _none_if_empty(data.get("cortical_normals"))
+                        # Restore cached units before scaling the leadfield.
+                        self._set_sensor_metadata(
+                            kind=_none_if_empty(data.get("sensor_kind")),
+                            unit=_none_if_empty(data.get("sensor_units", data.get("units"))),
+                            unit_mul=_none_if_empty(data.get("sensor_unitmult")),
+                            coil_type=_none_if_empty(data.get("coil_type")),
+                        )
 
                     # Basic validation based on expected dimensions
                     if leadfield.ndim == 2:
                         self.logger.info(f"Loaded fixed orientation leadfield: {leadfield.shape}")
-                    elif leadfield.ndim == 3 and leadfield.shape[-1] == 3:
+                    elif leadfield.ndim == 3 and leadfield.shape[-1] in (2, 3):
                         self.logger.info(f"Loaded free orientation leadfield: {leadfield.shape}")
                     else:
                         raise ValueError(f"Loaded leadfield has unexpected shape: {leadfield.shape}")
@@ -548,6 +566,9 @@ class LeadfieldBuilder:
             raise ValueError("Forward solution (fwd) must be provided to compute leadfield matrix when not loading from file.")
 
         self._store_sensor_metadata_from_info(fwd["info"])
+        self.src_coords = np.array(fwd["source_rr"], copy=True)
+        self.Q_basis = None
+        self.cortical_normals = None
 
         self.logger.info("Extracting leadfield matrix from the forward solution...")
         leadfield = fwd["sol"]["data"] 
@@ -567,6 +588,37 @@ class LeadfieldBuilder:
             leadfield = leadfield.reshape(n_sensors, n_sources, n_orient)
             self.logger.info(f"Reshaped free orientation leadfield: {leadfield.shape}")
             orientation_type = "free"
+
+            # Volume source spaces have no cortical surface normals.
+            if not all(src["type"] == "surf" for src in fwd["src"]):
+                raise ValueError("Cortical-normal simulation requires surface source spaces.")
+            fwd_fixed = mne.convert_forward_solution(
+                fwd, surf_ori=True, force_fixed=True, verbose="error"
+            )
+            normals = np.array(fwd_fixed["source_nn"], dtype=float, copy=True)
+            if normals.shape != (n_sources, 3) or not np.all(np.isfinite(normals)):
+                raise ValueError("Cortical normals must be finite and have shape (N, 3).")
+            lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+            if not np.all(np.isfinite(lengths)) or np.any(lengths < 1e-12):
+                raise ValueError("Cortical normals must have finite, nonzero lengths.")
+            self.cortical_normals = normals / lengths
+
+            if self.sensor_units in (FIFF.FIFF_UNIT_T, FIFF.FIFF_UNIT_T_M):
+                # Use the same local SVD reduction as extract_leadfield.
+                self.Q_basis = np.empty((n_sources, 3, 2))
+                reduced = np.empty((n_sensors, n_sources, 2))
+                for i in range(n_sources):
+                    Li = leadfield[:, i, :]
+                    _, _, Vt = np.linalg.svd(Li, full_matrices=False)
+                    Qi = Vt[:2, :].T.copy()
+                    for j in range(2):
+                        if Qi[np.argmax(np.abs(Qi[:, j])), j] < 0:
+                            Qi[:, j] *= -1
+                    self.Q_basis[i] = Qi
+                    reduced[:, i, :] = Li @ Qi
+                leadfield = reduced
+            else:
+                self.Q_basis = np.repeat(np.eye(3)[None, :, :], n_sources, axis=0)
         else:
             self.logger.warning("Unknown leadfield orientation type in forward solution.")
 
@@ -584,6 +636,11 @@ class LeadfieldBuilder:
                 payload["sensor_kind"] = self.sensor_kind
             if self.coil_type is not None:
                 payload["coil_type"] = self.coil_type
+            # Persist geometry with its matching leadfield.
+            for name in ("src_coords", "Q_basis", "cortical_normals"):
+                value = getattr(self, name, None)
+                if value is not None:
+                    payload[name] = value
             np.savez(save_fname, **payload)
 
         return leadfield
@@ -659,7 +716,7 @@ class LeadfieldBuilder:
             expected_suffix = "-fixed.npz"
         elif orientation_type == "free":
             expected_suffix = "-free.npz"
-            expected_dimensions = 3 # Free orientation leads to 3D leadfield (n_sensors, n_sources, 3)
+            expected_dimensions = 3 # Free leadfield: (n_sensors, n_sources, 2 or 3)
         else:
             raise ValueError(f"Invalid orientation_type '{orientation_type}'. Choose 'fixed' or 'free'.")
 
