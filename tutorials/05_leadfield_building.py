@@ -49,7 +49,7 @@ from mne.io.constants import FIFF
 from tempfile import TemporaryDirectory
 
 from calibrain import LeadfieldBuilder, extract_leadfields, fetch_example_data
-from calibrain.utils import get_data_path
+from calibrain.utils import get_data_path, get_leadfield_dir
 
 
 RANDOM_SEED = 23
@@ -64,7 +64,7 @@ RANDOM_SEED = 23
 # folder, pass it as ``data_dir`` to ``fetch_example_data`` and ``extract_leadfields``.
 
 data_root = get_data_path()
-leadfield_dir = data_root / "1284src_leadfield"
+leadfield_dir = get_leadfield_dir()
 
 print("tutorial data root:", data_root)
 print("tutorial leadfield directory:", leadfield_dir)

@@ -38,14 +38,14 @@ from pathlib import Path
 import mne
 import numpy as np
 
-from calibrain.utils import get_data_path, strip_local_paths
+from calibrain.utils import FWD_DIR_NAME, get_data_path, strip_local_paths
 
 # dataset name -> subjects (one forward solution each)
 DATASETS = {
     "fsaverage": ["fsaverage"],
     "camcan": ["CC120166", "CC120264", "CC120309", "CC120313"],
 }
-FWD_DIR_NAME = "1284src_fwd"
+ARCHIVE_FWD_DIR = "1284src_fwd"  # folder inside the published archives; fixed by the releases
 ARCHIVE_NAME = "calibrain-example-data-{name}.zip"
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)  # fixed, so that the zip itself is reproducible
 
@@ -73,7 +73,7 @@ def clean_forward(source, target):
 
 def build_dataset_files(name, data_dir, staging):
     """Create the cleaned files of dataset ``name`` in ``staging``; return their paths."""
-    fwd_dir = staging / FWD_DIR_NAME
+    fwd_dir = staging / ARCHIVE_FWD_DIR
     fwd_dir.mkdir(parents=True)
     for subject in DATASETS[name]:
         clean_forward(Path(data_dir) / FWD_DIR_NAME / f"{subject}-fwd.fif", fwd_dir / f"{subject}-fwd.fif")

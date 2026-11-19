@@ -16,7 +16,7 @@ from calibrain import (
     gamma_map_sflex,
     gamma_lambda_map_sflex,
 )
-from calibrain.utils import get_data_path
+from calibrain.utils import get_leadfield_dir
 from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/data_generation_default.py")
@@ -58,7 +58,7 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
 
     ERP_config = config.get("ERP_config", {})
     leadfield_dir = Path(
-        config.get("leadfield_dir", get_data_path(config.get("data_dir")) / "1284src_leadfield")
+        config.get("leadfield_dir", get_leadfield_dir(config.get("data_dir")))
     )
     leadfield_builder = LeadfieldBuilder(leadfield_dir=leadfield_dir, logger=logger)
     sensor_simulator = SensorSimulator(logger=logger)
