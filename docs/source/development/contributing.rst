@@ -155,11 +155,17 @@ publishing:
 5. Tag the release commit ``vX.Y.Z`` and publish a GitHub release. Publishing
    runs the tests and uploads the package to PyPI, and Zenodo archives the
    release automatically.
-6. When Zenodo has created the new version, update the DOI in ``CITATION.cff``,
+6. Update the documentation on Read the Docs. The ``stable`` version is built from
+   the git branch ``stable``, not from the newest tag, so a tag alone does not
+   update it: move the branch to the release commit (for example
+   ``git push origin <release commit>:stable``). New tags are created as inactive
+   versions, so also activate the version ``vX.Y.Z`` in the Read the Docs project
+   (Versions), which builds it.
+7. When Zenodo has created the new version, update the DOI in ``CITATION.cff``,
    ``README.md``, ``docs/source/cite/index.rst``, and ``docs/source/index.rst``.
-7. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
+8. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
    check the Read the Docs ``stable`` build and the Zenodo record.
-8. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
+9. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
    every documented version against the live site (see below).
 
 The documentation version switcher
