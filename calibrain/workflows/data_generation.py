@@ -58,7 +58,7 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
 
     ERP_config = config.get("ERP_config", {})
     leadfield_dir = Path(
-        config.get("leadfield_dir", get_data_path() / "1284src_leadfield")
+        config.get("leadfield_dir", get_data_path(config.get("data_dir")) / "1284src_leadfield")
     )
     leadfield_builder = LeadfieldBuilder(leadfield_dir=leadfield_dir, logger=logger)
     sensor_simulator = SensorSimulator(logger=logger)

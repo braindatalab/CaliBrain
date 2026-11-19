@@ -10,7 +10,7 @@ import pytest
 from calibrain.utils import strip_local_paths
 
 ROOT = Path(__file__).resolve().parent.parent
-_DATA_DIR = Path(os.environ.get("CALIBRAIN_DATA", ROOT / "data"))
+_DATA_DIR = ROOT / "data"
 
 needs_fwd = pytest.mark.skipif(
     not (_DATA_DIR / "1284src_fwd" / "fsaverage-fwd.fif").exists(),

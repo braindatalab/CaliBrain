@@ -321,7 +321,7 @@ def main(argv=None):
     import argparse
 
     parser = argparse.ArgumentParser(description=main.__doc__.split("\n\n")[0])
-    parser.add_argument("--data-dir", help="Data directory (default: CALIBRAIN_DATA or the CaliBrain default).")
+    parser.add_argument("--data-dir", help="Data directory (default: the CaliBrain default).")
     parser.add_argument("--subjects", nargs="+", help="Subjects to process (default: all with a forward solution).")
     parser.add_argument("--coil", choices=["eeg", "mag", "grad"], help="Channel type (default: from the subject).")
     args = parser.parse_args(argv)

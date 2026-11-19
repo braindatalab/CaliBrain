@@ -20,7 +20,7 @@ from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, UncertaintyCalibrator
-from calibrain.utils import get_data_path, inspect_object
+from calibrain.utils import inspect_object
 from mne.io.constants import FIFF
 from calibrain.calibration_storage import save_calibration_record
 from calibrain.calibration_dataset import EEG_COIL_TYPES, MEG_COIL_TYPES
@@ -445,7 +445,6 @@ class DataGenerator:
         noise_params = dict(noise_params)
         solver_name = getattr(self.solver, "__name__", str(self.solver))
         orientation_type = data_params.get("orientation_type")
-        solver_params['fwd_path'] = get_data_path() / '1284src_fwd' / data_params['subject']
 
         # Format human-friendly, 1-based progress counters and avoid division-by-zero
         nruns_local = max(1, int(nruns))

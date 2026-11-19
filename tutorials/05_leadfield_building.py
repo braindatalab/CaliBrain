@@ -59,9 +59,9 @@ RANDOM_SEED = 23
 # ----------------------------------
 #
 # CaliBrain resolves local datasets with ``get_data_path``. With no argument,
-# it uses the ``CALIBRAIN_DATA`` environment variable if it is set. Otherwise it
-# uses ``<repository>/data`` in a source checkout, and a per-user directory (for
-# example ``~/.cache/calibrain``) for an installed package.
+# it uses ``<repository>/data`` in a source checkout, and a per-user directory
+# (for example ``~/.cache/calibrain``) for an installed package. To use another
+# folder, pass it as ``data_dir`` to ``fetch_example_data`` and ``extract_leadfields``.
 
 data_root = get_data_path()
 leadfield_dir = data_root / "1284src_leadfield"

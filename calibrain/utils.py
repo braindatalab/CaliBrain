@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import re
 import runpy
+import warnings
 
 import mne
 import numpy as np
@@ -157,41 +158,44 @@ def strip_local_paths(info):
 
 def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     """Get the path to CaliBrain data directory.
-    
+
     Parameters
     ----------
     path : str | Path | None
-        Custom path to data directory. If None, the ``CALIBRAIN_DATA`` environment
-        variable is used if it is set. Otherwise the default is ``<repository>/data``
-        in a source checkout, and a per-user cache directory for an installed
-        package (for example ``~/.cache/calibrain`` on Linux).
-        
+        Custom path to data directory. If None, the default is
+        ``<repository>/data`` in a source checkout, and a per-user cache
+        directory for an installed package (for example ``~/.cache/calibrain``
+        on Linux). To use another folder, pass it explicitly (for example as
+        ``data_dir`` of :func:`calibrain.fetch_example_data`).
+
     Returns
     -------
     data_path : Path
         Path to CaliBrain data directory.
     """
     if path is None:
-        # Use environment variable or default location in calibrain package
-        if 'CALIBRAIN_DATA' in os.environ:
-            data_path = Path(os.environ['CALIBRAIN_DATA'])
+        if "CALIBRAIN_DATA" in os.environ:
+            warnings.warn(
+                "The CALIBRAIN_DATA environment variable is no longer used. Pass the folder "
+                "explicitly (for example data_dir=...) to use a folder other than the default.",
+                FutureWarning,
+                stacklevel=2,
+            )
+        calibrain_root = Path(__file__).parent.parent
+        if (calibrain_root / "pyproject.toml").exists():
+            # A source checkout (also an editable install): <repository>/data
+            data_path = calibrain_root / "data"
         else:
-            calibrain_root = Path(__file__).parent.parent
-            if (calibrain_root / "pyproject.toml").exists():
-                # A source checkout (also an editable install): <repository>/data
-                data_path = calibrain_root / 'data'
-            else:
-                # An installed package: a user directory, not the Python environment
-                import pooch
+            # An installed package: a user directory, not the Python environment
+            import pooch
 
-                data_path = Path(pooch.os_cache("calibrain"))
-        data_path = Path(data_path)
+            data_path = Path(pooch.os_cache("calibrain"))
     else:
         data_path = Path(path)
-    
+
     # Create directory if it doesn't exist
     data_path.mkdir(parents=True, exist_ok=True)
-    
+
     return data_path
 
 

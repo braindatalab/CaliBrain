@@ -70,22 +70,23 @@ them locally means they always match the installed version. On the command line,
 ``python -m calibrain.extract_leadfield`` does the same. By default it processes every
 subject that has a forward solution; ``--subjects`` and ``--data-dir`` select others.
 
-CaliBrain resolves the data directory with ``calibrain.utils.get_data_path``:
+CaliBrain resolves the default data directory with ``calibrain.utils.get_data_path``:
 
-- If the ``CALIBRAIN_DATA`` environment variable is set, that directory is used.
-- Otherwise, in a source checkout, ``<repository>/data`` is used.
+- In a source checkout, ``<repository>/data`` is used.
 - Otherwise (a PyPI installation), a per-user directory is used, for example
   ``~/.cache/calibrain`` on Linux.
 
-.. code-block:: bash
+To use another folder, pass it explicitly. No environment variable is read.
 
-   # Linux and macOS
-   export CALIBRAIN_DATA=/path/to/calibrain_data
+.. code-block:: python
 
-.. code-block:: powershell
+   from calibrain.datasets import fetch_example_data
+   from calibrain.extract_leadfield import extract_leadfields
 
-   # Windows (PowerShell)
-   $env:CALIBRAIN_DATA = "C:\path\to\calibrain_data"
+   fetch_example_data(data_dir="/path/to/calibrain_data")
+   extract_leadfields(data_dir="/path/to/calibrain_data")
+
+On the command line, use ``--data-dir /path/to/calibrain_data``.
 
 
 Available local example data

@@ -91,5 +91,4 @@ Download the forward solution, then create the leadfield files from it:
    fetch_example_data()
    extract_leadfields()
 
-See :doc:`../datasets/index` for where they are stored and the ``CALIBRAIN_DATA``
-environment variable.
+See :doc:`../datasets/index` for where they are stored and how to choose another folder.
