@@ -47,7 +47,7 @@ git pull
 git switch -c feature/short-description
 ```
 
-Name branches `feature/...`, `fix/...`, `docs/...`, or `refactor/...`, and start each
+Name branches `feature/...`, `fix/...`, `documentation/...`, or `refactor/...`, and start each
 commit message with its type (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`,
 or `chore:`).
 

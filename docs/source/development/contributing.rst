@@ -61,7 +61,7 @@ Start from an up-to-date ``dev`` and use one branch per change:
    git pull
    git switch -c feature/short-description
 
-Name branches ``feature/...``, ``fix/...``, ``docs/...``, or ``refactor/...``. Start
+Name branches ``feature/...``, ``fix/...``, ``documentation/...``, or ``refactor/...``. Start
 every commit message with its type, as in the history of the repository: ``feat:``,
 ``fix:``, ``docs:``, ``refactor:``, ``test:``, ``ci:``, or ``chore:``. Then write a short
 summary in the imperative, for example ``fix: keep the source order in the posterior
