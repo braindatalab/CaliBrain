@@ -18,12 +18,13 @@ of CaliBrain and are created locally from them with
 Usage::
 
     python scripts/build_example_data_archives.py --output /path/to/output
-    python scripts/build_example_data_archives.py --output /path/to/output --include-camcan
+    python scripts/build_example_data_archives.py --output /path/to/output --datasets camcan
 
-By default only the ``fsaverage`` template data is built. The CamCAN subjects are
-derived from CamCAN participants, so only include them if the CamCAN terms allow
-sharing derived data. Build in the same environment each time (the checksum depends
-on the MNE and NumPy versions) and take the checksum from the file you upload.
+By default only the ``fsaverage`` template data is built. The ``camcan`` dataset is
+derived from CamCAN participants, so only publish it if the CamCAN terms allow sharing
+derived data. Each dataset goes into its own release of CaliBrain-data. Build in the
+same environment each time (the checksum depends on the MNE and NumPy versions) and
+take the checksum from the file you upload.
 """
 import argparse
 import contextlib
@@ -161,13 +162,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--output", required=True, help="Directory for the archives and manifest.json.")
     parser.add_argument("--data-dir", help="Data directory (default: CALIBRAIN_DATA or <repository>/data).")
-    parser.add_argument("--include-camcan", action="store_true",
-                        help="Also build the CamCAN subjects (only if their terms allow sharing).")
+    parser.add_argument("--datasets", nargs="+", choices=sorted(DATASETS), default=["fsaverage"],
+                        help="Datasets to build (default: fsaverage). Only publish camcan if its terms allow it.")
     args = parser.parse_args(argv)
 
     data_dir = Path(args.data_dir) if args.data_dir else get_data_path()
-    names = ["fsaverage"] + (["camcan"] if args.include_camcan else [])
-    manifest = build_archives(data_dir, args.output, names)
+    manifest = build_archives(data_dir, args.output, args.datasets)
     for archive, entry in manifest.items():
         print(f"{archive}  {entry['size_bytes'] / 1e6:.1f} MB  sha256:{entry['sha256']}")
         for file in entry["files"]:

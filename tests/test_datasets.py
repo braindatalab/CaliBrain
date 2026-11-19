@@ -12,6 +12,14 @@ from calibrain.datasets import fetch_example_data
 
 FILES = {"1284src_fwd/fsaverage-fwd.fif": b"forward solution"}
 ARCHIVE = "calibrain-example-data-fsaverage.zip"
+VERSION = "release-fsaverage"
+CAMCAN_FILES = {f"1284src_fwd/{subject}-fwd.fif": subject.encode() for subject in ("CC1", "CC2")}
+CAMCAN_ARCHIVE = "calibrain-example-data-camcan.zip"
+CAMCAN_VERSION = "release-camcan"
+
+
+def _entry(version, archive, sha256, files):
+    return {"version": version, "archive": archive, "sha256": sha256, "files": tuple(files)}
 
 
 def _make_zip(path, files):
@@ -51,18 +59,19 @@ class _Server:
 
 @pytest.fixture
 def published(tmp_path, monkeypatch):
-    """Serve a fake archive and point ``fetch_example_data`` to it."""
+    """Serve fake archives of two datasets (each in its own release) and point to them."""
     served = tmp_path / "served"
-    served.mkdir()
-    sha256 = _make_zip(served / ARCHIVE, FILES)
+    registry = {}
+    for name, version, archive, files in (
+        ("fsaverage", VERSION, ARCHIVE, FILES),
+        ("camcan", CAMCAN_VERSION, CAMCAN_ARCHIVE, CAMCAN_FILES),
+    ):
+        (served / version).mkdir(parents=True)
+        sha256 = _make_zip(served / version / archive, files)
+        registry[name] = _entry(version, archive, sha256, files)
     server = _Server(served)
     monkeypatch.setattr(datasets, "DATA_URL", server.url + "{version}/")
-    monkeypatch.setattr(datasets, "_DATASETS", {
-        "fsaverage": {"archive": ARCHIVE, "sha256": sha256, "files": tuple(FILES)},
-    })
-    # the server serves files from <served>/<version>/
-    (served / datasets.DATA_VERSION).mkdir()
-    os.replace(served / ARCHIVE, served / datasets.DATA_VERSION / ARCHIVE)
+    monkeypatch.setattr(datasets, "_DATASETS", registry)
     yield server
     server.close()
 
@@ -119,14 +128,12 @@ def test_rejects_a_file_with_the_wrong_checksum(published, tmp_path, monkeypatch
 
 
 def test_rejects_an_archive_with_an_unsafe_path(tmp_path, monkeypatch):
-    served = tmp_path / "served" / datasets.DATA_VERSION
+    served = tmp_path / "served" / VERSION
     served.mkdir(parents=True)
     sha256 = _make_zip(served / ARCHIVE, {**FILES, "../outside.txt": b"escaped"})
     server = _Server(tmp_path / "served")
     monkeypatch.setattr(datasets, "DATA_URL", server.url + "{version}/")
-    monkeypatch.setattr(datasets, "_DATASETS", {
-        "fsaverage": {"archive": ARCHIVE, "sha256": sha256, "files": tuple(FILES)},
-    })
+    monkeypatch.setattr(datasets, "_DATASETS", {"fsaverage": _entry(VERSION, ARCHIVE, sha256, FILES)})
     try:
         with pytest.raises(ValueError, match="Unsafe path"):
             fetch_example_data(data_dir=tmp_path / "data")
@@ -138,20 +145,46 @@ def test_rejects_an_archive_with_an_unsafe_path(tmp_path, monkeypatch):
 
 
 def test_rejects_an_archive_that_misses_a_file(tmp_path, monkeypatch):
-    served = tmp_path / "served" / datasets.DATA_VERSION
+    served = tmp_path / "served" / VERSION
     served.mkdir(parents=True)
     sha256 = _make_zip(served / ARCHIVE, FILES)
     server = _Server(tmp_path / "served")
     monkeypatch.setattr(datasets, "DATA_URL", server.url + "{version}/")
     # the registry expects one more file than the archive holds
     monkeypatch.setattr(datasets, "_DATASETS", {
-        "fsaverage": {"archive": ARCHIVE, "sha256": sha256, "files": (*FILES, "1284src_fwd/other-fwd.fif")},
+        "fsaverage": _entry(VERSION, ARCHIVE, sha256, (*FILES, "1284src_fwd/other-fwd.fif")),
     })
     try:
         with pytest.raises(ValueError, match="expected files"):
             fetch_example_data(data_dir=tmp_path / "data")
     finally:
         server.close()
+
+
+def test_each_dataset_is_downloaded_from_its_own_release(published, tmp_path):
+    fetch_example_data("camcan", data_dir=tmp_path / "data")
+
+    assert published.requests == [f"/{CAMCAN_VERSION}/{CAMCAN_ARCHIVE}"]
+    for name, content in CAMCAN_FILES.items():
+        assert (tmp_path / "data" / name).read_bytes() == content
+    assert not (tmp_path / "data" / "1284src_fwd" / "fsaverage-fwd.fif").exists()
+
+
+def test_the_registry_is_well_formed():
+    import re
+
+    from calibrain.extract_leadfield import DEFAULT_COILS
+
+    assert {"fsaverage", "camcan"} <= set(datasets._DATASETS)
+    for name, entry in datasets._DATASETS.items():
+        assert entry["version"] and entry["archive"].endswith(".zip"), name
+        assert re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]), name
+        assert entry["files"], name
+        for file in entry["files"]:
+            match = re.fullmatch(r"1284src_fwd/(.+)-fwd\.fif", file)
+            assert match, (name, file)
+            # the extraction step must know the channel type of every downloaded subject
+            assert match.group(1) in DEFAULT_COILS, (name, file)
 
 
 def test_unknown_dataset_raises():
@@ -195,8 +228,9 @@ def test_default_data_directory_of_a_source_checkout_is_the_repository_data(tmp_
 
 
 @pytest.mark.skipif(not os.environ.get("CALIBRAIN_TEST_NETWORK"), reason="set CALIBRAIN_TEST_NETWORK=1 to test the real download")
-def test_real_download_matches_the_published_checksum(tmp_path):
-    data_dir = fetch_example_data(data_dir=tmp_path)
+@pytest.mark.parametrize("dataset", sorted(datasets._DATASETS))
+def test_real_download_matches_the_published_checksum(tmp_path, dataset):
+    data_dir = fetch_example_data(dataset, data_dir=tmp_path)
 
-    for name in datasets._DATASETS["fsaverage"]["files"]:
+    for name in datasets._DATASETS[dataset]["files"]:
         assert (data_dir / name).is_file()

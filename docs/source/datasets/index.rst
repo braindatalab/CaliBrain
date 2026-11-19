@@ -49,8 +49,20 @@ them ready takes two independent steps:
 SHA-256 checksum, and unpacks the forward solution into
 ``<data directory>/1284src_fwd``. Nothing is downloaded if the file already exists;
 pass ``force=True`` to download it again. The data are computed from the ``fsaverage``
-template and contain no participant data. The CamCAN subjects are not included; see
-the :doc:`Dataset Notice <data_notice>`.
+template and contain no participant data.
+
+**CamCAN subjects.** The default configurations and the figure scripts use four CamCAN
+participants (``CC120166``, ``CC120264``, ``CC120309``, ``CC120313``). Their forward
+solutions are available as a separate dataset, with the same two steps:
+
+.. code-block:: python
+
+   fetch_example_data("camcan")   # about 54 MB
+   extract_leadfields()           # creates the leadfield files of every subject that has a forward
+
+They are derived from CamCAN data and remain subject to the CamCAN terms. Read the
+:doc:`Dataset Notice <data_notice>` before you use them, and acknowledge and cite
+CamCAN as described on the CamCAN data portal.
 
 **Step 2** creates the leadfield files in ``<data directory>/1284src_leadfield``. They
 are not downloaded, because their format depends on the version of CaliBrain: creating
