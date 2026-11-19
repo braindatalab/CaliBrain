@@ -4,6 +4,7 @@ import os
 import zipfile
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from calibrain.utils import strip_local_paths
@@ -49,6 +50,17 @@ def test_strip_local_paths_leaves_other_fields_alone():
 
     assert info["description"] == "/keep/this/text"
     assert info["nchan"] == 64
+
+
+def test_arrays_match_allows_rounding_noise_but_not_real_differences():
+    script = _load_script()
+    values = np.array([0.1, 0.2, 0.3])
+
+    assert script.arrays_match(values, values + 2.2e-16)      # rounding noise of another library version
+    assert not script.arrays_match(values, values + 1e-6)     # a real difference
+    assert not script.arrays_match(values, values[:2])        # different shape
+    assert script.arrays_match(np.array([1, 2]), np.array([1, 2]))
+    assert not script.arrays_match(np.array([1, 2]), np.array([1, 3]))
 
 
 def test_find_leaks_reports_personal_paths(tmp_path):

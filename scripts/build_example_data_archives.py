@@ -7,8 +7,8 @@ files for a Zenodo dataset record:
    because a published file cannot be edited afterwards).
 2. It regenerates the leadfield files from the cleaned forward solutions with
    ``calibrain.extract_leadfield``.
-3. It checks that the regenerated leadfields equal the existing ones, and that no
-   personal path or user name remains in any file.
+3. It checks that the regenerated leadfields equal the existing ones (up to
+   floating-point rounding), and that no personal path or user name remains in any file.
 4. It writes one zip archive per dataset and ``manifest.json`` with the size and
    SHA-256 checksum of every archive. The checksums go into the download registry.
 
@@ -19,8 +19,8 @@ Usage::
 
 By default only the ``fsaverage`` template data is built. The CamCAN subjects are
 derived from CamCAN participants, so only include them if the CamCAN terms allow
-sharing derived data. Upload the archives of ONE run: the forward files contain a
-creation time, so the checksums differ between runs.
+sharing derived data. Build in the same environment each time (the checksum depends
+on the MNE and NumPy versions) and take the checksum from the file you upload.
 """
 import argparse
 import contextlib
@@ -86,6 +86,22 @@ def build_dataset_files(name, data_dir, staging):
     return sorted(p for p in staging.rglob("*") if p.is_file())
 
 
+def arrays_match(a, b, atol=1e-12):
+    """Compare two arrays; floating-point values may differ by rounding noise.
+
+    The last binary digit of computed values depends on the MNE and NumPy versions,
+    so floats are compared with a tolerance. Everything else must be equal.
+    """
+    a, b = np.asarray(a), np.asarray(b)
+    if a.shape != b.shape:
+        return False
+    if a.dtype == object or b.dtype == object:
+        return a.tolist() == b.tolist()
+    if np.issubdtype(a.dtype, np.floating) or np.issubdtype(b.dtype, np.floating):
+        return bool(np.allclose(a, b, rtol=0, atol=atol, equal_nan=True))
+    return bool(np.array_equal(a, b))
+
+
 def verify_against_existing(files, staging, data_dir):
     """Check that regenerated leadfields equal the existing ones; return the mismatches."""
     mismatches = []
@@ -99,11 +115,7 @@ def verify_against_existing(files, staging, data_dir):
             for key in new.files:
                 if key == "info":
                     continue
-                a, b = new[key], old[key]
-                same = a.shape == b.shape and (
-                    a.tolist() == b.tolist() if a.dtype == object else np.array_equal(a, b)
-                )
-                if not same:
+                if not arrays_match(new[key], old[key]):
                     mismatches.append(f"{path.name}:{key}")
     return mismatches
 
