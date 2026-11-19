@@ -173,8 +173,18 @@ python -m pip install calibrain
 python -m pip install "calibrain[viz]"
 ```
 
-For installing from a source checkout, using conda, and providing the example
-data, see the
+The example data are downloaded on demand, in two steps (download the forward solution,
+then create the leadfield files from it):
+
+```python
+from calibrain.datasets import fetch_example_data
+from calibrain.extract_leadfield import extract_leadfields
+
+fetch_example_data()
+extract_leadfields()
+```
+
+For installing from a source checkout and using conda, see the
 [installation guide](https://calibrain.readthedocs.io/stable/installation/index.html).
 
 ## Contributing

@@ -44,10 +44,11 @@ example ``python -m pip install "calibrain[viz]"``.
 Data files
 ----------
 
-The example forward-model and leadfield files are not part of the package. By
-default CaliBrain looks for them in a ``data`` directory next to the package, and
-the ``CALIBRAIN_DATA`` environment variable overrides this. See
-:doc:`../datasets/index` for the expected layout.
+The example forward-model and leadfield files are not part of the package. Download
+the forward solution with ``calibrain.datasets.fetch_example_data()`` and create the
+leadfield files from it with ``calibrain.extract_leadfield.extract_leadfields()``. The
+``CALIBRAIN_DATA`` environment variable chooses the folder they are stored in. See
+:doc:`../datasets/index` for details and the expected layout.
 
 .. toctree::
    :hidden:

@@ -32,15 +32,38 @@ The local data root is expected to contain precomputed forward solutions and
 leadfield matrices. In practice, the workflow configuration should point to the
 directories that contain those files.
 
-The example data are not part of the PyPI package or the git repository, so you
-have to provide them yourself. CaliBrain resolves the data root with
-``calibrain.utils.get_data_path``:
+The example data are not part of the PyPI package or the git repository. They are
+published as release assets of the
+`CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_ repository. Getting
+them ready takes two independent steps:
+
+.. code-block:: python
+
+   from calibrain.datasets import fetch_example_data
+   from calibrain.extract_leadfield import extract_leadfields
+
+   fetch_example_data()   # step 1: download the forward solution
+   extract_leadfields()   # step 2: create the leadfield files from it
+
+**Step 1** downloads ``calibrain-example-data-fsaverage.zip`` (about 36 MB), verifies its
+SHA-256 checksum, and unpacks the forward solution into
+``<data directory>/1284src_fwd``. Nothing is downloaded if the file already exists;
+pass ``force=True`` to download it again. The data are computed from the ``fsaverage``
+template and contain no participant data. The CamCAN subjects are not included; see
+the :doc:`Dataset Notice <data_notice>`.
+
+**Step 2** creates the leadfield files in ``<data directory>/1284src_leadfield``. They
+are not downloaded, because their format depends on the version of CaliBrain: creating
+them locally means they always match the installed version. On the command line,
+``python -m calibrain.extract_leadfield`` does the same. By default it processes every
+subject that has a forward solution; ``--subjects`` and ``--data-dir`` select others.
+
+CaliBrain resolves the data directory with ``calibrain.utils.get_data_path``:
 
 - If the ``CALIBRAIN_DATA`` environment variable is set, that directory is used.
-- Otherwise, the ``data`` directory next to the package is used. In a source
-  checkout this is ``<repository>/data``. For a PyPI installation it is a
-  directory inside the Python environment, so set ``CALIBRAIN_DATA`` to a
-  location of your choice instead.
+- Otherwise, in a source checkout, ``<repository>/data`` is used.
+- Otherwise (a PyPI installation), a per-user directory is used, for example
+  ``~/.cache/calibrain`` on Linux.
 
 .. code-block:: bash
 
@@ -52,9 +75,6 @@ have to provide them yourself. CaliBrain resolves the data root with
    # Windows (PowerShell)
    $env:CALIBRAIN_DATA = "C:\path\to\calibrain_data"
 
-To regenerate the leadfield files from the forward solutions, run
-``python -m calibrain.extract_leadfield``. It reads ``<data>/1284src_fwd`` and
-writes ``<data>/1284src_leadfield``.
 
 Available local example data
 ----------------------------
