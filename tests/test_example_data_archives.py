@@ -99,11 +99,30 @@ def test_fsaverage_archive_is_complete_and_free_of_personal_information(tmp_path
     assert entry["sha256"] == script.sha256(archive)
     assert json.loads((tmp_path / "manifest.json").read_text()) == manifest
     with zipfile.ZipFile(archive) as zf:
-        assert sorted(zf.namelist()) == [
-            "1284src_fwd/fsaverage-fwd.fif",
-            "1284src_leadfield/fsaverage_fixed_leadfield.npz",
-            "1284src_leadfield/fsaverage_free_leadfield.npz",
-        ]
+        assert sorted(zf.namelist()) == ["1284src_fwd/fsaverage-fwd.fif"]
         for name in zf.namelist():
             content = zf.read(name)
             assert not any(pattern in content for pattern in script.forbidden_patterns()), name
+
+
+
+@needs_fwd
+def test_leadfields_extracted_from_the_archive_equal_those_from_the_original(tmp_path):
+    # the two steps of a user: unpack the downloaded forward, then extract the leadfields
+    from calibrain.extract_leadfield import extract_leadfield, extract_leadfields
+
+    script = _load_script()
+    script.build_archives(_DATA_DIR, tmp_path / "out", ["fsaverage"])
+    user_dir = tmp_path / "user"
+    with zipfile.ZipFile(tmp_path / "out" / "calibrain-example-data-fsaverage.zip") as zf:
+        zf.extractall(user_dir)
+    extract_leadfields(data_dir=user_dir)
+
+    for orientation in ("fixed", "free"):
+        extract_leadfield(_DATA_DIR / "1284src_fwd", "fsaverage", "eeg", orientation, tmp_path / "original")
+        name = f"fsaverage_{orientation}_leadfield.npz"
+        with np.load(user_dir / "1284src_leadfield" / name, allow_pickle=True) as new, \
+                np.load(tmp_path / "original" / name, allow_pickle=True) as old:
+            for key in new.files:
+                if key != "info":
+                    assert script.arrays_match(new[key], old[key]), (name, key)
