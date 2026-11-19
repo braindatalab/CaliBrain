@@ -430,21 +430,14 @@ class DataGenerator:
         global_run_id: Optional[int] = None,
         global_total_runs: Optional[int] = None,
     ) -> dict:
-        # Ensure worker processes emit INFO logs to stdout/file (joblib workers start with default WARNING level)
+        # Ensure worker processes emit INFO logs to the console (joblib workers start with default WARNING level)
         root_logger = logging.getLogger()
         if not root_logger.handlers:
-            log_handlers = [logging.StreamHandler()]
-            log_file_env = os.environ.get("CALIBRAIN_LOG_FILE")
-            if log_file_env:
-                try:
-                    log_handlers.insert(0, logging.FileHandler(log_file_env, mode="a"))
-                except Exception:
-                    pass
             logging.basicConfig(
                 level=logging.INFO,
                 format="%(asctime)s - %(levelname)s - %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
-                handlers=log_handlers,
+                handlers=[logging.StreamHandler()],
             )
         root_logger.setLevel(logging.INFO)
         solver_params = dict(solver_params)
