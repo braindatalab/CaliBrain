@@ -9,7 +9,6 @@ RUN_PARAMS = {
 ORIENTATION_TYPE = "free"
 
 PATHS = {
-    "log_dir": f"/data/orabem/calibrain/results/logs/{ORIENTATION_TYPE}",
     "posterior_dir": f"/data/orabem/calibrain/results/posterior_summaries/{ORIENTATION_TYPE}",
     "manifest_path": f"/data/orabem/calibrain/results/run_manifest/{ORIENTATION_TYPE}.csv",
 }

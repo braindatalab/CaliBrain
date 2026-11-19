@@ -30,6 +30,7 @@ Version 1.0.4 (unreleased)
 *   [BUGFIX] ``extract_leadfield.py`` and ``reduce_fwd.py`` no longer run their batch jobs, which overwrite data files, when they are imported.
 *   [BUGFIX] Fixed an undefined ``STRIP_SIZE`` in ``viz/plot_overview_by_nnz.py``.
 *   [BUGFIX] Removed the duplicate repository-root ``__init__.py``, which could prevent ``pytest`` from collecting the test suite.
+*   [BREAKING] The data-generation workflow no longer writes a log file: ``run_data_generation`` does not create ``results/logs/*.log`` and ignores the ``log_dir`` config key. It logs to the console, which you can redirect (for example ``2>&1 | tee run.log``). The internal ``CALIBRAIN_LOG_FILE`` environment variable is removed with it.
 *   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, the posterior-summary files, and package metadata.
 *   [DOCS] Updated tutorials 04, 06, 08, 09, and 12 (metric evaluation) for the cortical-normal simulation interface.
 *   [DOCS] Tutorial 05 now downloads the example data, creates the leadfield files from it, and loads them. Its description of the data directory was corrected, and tutorials 05 and 07 clean up their temporary folders.

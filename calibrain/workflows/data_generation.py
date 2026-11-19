@@ -1,6 +1,4 @@
-import datetime
 import logging
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
@@ -44,18 +42,12 @@ def run_data_generation(config: Union[str, Path, Dict[str, Any]]) -> pd.DataFram
     if isinstance(config, (str, Path)):
         config = load_python_config(config)
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = Path(config.get("log_dir", "results/logs"))
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"data_generation_log_{timestamp}.log"
-
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.FileHandler(log_file, mode="w"), logging.StreamHandler()],
+        handlers=[logging.StreamHandler()],
     )
-    os.environ["CALIBRAIN_LOG_FILE"] = str(log_file)
     mne.set_log_level("ERROR")
     logging.getLogger("mne").setLevel(logging.ERROR)
     logger = logging.getLogger(__name__)
