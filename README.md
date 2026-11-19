@@ -173,14 +173,14 @@ python -m pip install calibrain
 python -m pip install "calibrain[viz]"
 ```
 
-The example data are downloaded on demand, in two steps (download the forward solution,
-then create the leadfield files from it):
+The example data are downloaded on demand, in three steps (download the forward solution,
+reduce it to 1284 sources, then create the leadfield files from it):
 
 ```python
-from calibrain.datasets import fetch_example_data
-from calibrain.extract_leadfield import extract_leadfields
+from calibrain import extract_leadfields, fetch_example_data, reduce_forward_solutions
 
 fetch_example_data()
+reduce_forward_solutions()
 extract_leadfields()
 ```
 

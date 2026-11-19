@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 _DATA_DIR = ROOT / "data"
 
 needs_fwd = pytest.mark.skipif(
-    not (_DATA_DIR / "1284src_fwd" / "fsaverage-fwd.fif").exists(),
-    reason="1284src forward solutions not available",
+    not (_DATA_DIR / "fwd" / "fsaverage-fwd.fif").exists(),
+    reason="full forward solutions not available",
 )
 
 
@@ -99,7 +99,7 @@ def test_fsaverage_archive_is_complete_and_free_of_personal_information(tmp_path
     assert entry["sha256"] == script.sha256(archive)
     assert json.loads((tmp_path / "manifest.json").read_text()) == manifest
     with zipfile.ZipFile(archive) as zf:
-        assert sorted(zf.namelist()) == ["1284src_fwd/fsaverage-fwd.fif"]
+        assert sorted(zf.namelist()) == ["fwd/fsaverage-fwd.fif"]
         for name in zf.namelist():
             content = zf.read(name)
             assert not any(pattern in content for pattern in script.forbidden_patterns()), name
@@ -107,17 +107,23 @@ def test_fsaverage_archive_is_complete_and_free_of_personal_information(tmp_path
 
 
 @pytest.mark.parametrize("dataset,subject,coil", [("fsaverage", "fsaverage", "eeg"), ("camcan", "CC120166", "mag")])
-def test_leadfields_extracted_from_the_archive_equal_those_from_the_original(tmp_path, dataset, subject, coil):
-    # the two steps of a user: unpack the downloaded forward, then extract the leadfields
+def test_leadfields_from_the_reduced_archive_forward_equal_those_from_the_original(tmp_path, dataset, subject, coil):
+    # the steps of a user: unpack the downloaded forward, reduce it, then extract the leadfields
     from calibrain.extract_leadfield import extract_leadfield, extract_leadfields
+    from calibrain.reduce_fwd import reduce_forward_solutions
 
     script = _load_script()
-    if not all((_DATA_DIR / "1284src_fwd" / f"{s}-fwd.fif").exists() for s in script.DATASETS[dataset]):
-        pytest.skip(f"forward solutions of {dataset} not available")
+    if not all(
+        (_DATA_DIR / folder / f"{s}-fwd.fif").exists()
+        for s in script.DATASETS[dataset]
+        for folder in ("fwd", "1284src_fwd")
+    ):
+        pytest.skip(f"full and reduced forward solutions of {dataset} not available")
     script.build_archives(_DATA_DIR, tmp_path / "out", [dataset])
     user_dir = tmp_path / "user"
     with zipfile.ZipFile(tmp_path / "out" / f"calibrain-example-data-{dataset}.zip") as zf:
         zf.extractall(user_dir)
+    reduce_forward_solutions(data_dir=user_dir)
     extract_leadfields(data_dir=user_dir)
 
     for orientation in ("fixed", "free"):

@@ -11,9 +11,11 @@ files for a release of https://github.com/braindatalab/CaliBrain-data:
 3. It writes one zip archive per dataset and ``manifest.json`` with the size and
    SHA-256 checksum of every archive. The checksums go into ``calibrain/datasets.py``.
 
-Only the forward solutions are published. The leadfield files depend on the version
-of CaliBrain and are created locally from them with
-``python -m calibrain.extract_leadfield``.
+Only the forward solutions with the full source space (``<data>/fwd``) are published.
+Users reduce them to the 1284 sources of CaliBrain with
+``python -m calibrain.reduce_fwd`` and create the leadfield files from those with
+``python -m calibrain.extract_leadfield``; both depend on the version of CaliBrain
+and are not published.
 
 Usage::
 
@@ -38,14 +40,15 @@ from pathlib import Path
 import mne
 import numpy as np
 
-from calibrain.utils import FWD_DIR_NAME, get_data_path, strip_local_paths
+from calibrain.reduce_fwd import FULL_FWD_DIR_NAME
+from calibrain.utils import get_data_path, strip_local_paths
 
 # dataset name -> subjects (one forward solution each)
 DATASETS = {
     "fsaverage": ["fsaverage"],
     "camcan": ["CC120166", "CC120264", "CC120309", "CC120313"],
 }
-ARCHIVE_FWD_DIR = "1284src_fwd"  # folder inside the published archives; fixed by the releases
+ARCHIVE_FWD_DIR = "fwd"  # folder inside the published archives; fixed by the releases
 ARCHIVE_NAME = "calibrain-example-data-{name}.zip"
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)  # fixed, so that the zip itself is reproducible
 
@@ -76,7 +79,7 @@ def build_dataset_files(name, data_dir, staging):
     fwd_dir = staging / ARCHIVE_FWD_DIR
     fwd_dir.mkdir(parents=True)
     for subject in DATASETS[name]:
-        clean_forward(Path(data_dir) / FWD_DIR_NAME / f"{subject}-fwd.fif", fwd_dir / f"{subject}-fwd.fif")
+        clean_forward(Path(data_dir) / FULL_FWD_DIR_NAME / f"{subject}-fwd.fif", fwd_dir / f"{subject}-fwd.fif")
     return sorted(p for p in staging.rglob("*") if p.is_file())
 
 

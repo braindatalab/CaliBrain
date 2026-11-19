@@ -9,10 +9,10 @@ import pytest
 from calibrain import datasets
 from calibrain.datasets import fetch_example_data
 
-FILES = {"1284src_fwd/fsaverage-fwd.fif": b"forward solution"}
+FILES = {"fwd/fsaverage-fwd.fif": b"forward solution"}
 ARCHIVE = "calibrain-example-data-fsaverage.zip"
 VERSION = "release-fsaverage"
-CAMCAN_FILES = {f"1284src_fwd/{subject}-fwd.fif": subject.encode() for subject in ("CC1", "CC2")}
+CAMCAN_FILES = {f"fwd/{subject}-fwd.fif": subject.encode() for subject in ("CC1", "CC2")}
 CAMCAN_ARCHIVE = "calibrain-example-data-camcan.zip"
 CAMCAN_VERSION = "release-camcan"
 
@@ -98,11 +98,11 @@ def test_does_not_download_again_when_the_files_exist(published, tmp_path):
 
 def test_force_downloads_again_and_overwrites(published, tmp_path):
     data_dir = fetch_example_data(data_dir=tmp_path / "data")
-    (data_dir / "1284src_fwd/fsaverage-fwd.fif").write_bytes(b"changed locally")
+    (data_dir / "fwd/fsaverage-fwd.fif").write_bytes(b"changed locally")
 
     fetch_example_data(data_dir=data_dir, force=True)
 
-    assert (data_dir / "1284src_fwd/fsaverage-fwd.fif").read_bytes() == FILES["1284src_fwd/fsaverage-fwd.fif"]
+    assert (data_dir / "fwd/fsaverage-fwd.fif").read_bytes() == FILES["fwd/fsaverage-fwd.fif"]
 
 
 def test_does_not_overwrite_existing_files_without_force(published, tmp_path):
@@ -114,7 +114,7 @@ def test_does_not_overwrite_existing_files_without_force(published, tmp_path):
     fetch_example_data(data_dir=data_dir)
 
     assert published.requests == []
-    assert (data_dir / "1284src_fwd/fsaverage-fwd.fif").read_bytes() == b"my own file"
+    assert (data_dir / "fwd/fsaverage-fwd.fif").read_bytes() == b"my own file"
 
 
 def test_rejects_a_file_with_the_wrong_checksum(published, tmp_path, monkeypatch):
@@ -123,7 +123,7 @@ def test_rejects_a_file_with_the_wrong_checksum(published, tmp_path, monkeypatch
     with pytest.raises(ValueError, match="hash"):
         fetch_example_data(data_dir=tmp_path / "data")
 
-    assert not (tmp_path / "data" / "1284src_fwd").exists()
+    assert not (tmp_path / "data" / "fwd").exists()
 
 
 def test_rejects_an_archive_with_an_unsafe_path(tmp_path, monkeypatch):
@@ -140,7 +140,7 @@ def test_rejects_an_archive_with_an_unsafe_path(tmp_path, monkeypatch):
         server.close()
 
     assert not (tmp_path / "outside.txt").exists()
-    assert not (tmp_path / "data" / "1284src_fwd").exists()
+    assert not (tmp_path / "data" / "fwd").exists()
 
 
 def test_rejects_an_archive_that_misses_a_file(tmp_path, monkeypatch):
@@ -151,7 +151,7 @@ def test_rejects_an_archive_that_misses_a_file(tmp_path, monkeypatch):
     monkeypatch.setattr(datasets, "DATA_URL", server.url + "{version}/")
     # the registry expects one more file than the archive holds
     monkeypatch.setattr(datasets, "_DATASETS", {
-        "fsaverage": _entry(VERSION, ARCHIVE, sha256, (*FILES, "1284src_fwd/other-fwd.fif")),
+        "fsaverage": _entry(VERSION, ARCHIVE, sha256, (*FILES, "fwd/other-fwd.fif")),
     })
     try:
         with pytest.raises(ValueError, match="expected files"):
@@ -166,7 +166,7 @@ def test_each_dataset_is_downloaded_from_its_own_release(published, tmp_path):
     assert published.requests == [f"/{CAMCAN_VERSION}/{CAMCAN_ARCHIVE}"]
     for name, content in CAMCAN_FILES.items():
         assert (tmp_path / "data" / name).read_bytes() == content
-    assert not (tmp_path / "data" / "1284src_fwd" / "fsaverage-fwd.fif").exists()
+    assert not (tmp_path / "data" / "fwd" / "fsaverage-fwd.fif").exists()
 
 
 def test_the_registry_is_well_formed():
@@ -180,7 +180,7 @@ def test_the_registry_is_well_formed():
         assert re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]), name
         assert entry["files"], name
         for file in entry["files"]:
-            match = re.fullmatch(r"1284src_fwd/(.+)-fwd\.fif", file)
+            match = re.fullmatch(r"fwd/(.+)-fwd\.fif", file)
             assert match, (name, file)
             # the extraction step must know the channel type of every downloaded subject
             assert match.group(1) in DEFAULT_COILS, (name, file)
@@ -199,7 +199,7 @@ def test_uses_the_default_data_directory_when_none_is_given(published, tmp_path,
     data_dir = fetch_example_data()
 
     assert data_dir == default
-    assert (data_dir / "1284src_fwd/fsaverage-fwd.fif").exists()
+    assert (data_dir / "fwd/fsaverage-fwd.fif").exists()
 
 
 def test_the_removed_calibrain_data_variable_is_ignored_with_a_warning(tmp_path, monkeypatch):

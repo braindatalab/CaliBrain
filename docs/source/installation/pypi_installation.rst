@@ -81,14 +81,15 @@ Next steps
 ----------
 
 The example forward-model and leadfield files are not part of the package.
-Download the forward solution, then create the leadfield files from it:
+Download the forward solution, reduce it to 1284 sources, then create the leadfield
+files from it:
 
 .. code-block:: python
 
-   from calibrain.datasets import fetch_example_data
-   from calibrain.extract_leadfield import extract_leadfields
+   from calibrain import extract_leadfields, fetch_example_data, reduce_forward_solutions
 
    fetch_example_data()
+   reduce_forward_solutions()
    extract_leadfields()
 
 See :doc:`../datasets/index` for where they are stored and how to choose another folder.

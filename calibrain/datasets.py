@@ -6,8 +6,10 @@ demand with :func:`fetch_example_data`. Every archive is verified against a SHA-
 checksum that is stored in this module, so a given version of CaliBrain always gets
 exactly the data it was tested with.
 
-Only the forward solutions are downloaded. The leadfield files depend on the version
-of CaliBrain, so they are created from the forward solutions in a separate step, with
+Only the forward solutions with the full source space are downloaded. CaliBrain works
+with a reduced source space of 1284 sources and with leadfield files; both depend on the
+version of CaliBrain, so they are created from the download in two separate steps, with
+:func:`calibrain.reduce_fwd.reduce_forward_solutions` and
 :func:`calibrain.extract_leadfield.extract_leadfields`.
 """
 import zipfile
@@ -28,21 +30,21 @@ DATA_URL = "https://github.com/braindatalab/CaliBrain-data/releases/download/{ve
 # the files it provides. Every dataset has its own release, and a release is never changed.
 _DATASETS = {
     "fsaverage": {
-        "version": "example-data-fsaverage-1",
+        "version": "example-data-fsaverage-2",
         "archive": "calibrain-example-data-fsaverage.zip",
-        "sha256": "0b2d57df59b22aff4541ea33ed75faa36290709034823275823cc892580efcce",
-        "files": ("1284src_fwd/fsaverage-fwd.fif",),
+        "sha256": "73bb27704e33d25ed0d79c7232356ef6a1a3300bce98cdb38f467460a2f99b86",
+        "files": ("fwd/fsaverage-fwd.fif",),
     },
     # Derived from four CamCAN participants; see the Dataset Notice in the documentation.
     "camcan": {
-        "version": "example-data-camcan-1",
+        "version": "example-data-camcan-2",
         "archive": "calibrain-example-data-camcan.zip",
-        "sha256": "6e19da512390614f865d246204db585447a9e8447dd0b1c3a8e7172e6d9cd124",
+        "sha256": "de05bc2312f490d5f5fd287197c9b856e76374593ffa8e24ec2b6508c1a7af00",
         "files": (
-            "1284src_fwd/CC120166-fwd.fif",
-            "1284src_fwd/CC120264-fwd.fif",
-            "1284src_fwd/CC120309-fwd.fif",
-            "1284src_fwd/CC120313-fwd.fif",
+            "fwd/CC120166-fwd.fif",
+            "fwd/CC120264-fwd.fif",
+            "fwd/CC120309-fwd.fif",
+            "fwd/CC120313-fwd.fif",
         ),
     },
 }
@@ -56,10 +58,11 @@ def fetch_example_data(
     """Download the example forward solution into the data directory, once.
 
     The archive is downloaded from the CaliBrain-data repository, checked against its
-    SHA-256 checksum, and unpacked into ``<data_dir>/1284src_fwd``. Nothing is
-    downloaded if the files already exist. This function only downloads the forward
-    solution; create the leadfield files from it in a separate step with
-    :func:`calibrain.extract_leadfield.extract_leadfields`.
+    SHA-256 checksum, and unpacked into ``<data_dir>/fwd``. The forward solutions have
+    the full source space. Nothing is downloaded if the files already exist. This
+    function only downloads them; reduce them to the 1284 sources of CaliBrain with
+    :func:`calibrain.reduce_fwd.reduce_forward_solutions`, then create the leadfield
+    files with :func:`calibrain.extract_leadfield.extract_leadfields`.
 
     Parameters
     ----------

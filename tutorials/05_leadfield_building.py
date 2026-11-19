@@ -16,8 +16,8 @@ subclass that returns a deterministic synthetic leadfield while preserving the
 same ``get_leadfield(..., retrieve_mode="simulate")`` interface.
 
 The last section loads real example data. It downloads the forward solution of
-the ``fsaverage`` template (about 36 MB, once) and creates the leadfield files
-from it.
+the ``fsaverage`` template (about 39 MB, once), reduces it to 1284 sources, and
+creates the leadfield files from it.
 """
 
 
@@ -48,7 +48,7 @@ import numpy as np
 from mne.io.constants import FIFF
 from tempfile import TemporaryDirectory
 
-from calibrain import LeadfieldBuilder, extract_leadfields, fetch_example_data
+from calibrain import LeadfieldBuilder, extract_leadfields, fetch_example_data, reduce_forward_solutions
 from calibrain.utils import get_data_path, get_leadfield_dir
 
 
@@ -166,18 +166,22 @@ tmpdir.cleanup()
 #
 # The example data are not part of the package. They are downloaded on demand
 # from the `CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_
-# repository. Getting them ready takes two independent steps:
+# repository. Getting them ready takes three independent steps:
 #
 # 1. ``fetch_example_data()`` downloads the forward solution of the ``fsaverage``
-#    template (about 36 MB) into the data root and checks its SHA-256 checksum.
-#    Nothing is downloaded if the file is already there.
-# 2. ``extract_leadfields()`` creates the leadfield files from the forward
+#    template with the full source space (about 39 MB) into the data root and
+#    checks its SHA-256 checksum. Nothing is downloaded if the file is already there.
+# 2. ``reduce_forward_solutions()`` reduces it to the 1284 sources (642 per
+#    hemisphere) that CaliBrain works with. The sources are chosen with a fixed
+#    seed, so everyone gets the same ones.
+# 3. ``extract_leadfields()`` creates the leadfield files from the reduced forward
 #    solution. They are created locally and not downloaded, because their format
 #    depends on the version of CaliBrain.
 
 fetch_example_data()  # step 1: download the forward solution
+reduce_forward_solutions("fsaverage")  # step 2: reduce it to 1284 sources
 if not (leadfield_dir / "fsaverage_free_leadfield.npz").exists():
-    extract_leadfields("fsaverage")  # step 2: create the leadfield files
+    extract_leadfields("fsaverage")  # step 3: create the leadfield files
 
 # %%
 # Now the standard ``load`` mode reads the real leadfield. For free orientation
@@ -209,8 +213,9 @@ print("source coordinates shape:", example.src_coords.shape)
 # - ``load``: standard workflow mode for leadfield files, for example the ones
 #   created from the example data in the previous section.
 #
-# For larger workflow runs, use ``fetch_example_data()`` and
-# ``extract_leadfields()`` to prepare the example data, or point
+# For larger workflow runs, use ``fetch_example_data()``,
+# ``reduce_forward_solutions()`` and ``extract_leadfields()`` to prepare the
+# example data, or point
 # ``LeadfieldBuilder`` to a directory that holds your own
 # ``*_fixed_leadfield.npz`` or ``*_free_leadfield.npz`` files. The CamCAN example
 # subjects are a separate dataset, ``fetch_example_data("camcan")``, and are

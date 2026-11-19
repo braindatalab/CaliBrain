@@ -7,7 +7,7 @@ leadfield. This tutorial runs the same chain on a real head model: the
 ``fsaverage`` template, with 1284 cortical sources and 64 EEG channels. It then
 shows what the free-orientation simulation does with the real cortical normals.
 
-The example data are downloaded on first use (about 36 MB, see
+The example data are downloaded on first use (about 39 MB, see
 :doc:`Leadfield Construction </auto_tutorials/05_leadfield_building>`), and the
 run takes about 20 seconds.
 """
@@ -16,9 +16,9 @@ run takes about 20 seconds.
 # Get the example data
 # --------------------
 #
-# Getting the data ready takes the two independent steps from the leadfield
-# tutorial: download the forward solution, then create the leadfield files from
-# it. Both are skipped when the files already exist.
+# Getting the data ready takes the three independent steps from the leadfield
+# tutorial: download the forward solution, reduce it to 1284 sources, then
+# create the leadfield files from it. Each is skipped when its files already exist.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,6 +34,7 @@ from calibrain import (
     extract_leadfields,
     fetch_example_data,
     gamma_map_sflex,
+    reduce_forward_solutions,
 )
 from calibrain.utils import get_leadfield_dir
 
@@ -41,8 +42,9 @@ RANDOM_SEED = 91
 
 leadfield_dir = get_leadfield_dir()
 fetch_example_data()  # step 1: download the forward solution
+reduce_forward_solutions("fsaverage")  # step 2: reduce it to 1284 sources
 if not (leadfield_dir / "fsaverage_free_leadfield.npz").exists():
-    extract_leadfields("fsaverage")  # step 2: create the leadfield files
+    extract_leadfields("fsaverage")  # step 3: create the leadfield files
 
 # %%
 # Load the real leadfield
@@ -270,7 +272,7 @@ print("largest relative sensor difference:", f"{np.abs(y_free - y_fixed).max() /
 # With the real ``fsaverage`` head model the workflow is the same as with the
 # synthetic one, only larger:
 #
-# - the example data were downloaded and prepared in two independent steps;
+# - the example data were downloaded and prepared in three independent steps;
 # - ``LeadfieldBuilder`` loaded a real leadfield with its coordinates, units, and
 #   cortical normals;
 # - simulation, estimation, uncertainty, and calibration ran on 1284 real source
