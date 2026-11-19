@@ -1,5 +1,5 @@
 """
-06. Sensor Simulation
+07. Sensor Simulation
 =====================
 
 This tutorial mainly explains the ``SensorSimulator`` class. It projects

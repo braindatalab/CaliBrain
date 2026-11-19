@@ -1,5 +1,5 @@
 """
-08. Source Estimation
+09. Source Estimation
 =====================
 
 This tutorial explains the ``SourceEstimator`` class.
@@ -428,4 +428,4 @@ fig.tight_layout()
 # The next tutorial takes these posterior outputs and turns them into the
 # uncertainty representations that are actually calibrated:
 #
-# - :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>`
+# - :doc:`Uncertainty Estimation </auto_tutorials/10_uncertainty_estimation>`

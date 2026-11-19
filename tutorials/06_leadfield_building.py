@@ -1,5 +1,5 @@
 """
-05. Leadfield Construction
+06. Leadfield Construction
 ==========================
 
 This tutorial mainly explains the ``LeadfieldBuilder`` class. It demonstrates
@@ -166,7 +166,9 @@ tmpdir.cleanup()
 #
 # The example data are not part of the package. They are downloaded on demand
 # from the `CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_
-# repository. Getting them ready takes three independent steps:
+# repository. Getting them ready takes three independent steps, which the previous
+# tutorial, :doc:`Preparing the Example Data </auto_tutorials/05_preparing_the_example_data>`,
+# explains one by one:
 #
 # 1. ``fetch_example_data()`` downloads the forward solution of the ``fsaverage``
 #    template with the full source space (about 39 MB) into the data root and
@@ -187,7 +189,7 @@ if not (leadfield_dir / "fsaverage_free_leadfield.npz").exists():
 # Now the standard ``load`` mode reads the real leadfield. For free orientation
 # the metadata also holds the cortical normals and the local source basis that the
 # free-orientation simulation needs. The
-# :doc:`real head model workflow </auto_tutorials/14_real_head_model_workflow>`
+# :doc:`real head model workflow </auto_tutorials/15_real_head_model_workflow>`
 # uses this leadfield for a complete simulation and calibration run.
 
 example = builder.get_leadfield(

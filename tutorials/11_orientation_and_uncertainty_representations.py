@@ -1,5 +1,5 @@
 """
-10. Orientation and Uncertainty Representations
+11. Orientation and Uncertainty Representations
 ===============================================
 
 This tutorial compares the uncertainty representations used in CaliBrain for
@@ -267,4 +267,4 @@ fig.tight_layout()
 #
 # The next tutorial applies those calibration modes explicitly:
 #
-# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>`
+# - :doc:`Calibration Methods </auto_tutorials/12_uncertainty_calibration>`

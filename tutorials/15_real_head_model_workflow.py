@@ -1,5 +1,5 @@
 """
-14. Workflow with a Real Head Model
+15. Workflow with a Real Head Model
 ===================================
 
 The previous tutorial ran the whole calibration chain on a small synthetic
@@ -8,7 +8,7 @@ leadfield. This tutorial runs the same chain on a real head model: the
 shows what the free-orientation simulation does with the real cortical normals.
 
 The example data are downloaded on first use (about 39 MB, see
-:doc:`Leadfield Construction </auto_tutorials/05_leadfield_building>`), and the
+:doc:`Preparing the Example Data </auto_tutorials/05_preparing_the_example_data>`), and the
 run takes about 20 seconds.
 """
 
@@ -16,9 +16,10 @@ run takes about 20 seconds.
 # Get the example data
 # --------------------
 #
-# Getting the data ready takes the three independent steps from the leadfield
-# tutorial: download the forward solution, reduce it to 1284 sources, then
-# create the leadfield files from it. Each is skipped when its files already exist.
+# Getting the data ready takes the three independent steps from the tutorial
+# :doc:`Preparing the Example Data </auto_tutorials/05_preparing_the_example_data>`:
+# download the forward solution, reduce it to 1284 sources, then create the leadfield
+# files from it. Each is skipped when its files already exist.
 
 import matplotlib.pyplot as plt
 import numpy as np

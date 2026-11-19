@@ -60,7 +60,7 @@ x_true[active_sources] = rng.normal(1.0, 0.2, size=(5, 1)) * erp_waveform
 #
 # In real workflows, inverse solvers such as ``gamma_map_sflex`` or ``BMN``
 # produce posterior means and covariance estimates. Those steps are covered in
-# :doc:`Source Estimation </auto_tutorials/08_source_estimation>`.
+# :doc:`Source Estimation </auto_tutorials/09_source_estimation>`.
 #
 # Here we use a simple synthetic posterior summary:
 #
@@ -84,7 +84,7 @@ x_hat = x_true + rng.normal(
 #
 # The aggregated method averages source time courses over time before checking
 # whether the true source quantity lies inside the interval. The later tutorial
-# :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>`
+# :doc:`Uncertainty Estimation </auto_tutorials/10_uncertainty_estimation>`
 # explains this in detail.
 
 nominal_coverages = np.linspace(0.0, 1.0, 11)
@@ -153,8 +153,8 @@ fig.tight_layout()
 # tutorials unpack each stage of the actual workflow:
 #
 # - :doc:`Source Simulation </auto_tutorials/04_source_simulation>`
-# - :doc:`Source Estimation </auto_tutorials/08_source_estimation>`
-# - :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>`
-# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>`
-# - :doc:`End-to-End Workflow </auto_tutorials/13_end_to_end_workflow>`
-# - :doc:`Workflow with a Real Head Model </auto_tutorials/14_real_head_model_workflow>`, which runs the same chain on real example data
+# - :doc:`Source Estimation </auto_tutorials/09_source_estimation>`
+# - :doc:`Uncertainty Estimation </auto_tutorials/10_uncertainty_estimation>`
+# - :doc:`Calibration Methods </auto_tutorials/12_uncertainty_calibration>`
+# - :doc:`End-to-End Workflow </auto_tutorials/14_end_to_end_workflow>`
+# - :doc:`Workflow with a Real Head Model </auto_tutorials/15_real_head_model_workflow>`, which runs the same chain on real example data

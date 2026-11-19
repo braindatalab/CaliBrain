@@ -122,18 +122,34 @@ for later solver comparison and calibration analysis.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Follows the example data from the download through the reduction to 1284 sources to the leadfield files, checks that they are ready, and shows how to prepare your own forward solutions.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_05_preparing_the_example_data_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/05_preparing_the_example_data`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">05. Preparing the Example Data</div>
+    </div>
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Uses LeadfieldBuilder in random, simulate, and load modes and explains how source and sensor units relate through the forward model.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_05_leadfield_building_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_06_leadfield_building_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/05_leadfield_building`
+  :doc:`/auto_tutorials/06_leadfield_building`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">05. Leadfield Construction</div>
+      <div class="sphx-glr-thumbnail-title">06. Leadfield Construction</div>
     </div>
 
 .. raw:: html
@@ -142,28 +158,28 @@ for later solver comparison and calibration analysis.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_06_sensor_simulation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_07_sensor_simulation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/06_sensor_simulation`
+  :doc:`/auto_tutorials/07_sensor_simulation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">06. Sensor Simulation</div>
+      <div class="sphx-glr-thumbnail-title">07. Sensor Simulation</div>
     </div>
 
     <div class="sphx-glr-thumbcontainer" tooltip="Uses DataGenerator as the batch orchestration layer across simulation, leadfield loading, sensor generation, source estimation, and run-wise metadata collection.">
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_07_data_generator_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_08_data_generator_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/07_data_generator`
+  :doc:`/auto_tutorials/08_data_generator`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">07. Data Generation</div>
+      <div class="sphx-glr-thumbnail-title">08. Data Generation</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -191,14 +207,14 @@ converted into the uncertainty objects that CaliBrain evaluates.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_08_source_estimation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_09_source_estimation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/08_source_estimation`
+  :doc:`/auto_tutorials/09_source_estimation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">08. Source Estimation</div>
+      <div class="sphx-glr-thumbnail-title">09. Source Estimation</div>
     </div>
 
 .. raw:: html
@@ -207,14 +223,14 @@ converted into the uncertainty objects that CaliBrain evaluates.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_09_uncertainty_estimation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_uncertainty_estimation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/09_uncertainty_estimation`
+  :doc:`/auto_tutorials/10_uncertainty_estimation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">09. Uncertainty Estimation</div>
+      <div class="sphx-glr-thumbnail-title">10. Uncertainty Estimation</div>
     </div>
 
 .. raw:: html
@@ -223,14 +239,14 @@ converted into the uncertainty objects that CaliBrain evaluates.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_orientation_and_uncertainty_representations_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_11_orientation_and_uncertainty_representations_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/10_orientation_and_uncertainty_representations`
+  :doc:`/auto_tutorials/11_orientation_and_uncertainty_representations`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">10. Orientation and Uncertainty Representations</div>
+      <div class="sphx-glr-thumbnail-title">11. Orientation and Uncertainty Representations</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -258,14 +274,14 @@ calibration behavior is summarized quantitatively.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_11_uncertainty_calibration_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_12_uncertainty_calibration_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/11_uncertainty_calibration`
+  :doc:`/auto_tutorials/12_uncertainty_calibration`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">11. Calibration Methods</div>
+      <div class="sphx-glr-thumbnail-title">12. Calibration Methods</div>
     </div>
 
 .. raw:: html
@@ -274,14 +290,14 @@ calibration behavior is summarized quantitatively.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_12_metric_evaluation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_13_metric_evaluation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/12_metric_evaluation`
+  :doc:`/auto_tutorials/13_metric_evaluation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">12. Metric Evaluation</div>
+      <div class="sphx-glr-thumbnail-title">13. Metric Evaluation</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -308,14 +324,14 @@ These tutorials combine the main stages into runnable workflows: one fully synth
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_13_end_to_end_workflow_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_14_end_to_end_workflow_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/13_end_to_end_workflow`
+  :doc:`/auto_tutorials/14_end_to_end_workflow`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">13. End-to-End Workflow</div>
+      <div class="sphx-glr-thumbnail-title">14. End-to-End Workflow</div>
     </div>
 
 .. raw:: html
@@ -324,14 +340,14 @@ These tutorials combine the main stages into runnable workflows: one fully synth
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_14_real_head_model_workflow_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_15_real_head_model_workflow_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/14_real_head_model_workflow`
+  :doc:`/auto_tutorials/15_real_head_model_workflow`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">14. Workflow with a Real Head Model</div>
+      <div class="sphx-glr-thumbnail-title">15. Workflow with a Real Head Model</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -348,13 +364,14 @@ These tutorials combine the main stages into runnable workflows: one fully synth
   /auto_tutorials/02_solver_families_and_uncertainty_behavior
   /auto_tutorials/03_quick_start
   /auto_tutorials/04_source_simulation
-  /auto_tutorials/05_leadfield_building
-  /auto_tutorials/06_sensor_simulation
-  /auto_tutorials/07_data_generator
-  /auto_tutorials/08_source_estimation
-  /auto_tutorials/09_uncertainty_estimation
-  /auto_tutorials/10_orientation_and_uncertainty_representations
-  /auto_tutorials/11_uncertainty_calibration
-  /auto_tutorials/12_metric_evaluation
-  /auto_tutorials/13_end_to_end_workflow
-  /auto_tutorials/14_real_head_model_workflow
+  /auto_tutorials/05_preparing_the_example_data
+  /auto_tutorials/06_leadfield_building
+  /auto_tutorials/07_sensor_simulation
+  /auto_tutorials/08_data_generator
+  /auto_tutorials/09_source_estimation
+  /auto_tutorials/10_uncertainty_estimation
+  /auto_tutorials/11_orientation_and_uncertainty_representations
+  /auto_tutorials/12_uncertainty_calibration
+  /auto_tutorials/13_metric_evaluation
+  /auto_tutorials/14_end_to_end_workflow
+  /auto_tutorials/15_real_head_model_workflow
