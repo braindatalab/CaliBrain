@@ -267,4 +267,4 @@ fig.tight_layout()
 #
 # The next tutorial applies those calibration modes explicitly:
 #
-# - :doc:`Calibration Methods </auto_tutorials/10_uncertainty_calibration>`
+# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>`

@@ -330,5 +330,5 @@ fig.tight_layout()
 #   calibration curve;
 # - :doc:`Uncertainty estimation </auto_tutorials/09_uncertainty_estimation>`
 #   builds the uncertainty objects used in practice;
-# - :doc:`Calibration methods </auto_tutorials/10_uncertainty_calibration>`
+# - :doc:`Calibration methods </auto_tutorials/11_uncertainty_calibration>`
 #   demonstrates recalibration workflows.

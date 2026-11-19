@@ -37,14 +37,14 @@
 
 .. rubric:: Examples using ``{{ fullname }}``
 
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.workflows.calibration.run_calibration" %}
 
 .. rubric:: Examples using ``{{ fullname }}``
 
-- :doc:`/auto_tutorials/10_uncertainty_calibration`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/11_uncertainty_calibration`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.workflows.calibration.build_uncertainty_components" %}
 

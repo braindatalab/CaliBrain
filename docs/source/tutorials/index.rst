@@ -258,14 +258,14 @@ calibration behavior is summarized quantitatively.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_10_uncertainty_calibration_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_11_uncertainty_calibration_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/10_uncertainty_calibration`
+  :doc:`/auto_tutorials/11_uncertainty_calibration`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">10. Calibration Methods</div>
+      <div class="sphx-glr-thumbnail-title">11. Calibration Methods</div>
     </div>
 
 .. raw:: html
@@ -274,14 +274,14 @@ calibration behavior is summarized quantitatively.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_11_metric_evaluation_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_12_metric_evaluation_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/11_metric_evaluation`
+  :doc:`/auto_tutorials/12_metric_evaluation`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">11. Metric Evaluation</div>
+      <div class="sphx-glr-thumbnail-title">12. Metric Evaluation</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -294,7 +294,7 @@ calibration behavior is summarized quantitatively.
 
   <h2 class="tutorial-gallery-section">Integrated Workflow</h2>
 
-This tutorial combines the main stages into one compact runnable workflow.
+These tutorials combine the main stages into runnable workflows: one fully synthetic, and one with the real ``fsaverage`` head model.
 
 .. raw:: html
 
@@ -308,14 +308,30 @@ This tutorial combines the main stages into one compact runnable workflow.
 
 .. only:: html
 
-  .. image:: /auto_tutorials/images/thumb/sphx_glr_12_end_to_end_workflow_thumb.png
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_13_end_to_end_workflow_thumb.png
     :alt:
 
-  :doc:`/auto_tutorials/12_end_to_end_workflow`
+  :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">12. End-to-End Workflow</div>
+      <div class="sphx-glr-thumbnail-title">13. End-to-End Workflow</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Runs the calibration chain on the real fsaverage head model (1284 cortical sources, 64 EEG channels), downloaded as example data, and simulates free-orientation activity along the real cortical normals.">
+
+.. only:: html
+
+  .. image:: /auto_tutorials/images/thumb/sphx_glr_14_real_head_model_workflow_thumb.png
+    :alt:
+
+  :doc:`/auto_tutorials/14_real_head_model_workflow`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">14. Workflow with a Real Head Model</div>
     </div>
 
 .. thumbnail-parent-div-close
@@ -337,7 +353,8 @@ This tutorial combines the main stages into one compact runnable workflow.
   /auto_tutorials/07_data_generator
   /auto_tutorials/08_source_estimation
   /auto_tutorials/09_uncertainty_estimation
-  /auto_tutorials/10_uncertainty_calibration
-  /auto_tutorials/11_metric_evaluation
-  /auto_tutorials/12_end_to_end_workflow
   /auto_tutorials/10_orientation_and_uncertainty_representations
+  /auto_tutorials/11_uncertainty_calibration
+  /auto_tutorials/12_metric_evaluation
+  /auto_tutorials/13_end_to_end_workflow
+  /auto_tutorials/14_real_head_model_workflow

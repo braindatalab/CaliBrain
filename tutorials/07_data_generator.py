@@ -242,3 +242,6 @@ fig.tight_layout()
 #
 # The next workflow stages consume these repeated runs to build uncertainty
 # summaries and calibration analyses.
+
+leadfield_dir.cleanup()
+tmpdir.cleanup()

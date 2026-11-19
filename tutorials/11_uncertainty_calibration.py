@@ -1,5 +1,5 @@
 """
-10. Calibration Methods
+11. Calibration Methods
 =======================
 
 This tutorial explains CaliBrain's calibration step through the high-level
@@ -314,7 +314,7 @@ fig.tight_layout()
 # This is what lets the workflows study recalibration transfer across
 # conditions rather than mixing up transfer effects with a different
 # calibration algorithm. Broader evaluation choices are covered in
-# :doc:`Metric Evaluation </auto_tutorials/11_metric_evaluation>`.
+# :doc:`Metric Evaluation </auto_tutorials/12_metric_evaluation>`.
 
 # %%
 # Plot ``precal`` and ``post_oracle``

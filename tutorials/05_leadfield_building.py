@@ -14,6 +14,10 @@ information, and forward-solution configuration. To keep this tutorial
 executable during documentation builds, the simulate example uses a small
 subclass that returns a deterministic synthetic leadfield while preserving the
 same ``get_leadfield(..., retrieve_mode="simulate")`` interface.
+
+The last section loads real example data. It downloads the forward solution of
+the ``fsaverage`` template (about 36 MB, once) and creates the leadfield files
+from it.
 """
 
 
@@ -44,7 +48,7 @@ import numpy as np
 from mne.io.constants import FIFF
 from tempfile import TemporaryDirectory
 
-from calibrain import LeadfieldBuilder
+from calibrain import LeadfieldBuilder, extract_leadfields, fetch_example_data
 from calibrain.utils import get_data_path
 
 
@@ -55,8 +59,9 @@ RANDOM_SEED = 23
 # ----------------------------------
 #
 # CaliBrain resolves local datasets with ``get_data_path``. With no argument,
-# it uses ``CALIBRAIN_DATA`` if the environment variable is set, otherwise the
-# repository-level ``data`` directory.
+# it uses the ``CALIBRAIN_DATA`` environment variable if it is set. Otherwise it
+# uses ``<repository>/data`` in a source checkout, and a per-user directory (for
+# example ``~/.cache/calibrain``) for an installed package.
 
 data_root = get_data_path()
 leadfield_dir = data_root / "1284src_leadfield"
@@ -153,6 +158,45 @@ loaded = temp_builder.get_leadfield(
 
 print("loaded shape:", loaded.leadfield.shape)
 print("loaded equals simulate-like:", np.allclose(loaded.leadfield, simulated_leadfield))
+tmpdir.cleanup()
+
+# %%
+# Load the example data
+# ---------------------
+#
+# The example data are not part of the package. They are downloaded on demand
+# from the `CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_
+# repository. Getting them ready takes two independent steps:
+#
+# 1. ``fetch_example_data()`` downloads the forward solution of the ``fsaverage``
+#    template (about 36 MB) into the data root and checks its SHA-256 checksum.
+#    Nothing is downloaded if the file is already there.
+# 2. ``extract_leadfields()`` creates the leadfield files from the forward
+#    solution. They are created locally and not downloaded, because their format
+#    depends on the version of CaliBrain.
+
+fetch_example_data()  # step 1: download the forward solution
+if not (leadfield_dir / "fsaverage_free_leadfield.npz").exists():
+    extract_leadfields("fsaverage")  # step 2: create the leadfield files
+
+# %%
+# Now the standard ``load`` mode reads the real leadfield. For free orientation
+# the metadata also holds the cortical normals and the local source basis that the
+# free-orientation simulation needs. The
+# :doc:`real head model workflow </auto_tutorials/14_real_head_model_workflow>`
+# uses this leadfield for a complete simulation and calibration run.
+
+example = builder.get_leadfield(
+    subject="fsaverage",
+    orientation_type="free",
+    retrieve_mode="load",
+    return_metadata=True,
+)
+
+print("example leadfield shape:", example.leadfield.shape)
+print("cortical normals shape:", example.cortical_normals.shape)
+print("Q_basis shape:", example.Q_basis.shape)
+print("source coordinates shape:", example.src_coords.shape)
 
 # %%
 # Summary
@@ -162,8 +206,12 @@ print("loaded equals simulate-like:", np.allclose(loaded.leadfield, simulated_le
 #
 # - ``random``: fast synthetic matrices for testing shape logic;
 # - ``simulate``: full MNE forward-model construction in production;
-# - ``load``: standard workflow mode for precomputed leadfield datasets.
+# - ``load``: standard workflow mode for leadfield files, for example the ones
+#   created from the example data in the previous section.
 #
-# For larger workflow runs, use ``get_data_path`` to locate the local dataset
-# root and point ``LeadfieldBuilder`` to the directory containing
-# ``*_fixed_leadfield.npz`` or ``*_free_leadfield.npz`` files.
+# For larger workflow runs, use ``fetch_example_data()`` and
+# ``extract_leadfields()`` to prepare the example data, or point
+# ``LeadfieldBuilder`` to a directory that holds your own
+# ``*_fixed_leadfield.npz`` or ``*_free_leadfield.npz`` files. The CamCAN example
+# subjects are a separate dataset, ``fetch_example_data("camcan")``, and are
+# subject to the CamCAN terms (see the Dataset Notice).

@@ -155,5 +155,6 @@ fig.tight_layout()
 # - :doc:`Source Simulation </auto_tutorials/04_source_simulation>`
 # - :doc:`Source Estimation </auto_tutorials/08_source_estimation>`
 # - :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>`
-# - :doc:`Calibration Methods </auto_tutorials/10_uncertainty_calibration>`
-# - :doc:`End-to-End Workflow </auto_tutorials/12_end_to_end_workflow>`
+# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>`
+# - :doc:`End-to-End Workflow </auto_tutorials/13_end_to_end_workflow>`
+# - :doc:`Workflow with a Real Head Model </auto_tutorials/14_real_head_model_workflow>`, which runs the same chain on real example data

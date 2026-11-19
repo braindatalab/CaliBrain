@@ -150,4 +150,5 @@ fig.tight_layout()
 # - :doc:`Quick Start </auto_tutorials/03_quick_start>` for a minimal coverage example,
 # - :doc:`Source Simulation </auto_tutorials/04_source_simulation>` for the synthetic source model,
 # - :doc:`Uncertainty Estimation </auto_tutorials/09_uncertainty_estimation>` for the uncertainty objects,
-# - :doc:`Calibration Methods </auto_tutorials/10_uncertainty_calibration>` for recalibration workflows.
+# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>` for recalibration workflows.
+# - :doc:`Workflow with a Real Head Model </auto_tutorials/14_real_head_model_workflow>` for the whole chain on a real head model.

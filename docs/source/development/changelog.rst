@@ -31,7 +31,9 @@ Version 1.0.4 (unreleased)
 *   [BUGFIX] Fixed an undefined ``STRIP_SIZE`` in ``viz/plot_overview_by_nnz.py``.
 *   [BUGFIX] Removed the duplicate repository-root ``__init__.py``, which could prevent ``pytest`` from collecting the test suite.
 *   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, the posterior-summary files, and package metadata.
-*   [DOCS] Updated tutorials 04, 06, 08, 09, and 11 for the cortical-normal simulation interface.
+*   [DOCS] Updated tutorials 04, 06, 08, 09, and 12 (metric evaluation) for the cortical-normal simulation interface.
+*   [DOCS] Tutorial 05 now downloads the example data, creates the leadfield files from it, and loads them. Its description of the data directory was corrected, and tutorials 05 and 07 clean up their temporary folders.
+*   [DOCS] Added tutorial 14, which runs the simulation, estimation, and calibration chain on the real ``fsaverage`` head model from the example data and shows free-orientation activity along the real cortical normals. The tutorials with a duplicate number 10 were renumbered: calibration is now 11, metric evaluation 12, and the end-to-end workflow 13. Links to the old tutorial page names change.
 *   [DOCS] Expanded the installation guides (conda, Windows, optional extras, upgrading) and documented the ``CALIBRAIN_DATA`` data directory.
 *   [DOCS] Added a release checklist for maintainers and a ``SECURITY.md``.
 *   [DOCS] Added Documentation and Citation sections to the README, switched the pipeline images to PNG, updated the wording and author order for uncertainty quantification, and made the documentation default to the ``stable`` version.

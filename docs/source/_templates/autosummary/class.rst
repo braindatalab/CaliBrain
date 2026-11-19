@@ -19,21 +19,21 @@
 .. rubric:: Examples using ``{{ fullname }}``
 
 - :doc:`/auto_tutorials/04_source_simulation`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.LeadfieldBuilder" %}
 
 .. rubric:: Examples using ``{{ fullname }}``
 
 - :doc:`/auto_tutorials/05_leadfield_building`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.SensorSimulator" %}
 
 .. rubric:: Examples using ``{{ fullname }}``
 
 - :doc:`/auto_tutorials/06_sensor_simulation`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.DataGenerator" %}
 
@@ -46,7 +46,7 @@
 .. rubric:: Examples using ``{{ fullname }}``
 
 - :doc:`/auto_tutorials/08_source_estimation`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.UncertaintyEstimator" %}
 
@@ -54,22 +54,22 @@
 
 - :doc:`/auto_tutorials/03_quick_start`
 - :doc:`/auto_tutorials/09_uncertainty_estimation`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 - :doc:`/auto_tutorials/10_orientation_and_uncertainty_representations`
 
 {% elif fullname == "calibrain.UncertaintyCalibrator" %}
 
 .. rubric:: Examples using ``{{ fullname }}``
 
-- :doc:`/auto_tutorials/10_uncertainty_calibration`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/11_uncertainty_calibration`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% elif fullname == "calibrain.MetricEvaluator" %}
 
 .. rubric:: Examples using ``{{ fullname }}``
 
-- :doc:`/auto_tutorials/11_metric_evaluation`
-- :doc:`/auto_tutorials/12_end_to_end_workflow`
+- :doc:`/auto_tutorials/12_metric_evaluation`
+- :doc:`/auto_tutorials/13_end_to_end_workflow`
 
 {% endif %}
 
