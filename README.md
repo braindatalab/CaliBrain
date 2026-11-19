@@ -10,9 +10,9 @@
 [![Tests](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml/badge.svg)](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21261767.svg)](https://doi.org/10.5281/zenodo.21261767)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20683761.svg)](https://doi.org/10.5281/zenodo.20683761)
 
-CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging.
+CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging.
 
 ## Overview
 
@@ -38,24 +38,24 @@ documentation on Read the Docs.
 
 ## Citation
 
-If you use CaliBrain in academic work, please cite the software archive:
+If you use CaliBrain in academic work, please cite the software archive. The DOI below
+always points to the latest version; Zenodo also lists a DOI for every release.
 
 ```text
 Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
-CaliBrain: A Python toolbox for uncertainty quantification and calibration in
-EEG/MEG inverse source imaging (v1.0.3). Zenodo.
-https://doi.org/10.5281/zenodo.21261767
+CaliBrain: A Python toolbox for uncertainty quantification, calibration, and
+benchmarking in Bayesian M/EEG inverse source imaging. Zenodo.
+https://doi.org/10.5281/zenodo.20683761
 ```
 
 ```bibtex
 @software{calibrain,
-  title = {CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging},
+  title = {CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging},
   author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail T.},
-  version = {1.0.3},
   year = {2026},
   publisher = {Zenodo},
-  doi = {10.5281/zenodo.21261767},
-  url = {https://doi.org/10.5281/zenodo.21261767}
+  doi = {10.5281/zenodo.20683761},
+  url = {https://doi.org/10.5281/zenodo.20683761}
 }
 ```
 

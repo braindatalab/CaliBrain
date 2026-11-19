@@ -1,14 +1,15 @@
 cff-version: 1.2.0
 message: "If you use CaliBrain, please cite this software."
-title: "CaliBrain"
+title: "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging"
 version: "1.0.3"
 date-released: 2026-07-08
 type: software
 license: "BSD-3-Clause"
-doi: 10.5281/zenodo.21261767
+doi: 10.5281/zenodo.20683761
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.21261767
+    value: 10.5281/zenodo.20683761
+    description: "Concept DOI of the Zenodo archive; it always resolves to the latest version."
 authors:
   - family-names: "Orabe"
     given-names: "Mohammad"
@@ -28,10 +29,13 @@ authors:
     orcid: "https://orcid.org/0000-0002-4141-3544"
 repository-code: "https://github.com/braindatalab/CaliBrain"
 url: "https://calibrain.readthedocs.io/"
-abstract: "CaliBrain is a Python framework for uncertainty quantification and calibration in EEG/MEG inverse source imaging."
+abstract: "CaliBrain is a Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging."
 keywords:
   - EEG
   - MEG
-  - uncertainty estimation
-  - calibration
+  - inverse problem
   - inverse source imaging
+  - uncertainty quantification
+  - calibration
+  - benchmarking
+  - Bayesian

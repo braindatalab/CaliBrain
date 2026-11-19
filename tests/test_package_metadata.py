@@ -70,3 +70,42 @@ def test_documentation_loads_its_version_list_from_the_stable_address():
 
     match = re.search(r'^switcher_json_url = "([^"]+)"', conf, re.M)
     assert match and match.group(1) == "https://calibrain.readthedocs.io/stable/_static/switcher.json"
+
+
+CANONICAL_TITLE = (
+    "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and "
+    "benchmarking in Bayesian M/EEG inverse source imaging"
+)
+AUTHORS = ["Mohammad Orabe", "Srikantan Nagarajan", "Stefan Haufe", "Ismail Huseynov"]
+
+
+def test_title_and_description_are_the_same_everywhere():
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    assert f'description = "{CANONICAL_TITLE}"' in pyproject
+    assert f'title: "{CANONICAL_TITLE}"' in (ROOT / "CITATION.cff").read_text()
+    assert f"{CANONICAL_TITLE}.\n" in (ROOT / "README.md").read_text()
+    assert f"{CANONICAL_TITLE}.\n" in (ROOT / "docs/source/index.rst").read_text()
+    abstract = CANONICAL_TITLE.replace("CaliBrain: A", "CaliBrain is a") + "."
+    assert f'abstract: "{abstract}"' in (ROOT / "CITATION.cff").read_text()
+    assert f":description: {abstract}" in (ROOT / "docs/source/index.rst").read_text()
+
+
+def test_authors_are_listed_in_the_same_order_everywhere():
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    names = re.findall(r'\{name = "([^"]+)"', pyproject.split("authors = [", 1)[1].split("]", 1)[0])
+    assert names == AUTHORS
+
+    citation = (ROOT / "CITATION.cff").read_text()
+    family = re.findall(r'family-names: "([^"]+)"', citation)
+    assert family == [name.split()[-1] for name in AUTHORS]
+
+    license_line = (ROOT / "LICENSE").read_text().splitlines()[2]
+    assert license_line == "Copyright (c) 2025, " + ", ".join(AUTHORS)
+    assert f"author = '{', '.join(AUTHORS)}'" in (ROOT / "docs/source/conf.py").read_text()
+
+
+def test_citation_uses_the_zenodo_concept_doi_that_always_points_to_the_latest_version():
+    for path in ("CITATION.cff", "README.md", "docs/source/index.rst", "docs/source/cite/index.rst"):
+        text = (ROOT / path).read_text()
+        assert "10.5281/zenodo.20683761" in text, path
+        assert "zenodo.21261767" not in text, path  # the DOI of v1.0.3 only

@@ -156,12 +156,33 @@ publishing:
    ``git push origin <release commit>:stable``). New tags are created as inactive
    versions, so also activate the version ``vX.Y.Z`` in the Read the Docs project
    (Versions), which builds it.
-7. When Zenodo has created the new version, update the DOI in ``CITATION.cff``,
-   ``README.md``, ``docs/source/cite/index.rst``, and ``docs/source/index.rst``.
+7. When Zenodo has created the new version, check its record: the title, description,
+   keywords, and author order must agree with the repository (see "Name, description,
+   and authors" below). The DOI in ``CITATION.cff``, ``README.md``, and the
+   documentation is the Zenodo concept DOI, which always points to the latest version,
+   so it does not change from release to release.
 8. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
    check the Read the Docs ``stable`` build and the Zenodo record.
 9. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
    every documented version against the live site (see below).
+
+Name, description, and authors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The same sentence describes CaliBrain everywhere:
+
+   CaliBrain: A Python toolbox for uncertainty quantification, calibration, and
+   benchmarking in Bayesian M/EEG inverse source imaging
+
+It is the ``description`` in ``pyproject.toml`` (which becomes the PyPI summary), the
+``title`` in ``CITATION.cff``, and the first line of ``README.md`` and of the
+documentation landing page. Set it by hand where no file controls it: the GitHub
+repository description (without the ``CaliBrain:`` prefix is fine, but keep the words),
+the title of the Zenodo record, and the description of the Read the Docs project. The
+authors are always listed in the order Mohammad Orabe, Srikantan Nagarajan, Stefan
+Haufe, Ismail Huseynov: in ``pyproject.toml``, ``CITATION.cff``, ``LICENSE``, the
+documentation, and on Zenodo. A test (``tests/test_package_metadata.py``) checks the
+files in the repository.
 
 .. _doc-version-switcher:
 

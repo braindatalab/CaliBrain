@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "calibrain"
 dynamic = ["version"]
-description = "CaliBrain: A Python toolbox for uncertainty quantification and calibration in EEG/MEG inverse source imaging"
+description = "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
     {name = "Srikantan Nagarajan", email = "Srikantan.Nagarajan@ucsf.edu"},
-    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
-    {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
+    {name = "Stefan Haufe", email = "haufe@tu-berlin.de"},
+    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"}
 ]
-keywords = ["EEG", "MEG", "inverse problem", "source imaging", "uncertainty quantification", "calibration", "Bayesian"]
+keywords = ["EEG", "MEG", "inverse problem", "inverse source imaging", "uncertainty quantification", "calibration", "benchmarking", "Bayesian"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",

@@ -5,7 +5,7 @@ Documentation overview
 ======================
 
 This section provides the main user-facing documentation for CaliBrain. It is
-organized around the current workflow for uncertainty estimation and
+organized around the current workflow for uncertainty quantification and
 calibration in EEG/MEG inverse source imaging.
 
 If you have not installed CaliBrain yet, start with the pages in
