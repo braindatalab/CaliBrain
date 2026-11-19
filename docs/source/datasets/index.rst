@@ -121,16 +121,24 @@ The dataset layout distinguishes between two related but different objects:
 Full versus reduced representations
 -----------------------------------
 
-The local data may also distinguish between **full** and **reduced**
-representations:
+The data directory holds three stages of the same data (see
+:term:`forward solution`, :term:`full source space`, and :term:`reduced source space`
+in the :doc:`glossary <../documentation/glossary>`):
 
-- **Full forward solution**: retains the original forward-model object and
-  associated metadata. It is appropriate when source-space geometry,
-  orientation structure, or coordinate recovery is needed.
+- **Full forward solutions** (``fwd/``): the downloaded MNE forward solutions with
+  the full source space (about 5100 sources). They are the input of the reduction.
 
-- **Reduced leadfield**: stores only the numerical leadfield needed by the
-  workflow. It is smaller and faster to load than the full forward solution and
-  is intended for routine simulation and source-estimation runs.
+- **Reduced forward solutions** (``1284src_fwd/``): the same forward solutions
+  restricted to 1284 sources (642 per hemisphere). They keep the MNE forward-solution
+  format, with the source-space geometry and the sensor information, and they are the
+  input of the leadfield extraction. The workflows also read them for the source
+  coordinates.
+
+- **Leadfield files** (``1284src_leadfield/``): the ``.npz`` files that
+  ``LeadfieldBuilder`` loads. They hold only what the simulation and the solvers
+  need: the leadfield, the sensor units, the source coordinates, and for free
+  orientation the cortical normals. They are smaller and faster to load than a
+  forward solution.
 
 Modality-specific overview
 --------------------------

@@ -80,7 +80,7 @@ html_theme_options = {
     "navigation_depth": 3,
     "show_toc_level": 3,
     "collapse_navigation": False,
-    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+    "secondary_sidebar_items": ["page-toc"],
     "logo": {
         "image_light": "_static/caliBrain.png",
         "image_dark": "_static/caliBrain.png",
@@ -141,3 +141,7 @@ intersphinx_mapping = {
 
 html_title = "CaliBrain Documentation"
 html_short_title = "CaliBrain"
+html_show_sphinx = False  # no "Created using Sphinx" line in the footer
+# Do not publish the reStructuredText sources (_sources/*.txt): search engines index them.
+html_copy_source = False
+html_show_sourcelink = False

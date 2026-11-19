@@ -186,7 +186,7 @@ fig.tight_layout()
 #   gamma-MAP behavior with extended support for uncertainty analysis.
 #
 # These solver families are compared later at the API level in
-# :doc:`Source Estimation </auto_tutorials/08_source_estimation>`.
+# :doc:`Source Estimation </auto_tutorials/09_source_estimation>`.
 
 
 # %%

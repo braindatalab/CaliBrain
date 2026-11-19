@@ -1,5 +1,5 @@
 """
-09. Uncertainty Estimation
+10. Uncertainty Estimation
 ==========================
 
 This tutorial explains the ``UncertaintyEstimator`` class.
@@ -833,4 +833,4 @@ fig.tight_layout()
 # The next tutorial shows how the calibration stage acts on these curves
 # without changing the underlying uncertainty representation:
 #
-# - :doc:`Calibration Methods </auto_tutorials/11_uncertainty_calibration>`
+# - :doc:`Calibration Methods </auto_tutorials/12_uncertainty_calibration>`
