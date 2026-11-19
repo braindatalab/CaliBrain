@@ -4,10 +4,9 @@
 Changelog
 =========
 
-This document records notable changes to the CaliBrain package.
-
-.. note::
-    This page summarizes notable package, workflow, and documentation changes.
+The notable changes of every release, newest first. Entries are tagged ``[FEATURE]``,
+``[ENHANCEMENT]``, ``[BUGFIX]``, ``[BREAKING]``, ``[DOCS]``, ``[TEST]``, or ``[CI]``;
+``[BREAKING]`` entries need a change in user code or in existing data files.
 
 Version 1.0.4 (unreleased)
 --------------------------

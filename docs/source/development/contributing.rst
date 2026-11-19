@@ -1,138 +1,131 @@
 .. meta::
-   :description: Learn how to contribute code, tests, documentation, bug reports, and workflow improvements to CaliBrain.
+   :description: How to report bugs, set up a development environment, make a change, and submit a pull request to CaliBrain, with the maintainer checklists for releases and example data.
 
 Contributing
 ============
 
-This page describes how to contribute to CaliBrain development. For the
-repository-level entry point used by GitHub and package reviewers, see
-``CONTRIBUTING.md`` in the repository root.
+Changes are made on a branch and submitted as a pull request against the ``dev``
+branch. This page lists the steps. ``CONTRIBUTING.md`` in the repository root is the
+short version for GitHub. How the code and the tests are organized is described in the
+:doc:`Development Guide <index>`.
 
-Ways to contribute
-------------------
+Reporting a bug or proposing a change
+-------------------------------------
 
-Contributions are welcome in several forms:
+Open an issue at https://github.com/braindatalab/CaliBrain/issues.
 
-- bug reports and bug fixes;
-- documentation improvements;
-- tests for core package functionality;
-- workflow and API improvements;
-- packaging and release infrastructure improvements.
+For a bug, include:
 
-Before you start
-----------------
+- the CaliBrain version (``python -c "import calibrain; print(calibrain.__version__)"``),
+  the Python version, and the operating system;
+- a short script that reproduces the problem, and the complete traceback.
 
-Before opening a pull request:
+Open an issue before you start on a larger change, for example a new solver, a
+different signature of a public function, or a change of a file format. Then the design
+can be discussed before you write the code.
 
-- check whether a related issue already exists;
-- open an issue first for substantial changes;
-- keep changes focused on one problem or one feature;
-- update documentation when user-facing behavior changes.
+Setting up
+----------
 
-Development setup
------------------
-
-Clone the repository:
+CaliBrain needs Python 3.10 or newer. Clone the repository and install it in editable
+mode with the development and documentation extras. With ``venv`` (on Windows, activate
+with ``.venv\Scripts\Activate.ps1``):
 
 .. code-block:: bash
 
    git clone https://github.com/braindatalab/CaliBrain.git
    cd CaliBrain
-
-Create and activate an isolated environment. Either a virtual environment or a
-conda environment is fine. One minimal ``venv``-based setup is (on Windows,
-activate with ``.venv\Scripts\Activate.ps1``):
-
-.. code-block:: bash
-
    python -m venv .venv
    source .venv/bin/activate
-   python -m pip install --upgrade pip
-
-Install CaliBrain in editable mode with development and documentation extras:
-
-.. code-block:: bash
-
    python -m pip install -e ".[dev,docs]"
 
-Create a working branch
------------------------
-
-Create a branch for your change:
+With conda, ``environment.yml`` creates an environment with Python 3.11 and ``pip``:
 
 .. code-block:: bash
 
-   git checkout -b feature/short-description
+   conda env create -f environment.yml
+   conda activate calibrain
+   python -m pip install -e ".[dev,docs]"
 
-Use a separate branch for each independent change.
+Most tests run without data. Some tests and the tutorials 05, 06, and 15 use the example
+data. To prepare it, see :doc:`../datasets/index`.
 
-Coding expectations
--------------------
+Branches and commits
+--------------------
 
-Contributions should follow the current package conventions:
+Start from an up-to-date ``dev`` and use one branch per change:
 
-- keep changes small and targeted;
-- preserve the current public workflow unless the change is explicitly intended
-  to modify it;
-- use clear names for variables, functions, and classes;
-- write NumPy-style docstrings for public functions and classes;
-- add type hints when they improve clarity;
-- prefer deterministic examples and fixed random seeds in tutorials and tests.
+.. code-block:: bash
 
-Testing and linting
--------------------
+   git switch dev
+   git pull
+   git switch -c feature/short-description
 
-Run the relevant tests for the code you changed. Prefer running the smallest
-relevant subset first and then the whole suite:
+Name branches ``feature/...``, ``fix/...``, ``docs/...``, or ``refactor/...``. Start
+every commit message with its type, as in the history of the repository: ``feat:``,
+``fix:``, ``docs:``, ``refactor:``, ``test:``, ``ci:``, or ``chore:``. Then write a short
+summary in the imperative, for example ``fix: keep the source order in the posterior
+summary``. If the reason for a change is not obvious, explain it in the body of the message.
+
+Checks before you open a pull request
+-------------------------------------
 
 .. code-block:: bash
 
    python -m pytest tests/
-   python -m pytest tests/ --cov=calibrain
    ruff check .
+   cd docs && make html SPHINXOPTS="-W --keep-going"
 
-Tests that need the example forward-model files (see :doc:`../datasets/index`)
-are skipped when the files are not available. If you add or change public
-behavior, add or update tests.
+- ``pytest`` runs the test suite. Add or update tests for every change of behavior. The
+  rules for tests are in the :doc:`Development Guide <index>`.
+- ``ruff`` finds syntax errors and undefined names.
+- The documentation build with ``-W`` turns warnings into errors, as on Read the Docs.
+  It also runs the tutorials, so a tutorial that fails fails the build. Build the
+  documentation whenever you change a public function, a workflow, or a tutorial, and
+  update the pages that describe it in the same pull request.
 
-Documentation
--------------
+The same checks run on GitHub for every pull request (``tests.yml`` and
+``docs-check.yml``; see the :doc:`Development Guide <index>`), on Python 3.10 to 3.14 and
+with the lowest allowed dependency versions.
 
-If you change public APIs, workflows, or tutorials, update the documentation in
-the same pull request.
-
-Build the documentation locally with:
-
-.. code-block:: bash
-
-   cd docs
-   make html
-
-If Sphinx-Gallery examples are affected, ensure that the relevant tutorial
-scripts still execute successfully.
-
-Submitting a pull request
--------------------------
-
-Open pull requests against the ``dev`` branch. Before opening a pull request:
-
-- make sure your branch is up to date with ``dev``;
-- write a clear commit history;
-- summarize what changed and why;
-- mention any limitations, follow-up work, or known issues.
-
-In the pull request description, include:
-
-- the problem being addressed;
-- the approach taken;
-- any user-facing changes;
-- any documentation or test updates.
-
-Code of conduct
+Changelog entry
 ---------------
 
-By participating in this project, you agree to follow the repository
-``CODE_OF_CONDUCT.md``.
+Add one line to the top section of the :doc:`changelog <changelog>` (the one marked
+``unreleased``). Begin it with a tag and describe what changes for the user, not how you
+implemented it. Put names of functions, classes, and files in double backticks.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - Tag
+     - Use for
+   * - ``[FEATURE]``
+     - New public functionality.
+   * - ``[ENHANCEMENT]``
+     - An improvement of existing behavior that needs no change in user code.
+   * - ``[BUGFIX]``
+     - A fix of wrong behavior.
+   * - ``[BREAKING]``
+     - A change after which user code or existing data files must be changed.
+   * - ``[DOCS]``, ``[TEST]``, ``[CI]``
+     - Changes of the documentation, the tests, or the continuous integration.
+
+Pull request
+------------
+
+Open the pull request against ``dev``, from a branch that contains the current ``dev``
+(merge it or rebase on it). Keep it to one problem or one feature. The description says:
+
+- what problem the change solves and how it does it;
+- what changes for users, and which changelog line describes it;
+- which tests you added or ran, and anything that is not finished or known to be
+  limited.
+
+The pull request can be merged when the checks on GitHub have passed.
+
+By taking part in this project you agree to follow ``CODE_OF_CONDUCT.md``.
 
 Releasing (maintainers)
 -----------------------
@@ -147,8 +140,10 @@ publishing:
    reads it from), in ``CITATION.cff`` (``version`` and ``date-released``), and in
    ``docs/source/_static/switcher.json``: add an entry for the new version, and set
    the ``version`` of the ``"stable"`` entry to the new release number.
-3. Run ``python -m pytest tests/`` and ``ruff check .``, and build the
-   documentation.
+3. Run ``python -m pytest tests/`` and ``ruff check .``, build the documentation with
+   ``make html SPHINXOPTS="-W --keep-going"``, and run
+   ``python -m pytest --network tests/test_datasets.py`` to check the real downloads of
+   the example data.
 4. Check what will be archived: look through ``git ls-files`` for unpublished,
    private, or large files. Anything tracked in the tagged commit ends up in the
    Zenodo archive.
@@ -167,6 +162,8 @@ publishing:
    check the Read the Docs ``stable`` build and the Zenodo record.
 9. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
    every documented version against the live site (see below).
+
+.. _doc-version-switcher:
 
 The documentation version switcher
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,24 +207,33 @@ release, and a release is never changed afterwards: new data means a new release
 because the checksums in ``calibrain/datasets.py`` must stay valid for older
 versions of CaliBrain.
 
-1. Build the archives in the same Python environment each time (the checksum
-   depends on the MNE and NumPy versions):
+The archives contain the forward solutions with the full source space (the files in
+``<data>/fwd``, stored as ``fwd/<subject>-fwd.fif``). The reduced forward solutions and
+the leadfield files depend on the version of CaliBrain, so they are not published; users
+create them with ``reduce_forward_solutions`` and ``extract_leadfields``.
+
+1. Build one archive per dataset, in the same Python environment each time (the
+   checksum depends on the MNE and NumPy versions). A separate output folder per dataset
+   gives each dataset its own ``manifest.json``:
 
    .. code-block:: bash
 
-      python scripts/build_example_data_archives.py --output ~/example_data_upload
-      python scripts/build_example_data_archives.py --output ~/example_data_upload --datasets camcan
+      python scripts/build_example_data_archives.py --output ~/archives-fsaverage --datasets fsaverage
+      python scripts/build_example_data_archives.py --output ~/archives-camcan --datasets camcan
 
-   The archives contain only the forward solutions, because the leadfield files
-   depend on the version of CaliBrain and are created locally with
-   ``python -m calibrain.extract_leadfield``. The script removes local paths,
-   refuses to continue if a personal path or a numerical difference remains, and
-   writes ``manifest.json`` with the SHA-256 checksums. Only publish ``camcan`` if the
-   CamCAN terms allow sharing derived data (see ``DATA_NOTICE.rst``).
-2. In CaliBrain-data, create a release with a new tag (``example-data-fsaverage-2``,
-   ``example-data-camcan-2``, ...) and attach the zip file and ``manifest.json`` to the
-   assets box, not to the description.
-3. Download an asset again and check that its SHA-256 equals the one in
+   The script removes local paths from the files, stops if a personal path or a
+   numerical difference remains, and writes the size and SHA-256 checksum of every
+   archive to ``manifest.json``. Only publish ``camcan`` if the CamCAN terms allow
+   sharing derived data (see ``DATA_NOTICE.rst``).
+2. In CaliBrain-data, create a release for each dataset with a new tag
+   (``example-data-fsaverage-3``, ``example-data-camcan-3``, ...: the number after the
+   last existing one). Put the checksum and the file list in the description, and drag
+   the zip file (and ``manifest.json``) into the assets box, not into the description.
+3. Download each asset again and check that its SHA-256 equals the one in
    ``manifest.json``.
-4. In ``calibrain/datasets.py``, update the ``version``, ``archive`` and ``sha256`` of the
-   dataset in the registry, then update the changelog.
+4. In ``calibrain/datasets.py``, update ``version``, ``sha256``, and, if they changed,
+   ``archive`` and ``files`` of the dataset in the registry. Run
+   ``python -m pytest --network tests/test_datasets.py``, which downloads every dataset
+   and checks it.
+5. Update the README of CaliBrain-data, the sizes in the documentation
+   (:doc:`../datasets/index`), and the changelog.
