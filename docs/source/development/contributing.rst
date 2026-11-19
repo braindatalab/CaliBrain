@@ -161,10 +161,14 @@ publishing:
    and authors" below). The DOI in ``CITATION.cff``, ``README.md``, and the
    documentation is the Zenodo concept DOI, which always points to the latest version,
    so it does not change from release to release.
-8. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
-   check the Read the Docs ``stable`` build and the Zenodo record.
-9. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
-   every documented version against the live site (see below).
+8. Merge ``dev`` into ``main``. The GitHub front page, the "Cite this repository" box,
+   and the images of the README on PyPI (they load from ``main``) show the files of
+   ``main``.
+9. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
+   check the Read the Docs ``stable`` build, the PyPI page (summary and images), and
+   the Zenodo record.
+10. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
+    every documented version against the live site (see below).
 
 Name, description, and authors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,14 +179,17 @@ The same sentence describes CaliBrain everywhere:
    benchmarking in Bayesian M/EEG inverse source imaging
 
 It is the ``description`` in ``pyproject.toml`` (which becomes the PyPI summary), the
-``title`` in ``CITATION.cff``, and the first line of ``README.md`` and of the
-documentation landing page. Set it by hand where no file controls it: the GitHub
-repository description (without the ``CaliBrain:`` prefix is fine, but keep the words),
-the title of the Zenodo record, and the description of the Read the Docs project. The
+``title`` in ``CITATION.cff`` and in ``.zenodo.json``, and the first line of ``README.md``
+and of the documentation landing page. Zenodo reads ``.zenodo.json`` when it archives a
+release and then ignores ``CITATION.cff``, so keep the two files in agreement. The
+long description on PyPI is ``README.md``; its images use absolute URLs, because PyPI
+does not resolve relative paths. Set the sentence by hand where no file controls it: the
+GitHub repository description (without the ``CaliBrain:`` prefix is fine, but keep the
+words) and the description of the Read the Docs project. The
 authors are always listed in the order Mohammad Orabe, Srikantan Nagarajan, Stefan
 Haufe, Ismail Huseynov: in ``pyproject.toml``, ``CITATION.cff``, ``LICENSE``, the
-documentation, and on Zenodo. A test (``tests/test_package_metadata.py``) checks the
-files in the repository.
+documentation, ``.zenodo.json``, and on Zenodo. A test (``tests/test_package_metadata.py``)
+checks the files in the repository.
 
 .. _doc-version-switcher:
 

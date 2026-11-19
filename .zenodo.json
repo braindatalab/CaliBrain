@@ -1,0 +1,35 @@
+{
+  "title": "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging",
+  "upload_type": "software",
+  "description": "<p>CaliBrain is a Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging.</p><p>Inverse source imaging is an ill-posed problem: different source configurations can explain the same sensor data. CaliBrain addresses a central question in Bayesian source imaging: are posterior uncertainty estimates empirically reliable? The toolbox provides simulation-based workflows for generating source activity, propagating it through forward models, reconstructing posterior source estimates, quantifying empirical coverage, and evaluating recalibration maps under controlled experimental conditions.</p><p><strong>Workflow</strong></p><ol><li>generate source-level ground truth under controlled sparsity and amplitude assumptions;</li><li>project sources to sensors through a leadfield and add noise at a defined SNR;</li><li>reconstruct posterior means and uncertainty summaries with inverse solvers;</li><li>convert uncertainty summaries into intervals, ellipses, or ellipsoids;</li><li>compare empirical against nominal coverage;</li><li>fit isotonic recalibration functions on training splits and evaluate them on held-out splits.</li></ol><p><strong>Supported models and solvers</strong></p><p>Fixed and free-orientation source models (EEG and MEG), with the inverse solvers <code>gamma_map_sflex</code> (Gamma-MAP with sparse basis field expansions), <code>gamma_lambda_map_sflex</code> (the S-FLEX Gamma-MAP variant with joint sparsity and lambda regularization), <code>BMN</code> (a Bayesian minimum norm baseline), and <code>BMN_joint</code> (a Bayesian minimum norm variant with joint gamma/lambda learning).</p><p><strong>Installation</strong></p><p><code>python -m pip install calibrain</code> (Python 3.10 or newer).</p><p><strong>Links</strong></p><ul><li>Documentation and tutorials: https://calibrain.readthedocs.io</li><li>Source code and issue tracker: https://github.com/braindatalab/CaliBrain</li><li>Example data (separate repository): https://github.com/braindatalab/CaliBrain-data</li><li>License: BSD 3-Clause</li></ul>",
+  "creators": [
+    {
+      "name": "Orabe, Mohammad",
+      "orcid": "0009-0004-7177-799X"
+    },
+    {
+      "name": "Nagarajan, Srikantan",
+      "orcid": "0000-0001-7209-3857"
+    },
+    {
+      "name": "Haufe, Stefan",
+      "orcid": "0000-0003-1470-9195"
+    },
+    {
+      "name": "Huseynov, Ismail T.",
+      "orcid": "0000-0002-4141-3544"
+    }
+  ],
+  "keywords": [
+    "EEG",
+    "MEG",
+    "inverse problem",
+    "inverse source imaging",
+    "uncertainty quantification",
+    "calibration",
+    "benchmarking",
+    "Bayesian"
+  ],
+  "license": "bsd-3-clause",
+  "access_right": "open"
+}

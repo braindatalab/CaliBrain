@@ -2,7 +2,7 @@
 <!--  width="220" -->
 
 <p align="center">
-  <img src="docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
 </p>
 
 [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
@@ -25,7 +25,7 @@ reconstructing posterior source estimates, quantifying empirical coverage, and
 evaluating recalibration maps under controlled experimental conditions.
 
 <p align="center">
-  <img src="docs/source/_static/calibrain_pipeline.png" alt="CaliBrain pipeline overview">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/calibrain_pipeline.png" alt="CaliBrain pipeline overview">
 </p>
 
 ## Documentation
@@ -128,7 +128,7 @@ plt.show()
 ```
 
 <p align="center">
-  <img src="docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
 </p>
 
 ## Workflow
