@@ -6,7 +6,6 @@ Most tests extract leadfields from the small (1284-source) forward solutions in
 to the real leadfield directory.
 """
 import copy
-import os
 from pathlib import Path
 
 import mne
@@ -16,7 +15,7 @@ from mne.io.constants import FIFF
 
 from calibrain.extract_leadfield import extract_leadfield, extract_leadfields, main
 
-_DATA_DIR = Path(os.environ.get("CALIBRAIN_DATA", Path(__file__).resolve().parent.parent / "data"))
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 FWD_DIR = _DATA_DIR / "1284src_fwd"
 
 needs_fwd = pytest.mark.skipif(

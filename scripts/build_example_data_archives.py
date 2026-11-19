@@ -161,7 +161,7 @@ def build_archives(data_dir, output, names):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--output", required=True, help="Directory for the archives and manifest.json.")
-    parser.add_argument("--data-dir", help="Data directory (default: CALIBRAIN_DATA or <repository>/data).")
+    parser.add_argument("--data-dir", help="Data directory (default: <repository>/data).")
     parser.add_argument("--datasets", nargs="+", choices=sorted(DATASETS), default=["fsaverage"],
                         help="Datasets to build (default: fsaverage). Only publish camcan if its terms allow it.")
     args = parser.parse_args(argv)

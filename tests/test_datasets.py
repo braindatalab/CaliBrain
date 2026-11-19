@@ -1,6 +1,5 @@
 import hashlib
 import http.server
-import os
 import threading
 import zipfile
 from pathlib import Path
@@ -192,13 +191,31 @@ def test_unknown_dataset_raises():
         fetch_example_data("does-not-exist")
 
 
-def test_uses_the_calibrain_data_directory_by_default(published, tmp_path, monkeypatch):
-    monkeypatch.setenv("CALIBRAIN_DATA", str(tmp_path / "from_env"))
+def test_uses_the_default_data_directory_when_none_is_given(published, tmp_path, monkeypatch):
+    default = tmp_path / "default"
+    default.mkdir()
+    monkeypatch.setattr(datasets, "get_data_path", lambda path=None: Path(path) if path else default)
 
     data_dir = fetch_example_data()
 
-    assert data_dir == tmp_path / "from_env"
+    assert data_dir == default
     assert (data_dir / "1284src_fwd/fsaverage-fwd.fif").exists()
+
+
+def test_the_removed_calibrain_data_variable_is_ignored_with_a_warning(tmp_path, monkeypatch):
+    from calibrain import utils
+
+    fake_module = tmp_path / "repo" / "calibrain" / "utils.py"
+    fake_module.parent.mkdir(parents=True)
+    (tmp_path / "repo" / "pyproject.toml").write_text("")
+    monkeypatch.setattr(utils, "__file__", str(fake_module))
+    monkeypatch.setenv("CALIBRAIN_DATA", str(tmp_path / "from_env"))
+
+    with pytest.warns(FutureWarning, match="no longer used"):
+        data_dir = utils.get_data_path()
+
+    assert data_dir == tmp_path / "repo" / "data"
+    assert not (tmp_path / "from_env").exists()
 
 
 def test_default_data_directory_of_an_installed_package_is_a_user_directory(tmp_path, monkeypatch):
@@ -208,7 +225,6 @@ def test_default_data_directory_of_an_installed_package_is_a_user_directory(tmp_
     fake_module = tmp_path / "site-packages" / "calibrain" / "utils.py"
     fake_module.parent.mkdir(parents=True)
     monkeypatch.setattr(utils, "__file__", str(fake_module))
-    monkeypatch.delenv("CALIBRAIN_DATA", raising=False)
     monkeypatch.setattr("pooch.os_cache", lambda project: tmp_path / "user_cache" / project)
 
     assert utils.get_data_path() == tmp_path / "user_cache" / "calibrain"
@@ -222,12 +238,11 @@ def test_default_data_directory_of_a_source_checkout_is_the_repository_data(tmp_
     fake_module.parent.mkdir(parents=True)
     (tmp_path / "repo" / "pyproject.toml").write_text("")
     monkeypatch.setattr(utils, "__file__", str(fake_module))
-    monkeypatch.delenv("CALIBRAIN_DATA", raising=False)
 
     assert utils.get_data_path() == tmp_path / "repo" / "data"
 
 
-@pytest.mark.skipif(not os.environ.get("CALIBRAIN_TEST_NETWORK"), reason="set CALIBRAIN_TEST_NETWORK=1 to test the real download")
+@pytest.mark.network
 @pytest.mark.parametrize("dataset", sorted(datasets._DATASETS))
 def test_real_download_matches_the_published_checksum(tmp_path, dataset):
     data_dir = fetch_example_data(dataset, data_dir=tmp_path)

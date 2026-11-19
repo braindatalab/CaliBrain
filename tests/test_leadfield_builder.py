@@ -4,7 +4,6 @@ Tests that need real forward solutions use the small (1284-source) files in
 ``<data>/1284src_fwd``. They are skipped when those files are not available and
 write only to temporary directories.
 """
-import os
 from pathlib import Path
 
 import mne
@@ -14,7 +13,7 @@ from mne.io.constants import FIFF
 
 from calibrain.leadfield_builder import LeadfieldBuilder
 
-_DATA_DIR = Path(os.environ.get("CALIBRAIN_DATA", Path(__file__).resolve().parent.parent / "data"))
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 FWD_DIR = _DATA_DIR / "1284src_fwd"
 
 needs_eeg_fwd = pytest.mark.skipif(

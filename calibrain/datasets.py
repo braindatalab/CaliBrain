@@ -69,9 +69,8 @@ def fetch_example_data(
         subject to the CamCAN terms; see the Dataset Notice in the documentation).
     data_dir : str | Path | None
         Directory to unpack the data into. By default the CaliBrain data directory
-        is used: the ``CALIBRAIN_DATA`` environment variable if it is set, otherwise
-        ``<repository>/data`` in a source checkout, or a per-user directory for an
-        installed package (see :func:`calibrain.utils.get_data_path`).
+        is used: ``<repository>/data`` in a source checkout, or a per-user directory
+        for an installed package (see :func:`calibrain.utils.get_data_path`).
     force : bool, default False
         Download again and overwrite existing files.
 
