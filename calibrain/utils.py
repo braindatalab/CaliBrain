@@ -161,7 +161,10 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     Parameters
     ----------
     path : str | Path | None
-        Custom path to data directory. If None, uses default location.
+        Custom path to data directory. If None, the ``CALIBRAIN_DATA`` environment
+        variable is used if it is set. Otherwise the default is ``<repository>/data``
+        in a source checkout, and a per-user cache directory for an installed
+        package (for example ``~/.cache/calibrain`` on Linux).
         
     Returns
     -------
@@ -173,9 +176,15 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
         if 'CALIBRAIN_DATA' in os.environ:
             data_path = Path(os.environ['CALIBRAIN_DATA'])
         else:
-            # Default to calibrain/data directory relative to this module
             calibrain_root = Path(__file__).parent.parent
-            data_path = calibrain_root / 'data'
+            if (calibrain_root / "pyproject.toml").exists():
+                # A source checkout (also an editable install): <repository>/data
+                data_path = calibrain_root / 'data'
+            else:
+                # An installed package: a user directory, not the Python environment
+                import pooch
+
+                data_path = Path(pooch.os_cache("calibrain"))
         data_path = Path(data_path)
     else:
         data_path = Path(path)

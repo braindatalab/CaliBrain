@@ -234,30 +234,102 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     print(f"Leadfield saved to {save_path}")
 
 
-def main():
-    """Extract fixed and free leadfields for all example subjects.
+# Channel type of the example subjects: the template has EEG, the CamCAN data MEG
+# magnetometers. Other subjects need an explicit ``coil_name``.
+DEFAULT_COILS = {
+    "fsaverage": "eeg",
+    "CC120166": "mag",
+    "CC120264": "mag",
+    "CC120309": "mag",
+    "CC120313": "mag",
+}
+FWD_DIR_NAME = "1284src_fwd"
+LEADFIELD_DIR_NAME = "1284src_leadfield"
 
-    Run with ``python -m calibrain.extract_leadfield``. Reads the forward solutions
-    from ``<data>/1284src_fwd`` and writes to ``<data>/1284src_leadfield``.
+
+def extract_leadfields(subjects=None, data_dir=None, coil_name=None, orientations=("fixed", "free")):
+    """Extract the leadfield files of several subjects from their forward solutions.
+
+    This is the step after :func:`calibrain.datasets.fetch_example_data`: it reads
+    ``<data_dir>/1284src_fwd/<subject>-fwd.fif`` and writes
+    ``<data_dir>/1284src_leadfield/<subject>_<orientation>_leadfield.npz``. The
+    leadfield files depend on the version of CaliBrain, so they are created locally
+    and not downloaded.
+
+    Parameters
+    ----------
+    subjects : str | list of str | None
+        Subjects to process. By default all subjects that have a forward solution
+        (``*-fwd.fif``) in ``<data_dir>/1284src_fwd``.
+    data_dir : str | Path | None
+        Data directory. By default the CaliBrain data directory
+        (see :func:`calibrain.utils.get_data_path`).
+    coil_name : {"eeg", "mag", "grad"} | None
+        Channel type. By default it is taken from ``DEFAULT_COILS`` (``"eeg"`` for
+        ``fsaverage``, ``"mag"`` for the CamCAN subjects); other subjects need it.
+    orientations : sequence of {"fixed", "free"}
+        Orientation types to extract.
+
+    Returns
+    -------
+    saved : list of pathlib.Path
+        The leadfield files that were written.
+
+    Raises
+    ------
+    FileNotFoundError
+        If there is no forward solution to process.
+    ValueError
+        If the channel type of a subject is unknown and ``coil_name`` is not given.
     """
-    # full sources in fwd
-    # fwd_datapath = get_data_path() / 'fwd'
-    # save_path = get_data_path() / 'leadfield' 
+    data_dir = get_data_path(data_dir)
+    fwd_dir = data_dir / FWD_DIR_NAME
+    save_dir = data_dir / LEADFIELD_DIR_NAME
 
-    # reduced sources in fwd
-    fwd_datapath = get_data_path() / '1284src_fwd'
-    save_path = get_data_path() / '1284src_leadfield' 
+    if subjects is None:
+        subjects = sorted(path.name[: -len("-fwd.fif")] for path in fwd_dir.glob("*-fwd.fif"))
+        if not subjects:
+            raise FileNotFoundError(
+                f"No forward solutions (*-fwd.fif) found in {fwd_dir}. Download the example "
+                "data with calibrain.datasets.fetch_example_data()."
+            )
+    elif isinstance(subjects, str):
+        subjects = [subjects]
 
-    subjects_map = {
-        'eeg': ['fsaverage'],
-        'mag': ['CC120166', 'CC120264', 'CC120309', 'CC120313'],
-    }
+    saved = []
+    for subject in subjects:
+        coil = coil_name or DEFAULT_COILS.get(subject)
+        if coil is None:
+            raise ValueError(
+                f"The channel type of subject {subject!r} is unknown. Pass coil_name='eeg', 'mag' or 'grad'."
+            )
+        if not (fwd_dir / f"{subject}-fwd.fif").is_file():
+            raise FileNotFoundError(f"No forward solution for subject {subject!r} in {fwd_dir}.")
+        for orientation in orientations:
+            extract_leadfield(fwd_dir, subject, coil, orientation, save_dir)
+            saved.append(save_dir / f"{subject}_{orientation}_leadfield.npz")
+    return saved
 
-    for coil_name, subjects in subjects_map.items():
-        for subject in subjects:
-            print(f"\nExtracting leadfield (fixed & free) for subject: {subject}, coil_name: {coil_name}")
-            extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='fixed', save_path=save_path)
-            extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='free', save_path=save_path)
+
+def main(argv=None):
+    """Extract the leadfield files from the forward solutions in the data directory.
+
+    Run with ``python -m calibrain.extract_leadfield``. By default it processes every
+    subject that has a forward solution in ``<data>/1284src_fwd`` and writes
+    ``<data>/1284src_leadfield``.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main.__doc__.split("\n\n")[0])
+    parser.add_argument("--data-dir", help="Data directory (default: CALIBRAIN_DATA or the CaliBrain default).")
+    parser.add_argument("--subjects", nargs="+", help="Subjects to process (default: all with a forward solution).")
+    parser.add_argument("--coil", choices=["eeg", "mag", "grad"], help="Channel type (default: from the subject).")
+    args = parser.parse_args(argv)
+
+    saved = extract_leadfields(subjects=args.subjects, data_dir=args.data_dir, coil_name=args.coil)
+    print("\nWritten leadfield files:")
+    for path in saved:
+        print(f"  {path}")
 
 
 if __name__ == "__main__":
