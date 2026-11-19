@@ -109,3 +109,29 @@ def test_citation_uses_the_zenodo_concept_doi_that_always_points_to_the_latest_v
         text = (ROOT / path).read_text()
         assert "10.5281/zenodo.20683761" in text, path
         assert "zenodo.21261767" not in text, path  # the DOI of v1.0.3 only
+
+
+def test_zenodo_metadata_agrees_with_the_citation_file():
+    # Zenodo uses .zenodo.json instead of CITATION.cff when it exists, so they must agree.
+    import yaml
+
+    zenodo = json.loads((ROOT / ".zenodo.json").read_text())
+    citation = yaml.safe_load((ROOT / "CITATION.cff").read_text())
+
+    assert zenodo["title"] == citation["title"] == CANONICAL_TITLE
+    assert zenodo["description"].startswith("<p>" + citation["abstract"] + "</p>")
+    assert zenodo["keywords"] == citation["keywords"]
+    assert zenodo["license"].lower() == citation["license"].lower()  # Zenodo spells the id in lowercase
+    assert zenodo["upload_type"] == "software"
+    expected = [
+        {"name": f"{a['family-names']}, {a['given-names']}", "orcid": a["orcid"].rsplit("/", 1)[-1]}
+        for a in citation["authors"]
+    ]
+    assert zenodo["creators"] == expected
+
+
+def test_readme_images_use_absolute_urls_so_that_they_show_on_pypi():
+    readme = (ROOT / "README.md").read_text()
+    sources = re.findall(r'<img[^>]*\ssrc="([^"]+)"', readme)
+    assert sources
+    assert all(src.startswith("https://") for src in sources), sources
