@@ -35,11 +35,11 @@ from calibrain import (
     fetch_example_data,
     gamma_map_sflex,
 )
-from calibrain.utils import get_data_path
+from calibrain.utils import get_leadfield_dir
 
 RANDOM_SEED = 91
 
-leadfield_dir = get_data_path() / "1284src_leadfield"
+leadfield_dir = get_leadfield_dir()
 fetch_example_data()  # step 1: download the forward solution
 if not (leadfield_dir / "fsaverage_free_leadfield.npz").exists():
     extract_leadfields("fsaverage")  # step 2: create the leadfield files

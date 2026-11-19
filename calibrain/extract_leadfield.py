@@ -4,7 +4,7 @@ import mne
 import numpy as np
 from mne.io.constants import FIFF
 
-from calibrain.utils import get_data_path, strip_local_paths
+from calibrain.utils import get_data_path, get_fwd_dir, get_leadfield_dir, strip_local_paths
 
 def _canonicalize_basis_columns(Q: np.ndarray) -> np.ndarray:
     """
@@ -243,8 +243,6 @@ DEFAULT_COILS = {
     "CC120309": "mag",
     "CC120313": "mag",
 }
-FWD_DIR_NAME = "1284src_fwd"
-LEADFIELD_DIR_NAME = "1284src_leadfield"
 
 
 def extract_leadfields(subjects=None, data_dir=None, coil_name=None, orientations=("fixed", "free")):
@@ -282,9 +280,8 @@ def extract_leadfields(subjects=None, data_dir=None, coil_name=None, orientation
     ValueError
         If the channel type of a subject is unknown and ``coil_name`` is not given.
     """
-    data_dir = get_data_path(data_dir)
-    fwd_dir = data_dir / FWD_DIR_NAME
-    save_dir = data_dir / LEADFIELD_DIR_NAME
+    fwd_dir = get_fwd_dir(data_dir)
+    save_dir = get_leadfield_dir(data_dir)
 
     if subjects is None:
         subjects = sorted(path.name[: -len("-fwd.fif")] for path in fwd_dir.glob("*-fwd.fif"))

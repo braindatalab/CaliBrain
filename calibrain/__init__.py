@@ -9,11 +9,13 @@ from calibrain.visualization import Visualizer
 from calibrain.data_generation import DataGenerator
 from calibrain.datasets import fetch_example_data
 from calibrain.extract_leadfield import extract_leadfields
+from calibrain.reduce_fwd import reduce_forward_solutions
 
 __all__ = [
     "DataGenerator",
     "fetch_example_data",
     "extract_leadfields",
+    "reduce_forward_solutions",
     "LeadfieldBuilder",
     "SourceSimulator",
     "SensorSimulator",

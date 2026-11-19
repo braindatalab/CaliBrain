@@ -12,7 +12,7 @@ from scipy.linalg import block_diag
 
 from calibrain import MetricEvaluator, UncertaintyCalibrator, UncertaintyEstimator
 from calibrain.metric_evaluation import _compute_dataset_emd
-from calibrain.utils import get_data_path
+from calibrain.utils import get_fwd_dir
 from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/calibration_default.py")
@@ -68,7 +68,7 @@ def _load_subject_coords(subject: str, data_dir: str | Path | None = None) -> np
     if not subject:
         raise ValueError("Dataset does not specify a subject; cannot load coordinates.")
 
-    fwd_path = get_data_path(data_dir) / "1284src_fwd" / f"{subject}-fwd.fif"
+    fwd_path = get_fwd_dir(data_dir) / f"{subject}-fwd.fif"
     cache_key = str(fwd_path)
     if cache_key in _COORD_CACHE:
         return _COORD_CACHE[cache_key]

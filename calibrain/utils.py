@@ -156,6 +156,12 @@ def strip_local_paths(info):
     return info
 
 
+# Subfolders of the data directory. The number is the number of sources of the
+# forward solutions and leadfields (642 per hemisphere).
+FWD_DIR_NAME = "1284src_fwd"
+LEADFIELD_DIR_NAME = "1284src_leadfield"
+
+
 def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     """Get the path to CaliBrain data directory.
 
@@ -197,6 +203,16 @@ def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     data_path.mkdir(parents=True, exist_ok=True)
 
     return data_path
+
+
+def get_fwd_dir(data_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Folder of the forward solutions (``<data directory>/1284src_fwd``)."""
+    return get_data_path(data_dir) / FWD_DIR_NAME
+
+
+def get_leadfield_dir(data_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Folder of the leadfield files (``<data directory>/1284src_leadfield``)."""
+    return get_data_path(data_dir) / LEADFIELD_DIR_NAME
 
 
 def restrict_fwd_to_sources(
