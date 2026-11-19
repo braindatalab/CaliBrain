@@ -81,5 +81,15 @@ Next steps
 ----------
 
 The example forward-model and leadfield files are not part of the package.
-See :doc:`../datasets/index` for how to provide them, and the ``CALIBRAIN_DATA``
-environment variable described there.
+Download the forward solution, then create the leadfield files from it:
+
+.. code-block:: python
+
+   from calibrain.datasets import fetch_example_data
+   from calibrain.extract_leadfield import extract_leadfields
+
+   fetch_example_data()
+   extract_leadfields()
+
+See :doc:`../datasets/index` for where they are stored and the ``CALIBRAIN_DATA``
+environment variable.

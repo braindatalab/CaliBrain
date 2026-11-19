@@ -158,3 +158,32 @@ publishing:
    ``README.md``, ``docs/source/cite/index.rst``, and ``docs/source/index.rst``.
 7. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
    check the Read the Docs ``stable`` build and the Zenodo record.
+
+Publishing new example data (maintainers)
+-----------------------------------------
+
+The example data live in the
+`CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_ repository as
+release assets, never in git. A release is never changed afterwards: new data
+means a new release, because the checksums in ``calibrain/datasets.py`` must
+stay valid for older versions of CaliBrain.
+
+1. Build the archives in the same Python environment each time (the checksum
+   depends on the MNE and NumPy versions):
+
+   .. code-block:: bash
+
+      python scripts/build_example_data_archives.py --output ~/example_data_upload
+
+   The archives contain only the forward solutions, because the leadfield files
+   depend on the version of CaliBrain and are created locally with
+   ``python -m calibrain.extract_leadfield``. The script removes local paths,
+   refuses to continue if a personal path or a numerical difference remains, and
+   writes ``manifest.json`` with the SHA-256 checksums. Only add
+   ``--include-camcan`` if the CamCAN terms allow sharing derived data.
+2. In CaliBrain-data, create a release with a new tag (``example-data-2``, ...) and
+   attach the zip files and ``manifest.json``.
+3. Download an asset again and check that its SHA-256 equals the one in
+   ``manifest.json``.
+4. In ``calibrain/datasets.py``, set ``DATA_VERSION`` to the new tag and update the
+   archive names and checksums, then update the changelog.

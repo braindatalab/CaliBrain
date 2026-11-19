@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from mne.io.constants import FIFF
 
-from calibrain.extract_leadfield import extract_leadfield
+from calibrain.extract_leadfield import extract_leadfield, extract_leadfields, main
 
 _DATA_DIR = Path(os.environ.get("CALIBRAIN_DATA", Path(__file__).resolve().parent.parent / "data"))
 FWD_DIR = _DATA_DIR / "1284src_fwd"
@@ -156,3 +156,64 @@ def test_importing_reduce_fwd_does_not_run_the_batch_reduction():
     assert callable(module.restrict_fwd_to_sources)
     assert not hasattr(module, "subjects_map")
     assert not hasattr(module, "save_path")
+
+
+def _data_dir_with_forward(tmp_path, subject="fsaverage"):
+    """A data directory that holds only the forward solution of ``subject``."""
+    fwd_dir = tmp_path / "1284src_fwd"
+    fwd_dir.mkdir(parents=True)
+    (fwd_dir / f"{subject}-fwd.fif").symlink_to(FWD_DIR / f"{subject}-fwd.fif")
+    return tmp_path
+
+
+@needs_fwd
+def test_extract_leadfields_processes_the_forwards_that_exist(tmp_path):
+    data_dir = _data_dir_with_forward(tmp_path)
+
+    saved = extract_leadfields(data_dir=data_dir)
+
+    assert saved == [
+        data_dir / "1284src_leadfield" / "fsaverage_fixed_leadfield.npz",
+        data_dir / "1284src_leadfield" / "fsaverage_free_leadfield.npz",
+    ]
+    assert all(path.is_file() for path in saved)
+
+
+@needs_fwd
+def test_extract_leadfields_can_extract_one_orientation(tmp_path):
+    data_dir = _data_dir_with_forward(tmp_path)
+
+    saved = extract_leadfields("fsaverage", data_dir=data_dir, orientations=("free",))
+
+    assert [path.name for path in saved] == ["fsaverage_free_leadfield.npz"]
+
+
+@needs_fwd
+def test_command_line_extracts_the_leadfields(tmp_path, capsys):
+    data_dir = _data_dir_with_forward(tmp_path)
+
+    main(["--data-dir", str(data_dir), "--subjects", "fsaverage"])
+
+    assert (data_dir / "1284src_leadfield" / "fsaverage_free_leadfield.npz").is_file()
+    assert "Written leadfield files" in capsys.readouterr().out
+
+
+def test_extract_leadfields_without_a_forward_points_to_the_download(tmp_path):
+    with pytest.raises(FileNotFoundError, match="fetch_example_data"):
+        extract_leadfields(data_dir=tmp_path)
+
+
+def test_extract_leadfields_for_a_missing_forward_raises(tmp_path):
+    (tmp_path / "1284src_fwd").mkdir()
+
+    with pytest.raises(FileNotFoundError, match="fsaverage"):
+        extract_leadfields("fsaverage", data_dir=tmp_path)
+
+
+def test_extract_leadfields_needs_the_channel_type_of_an_unknown_subject(tmp_path):
+    fwd_dir = tmp_path / "1284src_fwd"
+    fwd_dir.mkdir()
+    (fwd_dir / "mysubject-fwd.fif").write_bytes(b"")
+
+    with pytest.raises(ValueError, match="coil_name"):
+        extract_leadfields("mysubject", data_dir=tmp_path)

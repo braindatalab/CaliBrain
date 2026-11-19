@@ -7,9 +7,13 @@ from calibrain.metric_evaluation import MetricEvaluator
 from calibrain.uncertainty_calibration import UncertaintyCalibrator
 from calibrain.visualization import Visualizer
 from calibrain.data_generation import DataGenerator
+from calibrain.datasets import fetch_example_data
+from calibrain.extract_leadfield import extract_leadfields
 
 __all__ = [
     "DataGenerator",
+    "fetch_example_data",
+    "extract_leadfields",
     "LeadfieldBuilder",
     "SourceSimulator",
     "SensorSimulator",

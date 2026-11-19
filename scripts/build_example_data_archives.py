@@ -1,16 +1,19 @@
-"""Build the example-data archives that are uploaded to Zenodo.
+"""Build the example-data archives that are uploaded to the CaliBrain-data release.
 
 The example data are not distributed with the package. This script prepares the
-files for a Zenodo dataset record:
+files for a release of https://github.com/braindatalab/CaliBrain-data:
 
-1. It cleans each forward solution (the local paths stored by MNE are removed,
-   because a published file cannot be edited afterwards).
-2. It regenerates the leadfield files from the cleaned forward solutions with
-   ``calibrain.extract_leadfield``.
-3. It checks that the regenerated leadfields equal the existing ones, and that no
-   personal path or user name remains in any file.
-4. It writes one zip archive per dataset and ``manifest.json`` with the size and
-   SHA-256 checksum of every archive. The checksums go into the download registry.
+1. It cleans each forward solution (the local paths stored by MNE are removed, so
+   that no user or machine name is published).
+2. It checks that the cleaned forward solution has the same numbers as the original
+   one (up to floating-point rounding), and that no personal path or user name
+   remains in any file.
+3. It writes one zip archive per dataset and ``manifest.json`` with the size and
+   SHA-256 checksum of every archive. The checksums go into ``calibrain/datasets.py``.
+
+Only the forward solutions are published. The leadfield files depend on the version
+of CaliBrain and are created locally from them with
+``python -m calibrain.extract_leadfield``.
 
 Usage::
 
@@ -19,14 +22,13 @@ Usage::
 
 By default only the ``fsaverage`` template data is built. The CamCAN subjects are
 derived from CamCAN participants, so only include them if the CamCAN terms allow
-sharing derived data. Upload the archives of ONE run: the forward files contain a
-creation time, so the checksums differ between runs.
+sharing derived data. Build in the same environment each time (the checksum depends
+on the MNE and NumPy versions) and take the checksum from the file you upload.
 """
 import argparse
 import contextlib
 import getpass
 import hashlib
-import io
 import json
 import tempfile
 import zipfile
@@ -35,17 +37,14 @@ from pathlib import Path
 import mne
 import numpy as np
 
-from calibrain.extract_leadfield import extract_leadfield
 from calibrain.utils import get_data_path, strip_local_paths
 
-# dataset name -> {channel type: subjects}
+# dataset name -> subjects (one forward solution each)
 DATASETS = {
-    "fsaverage": {"eeg": ["fsaverage"]},
-    "camcan": {"mag": ["CC120166", "CC120264", "CC120309", "CC120313"]},
+    "fsaverage": ["fsaverage"],
+    "camcan": ["CC120166", "CC120264", "CC120309", "CC120313"],
 }
-ORIENTATIONS = ("fixed", "free")
 FWD_DIR_NAME = "1284src_fwd"
-LEADFIELD_DIR_NAME = "1284src_leadfield"
 ARCHIVE_NAME = "calibrain-example-data-{name}.zip"
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)  # fixed, so that the zip itself is reproducible
 
@@ -65,7 +64,7 @@ def find_leaks(path):
 
 
 def clean_forward(source, target):
-    """Copy a forward solution and remove the local directory stored in its info."""
+    """Copy a forward solution and remove the local paths stored in its info."""
     fwd = mne.read_forward_solution(source, verbose="error")
     strip_local_paths(fwd["info"])
     mne.write_forward_solution(target, fwd, overwrite=True, verbose="error")
@@ -74,37 +73,42 @@ def clean_forward(source, target):
 def build_dataset_files(name, data_dir, staging):
     """Create the cleaned files of dataset ``name`` in ``staging``; return their paths."""
     fwd_dir = staging / FWD_DIR_NAME
-    leadfield_dir = staging / LEADFIELD_DIR_NAME
     fwd_dir.mkdir(parents=True)
-    leadfield_dir.mkdir(parents=True)
-    for coil, subjects in DATASETS[name].items():
-        for subject in subjects:
-            clean_forward(Path(data_dir) / FWD_DIR_NAME / f"{subject}-fwd.fif", fwd_dir / f"{subject}-fwd.fif")
-            for orientation in ORIENTATIONS:
-                with contextlib.redirect_stdout(io.StringIO()):
-                    extract_leadfield(fwd_dir, subject, coil, orientation, leadfield_dir)
+    for subject in DATASETS[name]:
+        clean_forward(Path(data_dir) / FWD_DIR_NAME / f"{subject}-fwd.fif", fwd_dir / f"{subject}-fwd.fif")
     return sorted(p for p in staging.rglob("*") if p.is_file())
 
 
+def arrays_match(a, b, atol=1e-12):
+    """Compare two arrays; floating-point values may differ by rounding noise.
+
+    The last binary digit of computed values depends on the MNE and NumPy versions,
+    so floats are compared with a tolerance. Everything else must be equal.
+    """
+    a, b = np.asarray(a), np.asarray(b)
+    if a.shape != b.shape:
+        return False
+    if a.dtype == object or b.dtype == object:
+        return a.tolist() == b.tolist()
+    if np.issubdtype(a.dtype, np.floating) or np.issubdtype(b.dtype, np.floating):
+        return bool(np.allclose(a, b, rtol=0, atol=atol, equal_nan=True))
+    return bool(np.array_equal(a, b))
+
+
 def verify_against_existing(files, staging, data_dir):
-    """Check that regenerated leadfields equal the existing ones; return the mismatches."""
+    """Check that the cleaned forwards equal the originals; return the mismatches."""
     mismatches = []
     for path in files:
-        if path.suffix != ".npz":
-            continue
-        existing = Path(data_dir) / path.relative_to(staging)
-        if not existing.exists():
-            continue
-        with np.load(path, allow_pickle=True) as new, np.load(existing, allow_pickle=True) as old:
-            for key in new.files:
-                if key == "info":
-                    continue
-                a, b = new[key], old[key]
-                same = a.shape == b.shape and (
-                    a.tolist() == b.tolist() if a.dtype == object else np.array_equal(a, b)
-                )
-                if not same:
-                    mismatches.append(f"{path.name}:{key}")
+        original = Path(data_dir) / path.relative_to(staging)
+        new = mne.read_forward_solution(path, verbose="error")
+        old = mne.read_forward_solution(original, verbose="error")
+        checks = {
+            "gain matrix": arrays_match(new["sol"]["data"], old["sol"]["data"]),
+            "source positions": arrays_match(new["source_rr"], old["source_rr"]),
+            "source normals": arrays_match(new["source_nn"], old["source_nn"]),
+            "channel names": new["info"]["ch_names"] == old["info"]["ch_names"],
+        }
+        mismatches += [f"{path.name}: {what}" for what, same in checks.items() if not same]
     return mismatches
 
 
@@ -140,7 +144,7 @@ def build_archives(data_dir, output, names):
                 raise RuntimeError(f"Personal information found in {name}: {leaks}")
             mismatches = verify_against_existing(files, staging, Path(data_dir))
             if mismatches:
-                raise RuntimeError(f"Regenerated leadfields differ from the existing ones: {mismatches}")
+                raise RuntimeError(f"The cleaned forward solutions differ from the originals: {mismatches}")
             archive = output / ARCHIVE_NAME.format(name=name)
             write_zip(archive, files, staging)
             manifest[archive.name] = {

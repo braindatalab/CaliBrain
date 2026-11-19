@@ -26,6 +26,8 @@ Top-level public API
    MetricEvaluator
    Visualizer
    DataGenerator
+   fetch_example_data
+   extract_leadfields
    gamma_map_sflex
    gamma_lambda_map_sflex
    BMN
@@ -44,6 +46,8 @@ Top-level public API
    generated/calibrain.MetricEvaluator
    generated/calibrain.Visualizer
    generated/calibrain.DataGenerator
+   generated/calibrain.fetch_example_data
+   generated/calibrain.extract_leadfields
    generated/calibrain.gamma_map_sflex
    generated/calibrain.gamma_lambda_map_sflex
    generated/calibrain.BMN
