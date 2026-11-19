@@ -141,3 +141,4 @@ intersphinx_mapping = {
 
 html_title = "CaliBrain Documentation"
 html_short_title = "CaliBrain"
+html_show_sphinx = False  # no "Created using Sphinx" line in the footer
