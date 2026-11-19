@@ -288,7 +288,8 @@ def extract_leadfields(subjects=None, data_dir=None, coil_name=None, orientation
         if not subjects:
             raise FileNotFoundError(
                 f"No forward solutions (*-fwd.fif) found in {fwd_dir}. Download the example "
-                "data with calibrain.datasets.fetch_example_data()."
+                "data with calibrain.fetch_example_data() and reduce it with "
+                "calibrain.reduce_forward_solutions()."
             )
     elif isinstance(subjects, str):
         subjects = [subjects]
