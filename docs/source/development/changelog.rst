@@ -25,6 +25,7 @@ Version 1.0.4 (unreleased)
 *   [ENHANCEMENT] The dependencies are now defined only in ``pyproject.toml``, with lower version bounds, and ``pooch`` is now a direct dependency. ``requirements.txt`` and ``docs/requirements.txt`` were removed, ``environment.yml`` only defines Python and ``pip``, and the unused ``myst-parser`` requirement was dropped. The ``docs`` and ``dev`` extras were updated (``dev`` now includes ``pytest-cov`` and ``ruff``).
 *   [ENHANCEMENT] The figure scripts in ``viz/`` no longer need ``seaborn``. They use matplotlib and draw the same figures.
 *   [ENHANCEMENT] ``python -m calibrain.extract_leadfield`` and ``python -m calibrain.reduce_fwd`` run the data preparation scripts from an installed package.
+*   [ENHANCEMENT] The data-generation and calibration workflows accept an optional ``data_dir`` config key for the folder with the forward solutions and leadfields (the default data folder is used otherwise). Before, the calibration workflow could only read them from the default folder.
 *   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
 *   [BUGFIX] ``extract_leadfield`` no longer stores local file paths (user and machine names) in the leadfield files it writes. Regenerate existing files before sharing them.
 *   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
