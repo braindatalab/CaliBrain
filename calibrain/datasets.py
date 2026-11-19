@@ -18,20 +18,32 @@ import pooch
 
 from calibrain.utils import get_data_path
 
-__all__ = ["fetch_example_data", "DATA_VERSION"]
+__all__ = ["fetch_example_data"]
 
-#: Release of https://github.com/braindatalab/CaliBrain-data that holds the data.
-DATA_VERSION = "example-data-1"
-
-#: Download location of the archives (``{version}`` is replaced by ``DATA_VERSION``).
+#: Download location of the archives (``{version}`` is the release of
+#: https://github.com/braindatalab/CaliBrain-data that holds the dataset).
 DATA_URL = "https://github.com/braindatalab/CaliBrain-data/releases/download/{version}/"
 
-# dataset name -> archive file name, SHA-256 checksum, and the files it provides
+# dataset name -> release of CaliBrain-data, archive file name, SHA-256 checksum, and
+# the files it provides. Every dataset has its own release, and a release is never changed.
 _DATASETS = {
     "fsaverage": {
+        "version": "example-data-fsaverage-1",
         "archive": "calibrain-example-data-fsaverage.zip",
         "sha256": "0b2d57df59b22aff4541ea33ed75faa36290709034823275823cc892580efcce",
         "files": ("1284src_fwd/fsaverage-fwd.fif",),
+    },
+    # Derived from four CamCAN participants; see the Dataset Notice in the documentation.
+    "camcan": {
+        "version": "example-data-camcan-1",
+        "archive": "calibrain-example-data-camcan.zip",
+        "sha256": "6e19da512390614f865d246204db585447a9e8447dd0b1c3a8e7172e6d9cd124",
+        "files": (
+            "1284src_fwd/CC120166-fwd.fif",
+            "1284src_fwd/CC120264-fwd.fif",
+            "1284src_fwd/CC120309-fwd.fif",
+            "1284src_fwd/CC120313-fwd.fif",
+        ),
     },
 }
 
@@ -51,9 +63,10 @@ def fetch_example_data(
 
     Parameters
     ----------
-    dataset : str, default "fsaverage"
-        The dataset to fetch. Currently only ``"fsaverage"`` (the template forward
-        solution) is available.
+    dataset : {"fsaverage", "camcan"}, default "fsaverage"
+        The dataset to fetch: ``"fsaverage"`` (the template forward solution) or
+        ``"camcan"`` (the forward solutions of four CamCAN participants, which are
+        subject to the CamCAN terms; see the Dataset Notice in the documentation).
     data_dir : str | Path | None
         Directory to unpack the data into. By default the CaliBrain data directory
         is used: the ``CALIBRAIN_DATA`` environment variable if it is set, otherwise
@@ -84,7 +97,7 @@ def fetch_example_data(
     download_dir = data_dir / ".downloads"
     archive = Path(
         pooch.retrieve(
-            url=DATA_URL.format(version=DATA_VERSION) + entry["archive"],
+            url=DATA_URL.format(version=entry["version"]) + entry["archive"],
             known_hash=f"sha256:{entry['sha256']}",
             fname=entry["archive"],
             path=download_dir,

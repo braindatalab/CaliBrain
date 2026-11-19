@@ -106,23 +106,32 @@ def test_fsaverage_archive_is_complete_and_free_of_personal_information(tmp_path
 
 
 
-@needs_fwd
-def test_leadfields_extracted_from_the_archive_equal_those_from_the_original(tmp_path):
+@pytest.mark.parametrize("dataset,subject,coil", [("fsaverage", "fsaverage", "eeg"), ("camcan", "CC120166", "mag")])
+def test_leadfields_extracted_from_the_archive_equal_those_from_the_original(tmp_path, dataset, subject, coil):
     # the two steps of a user: unpack the downloaded forward, then extract the leadfields
     from calibrain.extract_leadfield import extract_leadfield, extract_leadfields
 
     script = _load_script()
-    script.build_archives(_DATA_DIR, tmp_path / "out", ["fsaverage"])
+    if not all((_DATA_DIR / "1284src_fwd" / f"{s}-fwd.fif").exists() for s in script.DATASETS[dataset]):
+        pytest.skip(f"forward solutions of {dataset} not available")
+    script.build_archives(_DATA_DIR, tmp_path / "out", [dataset])
     user_dir = tmp_path / "user"
-    with zipfile.ZipFile(tmp_path / "out" / "calibrain-example-data-fsaverage.zip") as zf:
+    with zipfile.ZipFile(tmp_path / "out" / f"calibrain-example-data-{dataset}.zip") as zf:
         zf.extractall(user_dir)
     extract_leadfields(data_dir=user_dir)
 
     for orientation in ("fixed", "free"):
-        extract_leadfield(_DATA_DIR / "1284src_fwd", "fsaverage", "eeg", orientation, tmp_path / "original")
-        name = f"fsaverage_{orientation}_leadfield.npz"
+        extract_leadfield(_DATA_DIR / "1284src_fwd", subject, coil, orientation, tmp_path / "original")
+        name = f"{subject}_{orientation}_leadfield.npz"
         with np.load(user_dir / "1284src_leadfield" / name, allow_pickle=True) as new, \
                 np.load(tmp_path / "original" / name, allow_pickle=True) as old:
             for key in new.files:
                 if key != "info":
                     assert script.arrays_match(new[key], old[key]), (name, key)
+
+
+def test_the_builder_rejects_an_unknown_dataset(tmp_path):
+    script = _load_script()
+
+    with pytest.raises(SystemExit):
+        script.main(["--output", str(tmp_path), "--datasets", "does-not-exist"])
