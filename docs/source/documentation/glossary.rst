@@ -1,187 +1,289 @@
 .. meta::
-   :description: Definitions of CaliBrain, uncertainty-calibration, inverse-imaging, and EEG/MEG terminology.
+   :description: Definitions of the terms used in the CaliBrain documentation and code: data and head models, source models, inverse solvers, uncertainty representations, and calibration modes.
 
 Glossary
 ========
 
-This glossary defines CaliBrain-specific vocabulary together with general
-inverse-imaging and neuroimaging terms used throughout the documentation.
+The terms of CaliBrain and of EEG/MEG source imaging as the documentation and the code
+use them. Names in ``code font`` are the names used in function arguments and
+configuration files.
 
 .. glossary::
    :sorted:
 
-   aggregated calibration
-      Calibration performed on source summaries that have been reduced across
-      time rather than on the full source-by-time posterior output.
-
    adaptive_joint_learning
-      A noise-variance workflow mode in which no fixed sensor-noise variance is
-      supplied to the inverse solver. Instead, a joint-learning solver
-      estimates the noise level during fitting.
+      A noise-variance strategy (``noise_type="adaptive_joint_learning"``). No noise
+      variance is given to the solver; a joint-learning solver (``BMN_joint`` or
+      ``gamma_lambda_map_sflex``) estimates it during the fit. See :term:`noise-variance
+      strategy`.
+
+   aggregated
+      An uncertainty mode (``calibration_curve_intervals_aggregated``) that works on the
+      time average :math:`\bar{x}` of the source activity instead of on every time sample.
+      The posterior covariance of the average is the covariance divided by the number of
+      time samples :math:`T`. The calibration workflow uses this mode. See
+      :term:`pointwise`.
+
+   alpha_SNR
+      The signal-to-noise mixing parameter of ``SensorSimulator.simulate``, between 0 and
+      1. For 1 the sensor data have no noise. Otherwise the noise is scaled by
+      :math:`(1 - \alpha) / \alpha` times the ratio of the Frobenius norms of the clean
+      data and the noise.
 
    baseline noise variance
-      Noise-variance estimate obtained from the pre-stimulus segment of the
-      simulated sensor data.
+      The noise variance estimated from the segment before the stimulus
+      (``noise_type="baseline"``). See :term:`noise-variance strategy`.
 
    BMN
-      Bayesian minimum norm. In CaliBrain, this refers to a minimum-norm-style
-      Bayesian inverse solver that returns posterior means and covariance
-      summaries under a common source-variance model.
+      Bayesian minimum norm: an inverse solver (``calibrain.BMN``) that returns the
+      posterior mean and covariance of the source activity under one common source
+      variance. The noise variance is an input.
 
    BMN_joint
-      A BMN variant that can learn a common sensor-noise variance jointly with
-      the source hyperparameter.
+      The variant of :term:`BMN` (``calibrain.BMN_joint``) that learns a common sensor-noise
+      variance together with the source variance.
+
+   CamCAN
+      Cambridge Centre for Ageing and Neuroscience, a data repository. CaliBrain offers
+      the forward solutions of four of its participants (``CC120166``, ``CC120264``,
+      ``CC120309``, ``CC120313``) as a separate example dataset, which remains subject to the
+      CamCAN terms. See :doc:`../datasets/data_notice`.
 
    calibration
-      The process of comparing nominal uncertainty levels with empirical
-      coverage and, when needed, learning a recalibration map.
+      Comparing the nominal coverage of credible sets with their empirical coverage and,
+      where they differ, learning a mapping that corrects them. See :term:`recalibration`.
 
    calibration curve
-      A curve showing empirical coverage as a function of nominal coverage.
+      The empirical coverage plotted against the nominal coverage. The diagonal is perfect
+      calibration.
 
    coil type
-      MNE/FIFF metadata describing the sensor hardware type, for example EEG
-      electrodes or MEG magnetometers.
+      The sensor type of the leadfield. ``LeadfieldData.coil_type`` holds the MNE/FIFF code
+      of the sensor hardware; ``extract_leadfields`` takes the argument
+      ``coil_name``: ``"eeg"`` (electrodes), ``"mag"`` (magnetometers), or ``"grad"``
+      (gradiometers).
+
+   cortical normal
+      The unit vector perpendicular to the cortical surface at a source. A free-orientation
+      leadfield file stores the normals (``cortical_normals``, shape ``(n_sources, 3)``), and
+      the free-orientation simulation places the activity of an active source along its normal.
 
    credible interval
-      An interval derived from a posterior distribution. In CaliBrain, scalar
-      credible intervals are used for fixed-orientation uncertainty evaluation.
+      The interval around the posterior mean that contains the true value of a scalar source
+      with a given probability, for a Gaussian posterior. Fixed orientation uses credible
+      intervals.
 
    credible set
-      A posterior uncertainty region, such as an interval or ellipsoid,
-      associated with a nominal coverage level.
+      The region of the posterior that contains the true source value with a given
+      probability: an interval (:math:`d = 1`), an ellipse (:math:`d = 2`), or an ellipsoid
+      (:math:`d = 3`). :term:`nominal coverage` is that probability.
+
+   data directory
+      The folder with the example data and the leadfield files. It has the subfolders
+      ``fwd/``, ``1284src_fwd/``, and ``1284src_leadfield/``. ``get_data_path()`` returns it:
+      ``<repository>/data`` in a source checkout and a per-user folder for an installed
+      package. Functions take a ``data_dir`` argument to use another folder.
 
    empirical coverage
-      The observed fraction of cases in which the true source value or vector
-      lies inside the nominal posterior credible set.
-
-   EMD
-      Earth mover's distance. In CaliBrain, this is used as a source-space
-      distributional metric for comparing estimated and true source activity.
+      The fraction of cases in which the true source value lies inside the credible set of a
+      given nominal coverage.
 
    EEG
-      Electroencephalography. In CaliBrain, EEG can be treated in fixed
-      orientation or in free orientation with three local source components.
+      Electroencephalography. EEG sources have fixed orientation or three free components.
+      EEG leadfields are in µV/nAm.
+
+   EMD
+      Earth mover's distance (``emd`` in ``MetricEvaluator``). It compares the distribution of
+      the estimated source activity over the source space with that of the true activity.
+
+   ERP
+      Event-related potential. ``SourceSimulator`` draws the waveform of every active
+      source as an ERP-like signal, configured with ``ERP_config``.
+
+   example data
+      The forward solutions of the ``fsaverage`` template and of four CamCAN participants, which
+      are downloaded with ``fetch_example_data`` from the CaliBrain-data repository and are
+      not part of the package. See :doc:`../datasets/index`.
+
+   fixed orientation
+      A source model with one scalar amplitude per source, along the cortical normal. The
+      local source dimension is :math:`d = 1`, and the leadfield has the shape
+      ``(n_sensors, n_sources)``.
 
    forward model
-      The mapping from source activity to sensor measurements, represented by
-      the leadfield.
+      The mapping from source activity to sensor measurements. It is represented by the
+      :term:`leadfield`, which is computed from a :term:`forward solution`.
+
+   forward solution
+      The result of an MNE forward computation, stored as a ``<subject>-fwd.fif`` file: the
+      source space, the gain matrix, and the sensor information. The :term:`example data`
+      are forward solutions. ``reduce_forward_solutions`` reduces them to 1284 sources, and
+      ``extract_leadfields`` creates the :term:`leadfield` files from them.
 
    free orientation
-      A source model in which each source location has multiple orientation
-      components rather than a single fixed scalar coefficient.
+      A source model with several components per source instead of one scalar amplitude: three
+      for EEG (:math:`d = 3`) and two tangential ones for MEG (:math:`d = 2`, see
+      :term:`reduced free-orientation MEG`). The leadfield has the shape ``(n_sensors,
+      n_sources, n_components)``.
+
+   free-orientation EEG
+      A free-orientation EEG model with three components per source (:math:`d = 3`).
+
+   fsaverage
+      The template head model distributed with FreeSurfer and MNE-Python. The ``fsaverage``
+      example dataset has 64 EEG channels and contains no participant data.
+
+   full source space
+      The source space of a downloaded :term:`forward solution`, with about 5100 sources (2562
+      per hemisphere). CaliBrain works with the :term:`reduced source space`.
 
    full_cov
-      CaliBrain's name for the free-orientation uncertainty representation that
-      uses local posterior covariance blocks to define multivariate ellipsoidal
-      credible sets.
-
-   gamma_map_sflex
-      A sparse Bayesian inverse solver in CaliBrain based on Gamma-MAP and an
-      sFLEX basis construction.
+      The free-orientation uncertainty representation that uses the local posterior
+      covariance block of every source, which gives ellipsoidal credible sets. See
+      :term:`marginal`.
 
    gamma_lambda_map_sflex
-      An sFLEX Gamma-MAP variant that jointly learns a noise-related
-      regularization parameter.
+      The variant of :term:`gamma_map_sflex` that also learns a noise-related regularization
+      parameter (``calibrain.gamma_lambda_map_sflex``).
+
+   gamma_map_sflex
+      A sparse Bayesian inverse solver (``calibrain.gamma_map_sflex``): Gamma-MAP with an
+      :term:`sFLEX` spatial basis. The noise variance is an input.
 
    head
-      Informal workflow term for one subject-specific or geometry-specific
-      simulation context used when pooling or splitting calibration data.
+      The word used in the workflow configurations (``HEADS``) for one subject's forward model,
+      for example ``CC120166``. Calibration data are pooled or split by head.
 
    inverse problem
-      The problem of recovering latent neural source activity from EEG/MEG
-      sensor measurements.
+      Estimating the source activity from the sensor measurements. The leadfield has fewer
+      rows (sensors) than columns (sources), so the problem is underdetermined.
 
    isotonic regression
-      A monotone regression method used in CaliBrain to recalibrate nominal
-      coverage levels while preserving ordering.
+      A monotonic regression. ``UncertaintyCalibrator`` uses it to map nominal to empirical
+      coverage, which keeps the order of the coverage levels.
 
    leadfield
-      The matrix or tensor that maps source amplitudes to sensor measurements.
+      The matrix that maps source amplitudes (in nAm) to sensor measurements: fT/nAm for MEG
+      and µV/nAm for EEG. CaliBrain stores it in ``<subject>_fixed_leadfield.npz`` and
+      ``<subject>_free_leadfield.npz`` together with the source coordinates, the sensor units,
+      and for free orientation the :term:`cortical normal`\ s. ``extract_leadfields`` creates
+      these files; ``LeadfieldBuilder`` reads them.
+
+   local source basis
+      A :math:`3 \times d` matrix per source (``Q_basis``, shape ``(n_sources, 3, d)``) that
+      relates the :math:`d` local components of a source to a common 3D frame: :math:`d = 3`
+      for EEG and :math:`d = 2` (the tangential plane) for MEG. It is stored in the free
+      leadfield file and used by the free-orientation simulation.
 
    marginal
-      CaliBrain's name for the free-orientation uncertainty representation that
-      calibrates component-wise intervals using marginal variances only.
+      The free-orientation uncertainty representation that calibrates every component with its
+      own marginal variance and ignores the covariance between components. See
+      :term:`full_cov`.
 
    MEG
-      Magnetoencephalography. In CaliBrain, MEG can be represented in fixed
-      orientation or in a reduced free-orientation form with tangential
-      components.
+      Magnetoencephalography. MEG sources have fixed orientation or two free tangential
+      components (:term:`reduced free-orientation MEG`). Magnetometer leadfields are in
+      fT/nAm.
+
+   nnz
+      The number of active sources (non-zero rows) in a simulated source activity, the argument
+      of ``SourceSimulator.simulate``.
 
    nominal coverage
-      The target coverage level attached to a credible interval or credible
-      set, for example 0.9 for a nominal 90% credible set.
+      The probability a credible set is built to contain the true value with, for example 0.9
+      for a 90% credible set.
 
    noise-variance strategy
-      The rule used to provide or estimate the sensor-noise variance for source
-      reconstruction. In CaliBrain, the main strategies are ``oracle``,
-      ``baseline``, and ``adaptive_joint_learning``.
+      How the sensor-noise variance reaches the solver (``noise_type``): ``oracle`` (the true
+      value), ``baseline`` (estimated before the stimulus), or ``adaptive_joint_learning``
+      (learned by the solver).
 
    oracle noise variance
-      The true sensor-noise variance computed from the injected simulation
-      noise.
+      The true noise variance, computed from the noise that was added to the simulated data
+      (``noise_type="oracle"``).
+
+   pointwise
+      An uncertainty mode (``calibration_curve_intervals_pointwise``) that checks the credible
+      set of every source at every time sample. See :term:`aggregated`.
 
    post_fixed
-      A calibration workflow mode in which one recalibration map is fit at a
-      reference condition and then reused across a sweep of evaluation
-      conditions.
+      A calibration mode: one recalibration map is fitted at a reference condition and applied
+      to a series of evaluation conditions.
 
    post_oracle
-      A calibration workflow mode in which recalibration is fit and evaluated
-      on matched train and evaluation conditions.
+      A calibration mode: the map is fitted and evaluated on matching training and evaluation
+      conditions.
 
    post_pooled
-      A calibration workflow mode in which recalibration is fit on pooled
-      training data and evaluated on a target condition.
-
-   post_pooled_mismatch
-      A calibration workflow mode in which recalibration is fit on pooled but
-      intentionally mismatched training conditions and evaluated on the target
+      A calibration mode: the map is fitted on pooled training data and evaluated on a target
       condition.
 
+   post_pooled_mismatch
+      A calibration mode: the map is fitted on pooled training data whose conditions
+      deliberately differ from the target condition, which is where it is evaluated.
+
    posterior covariance
-      The covariance matrix returned by an inverse solver to quantify posterior
-      uncertainty in source space or coefficient space.
+      The covariance matrix of the posterior distribution of the source activity, returned by
+      the solver.
 
    posterior mean
-      The mean of the posterior distribution returned by an inverse solver and
-      used as the point estimate of source activity.
+      The mean of the posterior distribution of the source activity: the estimate.
 
    posterior summary
-      The stored solver output used downstream in CaliBrain, typically
-      including posterior mean, posterior covariance, and associated metadata.
+      The file (HDF5) that ``DataGenerator`` saves for every run: posterior mean and covariance
+      with the metadata of the run (orientation, solver, noise type, seed, active sources, and
+      so on). The :term:`run manifest` lists these files.
 
    precal
-      A workflow mode that evaluates raw empirical coverage without fitting a
-      recalibration map.
+      A calibration mode that measures the empirical coverage before any recalibration.
 
    recalibration
-      The post-hoc correction of nominal coverage levels using a fitted mapping
-      such as isotonic regression.
+      Correcting the nominal coverage with a fitted mapping, in CaliBrain isotonic regression.
 
    reduced free-orientation MEG
-      A free-orientation MEG representation with two tangential components per
-      source location.
+      The free-orientation model for MEG with two tangential components per source
+      (:math:`d = 2`). Its uncertainty regions are ellipses.
+
+   reduced source space
+      The source space of 1284 sources (642 per hemisphere) that CaliBrain works with,
+      chosen at random from the :term:`full source space` with a fixed seed.
+      ``reduce_forward_solutions`` creates it, and the folders ``1284src_fwd/`` and
+      ``1284src_leadfield/`` are named after it.
 
    run manifest
-      A tabular index of generated runs used to locate posterior summaries and
-      their metadata in downstream workflow stages.
+      The CSV file (``manifest_path``) that lists the posterior summaries of the runs of the
+      data-generation workflow. The aggregation step finds the summaries through it.
 
    sensor noise
-      Additive noise at the sensor level, simulated in CaliBrain before source
-      reconstruction.
+      Gaussian noise that ``SensorSimulator`` adds to the sensor data before the sources are
+      estimated.
+
+   sFLEX
+      Sparse basis field expansion, the spatial basis of the Gamma-MAP solvers. It is built
+      from the source coordinates: two sources within ``threshold_factor`` times ``sigma`` of
+      each other get the weight :math:`\exp(-d^2 / 2\sigma^2)`, where :math:`d` is their
+      distance, and the matrix is normalized. The solver imposes sparsity on the coefficients
+      of this basis and so keeps the source-space posterior covariance defined at inactive
+      sources.
 
    source activity
-      Latent neural current amplitudes at source locations over time.
+      The time course of the current dipole moments (in nAm) at the sources. Fixed orientation:
+      shape ``(n_sources, n_times)``. Free orientation: ``(n_sources, n_components, n_times)``.
 
    source space
-      The discrete set of candidate source locations used for inverse source
-      imaging.
+      The set of locations where sources are modelled. See :term:`full source space` and
+      :term:`reduced source space`.
 
-   source_estimator
-      The high-level CaliBrain class that wraps an inverse solver and applies
-      it to a leadfield and sensor data.
+   SourceEstimator
+      The class (``calibrain.SourceEstimator``) that applies an inverse solver, for example
+      ``gamma_map_sflex`` or ``BMN``, to a leadfield and sensor data and returns the posterior
+      mean and covariance.
+
+   subject
+      The identifier of a forward solution: the file name without ``-fwd.fif``, for example
+      ``fsaverage`` or ``CC120166``. Leadfield files and posterior summaries carry it.
 
    uncertainty representation
-      The geometric object used for calibration, such as a scalar interval,
-      component-wise interval family, or local ellipsoid.
+      The object that defines a credible set for a source: a scalar interval (fixed
+      orientation), a family of component-wise intervals (:term:`marginal`), or an
+      ellipse or ellipsoid (:term:`full_cov`).
