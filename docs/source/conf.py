@@ -12,14 +12,18 @@ sys.path.insert(0, str(project_root))
 import calibrain
 
 project = 'CaliBrain'
-copyright = '2026, Mohammad Orabe'
 author = 'Mohammad Orabe, Srikantan Nagarajan, Stefan Haufe, Ismail Huseynov'
+copyright = f'2026, {author}'
 release = calibrain.__version__
 version = release
 documentation_version = os.environ.get(
     "READTHEDOCS_VERSION",
     os.environ.get("DOCS_VERSION", "stable"),
 )
+if documentation_version == "stable":
+    # The stable docs are the latest release. Its entry in switcher.json is marked
+    # "preferred" and has the release number as its version (used for the old-version banner).
+    documentation_version = release
 switcher_json_url = "https://calibrain.readthedocs.io/stable/_static/switcher.json"
 html_baseurl = os.environ.get(
     "READTHEDOCS_CANONICAL_URL",

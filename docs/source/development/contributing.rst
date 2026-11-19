@@ -144,8 +144,9 @@ publishing:
 1. Check that the :doc:`changelog <changelog>` lists every change since the last
    release, and replace ``(unreleased)`` with the release date.
 2. Update the version in ``calibrain/__init__.py`` (the only place the package
-   reads it from), in ``CITATION.cff`` (``version`` and ``date-released``), and
-   add the new version to ``docs/source/_static/switcher.json``.
+   reads it from), in ``CITATION.cff`` (``version`` and ``date-released``), and in
+   ``docs/source/_static/switcher.json``: add an entry for the new version, and set
+   the ``version`` of the ``"stable"`` entry to the new release number.
 3. Run ``python -m pytest tests/`` and ``ruff check .``, and build the
    documentation.
 4. Check what will be archived: look through ``git ls-files`` for unpublished,
@@ -158,6 +159,40 @@ publishing:
    ``README.md``, ``docs/source/cite/index.rst``, and ``docs/source/index.rst``.
 7. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
    check the Read the Docs ``stable`` build and the Zenodo record.
+8. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
+   every documented version against the live site (see below).
+
+The documentation version switcher
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Every version of the documentation loads its list of versions from
+``https://calibrain.readthedocs.io/stable/_static/switcher.json``. That address is
+stored in the HTML of every build and cannot be changed afterwards, so the address
+and the file must never move: add a new entry for every release, and keep the
+addresses of the form ``https://calibrain.readthedocs.io/<version>/`` (without
+``/en/``, and never GitHub Pages).
+
+The ``"stable"`` entry is marked ``"preferred": true``, and its ``version`` is the
+current release number. The theme compares it with the version of each page and
+shows a banner on older pages ("This is documentation for an old version") and on
+development builds that are ahead of it. Exactly one entry may be preferred, and a
+test checks that it matches ``calibrain.__version__``. Because the banner is part of
+every build, old versions show it as soon as they can load this list.
+
+Releases up to v1.0.3 were built before this was fixed: v0.1.2 and v1.0.0 load their
+own bundled list (which is malformed or links to the old GitHub Pages site), and
+v1.0.1 to v1.0.3 load ``/en/latest/_static/switcher.json``, which does not exist on
+this project. They are fixed with redirects in the Read the Docs project (Admin,
+Redirects), in this order, all of type "Exact Redirect":
+
+1. ``/v0.1.2/_static/switcher.json`` to ``/stable/_static/switcher.json`` (force redirect)
+2. ``/v1.0.0/_static/switcher.json`` to ``/stable/_static/switcher.json`` (force redirect)
+3. ``/en/latest/_static/switcher.json`` to ``/stable/_static/switcher.json``
+4. ``/en/*`` to ``/:splat``
+
+Rule 4 also sends any other old address with an ``/en/`` prefix to the right page.
+The first matching rule is applied, so keep the order. After changing the
+redirects, ``python scripts/check_version_switcher.py`` must report no problems.
 
 Publishing new example data (maintainers)
 -----------------------------------------

@@ -6,8 +6,9 @@
   },
   {
     "name": "stable",
-    "version": "stable",
-    "url": "https://calibrain.readthedocs.io/stable/"
+    "version": "1.0.3",
+    "url": "https://calibrain.readthedocs.io/stable/",
+    "preferred": true
   },
   {
     "name": "v1.0.3",
@@ -18,7 +19,7 @@
     "name": "v1.0.2",
     "version": "v1.0.2",
     "url": "https://calibrain.readthedocs.io/v1.0.2/"
-  },  
+  },
   {
     "name": "v1.0.1",
     "version": "v1.0.1",
