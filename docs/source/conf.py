@@ -12,15 +12,23 @@ sys.path.insert(0, str(project_root))
 import calibrain
 
 project = 'CaliBrain'
-copyright = '2026, Mohammad Orabe'
-author = 'Mohammad Orabe, Ismail Huseynov, Srikantan Nagarajan, Stefan Haufe'
+author = 'Mohammad Orabe, Srikantan Nagarajan, Stefan Haufe, Ismail Huseynov'
+copyright = f'2026, {author}'
 release = calibrain.__version__
 version = release
 documentation_version = os.environ.get(
     "READTHEDOCS_VERSION",
-    os.environ.get("DOCS_VERSION", "latest"),
+    os.environ.get("DOCS_VERSION", "stable"),
 )
-switcher_json_url = "https://calibrain.readthedocs.io/en/latest/_static/switcher.json"
+if documentation_version == "stable":
+    # The stable docs are the latest release. Its entry in switcher.json is marked
+    # "preferred" and has the release number as its version (used for the old-version banner).
+    documentation_version = release
+switcher_json_url = "https://calibrain.readthedocs.io/stable/_static/switcher.json"
+html_baseurl = os.environ.get(
+    "READTHEDOCS_CANONICAL_URL",
+    "https://calibrain.readthedocs.io/stable/",
+)
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -72,7 +80,7 @@ html_theme_options = {
     "navigation_depth": 3,
     "show_toc_level": 3,
     "collapse_navigation": False,
-    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+    "secondary_sidebar_items": ["page-toc"],
     "logo": {
         "image_light": "_static/caliBrain.png",
         "image_dark": "_static/caliBrain.png",
@@ -117,6 +125,7 @@ master_doc = 'index'
 html_static_path = ['_static']
 html_css_files = ['custom.css']
 templates_path = ['_templates']
+epub_exclude_files = ['_static/switcher.json']
 html_sidebars = {
     "**": ["sidebar-nav-bs.html"],
 }
@@ -130,9 +139,9 @@ intersphinx_mapping = {
     'mne': ('https://mne.tools/stable/', None),
 }
 
-html_meta = {
-    "google-site-verification": "U4j0wnWaoGzIzJ5_ThCD3I8YLlSSrcOoIeECjL2nPuk",
-}
-
 html_title = "CaliBrain Documentation"
 html_short_title = "CaliBrain"
+html_show_sphinx = False  # no "Created using Sphinx" line in the footer
+# Do not publish the reStructuredText sources (_sources/*.txt): search engines index them.
+html_copy_source = False
+html_show_sourcelink = False

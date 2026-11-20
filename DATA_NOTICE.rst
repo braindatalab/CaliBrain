@@ -29,3 +29,13 @@ https://opendata.mrc-cbu.cam.ac.uk/projects/camcan/
 If a workflow requires CamCAN or another restricted dataset, the recommended
 pattern is that users obtain the data themselves under the relevant agreement
 and then run the CaliBrain scripts locally on their own authorized copy.
+
+Derived CamCAN example data
+---------------------------
+
+The CaliBrain-data repository provides the forward solutions of four CamCAN participants (``CC120166``, ``CC120264``, ``CC120309``, ``CC120313``) as derived example data (``fetch_example_data("camcan")``).
+They contain the source-space geometry and the sensor gain matrix computed for these
+participants, and no images and no participant information beyond the pseudonymous
+participant IDs. They remain subject to the CamCAN terms: if you use them, acknowledge
+CamCAN and cite the CamCAN publications as described on the data portal. They do not
+replace requesting access to the CamCAN data if you need the original recordings.

@@ -12,7 +12,7 @@ from scipy.linalg import block_diag
 
 from calibrain import MetricEvaluator, UncertaintyCalibrator, UncertaintyEstimator
 from calibrain.metric_evaluation import _compute_dataset_emd
-from calibrain.utils import get_data_path
+from calibrain.utils import get_fwd_dir
 from calibrain.utils import load_python_config
 
 DEFAULT_CONFIG_PATH = Path("configs/calibration_default.py")
@@ -59,19 +59,24 @@ def _slugify(value: str) -> str:
 _COORD_CACHE: Dict[str, np.ndarray] = {}
 
 
-def _load_subject_coords(subject: str) -> np.ndarray:
+def _load_subject_coords(subject: str, data_dir: str | Path | None = None) -> np.ndarray:
+    """Source coordinates of ``subject``, read from ``<data_dir>/1284src_fwd``.
+
+    ``data_dir`` is the CaliBrain data directory; by default the standard one is used
+    (see :func:`calibrain.utils.get_data_path`).
+    """
     if not subject:
         raise ValueError("Dataset does not specify a subject; cannot load coordinates.")
-    if subject in _COORD_CACHE:
-        return _COORD_CACHE[subject]
 
-    fwd_dir = get_data_path() / "1284src_fwd"
-    fwd_path = fwd_dir / f"{subject}-fwd.fif"
+    fwd_path = get_fwd_dir(data_dir) / f"{subject}-fwd.fif"
+    cache_key = str(fwd_path)
+    if cache_key in _COORD_CACHE:
+        return _COORD_CACHE[cache_key]
     if not fwd_path.exists():
         raise FileNotFoundError(f"Forward solution not found for subject '{subject}': {fwd_path}")
     fwd = mne.read_forward_solution(str(fwd_path), verbose="ERROR")
     coords = np.vstack([hemi["rr"][hemi["vertno"]] for hemi in fwd["src"]])
-    _COORD_CACHE[subject] = coords
+    _COORD_CACHE[cache_key] = coords
     return coords
 
 
@@ -433,7 +438,7 @@ def _run_calibration_single(config: Dict[str, Any]) -> Path:
         eval_coords: np.ndarray | None = None
         if eval_subject:
             try:
-                eval_coords = _load_subject_coords(str(eval_subject))
+                eval_coords = _load_subject_coords(str(eval_subject), config.get("data_dir"))
             except Exception as exc:
                 logger.warning("Unable to load source coordinates for subject %s: %s", eval_subject, exc)
         else:
@@ -553,6 +558,8 @@ def run_calibration(config: Union[str, Path, Dict[str, Any]]) -> Path:
             print(f"[calibration] Running preset '{label}'")
             if not isinstance(sub_config, dict):
                 raise ValueError(f"Run '{label}' must be a dict config.")
+            if "data_dir" in config and "data_dir" not in sub_config:
+                sub_config = {**sub_config, "data_dir": config["data_dir"]}  # a top-level data_dir applies to every run
             last = _run_calibration_single(sub_config)
         return last if last is not None else Path(config.get("output_dir", "results/calibration_eval"))
 

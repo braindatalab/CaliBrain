@@ -1,8 +1,11 @@
 from typing import Any, Dict, Union, Optional
+import contextlib
 import logging
 from pathlib import Path
 import os
+import re
 import runpy
+import warnings
 
 import mne
 import numpy as np
@@ -123,35 +126,93 @@ def inspect_object(obj, show_private=False):
     return {"attributes": attributes, "methods": methods}
 
 
+# An absolute path: "/dir/file" or "C:\\dir\\file" (at least one directory level).
+_LOCAL_PATH = re.compile(r"(?:[A-Za-z]:\\|/)(?:[^\s,;()<>\"'\\/]+[\\/])+[^\s,;()<>\"'\\/]*")
+
+
+def strip_local_paths(info):
+    """Remove local file paths from an MNE info (or forward info), in place.
+
+    MNE stores the directory a file was made in (``working_dir``) and the paths of
+    the files it was computed from (``mri_file``, ``meas_file``, ``command_line``).
+    They contain user and machine names, so they must not end up in shared files.
+    ``working_dir`` is emptied and the other fields keep only the file names.
+
+    Parameters
+    ----------
+    info : mne.Info or dict
+        The info to clean. It is modified in place.
+    """
+    unlock = info._unlock() if hasattr(info, "_unlock") else contextlib.nullcontext()
+    with unlock:
+        if "working_dir" in info:
+            info["working_dir"] = ""
+        for key in ("mri_file", "meas_file", "command_line"):
+            value = info.get(key)
+            if isinstance(value, str) and value:
+                info[key] = _LOCAL_PATH.sub(
+                    lambda m: m.group(0).replace("\\", "/").rstrip("/").split("/")[-1], value
+                )
+    return info
+
+
+# Subfolders of the data directory. The number is the number of sources of the
+# forward solutions and leadfields (642 per hemisphere).
+FWD_DIR_NAME = "1284src_fwd"
+LEADFIELD_DIR_NAME = "1284src_leadfield"
+
+
 def get_data_path(path: Optional[Union[str, Path]] = None) -> Path:
     """Get the path to CaliBrain data directory.
-    
+
     Parameters
     ----------
     path : str | Path | None
-        Custom path to data directory. If None, uses default location.
-        
+        Custom path to data directory. If None, the default is
+        ``<repository>/data`` in a source checkout, and a per-user cache
+        directory for an installed package (for example ``~/.cache/calibrain``
+        on Linux). To use another folder, pass it explicitly (for example as
+        ``data_dir`` of :func:`calibrain.fetch_example_data`).
+
     Returns
     -------
     data_path : Path
         Path to CaliBrain data directory.
     """
     if path is None:
-        # Use environment variable or default location in calibrain package
-        if 'CALIBRAIN_DATA' in os.environ:
-            data_path = Path(os.environ['CALIBRAIN_DATA'])
+        if "CALIBRAIN_DATA" in os.environ:
+            warnings.warn(
+                "The CALIBRAIN_DATA environment variable is no longer used. Pass the folder "
+                "explicitly (for example data_dir=...) to use a folder other than the default.",
+                FutureWarning,
+                stacklevel=2,
+            )
+        calibrain_root = Path(__file__).parent.parent
+        if (calibrain_root / "pyproject.toml").exists():
+            # A source checkout (also an editable install): <repository>/data
+            data_path = calibrain_root / "data"
         else:
-            # Default to calibrain/data directory relative to this module
-            calibrain_root = Path(__file__).parent.parent
-            data_path = calibrain_root / 'data'
-        data_path = Path(data_path)
+            # An installed package: a user directory, not the Python environment
+            import pooch
+
+            data_path = Path(pooch.os_cache("calibrain"))
     else:
         data_path = Path(path)
-    
+
     # Create directory if it doesn't exist
     data_path.mkdir(parents=True, exist_ok=True)
-    
+
     return data_path
+
+
+def get_fwd_dir(data_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Folder of the forward solutions (``<data directory>/1284src_fwd``)."""
+    return get_data_path(data_dir) / FWD_DIR_NAME
+
+
+def get_leadfield_dir(data_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Folder of the leadfield files (``<data directory>/1284src_leadfield``)."""
+    return get_data_path(data_dir) / LEADFIELD_DIR_NAME
 
 
 def restrict_fwd_to_sources(

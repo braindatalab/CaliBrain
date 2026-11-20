@@ -10,14 +10,14 @@ build:
 sphinx:
   configuration: docs/source/conf.py
   builder: html
-  fail_on_warning: false
+  fail_on_warning: true
 
 python:
   install:
-    - requirements: docs/requirements.txt # Install documentation requirements first
     - method: pip
-      path: .        # Correctly specify the path to your package root
-                     # This will run 'pip install .' which installs your package
+      path: .
+      extra_requirements:
+        - docs
 
 formats:
   - pdf

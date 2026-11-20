@@ -1,10 +1,67 @@
+.. meta::
+   :description: Release history and notable changes to the CaliBrain package, workflows, tests, and documentation.
+
 Changelog
 =========
 
-This document records notable changes to the CaliBrain package.
+The notable changes of every release, newest first. Entries are tagged ``[FEATURE]``,
+``[ENHANCEMENT]``, ``[BUGFIX]``, ``[BREAKING]``, ``[DOCS]``, ``[TEST]``, or ``[CI]``;
+``[BREAKING]`` entries need a change in user code or in existing data files.
 
-.. note::
-    This page summarizes notable package, workflow, and documentation changes.
+Version 1.1.0 (2026-11-20)
+--------------------------
+
+*   [BREAKING] Free-orientation sources are now simulated with one waveform along the
+    cortical normal of each active source (rank-one blocks), instead of an independent
+    waveform per component. Results of earlier free-orientation runs are not comparable.
+*   [BREAKING] ``SourceSimulator.simulate`` needs the keyword-only argument
+    ``cortical_normals`` for free orientation (and ``Q_basis`` for reduced free-orientation
+    MEG). Free-orientation leadfield files from 1.0.x do not contain the normals: create them
+    again with ``extract_leadfields()``, otherwise ``DataGenerator`` stops with an error.
+*   [BREAKING] The ``CALIBRAIN_DATA`` environment variable is no longer read. Pass
+    ``data_dir`` (or ``--data-dir``) instead. While the variable is set, ``get_data_path``
+    warns that it is ignored.
+*   [BREAKING] ``run_data_generation`` no longer writes ``results/logs/*.log`` and ignores
+    the ``log_dir`` key of the configuration. It logs to the console.
+*   [FEATURE] Example data on demand. ``fetch_example_data()`` downloads the forward
+    solutions of the ``fsaverage`` template and, as a separate dataset under the CamCAN
+    terms, of four CamCAN participants (``fetch_example_data("camcan")``), and checks them
+    against a SHA-256 checksum. ``reduce_forward_solutions()`` reduces them to 1284 sources
+    and ``extract_leadfields()`` creates the leadfield files. These two also run as
+    ``python -m calibrain.reduce_fwd`` and ``python -m calibrain.extract_leadfield``.
+*   [FEATURE] Leadfield files and ``LeadfieldBuilder`` carry ``cortical_normals`` (and
+    ``Q_basis`` for MEG), and ``DataGenerator`` saves the normals in the posterior-summary
+    files.
+*   [ENHANCEMENT] The data-generation and calibration workflows accept a ``data_dir`` key in
+    their configuration. An installed package keeps its data in a per-user folder instead of
+    inside the Python environment; a source checkout still uses ``<repository>/data``.
+*   [ENHANCEMENT] ``extract_leadfield`` checks its input and raises a ``ValueError`` for free
+    extraction from a fixed-orientation forward solution, for a source space that is not a
+    cortical surface, and for zero cortical normals.
+*   [ENHANCEMENT] ``PyQt5``, ``pyvistaqt``, and ``ipywidgets`` are optional now
+    (``pip install "calibrain[viz]"``). The version is defined only in
+    ``calibrain/__init__.py`` and the dependencies, with lower bounds, only in
+    ``pyproject.toml`` (``pooch`` is a direct dependency; ``requirements.txt`` is removed).
+*   [BUGFIX] ``extract_leadfield`` no longer stores local file paths (user and machine names)
+    in the leadfield files; create existing files again before you share them. Importing
+    ``extract_leadfield`` or ``reduce_fwd`` no longer runs their batch jobs, which overwrote
+    data files. ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when
+    ``save_path`` does not exist. The duplicate ``__init__.py`` in the repository root, which
+    could break the collection of the tests, is removed.
+*   [DOCS] New tutorial 05, "Preparing the Example Data", and new tutorial 15, a complete
+    workflow on the real ``fsaverage`` head model. The tutorials are renumbered (leadfield
+    construction is now 06 and calibration 12), so links to the old tutorial pages change.
+*   [DOCS] Rewritten development guide, contributing page, and glossary, expanded
+    installation guides, a ``SECURITY.md``, and a release checklist for maintainers. The
+    title, description, authors, and citation (the Zenodo concept DOI) are the same
+    everywhere, and the version menu and the old-version banner of the documentation work
+    again.
+*   [TEST] New tests for free-orientation simulation, the data steps, the workflows, the
+    posterior-summary files, and the package metadata.
+*   [CI] The tests run on Python 3.10 to 3.14 and with the lowest allowed dependency
+    versions, and before a release is uploaded to PyPI. A ``ruff`` check was added, Read the
+    Docs builds fail on warnings, and Dependabot checks the dependencies and the GitHub
+    Actions monthly.
 
 Version 1.0.3 (2026-07-08)
 --------------------------
@@ -43,7 +100,7 @@ Version 1.0.0 (2026-06-11)
 
 *   Version 1.0.0 marks a major consolidation of the CaliBrain package around a
     stable, production-ready workflow. The package is now centered on simulation-based
-    uncertainty estimation and calibration in EEG/MEG inverse source imaging, with
+    uncertainty quantification and calibration in EEG/MEG inverse source imaging, with
     robust support for fixed and free-orientation source models.
 *   [BREAKING] Consolidated the supported inverse workflow around ``gamma_map_sflex``,
     ``gamma_lambda_map_sflex``, ``BMN``, and ``BMN_joint``. Older methods such as
@@ -52,7 +109,7 @@ Version 1.0.0 (2026-06-11)
 *   [BREAKING] Reworked calibration from within-subject, across-source fitting to pooled source datasets across subjects, with isotonic regression now fit on subject-level splits rather than a single subject at a time.
 *   [FEATURE] Introduce five calibration modes (``precal``, ``post_oracle``, ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed``) for evaluating calibration performance under different fitting conditions.
 *   [FEATURE] Expanded the core simulation stack with stronger support for source simulation, sensor simulation, and leadfield handling across fixed and free-orientation settings.
-*   [FEATURE] Added and extended uncertainty estimation and calibration capabilities, including ``pointwise`` and ``aggregated`` uncertainty modes, ``full_cov`` and ``marginal`` free-orientation interval types, componentwise uncertainty handling, and the multiple calibration modes.
+*   [FEATURE] Added and extended uncertainty quantification and calibration capabilities, including ``pointwise`` and ``aggregated`` uncertainty modes, ``full_cov`` and ``marginal`` free-orientation interval types, componentwise uncertainty handling, and the multiple calibration modes.
 *   [FEATURE] Added manifest workflow modules for data generation, aggregation, calibration, and calibration-figure generation, and documented their main entry points and helper methods.
 *   [ENHANCEMENT] Refined ``MetricEvaluator`` and related evaluation logic for ``mse``, ``mae``, ``rmse``, ``rmae``, ``mean_posterior_std``, ``emd``, ``mean_signed_deviation``, ``mean_absolute_deviation``, ``max_underconfidence_deviation``, and ``max_overconfidence_deviation``.
 *   [BREAKING] Removed the legacy benchmarking class and replaced it with ``DataGenerator``, which wraps solver grids, ``SourceSimulator``, ``SensorSimulator``, ``LeadfieldBuilder``, and posterior-summary generation in a single workflow abstraction.

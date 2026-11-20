@@ -1,5 +1,5 @@
 """
-12. End-to-End Workflow
+14. End-to-End Workflow
 =======================
 
 This tutorial ties together the main CaliBrain component classes in one small,
@@ -41,7 +41,7 @@ simulation, inversion, uncertainty representation, and calibration.
 # as ``post_pooled``, ``post_pooled_mismatch``, and ``post_fixed`` change the
 # split construction, not the underlying recalibration mechanism. Evaluation can
 # then be extended beyond this one example with the tools shown in
-# :doc:`Metric Evaluation </auto_tutorials/11_metric_evaluation>`.
+# :doc:`Metric Evaluation </auto_tutorials/13_metric_evaluation>`.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -411,3 +411,7 @@ fig.tight_layout()
 #
 # The same sequence underlies the larger workflow scripts. What changes there is
 # scale and split construction, not the scientific role of each stage.
+#
+# The next tutorial,
+# :doc:`Workflow with a Real Head Model </auto_tutorials/15_real_head_model_workflow>`,
+# runs the same chain on the real ``fsaverage`` leadfield from the example data.

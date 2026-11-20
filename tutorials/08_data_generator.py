@@ -1,5 +1,5 @@
 """
-07. Data Generation
+08. Data Generation
 ===================
 
 This tutorial explains the high-level ``DataGenerator`` class.
@@ -242,3 +242,6 @@ fig.tight_layout()
 #
 # The next workflow stages consume these repeated runs to build uncertainty
 # summaries and calibration analyses.
+
+leadfield_dir.cleanup()
+tmpdir.cleanup()

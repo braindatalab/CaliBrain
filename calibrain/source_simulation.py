@@ -34,17 +34,20 @@ class SourceSimulator:
     """
     Simulate synthetic source coefficients for three settings:
 
-    1) fixed orientation (MEG and EEG):
+   1) fixed orientation (MEG and EEG):
          s shape = (N, T)
          One scalar coefficient per source location.
+         The cortical-normal direction is encoded in the fixed leadfield.
 
-    2) free orientation (EEG):
+   2) free orientation (EEG):
          x shape = (N, 3, T)
-         General 3D coefficient process in the retained local 3D source basis.
+         One scalar waveform per source, along its cortical-normal direction
+         expressed in the retained local 3D source basis.
 
-    3) free orientation (MEG):
+   3) free orientation (MEG):
          a shape = (N, 2, T)
-         General reduced 2D coefficient process in the MEG-sensitive local subspace.
+         The same scalar waveform, along the cortical normal projected into
+         the MEG-sensitive local 2D source basis.
     """
     def __init__(
         self,
@@ -286,6 +289,9 @@ class SourceSimulator:
         nnz: int,
         n_comp: int,
         trial_seed: int,
+        *,
+        cortical_normals: Optional[np.ndarray] = None,
+        Q_basis: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         if nnz > n_sources:
             raise ValueError(f"nnz ({nnz}) must be <= n_sources ({n_sources})")
@@ -297,14 +303,49 @@ class SourceSimulator:
         active_indices = trial_rng.choice(n_sources, size=nnz, replace=False)
         x = np.zeros((n_sources, n_comp, n_times))
 
-        # deterministic component offsets
-        prime_offset = 104729
+        if active_indices.size == 0:
+            return x, active_indices
+
+        if cortical_normals is None:
+            raise ValueError(
+                "cortical_normals is required for free-orientation simulation. "
+                "Provide normals in the same 3D source basis and source order "
+                "as the leadfield."
+            )
+            
+        normals = np.asarray(cortical_normals, dtype=float)
+        if normals.shape != (n_sources, 3) or not np.all(np.isfinite(normals)):
+            raise ValueError("cortical_normals must be a finite array of shape (N, 3).")
+
+        normal_lengths = np.linalg.norm(normals, axis=1)
+        if not np.all(np.isfinite(normal_lengths)) or np.any(normal_lengths < 1e-12):
+            raise ValueError("Each cortical normal must have a finite, nonzero norm.")
+
+        directions = normals / normal_lengths[:, None]
+
+        if n_comp == 2:
+            if Q_basis is None:
+                raise ValueError("Q_basis is required for reduced 2D MEG simulation.")
+
+
+            Q = np.asarray(Q_basis, dtype=float)
+            if Q.shape != (n_sources, 3, 2) or not np.all(np.isfinite(Q)):
+                raise ValueError("Q_basis must be a finite array of shape (N, 3, 2).")
+
+            gram = np.einsum("nki,nkj->nij", Q, Q)
+            if not np.allclose(gram, np.eye(2), rtol=1e-6, atol=1e-7):
+                raise ValueError("Each Q_basis block must have orthonormal columns.")
+
+            # Keep the projection length; renormalizing would change amplitudes.
+            directions = np.einsum("nck,nc->nk", Q, directions)
+
+        elif n_comp != 3:
+            raise ValueError("n_comp must be 2 or 3 for free-orientation simulation.")
 
         for src_idx in active_indices:
             base_seed = int(trial_rng.randint(0, seed_high))
-            for k in range(n_comp):
-                comp_seed = int((base_seed + k * prime_offset) % seed_high)
-                x[src_idx, k, :] = self._simulate_erp_waveform(source_seed=comp_seed)
+            waveform = self._simulate_erp_waveform(source_seed=base_seed)
+            x[src_idx, :, :] = directions[src_idx, :, None] * waveform[None, :]
 
         return x, active_indices
 
@@ -319,7 +360,35 @@ class SourceSimulator:
         orientation_type: str = "fixed",
         coil_type: str = FIFF.FIFFV_COIL_EEG, # 1 (eeg) default coil type for simulation
         seed: int = 42,
+        *,
+        cortical_normals: Optional[np.ndarray] = None,
+        Q_basis: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
+
+        """Simulate source coefficients with the existing two-array return value.
+
+        Additional Parameters
+        ---------------------
+        cortical_normals : ndarray, shape (N, 3), optional
+            Required for nonempty free-orientation simulations. Normals must
+            follow the leadfield source order and be expressed in its original
+            3D source basis, before any MEG SVD reduction. They are normalized
+            to unit length here; anatomical extraction and coordinate changes
+            belong to forward preparation. Fixed simulation ignores this input.
+        Q_basis : ndarray, shape (N, 3, 2), optional
+            Required for reduced free MEG. The local orthonormal SVD bases must
+            match both the reduced leadfield and cortical_normals. Projected
+            directions are not renormalized. Free EEG and fixed simulation
+            ignore this input.
+
+        Returns
+        -------
+        x : ndarray
+            Shape (N, T) for fixed, (N, 3, T) for free EEG, or (N, 2, T) for
+            reduced free MEG. Each nonzero local source block has rank one.
+        active_indices : ndarray
+            The sampled source indices, with the same meaning as before.
+        """
 
         if orientation_type == "fixed":
             return self._simulate_fixed(
@@ -329,21 +398,24 @@ class SourceSimulator:
             )
 
         elif orientation_type == "free" and coil_type == FIFF.FIFFV_COIL_EEG: # 1 (eeg)
-            # general 3D coefficient process in the retained local 3D basis
+            # Rank-one activity along the cortical normal in the retained 3D basis.
             return self._simulate_multicomponent(
                 n_sources=n_sources,
                 nnz=nnz,
                 n_comp=3,
                 trial_seed=int(seed),
+                cortical_normals=cortical_normals,
             )
 
         elif orientation_type == "free" and coil_type in [FIFF.FIFFV_COIL_VV_MAG_T1, FIFF.FIFFV_COIL_VV_PLANAR_T1]: # 3022 (mag), 3012 (grad)
-            # general reduced 2D coefficient process in the MEG-sensitive local subspace
+            # Project the same cortical normal into the MEG-sensitive 2D basis.
             return self._simulate_multicomponent(
                 n_sources=n_sources,
                 nnz=nnz,
                 n_comp=2,
                 trial_seed=int(seed),
+                cortical_normals=cortical_normals,
+                Q_basis=Q_basis,
             )
 
         raise ValueError("orientation_type must be 'fixed' or 'free' with appropriate coil_type for MEG/EEG")

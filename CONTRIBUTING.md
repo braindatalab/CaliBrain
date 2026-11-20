@@ -22,7 +22,8 @@ git clone https://github.com/braindatalab/CaliBrain.git
 cd CaliBrain
 ```
 
-Create and activate an isolated environment:
+Create and activate an isolated environment (on Windows, activate with
+`.venv\Scripts\Activate.ps1`):
 
 ```bash
 python -m venv .venv
@@ -38,41 +39,55 @@ python -m pip install -e ".[dev,docs]"
 
 ## Working on a change
 
-Create a branch for your work:
+Start from an up-to-date `dev` and create a branch for your work:
 
 ```bash
-git checkout -b feature/short-description
+git switch dev
+git pull
+git switch -c feature/short-description
 ```
+
+Name branches `feature/...`, `fix/...`, `documentation/...`, or `refactor/...`, and start each
+commit message with its type (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`,
+or `chore:`).
 
 Expected contribution practices:
 
 - keep changes small and targeted;
-- use clear names and NumPy-style docstrings for public APIs;
-- update relevant documentation;
-- add or update tests when practical.
+- use NumPy-style docstrings for public APIs;
+- update the relevant documentation;
+- add or update tests for every change of behavior;
+- add one line to the top section of the changelog
+  (`docs/source/development/changelog.rst`), starting with a tag such as `[FEATURE]`,
+  `[ENHANCEMENT]`, `[BUGFIX]`, or `[BREAKING]`.
 
-## Tests
+## Tests and linting
 
-When the test suite is present, run the relevant tests before opening a pull
-request:
+Run the tests and the linter before opening a pull request:
 
 ```bash
-pytest tests/
-pytest tests/ --cov=calibrain
+python -m pytest tests/
+python -m pytest tests/ --cov=calibrain
+ruff check .
 ```
+
+Tests that need the example data are skipped when it is not available. Tests that
+download the real data only run with `python -m pytest --network`.
 
 ## Documentation
 
-Build the documentation locally with:
+Build the documentation locally, with warnings as errors as on Read the Docs:
 
 ```bash
 cd docs
-make html
+make html SPHINXOPTS="-W --keep-going"
 ```
+
+The build runs the tutorials, so a failing tutorial fails the build.
 
 ## Pull requests
 
-In your pull request, describe:
+Open pull requests against the `dev` branch. In your pull request, describe:
 
 - what changed;
 - why it changed;

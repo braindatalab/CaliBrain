@@ -1,3 +1,6 @@
+.. meta::
+   :description: Citation guidance and BibTeX metadata for referencing CaliBrain software releases in academic work.
+
 How to Cite CaliBrain
 =====================
 
@@ -7,17 +10,17 @@ project, cite the archived software release used for the analysis.
 Recommended citation
 --------------------
 
-Cite CaliBrain as software:
+.. code-block:: bibtex
 
-.. code-block:: text
+   Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
+   CaliBrain: A Python toolbox for uncertainty quantification, calibration, and
+   benchmarking in Bayesian M/EEG inverse source imaging. Zenodo.
+   https://doi.org/10.5281/zenodo.20683761
 
-   Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026).
-   CaliBrain: A Python toolbox for uncertainty estimation and calibration in
-   EEG/MEG inverse source imaging (v1.0.3). Zenodo.
-   https://doi.org/10.5281/zenodo.21261767
-
-If you use another release, replace the version with the exact version used for
-the analysis. For development versions, also report the git commit hash:
+This DOI always points to the latest version of the archive. To make an analysis
+reproducible, also report the exact version (``calibrain.__version__``), and cite the
+DOI of that release, which the Zenodo record lists for every version. For development
+versions, report the git commit hash:
 
 .. code-block:: bash
 
@@ -29,11 +32,10 @@ BibTeX
 .. code-block:: bibtex
 
    @software{calibrain,
-     title = {CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging},
-     author = {Orabe, Mohammad and Huseynov, Ismail and Nagarajan, Srikantan and Haufe, Stefan},
-     version = {1.0.3},
+     title = {CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging},
+     author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail T.},
      year = {2026},
      publisher = {Zenodo},
-     doi = {10.5281/zenodo.21261767},
-     url = {https://doi.org/10.5281/zenodo.21261767}
+     doi = {10.5281/zenodo.20683761},
+     url = {https://doi.org/10.5281/zenodo.20683761}
    }

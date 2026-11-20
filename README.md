@@ -2,7 +2,7 @@
 <!--  width="220" -->
 
 <p align="center">
-  <img src="docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/calibrain_logo_name.jpg" alt="CaliBrain logo">
 </p>
 
 [![PyPI version](https://img.shields.io/pypi/v/calibrain.svg)](https://pypi.org/project/calibrain/)
@@ -10,9 +10,9 @@
 [![Tests](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml/badge.svg)](https://github.com/braindatalab/CaliBrain/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21261767.svg)](https://doi.org/10.5281/zenodo.21261767)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20683761.svg)](https://doi.org/10.5281/zenodo.20683761)
 
-CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging.
+CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging.
 
 ## Overview
 
@@ -25,7 +25,7 @@ reconstructing posterior source estimates, quantifying empirical coverage, and
 evaluating recalibration maps under controlled experimental conditions.
 
 <p align="center">
-  <img src="docs/source/_static/calibrain_pipeline.jpg" alt="CaliBrain pipeline overview" width="900">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/calibrain_pipeline.png" alt="CaliBrain pipeline overview">
 </p>
 
 ## Documentation
@@ -38,9 +38,26 @@ documentation on Read the Docs.
 
 ## Citation
 
-If you use CaliBrain in academic work, please cite the software archive:
+If you use CaliBrain in academic work, please cite the software archive. The DOI below
+always points to the latest version; Zenodo also lists a DOI for every release.
 
-`Orabe, Mohammad, Huseynov, Ismail T., Nagarajan, Srikantan, & Haufe, Stefan. (2026). CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.21261767`
+```text
+Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
+CaliBrain: A Python toolbox for uncertainty quantification, calibration, and
+benchmarking in Bayesian M/EEG inverse source imaging. Zenodo.
+https://doi.org/10.5281/zenodo.20683761
+```
+
+```bibtex
+@software{calibrain,
+  title = {CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging},
+  author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail T.},
+  year = {2026},
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.20683761},
+  url = {https://doi.org/10.5281/zenodo.20683761}
+}
+```
 
 ## Example
 
@@ -111,7 +128,7 @@ plt.show()
 ```
 
 <p align="center">
-  <img src="docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
+  <img src="https://raw.githubusercontent.com/braindatalab/CaliBrain/main/docs/source/_static/readme_example.png" alt="CaliBrain calibration example" width="500">
 </p>
 
 ## Workflow
@@ -138,7 +155,7 @@ uncertainty-calibration toolkits, and standard inverse-solver workflows rather
 than replacing them.
 
 Its scope is narrower and more specific: CaliBrain focuses on simulation-based
-uncertainty estimation and calibration for EEG/MEG inverse source imaging,
+uncertainty quantification and calibration for EEG/MEG inverse source imaging,
 including source-level intervals, local covariance-based ellipsoids, empirical
 coverage analysis, and recalibration across controlled evaluation conditions.
 
@@ -150,13 +167,25 @@ From PyPI:
 python -m pip install calibrain
 ```
 
-From a local checkout:
+3D brain plotting needs extra GUI packages, which are optional:
 
 ```bash
-git clone https://github.com/braindatalab/CaliBrain.git
-cd CaliBrain
-python -m pip install -e .
+python -m pip install "calibrain[viz]"
 ```
+
+The example data are downloaded on demand, in three steps (download the forward solution,
+reduce it to 1284 sources, then create the leadfield files from it):
+
+```python
+from calibrain import extract_leadfields, fetch_example_data, reduce_forward_solutions
+
+fetch_example_data()
+reduce_forward_solutions()
+extract_leadfields()
+```
+
+For installing from a source checkout and using conda, see the
+[installation guide](https://calibrain.readthedocs.io/stable/installation/index.html).
 
 ## Contributing
 

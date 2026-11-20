@@ -1,19 +1,9 @@
+# Minimal conda environment. The dependencies themselves are defined only in
+# pyproject.toml; install CaliBrain into this environment with pip afterwards:
+#   python -m pip install -e .
 name: calibrain
 channels:
-  - defaults
   - conda-forge
 dependencies:
-  - python=3.10
-  - numpy
-  - pandas
-  - scikit-learn
-  - mne
-  - POT
-  - nibabel
-  - pyyaml
-  - pyvistaqt # for plotting 3D brain surfaces
-  - ipywidgets # for interactive widgets in 3D brain surface plotting
-  - PyQt5 # for creating the GUI
-  - scipy
-  - sphinx-autodoc-typehints # for generating documentation with type hints
-  - sphinx-copybutton # for adding a "Copy" button to code blocks
+  - python=3.11
+  - pip

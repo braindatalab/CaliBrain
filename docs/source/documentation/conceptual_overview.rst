@@ -1,3 +1,6 @@
+.. meta::
+   :description: Learn how CaliBrain evaluates and calibrates posterior uncertainty in Bayesian EEG/MEG inverse source imaging.
+
 Conceptual Overview
 ===================
 

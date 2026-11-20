@@ -7,9 +7,15 @@ from calibrain.metric_evaluation import MetricEvaluator
 from calibrain.uncertainty_calibration import UncertaintyCalibrator
 from calibrain.visualization import Visualizer
 from calibrain.data_generation import DataGenerator
+from calibrain.datasets import fetch_example_data
+from calibrain.extract_leadfield import extract_leadfields
+from calibrain.reduce_fwd import reduce_forward_solutions
 
 __all__ = [
     "DataGenerator",
+    "fetch_example_data",
+    "extract_leadfields",
+    "reduce_forward_solutions",
     "LeadfieldBuilder",
     "SourceSimulator",
     "SensorSimulator",
@@ -24,4 +30,4 @@ __all__ = [
     "gamma_lambda_map_sflex",
 ]
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"

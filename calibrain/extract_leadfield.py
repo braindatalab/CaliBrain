@@ -4,7 +4,7 @@ import mne
 import numpy as np
 from mne.io.constants import FIFF
 
-from calibrain.utils import get_data_path
+from calibrain.utils import get_data_path, get_fwd_dir, get_leadfield_dir, strip_local_paths
 
 def _canonicalize_basis_columns(Q: np.ndarray) -> np.ndarray:
     """
@@ -53,6 +53,13 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     `Q_basis` is:
     - identity for free_eeg, as an API-consistent placeholder in the retained 3D basis
     - the local 3x2 SVD basis for free_meg
+
+    `cortical_normals` has shape (sources, 3) and holds the unit cortical normals
+    that MNE uses to build the fixed-orientation leadfield (``source_nn`` of the
+    fixed-converted forward, i.e. cortical-patch-statistics normals). They are
+    expressed in the same 3D source basis as the *free* leadfield columns (before
+    any MEG SVD reduction) and follow the same source order. The free-orientation
+    source simulation needs them to generate activity along the normal.
     """
     fwd_path = f"{fwd_datapath}/{subject}-fwd.fif"
     print(f"Loading forward solution from {fwd_path}")
@@ -72,9 +79,12 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         if fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI:
             print("Forward solution orientation is already free")
         elif fwd["source_ori"] == FIFF.FIFFV_MNE_FIXED_ORI:
-            print("Forward solution orientation is fixed, converting to free orientation")
-            fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
-            assert fwd["source_ori"] == FIFF.FIFFV_MNE_FREE_ORI, "Failed to convert to free orientation"
+            # A fixed-only forward does not retain the missing 3D components.
+            raise ValueError(
+                "Free extraction requires an original free-orientation forward. "
+                "A fixed-only forward cannot recover the missing 3D components."
+            )
+            
               
     # Filter channels by type
     if coil_name == 'mag':
@@ -93,6 +103,28 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         raise ValueError(f"Unknown channel type: {coil_name}")
 
     fwd = fwd.pick_channels(mag_channels)
+
+    # Cortical normals in the original (pre-reduction) 3D source basis. The free
+    # forward is stored with surf_ori=False, so its columns are in the head x/y/z
+    # frame; MNE's fixed conversion yields the matching unit normals in that frame.
+    if orientation_type == 'fixed':
+        cortical_normals = np.array(fwd['source_nn'], dtype=float, copy=True)
+    else:
+        # Cortical-normal free simulation requires a surface source space.
+        if any(src["type"] != "surf" for src in fwd["src"]):
+            raise ValueError(
+                "Cortical-normal free simulation requires surface source spaces."
+            )
+        fwd_fixed = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=True, verbose='error')
+        cortical_normals = np.array(fwd_fixed['source_nn'], dtype=float, copy=True)
+    if cortical_normals.shape != (fwd['nsource'], 3):
+        raise ValueError(f"Unexpected cortical normals shape {cortical_normals.shape}")
+
+    # Check lengths before division to avoid zero or invalid normalization.
+    normal_lengths = np.linalg.norm(cortical_normals, axis=1, keepdims=True)
+    if not np.all(np.isfinite(normal_lengths)) or np.any(normal_lengths < 1e-12):
+        raise ValueError("Each cortical normal must have a finite, nonzero norm.")
+    cortical_normals /= np.linalg.norm(cortical_normals, axis=1, keepdims=True)
 
     if orientation_type == 'fixed':
         Q_basis = None
@@ -165,9 +197,9 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
             break
             
             
-    # update working directory info to fwd['info']
-    with fwd["info"]._unlock():
-        fwd["info"]["working_dir"] = str(fwd_datapath)
+    # Do not store local paths in the saved file: they would leak user and machine
+    # names into every file that is shared.
+    strip_local_paths(fwd["info"])
     
     print(f"Number of channels after picking: {len(fwd['info']['chs'])}")
 
@@ -189,6 +221,7 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
         'sensor_kind': first_ch.get('kind'),
         'sensor_units': first_ch.get('unit'),
         'sensor_unitmult': first_ch.get('unit_mul'),
+        'cortical_normals': cortical_normals,  # (sources, 3), unit normals in the free 3D source basis.
         'Q_basis': Q_basis,  # (sources, 3, 2) for free MEG, identity (3, 3) for free eeg, None for fixed (MEG and EEG).
     }
     file_name = f"{subject}_{orientation_type}_leadfield.npz"
@@ -200,21 +233,102 @@ def extract_leadfield(fwd_datapath, subject: str, coil_name: str, orientation_ty
     np.savez(save_path, **leadfield_data)
     print(f"Leadfield saved to {save_path}")
 
-# full sources in fwd
-# fwd_datapath = get_data_path() / 'fwd'
-# save_path = get_data_path() / 'leadfield' 
 
-# reduced sources in fwd
-fwd_datapath = get_data_path() / '1284src_fwd'
-save_path = get_data_path() / '1284src_leadfield' 
-
-subjects_map = {
-    'eeg': ['fsaverage'],
-    'mag': ['CC120166', 'CC120264', 'CC120309', 'CC120313'],
+# Channel type of the example subjects: the template has EEG, the CamCAN data MEG
+# magnetometers. Other subjects need an explicit ``coil_name``.
+DEFAULT_COILS = {
+    "fsaverage": "eeg",
+    "CC120166": "mag",
+    "CC120264": "mag",
+    "CC120309": "mag",
+    "CC120313": "mag",
 }
 
-for coil_name, subjects in subjects_map.items():
+
+def extract_leadfields(subjects=None, data_dir=None, coil_name=None, orientations=("fixed", "free")):
+    """Extract the leadfield files of several subjects from their forward solutions.
+
+    This is the step after :func:`calibrain.datasets.fetch_example_data`: it reads
+    ``<data_dir>/1284src_fwd/<subject>-fwd.fif`` and writes
+    ``<data_dir>/1284src_leadfield/<subject>_<orientation>_leadfield.npz``. The
+    leadfield files depend on the version of CaliBrain, so they are created locally
+    and not downloaded.
+
+    Parameters
+    ----------
+    subjects : str | list of str | None
+        Subjects to process. By default all subjects that have a forward solution
+        (``*-fwd.fif``) in ``<data_dir>/1284src_fwd``.
+    data_dir : str | Path | None
+        Data directory. By default the CaliBrain data directory
+        (see :func:`calibrain.utils.get_data_path`).
+    coil_name : {"eeg", "mag", "grad"} | None
+        Channel type. By default it is taken from ``DEFAULT_COILS`` (``"eeg"`` for
+        ``fsaverage``, ``"mag"`` for the CamCAN subjects); other subjects need it.
+    orientations : sequence of {"fixed", "free"}
+        Orientation types to extract.
+
+    Returns
+    -------
+    saved : list of pathlib.Path
+        The leadfield files that were written.
+
+    Raises
+    ------
+    FileNotFoundError
+        If there is no forward solution to process.
+    ValueError
+        If the channel type of a subject is unknown and ``coil_name`` is not given.
+    """
+    fwd_dir = get_fwd_dir(data_dir)
+    save_dir = get_leadfield_dir(data_dir)
+
+    if subjects is None:
+        subjects = sorted(path.name[: -len("-fwd.fif")] for path in fwd_dir.glob("*-fwd.fif"))
+        if not subjects:
+            raise FileNotFoundError(
+                f"No forward solutions (*-fwd.fif) found in {fwd_dir}. Download the example "
+                "data with calibrain.fetch_example_data() and reduce it with "
+                "calibrain.reduce_forward_solutions()."
+            )
+    elif isinstance(subjects, str):
+        subjects = [subjects]
+
+    saved = []
     for subject in subjects:
-        print(f"\nExtracting leadfield (fixed & free) for subject: {subject}, coil_name: {coil_name}")
-        extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='fixed', save_path=save_path)
-        extract_leadfield(fwd_datapath, subject=subject, coil_name=coil_name, orientation_type='free', save_path=save_path)
+        coil = coil_name or DEFAULT_COILS.get(subject)
+        if coil is None:
+            raise ValueError(
+                f"The channel type of subject {subject!r} is unknown. Pass coil_name='eeg', 'mag' or 'grad'."
+            )
+        if not (fwd_dir / f"{subject}-fwd.fif").is_file():
+            raise FileNotFoundError(f"No forward solution for subject {subject!r} in {fwd_dir}.")
+        for orientation in orientations:
+            extract_leadfield(fwd_dir, subject, coil, orientation, save_dir)
+            saved.append(save_dir / f"{subject}_{orientation}_leadfield.npz")
+    return saved
+
+
+def main(argv=None):
+    """Extract the leadfield files from the forward solutions in the data directory.
+
+    Run with ``python -m calibrain.extract_leadfield``. By default it processes every
+    subject that has a forward solution in ``<data>/1284src_fwd`` and writes
+    ``<data>/1284src_leadfield``.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main.__doc__.split("\n\n")[0])
+    parser.add_argument("--data-dir", help="Data directory (default: the CaliBrain default).")
+    parser.add_argument("--subjects", nargs="+", help="Subjects to process (default: all with a forward solution).")
+    parser.add_argument("--coil", choices=["eeg", "mag", "grad"], help="Channel type (default: from the subject).")
+    args = parser.parse_args(argv)
+
+    saved = extract_leadfields(subjects=args.subjects, data_dir=args.data_dir, coil_name=args.coil)
+    print("\nWritten leadfield files:")
+    for path in saved:
+        print(f"  {path}")
+
+
+if __name__ == "__main__":
+    main()

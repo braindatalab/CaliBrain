@@ -20,7 +20,7 @@ from scipy.stats import chi2
 
 from calibrain import MetricEvaluator
 from calibrain import SourceEstimator, SensorSimulator, SourceSimulator, UncertaintyEstimator, Visualizer, LeadfieldBuilder, UncertaintyCalibrator
-from calibrain.utils import get_data_path, inspect_object
+from calibrain.utils import inspect_object
 from mne.io.constants import FIFF
 from calibrain.calibration_storage import save_calibration_record
 from calibrain.calibration_dataset import EEG_COIL_TYPES, MEG_COIL_TYPES
@@ -368,12 +368,21 @@ class DataGenerator:
         source_seed = seed
         sensor_seed = (seed * 26544) % (2**32)
 
+        if orientation_type == "free" and leadfield_data.cortical_normals is None:
+            raise ValueError(
+                f"Leadfield for subject '{data_params['subject']}' has no 'cortical_normals'. "
+                "Free-orientation simulation needs them; regenerate the leadfield with "
+                "`python -m calibrain.extract_leadfield`."
+            )
+
         x, x_active_indices = self.source_simulator.simulate(
             n_sources=n_sources,
             nnz=data_params['nnz'],
             orientation_type=orientation_type,
             coil_type=leadfield_data.coil_type,
             seed=source_seed,
+            cortical_normals=leadfield_data.cortical_normals,
+            Q_basis=leadfield_data.Q_basis,
         )
         source_units = self.source_simulator.units
         source_unitmult = self.source_simulator.unitmult
@@ -396,6 +405,8 @@ class DataGenerator:
                 "unitmult": leadfield_data.sensor_unitmult,
             },
             "Q_basis": leadfield_data.Q_basis,
+            # Keep the normals in the same source order as x and Q_basis.
+            "cortical_normals": leadfield_data.cortical_normals,
             "x": x,
             "x_active_indices": x_active_indices,
             "y_clean": y_clean,
@@ -419,21 +430,14 @@ class DataGenerator:
         global_run_id: Optional[int] = None,
         global_total_runs: Optional[int] = None,
     ) -> dict:
-        # Ensure worker processes emit INFO logs to stdout/file (joblib workers start with default WARNING level)
+        # Ensure worker processes emit INFO logs to the console (joblib workers start with default WARNING level)
         root_logger = logging.getLogger()
         if not root_logger.handlers:
-            log_handlers = [logging.StreamHandler()]
-            log_file_env = os.environ.get("CALIBRAIN_LOG_FILE")
-            if log_file_env:
-                try:
-                    log_handlers.insert(0, logging.FileHandler(log_file_env, mode="a"))
-                except Exception:
-                    pass
             logging.basicConfig(
                 level=logging.INFO,
                 format="%(asctime)s - %(levelname)s - %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
-                handlers=log_handlers,
+                handlers=[logging.StreamHandler()],
             )
         root_logger.setLevel(logging.INFO)
         solver_params = dict(solver_params)
@@ -441,7 +445,6 @@ class DataGenerator:
         noise_params = dict(noise_params)
         solver_name = getattr(self.solver, "__name__", str(self.solver))
         orientation_type = data_params.get("orientation_type")
-        solver_params['fwd_path'] = get_data_path() / '1284src_fwd' / data_params['subject']
 
         # Format human-friendly, 1-based progress counters and avoid division-by-zero
         nruns_local = max(1, int(nruns))
@@ -654,6 +657,13 @@ class DataGenerator:
                     "posterior_cov": posterior_cov,
                     "Q_basis": np.asarray(prepared_data.get("Q_basis"), dtype=float),
                 }
+
+                # Preserve available normals; fixed simulations may have none.
+                cortical_normals = prepared_data.get("cortical_normals")
+                if cortical_normals is not None:
+                    summary_arrays["cortical_normals"] = np.asarray(
+                        cortical_normals, dtype=float
+                    )
 
                 summary_metadata = {
                     "global_run_id": global_run_id,

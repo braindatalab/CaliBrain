@@ -4,17 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrain"
-version = "1.0.3"
-description = "CaliBrain: A Python toolbox for uncertainty estimation and calibration in EEG/MEG inverse source imaging"
+dynamic = ["version"]
+description = "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging"
 authors = [
     {name = "Mohammad Orabe", email = "orabe.mhd@gmail.com"},
-    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"},
     {name = "Srikantan Nagarajan", email = "Srikantan.Nagarajan@ucsf.edu"},
-    {name = "Stefan Haufe", email = "haufe@tu-berlin.de"}
+    {name = "Stefan Haufe", email = "haufe@tu-berlin.de"},
+    {name = "Ismail Huseynov", email = "ismailhuseynov6666@gmail.com"}
 ]
+keywords = ["EEG", "MEG", "inverse problem", "inverse source imaging", "uncertainty quantification", "calibration", "benchmarking", "Bayesian"]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
 ]
 license = "BSD-3-Clause"
@@ -22,32 +31,37 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 dependencies = [
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "mne",
-    "POT",
-    "nibabel",
-    "pyyaml",
-    "pyvistaqt", # for plotting 3D brain surfaces
-    "ipywidgets", # for interactive widgets in 3D brain surface plotting
-    "PyQt5", # for creating the GUI
-    "scipy",
-    "h5py",
-    "matplotlib",
-    "joblib",
-    "myst-parser",
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "pandas>=1.5",
+    "scikit-learn>=1.1",
+    "mne>=1.4",
+    "POT>=0.9",
+    "nibabel>=4.0",
+    "pyyaml>=6.0",
+    "h5py>=3.7",
+    "matplotlib>=3.5",
+    "joblib>=1.2",
+    "pooch>=1.6",
 ]
 
 [project.optional-dependencies]
+viz = [
+    "pyvistaqt",  # 3D brain surface plotting (MNE backend)
+    "ipywidgets",  # interactive widgets for 3D plotting
+    "PyQt5",  # GUI toolkit used by pyvistaqt
+]
+
 dev = [
-    "pytest==6.2.4"
+    "pytest>=7",
+    "pytest-cov",
+    "ruff",
 ]
 
 docs = [
     "sphinx>=5.0.0,<8.0.0",
-    "sphinx-rtd-theme>=1.0.1",
-    "pydata-sphinx-theme>=0.13.0",  # Add this
+    "docutils>=0.18,<0.22",
+    "pydata-sphinx-theme>=0.13.0",
     "sphinx-autodoc-typehints>=1.19.0",
     "sphinx-copybutton>=0.5.0",
     "sphinx-gallery>=0.19.0",
@@ -58,11 +72,22 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/braindatalab/CaliBrain"
-Repository = "https://github.com/braindatalab/CaliBrain"
-# Wiki = "https://github.com/braindatalab/CaliBrain/wiki"
 Documentation = "https://calibrain.readthedocs.io/"
+Repository = "https://github.com/braindatalab/CaliBrain"
+Issues = "https://github.com/braindatalab/CaliBrain/issues"
+Changelog = "https://calibrain.readthedocs.io/stable/development/changelog.html"
+
+[tool.setuptools.dynamic]
+version = {attr = "calibrain.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["calibrain*"]
 exclude = ["results*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+# Catch real bugs only (syntax errors, undefined names); no style rules.
+select = ["E9", "F63", "F7", "F82"]

@@ -43,8 +43,24 @@ def test_source_simulator_fixed_returns_expected_shape_and_active_count():
     assert np.count_nonzero(np.linalg.norm(x, axis=1)) == 3
 
 
-def test_source_simulator_free_eeg_returns_expected_shape():
+def _make_normals(n_sources, seed=0, scale=3.0):
+    rng = np.random.RandomState(seed)
+    normals = rng.randn(n_sources, 3)
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    return normals * scale  # non-unit on purpose: simulator must normalize
+
+
+def _make_q_basis(n_sources, seed=1):
+    rng = np.random.RandomState(seed)
+    Q = np.zeros((n_sources, 3, 2))
+    for i in range(n_sources):
+        Q[i], _ = np.linalg.qr(rng.randn(3, 2))
+    return Q
+
+
+def test_source_simulator_free_eeg_returns_rank_one_blocks_along_normal():
     simulator = SourceSimulator(ERP_config=_make_erp_config())
+    normals = _make_normals(6)
 
     x, active_sources = simulator.simulate(
         n_sources=6,
@@ -52,15 +68,26 @@ def test_source_simulator_free_eeg_returns_expected_shape():
         orientation_type="free",
         coil_type=FIFF.FIFFV_COIL_EEG,
         seed=11,
+        cortical_normals=normals,
     )
 
     assert x.shape == (6, 3, 250)
     assert len(active_sources) == 2
     assert np.count_nonzero(np.linalg.norm(x.reshape(6, -1), axis=1)) == 2
 
+    unit = normals / np.linalg.norm(normals, axis=1, keepdims=True)
+    for idx in active_sources:
+        block = x[idx]
+        assert np.linalg.matrix_rank(block) == 1
+        # every time sample is parallel to the unit normal
+        coeff = unit[idx] @ block
+        np.testing.assert_allclose(block, np.outer(unit[idx], coeff), atol=1e-10)
 
-def test_source_simulator_free_meg_returns_expected_shape():
+
+def test_source_simulator_free_meg_projects_normal_through_q_basis():
     simulator = SourceSimulator(ERP_config=_make_erp_config())
+    normals = _make_normals(5)
+    Q = _make_q_basis(5)
 
     x, active_sources = simulator.simulate(
         n_sources=5,
@@ -68,11 +95,81 @@ def test_source_simulator_free_meg_returns_expected_shape():
         orientation_type="free",
         coil_type=FIFF.FIFFV_COIL_VV_MAG_T1,
         seed=13,
+        cortical_normals=normals,
+        Q_basis=Q,
     )
 
     assert x.shape == (5, 2, 250)
     assert len(active_sources) == 2
     assert np.count_nonzero(np.linalg.norm(x.reshape(5, -1), axis=1)) == 2
+
+    unit = normals / np.linalg.norm(normals, axis=1, keepdims=True)
+    for idx in active_sources:
+        direction = Q[idx].T @ unit[idx]  # not renormalized
+        block = x[idx]
+        assert np.linalg.matrix_rank(block) == 1
+        coeff = direction @ block / (direction @ direction)
+        np.testing.assert_allclose(block, np.outer(direction, coeff), atol=1e-10)
+
+
+def test_source_simulator_free_same_waveform_for_eeg_and_meg():
+    simulator = SourceSimulator(ERP_config=_make_erp_config())
+    normals = _make_normals(5)
+    Q = _make_q_basis(5)
+
+    x3, act3 = simulator.simulate(
+        n_sources=5, nnz=2, orientation_type="free",
+        coil_type=FIFF.FIFFV_COIL_EEG, seed=3, cortical_normals=normals,
+    )
+    x2, act2 = simulator.simulate(
+        n_sources=5, nnz=2, orientation_type="free",
+        coil_type=FIFF.FIFFV_COIL_VV_MAG_T1, seed=3,
+        cortical_normals=normals, Q_basis=Q,
+    )
+
+    np.testing.assert_array_equal(act3, act2)
+    unit = normals / np.linalg.norm(normals, axis=1, keepdims=True)
+    for idx in act3:
+        w3 = unit[idx] @ x3[idx]
+        d = Q[idx].T @ unit[idx]
+        w2 = d @ x2[idx] / (d @ d)
+        np.testing.assert_allclose(w3, w2, atol=1e-10)
+
+
+def test_source_simulator_free_requires_normals_and_basis():
+    simulator = SourceSimulator(ERP_config=_make_erp_config())
+
+    with pytest.raises(ValueError, match="cortical_normals"):
+        simulator.simulate(
+            n_sources=4, nnz=1, orientation_type="free",
+            coil_type=FIFF.FIFFV_COIL_EEG, seed=1,
+        )
+    with pytest.raises(ValueError, match="Q_basis"):
+        simulator.simulate(
+            n_sources=4, nnz=1, orientation_type="free",
+            coil_type=FIFF.FIFFV_COIL_VV_MAG_T1, seed=1,
+            cortical_normals=_make_normals(4),
+        )
+
+
+def test_source_simulator_free_validates_inputs():
+    simulator = SourceSimulator(ERP_config=_make_erp_config())
+    kw = dict(n_sources=4, nnz=1, orientation_type="free", seed=1)
+
+    with pytest.raises(ValueError, match="shape"):
+        simulator.simulate(coil_type=FIFF.FIFFV_COIL_EEG,
+                           cortical_normals=np.ones((3, 3)), **kw)
+
+    zero = _make_normals(4)
+    zero[:] = 0.0
+    with pytest.raises(ValueError, match="nonzero"):
+        simulator.simulate(coil_type=FIFF.FIFFV_COIL_EEG,
+                           cortical_normals=zero, **kw)
+
+    bad_Q = _make_q_basis(4) * 2.0
+    with pytest.raises(ValueError, match="orthonormal"):
+        simulator.simulate(coil_type=FIFF.FIFFV_COIL_VV_MAG_T1,
+                           cortical_normals=_make_normals(4), Q_basis=bad_Q, **kw)
 
 
 def test_sensor_simulator_fixed_projection_and_noise_extremes():
@@ -199,3 +296,148 @@ def test_data_generator_create_experiment_directory_respects_order(tmp_path):
         "nnz=3",
         "seed=42",
     )
+
+
+def _make_generator_with_leadfield(tmp_path, leadfield_data):
+    class StubLeadfieldBuilder:
+        def get_leadfield(self, **kwargs):
+            return leadfield_data
+
+    return DataGenerator(
+        solver=lambda **kwargs: None,
+        solver_param_grid={"solver_name": ["dummy_solver"]},
+        data_param_grid={"orientation_type": ["free"], "nnz": [2]},
+        noise_param_grid={"noise_type": ["oracle"]},
+        ERP_config=_make_erp_config(),
+        source_simulator=SourceSimulator(ERP_config=_make_erp_config()),
+        leadfield_builder=StubLeadfieldBuilder(),
+        sensor_simulator=SensorSimulator(),
+        posterior_dir=tmp_path / "posterior",
+    )
+
+
+_RUN_PARAMS = {
+    "subject": "stub",
+    "orientation_type": "free",
+    "nnz": 2,
+    "alpha_SNR": 0.5,
+    "sensor_white_noise_std": 1.0,
+}
+
+
+@pytest.mark.parametrize("coil", ["eeg", "meg"])
+def test_data_generator_prepare_run_data_free_uses_cortical_normals(tmp_path, coil):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    n_sources, n_sensors = 6, 8
+    normals = _make_normals(n_sources)
+    rng = np.random.RandomState(0)
+    if coil == "eeg":
+        Q, k, coil_type = np.repeat(np.eye(3)[None], n_sources, axis=0), 3, FIFF.FIFFV_COIL_EEG
+    else:
+        Q, k, coil_type = _make_q_basis(n_sources), 2, FIFF.FIFFV_COIL_VV_MAG_T1
+
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(n_sensors, n_sources, k),
+        sensor_kind=1, sensor_units=112, sensor_unitmult=0,
+        coil_type=coil_type, src_coords=rng.randn(n_sources, 3),
+        Q_basis=Q, cortical_normals=normals,
+    )
+    generator = _make_generator_with_leadfield(tmp_path, leadfield_data)
+
+    prepared = generator._prepare_run_data(_RUN_PARAMS, seed=5)
+
+    x = prepared["x"]
+    assert x.shape == (n_sources, k, 250)
+    for idx in prepared["x_active_indices"]:
+        assert np.linalg.matrix_rank(x[idx]) == 1
+
+
+def test_data_generator_prepare_run_data_free_requires_cortical_normals(tmp_path):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    rng = np.random.RandomState(0)
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(8, 6, 3),
+        sensor_kind=2, sensor_units=107, sensor_unitmult=0,
+        coil_type=FIFF.FIFFV_COIL_EEG, src_coords=rng.randn(6, 3),
+        Q_basis=np.repeat(np.eye(3)[None], 6, axis=0), cortical_normals=None,
+    )
+    generator = _make_generator_with_leadfield(tmp_path, leadfield_data)
+
+    with pytest.raises(ValueError, match="cortical_normals"):
+        generator._prepare_run_data(_RUN_PARAMS, seed=5)
+
+
+def _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, orientation_type):
+    import h5py
+    from unittest.mock import MagicMock
+
+    # Replace the solver wrapper so the run reaches the H5 summary without a real solver.
+    n_sources = leadfield_data.leadfield.shape[1]
+    k = 1 if orientation_type == "fixed" else leadfield_data.leadfield.shape[2]
+    x_hat_shape = (n_sources, 250) if k == 1 else (n_sources, k, 250)
+    estimator = MagicMock()
+    estimator.return_value.predict.return_value = {
+        "posterior_mean_reshaped": np.zeros(x_hat_shape),
+        "active_indices": np.arange(2),
+        "posterior_cov": np.eye(n_sources * k),
+        "noise_var": 1.0,
+        "gamma": np.ones(n_sources),
+    }
+    monkeypatch.setattr("calibrain.data_generation.SourceEstimator", estimator)
+    generator = _make_generator_with_leadfield(tmp_path, leadfield_data)
+    generator.save_posterior_stats = True
+    generator.solver = lambda **kwargs: None
+
+    result = generator._execute_single_run(
+        run_id=1, nruns=1, total_runs=1,
+        solver_params={"solver_name": "dummy_solver"},
+        data_params={**_RUN_PARAMS, "orientation_type": orientation_type},
+        noise_params={"noise_type": "oracle"},
+        seed=5, fig_path=str(tmp_path / "figures"),
+        global_run_id=1, global_total_runs=1,
+    )
+    assert "posterior_summary" in result, result
+    with h5py.File(result["posterior_summary"], "r") as handle:
+        return {name: handle[name][()] for name in handle.keys()}
+
+
+def test_posterior_summary_stores_cortical_normals_for_free_runs(tmp_path, monkeypatch):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    n_sources, n_sensors = 6, 8
+    normals = _make_normals(n_sources)
+    rng = np.random.RandomState(0)
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(n_sensors, n_sources, 3),
+        sensor_kind=2, sensor_units=107, sensor_unitmult=0,
+        coil_type=FIFF.FIFFV_COIL_EEG, src_coords=rng.randn(n_sources, 3),
+        Q_basis=np.repeat(np.eye(3)[None], n_sources, axis=0), cortical_normals=normals,
+    )
+
+    summary = _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, "free")
+
+    assert "cortical_normals" in summary
+    assert summary["cortical_normals"].shape == (n_sources, 3)
+    # Same source order as the other per-source arrays in the file.
+    assert summary["cortical_normals"].shape[0] == summary["x_true"].shape[0]
+    assert summary["cortical_normals"].shape[0] == summary["Q_basis"].shape[0]
+    np.testing.assert_allclose(summary["cortical_normals"], normals)
+
+
+def test_posterior_summary_has_no_cortical_normals_for_fixed_runs(tmp_path, monkeypatch):
+    from calibrain.leadfield_builder import LeadfieldData
+
+    rng = np.random.RandomState(0)
+    leadfield_data = LeadfieldData(
+        leadfield=rng.randn(8, 6),
+        sensor_kind=2, sensor_units=107, sensor_unitmult=0,
+        coil_type=FIFF.FIFFV_COIL_EEG, src_coords=rng.randn(6, 3),
+        Q_basis=None, cortical_normals=None,
+    )
+
+    summary = _run_and_read_summary(tmp_path, monkeypatch, leadfield_data, "fixed")
+
+    assert "cortical_normals" not in summary
+    assert {"x_true", "x_hat", "posterior_cov", "Q_basis"} <= set(summary)

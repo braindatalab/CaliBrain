@@ -328,7 +328,7 @@ fig.tight_layout()
 #   motivates why solver structure affects uncertainty summaries;
 # - :doc:`Quick Start </auto_tutorials/03_quick_start>` introduces a minimal
 #   calibration curve;
-# - :doc:`Uncertainty estimation </auto_tutorials/09_uncertainty_estimation>`
+# - :doc:`Uncertainty estimation </auto_tutorials/10_uncertainty_estimation>`
 #   builds the uncertainty objects used in practice;
-# - :doc:`Calibration methods </auto_tutorials/10_uncertainty_calibration>`
+# - :doc:`Calibration methods </auto_tutorials/12_uncertainty_calibration>`
 #   demonstrates recalibration workflows.

@@ -1,3 +1,6 @@
+.. meta::
+   :description: Configure the local example data and forward-model files used by CaliBrain simulation and calibration workflows.
+
 Example Dataset
 ===============
 
@@ -29,6 +32,71 @@ The local data root is expected to contain precomputed forward solutions and
 leadfield matrices. In practice, the workflow configuration should point to the
 directories that contain those files.
 
+The example data are not part of the PyPI package or the git repository. They are
+published as release assets of the
+`CaliBrain-data <https://github.com/braindatalab/CaliBrain-data>`_ repository. Getting
+them ready takes three independent steps:
+
+.. code-block:: python
+
+   from calibrain import extract_leadfields, fetch_example_data, reduce_forward_solutions
+
+   fetch_example_data()         # step 1: download the forward solution
+   reduce_forward_solutions()   # step 2: reduce it to the 1284 sources CaliBrain uses
+   extract_leadfields()         # step 3: create the leadfield files from it
+
+**Step 1** downloads ``calibrain-example-data-fsaverage.zip`` (about 39 MB), verifies its
+SHA-256 checksum, and unpacks the forward solution with the full source space (about
+5100 sources) into ``<data directory>/fwd``. Nothing is downloaded if the file already
+exists; pass ``force=True`` to download it again. The data are computed from the
+``fsaverage`` template and contain no participant data.
+
+**Step 2** reduces the forward solutions in ``<data directory>/fwd`` to 642 randomly
+chosen sources per hemisphere (1284 in total) and writes them to
+``<data directory>/1284src_fwd``. The random choice uses a fixed seed (``seed=42``), so
+everyone gets the same sources; subjects that are already reduced are skipped unless you
+pass ``force=True``. On the command line, ``python -m calibrain.reduce_fwd`` does the
+same, with ``--subjects``, ``--data-dir``, ``--seed`` and ``--force``.
+
+**CamCAN subjects.** The default configurations and the figure scripts use four CamCAN
+participants (``CC120166``, ``CC120264``, ``CC120309``, ``CC120313``). Their forward
+solutions are available as a separate dataset, with the same three steps:
+
+.. code-block:: python
+
+   fetch_example_data("camcan")   # about 108 MB
+   reduce_forward_solutions()     # reduces every subject that has a forward solution in <data>/fwd
+   extract_leadfields()           # creates the leadfield files of every subject that has a reduced forward
+
+They are derived from CamCAN data and remain subject to the CamCAN terms. Read the
+:doc:`Dataset Notice <data_notice>` before you use them, and acknowledge and cite
+CamCAN as described on the CamCAN data portal.
+
+**Step 3** creates the leadfield files in ``<data directory>/1284src_leadfield``. They
+are not downloaded, because their format depends on the version of CaliBrain: creating
+them locally means they always match the installed version. On the command line,
+``python -m calibrain.extract_leadfield`` does the same. By default it processes every
+subject that has a forward solution; ``--subjects`` and ``--data-dir`` select others.
+
+CaliBrain resolves the default data directory with ``calibrain.utils.get_data_path``:
+
+- In a source checkout, ``<repository>/data`` is used.
+- Otherwise (a PyPI installation), a per-user directory is used, for example
+  ``~/.cache/calibrain`` on Linux.
+
+To use another folder, pass it explicitly. No environment variable is read.
+
+.. code-block:: python
+
+   from calibrain.datasets import fetch_example_data
+   from calibrain.extract_leadfield import extract_leadfields
+
+   fetch_example_data(data_dir="/path/to/calibrain_data")
+   extract_leadfields(data_dir="/path/to/calibrain_data")
+
+On the command line, use ``--data-dir /path/to/calibrain_data``.
+
+
 Available local example data
 ----------------------------
 
@@ -53,16 +121,24 @@ The dataset layout distinguishes between two related but different objects:
 Full versus reduced representations
 -----------------------------------
 
-The local data may also distinguish between **full** and **reduced**
-representations:
+The data directory holds three stages of the same data (see
+:term:`forward solution`, :term:`full source space`, and :term:`reduced source space`
+in the :doc:`glossary <../documentation/glossary>`):
 
-- **Full forward solution**: retains the original forward-model object and
-  associated metadata. It is appropriate when source-space geometry,
-  orientation structure, or coordinate recovery is needed.
+- **Full forward solutions** (``fwd/``): the downloaded MNE forward solutions with
+  the full source space (about 5100 sources). They are the input of the reduction.
 
-- **Reduced leadfield**: stores only the numerical leadfield needed by the
-  workflow. It is smaller and faster to load than the full forward solution and
-  is intended for routine simulation and source-estimation runs.
+- **Reduced forward solutions** (``1284src_fwd/``): the same forward solutions
+  restricted to 1284 sources (642 per hemisphere). They keep the MNE forward-solution
+  format, with the source-space geometry and the sensor information, and they are the
+  input of the leadfield extraction. The workflows also read them for the source
+  coordinates.
+
+- **Leadfield files** (``1284src_leadfield/``): the ``.npz`` files that
+  ``LeadfieldBuilder`` loads. They hold only what the simulation and the solvers
+  need: the leadfield, the sensor units, the source coordinates, and for free
+  orientation the cortical normals. They are smaller and faster to load than a
+  forward solution.
 
 Modality-specific overview
 --------------------------
@@ -80,9 +156,13 @@ Typical EEG-related files in the local example dataset include:
 
    * - Path
      - Contents
+   * - ``fwd/``
+     - Forward solutions with the full source space, such as
+       ``CC120166-fwd.fif`` and ``fsaverage-fwd.fif``. They are downloaded
+       by ``fetch_example_data()``.
    * - ``1284src_fwd/``
-     - Forward solutions such as ``CC120166-fwd.fif`` and
-       ``fsaverage-fwd.fif`` containing source-space geometry.
+     - The same forward solutions reduced to 1284 sources by
+       ``reduce_forward_solutions()``.
    * - ``1284src_leadfield/``
      - Reduced fixed and free-orientation leadfields such as
        ``CC120166_fixed_leadfield.npz`` and
