@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use CaliBrain, please cite this software."
 title: "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging"
-version: "1.0.3"
-date-released: 2026-07-08
+version: "1.1.0"
+date-released: 2026-11-20
 type: software
 license: "BSD-3-Clause"
 doi: 10.5281/zenodo.20683761
