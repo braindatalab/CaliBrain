@@ -30,4 +30,4 @@ __all__ = [
     "gamma_lambda_map_sflex",
 ]
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"

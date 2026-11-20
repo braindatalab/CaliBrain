@@ -8,42 +8,60 @@ The notable changes of every release, newest first. Entries are tagged ``[FEATUR
 ``[ENHANCEMENT]``, ``[BUGFIX]``, ``[BREAKING]``, ``[DOCS]``, ``[TEST]``, or ``[CI]``;
 ``[BREAKING]`` entries need a change in user code or in existing data files.
 
-Version 1.0.4 (unreleased)
+Version 1.1.0 (2026-11-20)
 --------------------------
 
-*   [BREAKING] Free-orientation source simulation now generates one waveform per active source along its cortical normal (rank-one source blocks) instead of an independent waveform per orientation component. Results from earlier free-orientation runs are not comparable.
-*   [BREAKING] ``SourceSimulator.simulate`` now requires the keyword-only argument ``cortical_normals`` for free-orientation simulations, plus ``Q_basis`` for reduced free MEG. Fixed-orientation simulation is unchanged.
-*   [BREAKING] Existing free-orientation leadfield files must be regenerated with ``python -m calibrain.extract_leadfield``, because older files do not contain ``cortical_normals``.
-*   [BREAKING] CaliBrain no longer reads environment variables. ``CALIBRAIN_DATA`` is removed: pass the folder explicitly (for example ``data_dir=`` of ``fetch_example_data`` and ``extract_leadfields``, or ``--data-dir``), otherwise the default folder is used. While ``CALIBRAIN_DATA`` is still set, ``get_data_path`` warns that it is ignored.
-*   [FEATURE] Added ``calibrain.datasets.fetch_example_data()``, which downloads example forward solutions from the CaliBrain-data repository on demand: the ``fsaverage`` template, and, as a separate dataset subject to the CamCAN terms, four CamCAN participants (``fetch_example_data("camcan")``). The forward solutions have the full source space, and the download is checked against a SHA-256 checksum. The reduced forward solutions (1284 sources) and the leadfield files are not downloaded: they depend on the CaliBrain version and are created from the download in two separate steps, ``reduce_forward_solutions()`` and ``extract_leadfields()``.
-*   [FEATURE] Added ``extract_leadfields()`` (also ``python -m calibrain.extract_leadfield``) to create the leadfield files from the forward solutions in the data directory. By default it processes every subject that has a forward solution, and it accepts ``--subjects``, ``--data-dir`` and ``--coil``. Before, the command line failed unless all five example forward solutions were present.
-*   [ENHANCEMENT] The default data directory of an installed package is now a per-user directory instead of a folder inside the Python environment. In a source checkout it is still ``<repository>/data``.
-*   [FEATURE] Leadfield files, ``LeadfieldBuilder``, and ``DataGenerator`` now carry ``cortical_normals`` (and ``Q_basis`` for MEG). ``LeadfieldBuilder`` computes them for free leadfields built from a forward solution and stores them in cached files, and ``DataGenerator`` saves the normals in the posterior-summary H5 files.
-*   [ENHANCEMENT] ``PyQt5``, ``pyvistaqt``, and ``ipywidgets`` are no longer required dependencies. 3D brain plotting now needs the optional extra, ``pip install "calibrain[viz]"``, and logs an install hint when it is missing.
-*   [ENHANCEMENT] The package version is now defined only in ``calibrain/__init__.py``, and ``pyproject.toml`` reads it from there.
-*   [ENHANCEMENT] The dependencies are now defined only in ``pyproject.toml``, with lower version bounds, and ``pooch`` is now a direct dependency. ``requirements.txt`` and ``docs/requirements.txt`` were removed, ``environment.yml`` only defines Python and ``pip``, and the unused ``myst-parser`` requirement was dropped. The ``docs`` and ``dev`` extras were updated (``dev`` now includes ``pytest-cov`` and ``ruff``).
-*   [ENHANCEMENT] The figure scripts in ``viz/`` no longer need ``seaborn``. They use matplotlib and draw the same figures.
-*   [FEATURE] Added ``reduce_forward_solutions()`` (also ``python -m calibrain.reduce_fwd``) to reduce forward solutions with the full source space in ``<data_dir>/fwd`` to the 1284 sources in ``<data_dir>/1284src_fwd``. It accepts ``--subjects``, ``--data-dir``, ``--seed`` and ``--force``, and with the default seed it reproduces the example forward solutions. Before, the script processed a fixed list of subjects from the default data folder.
-*   [ENHANCEMENT] ``python -m calibrain.extract_leadfield`` and ``python -m calibrain.reduce_fwd`` run the data preparation scripts from an installed package.
-*   [ENHANCEMENT] The data-generation and calibration workflows accept an optional ``data_dir`` config key for the folder with the forward solutions and leadfields (the default data folder is used otherwise). Before, the calibration workflow could only read them from the default folder.
-*   [ENHANCEMENT] ``extract_leadfield.py`` validates its inputs: free extraction from a fixed-only forward solution raises a clear ``ValueError``, and it requires surface source spaces and non-zero cortical normals.
-*   [BUGFIX] ``extract_leadfield`` no longer stores local file paths (user and machine names) in the leadfield files it writes. Regenerate existing files before sharing them.
-*   [BUGFIX] ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when ``save_path`` does not exist yet.
-*   [BUGFIX] ``extract_leadfield.py`` and ``reduce_fwd.py`` no longer run their batch jobs, which overwrite data files, when they are imported.
-*   [BUGFIX] Fixed an undefined ``STRIP_SIZE`` in ``viz/plot_overview_by_nnz.py``.
-*   [BUGFIX] Removed the duplicate repository-root ``__init__.py``, which could prevent ``pytest`` from collecting the test suite.
-*   [BREAKING] The data-generation workflow no longer writes a log file: ``run_data_generation`` does not create ``results/logs/*.log`` and ignores the ``log_dir`` config key. It logs to the console, which you can redirect (for example ``2>&1 | tee run.log``). The internal ``CALIBRAIN_LOG_FILE`` environment variable is removed with it.
-*   [TEST] Added tests for free-orientation simulation, ``extract_leadfield``, ``LeadfieldBuilder`` geometry, the posterior-summary files, and package metadata.
-*   [DOCS] Updated tutorials 04, 07, 09, 10, and 13 (metric evaluation) for the cortical-normal simulation interface.
-*   [DOCS] Added tutorial 05, "Preparing the Example Data", which follows the example data from the download through the reduction to 1284 sources to the leadfield files, checks that they are ready, and shows how to prepare your own forward solutions. Tutorial 06 (leadfield construction) now loads the real example data, its description of the data directory was corrected, and tutorials 06 and 08 clean up their temporary folders.
-*   [DOCS] Added tutorial 15, which runs the simulation, estimation, and calibration chain on the real ``fsaverage`` head model from the example data and shows free-orientation activity along the real cortical normals. The tutorials were renumbered (there was a duplicate number 10, and tutorial 05 is new): leadfield construction is now 06, sensor simulation 07, data generation 08, source estimation 09, uncertainty estimation 10, orientation 11, calibration 12, metric evaluation 13, and the end-to-end workflow 14. Links to the old tutorial page names change.
-*   [DOCS] The title, description, keywords, and author order are now the same in ``pyproject.toml``, ``CITATION.cff``, the ``LICENSE``, the README, and the documentation, and a test keeps them in sync. A new ``.zenodo.json`` gives every Zenodo release the same title, description, keywords, and authors, and the images of the README use absolute URLs so that they show on PyPI. The citation uses the Zenodo concept DOI, which always points to the latest version, so it no longer changes with each release.
-*   [DOCS] Expanded the installation guides (conda, Windows, optional extras, upgrading) and documented the data directory.
-*   [DOCS] Added a release checklist for maintainers and a ``SECURITY.md``.
-*   [DOCS] The documentation footer now lists all four authors. The version warning banner for old versions now works: the ``stable`` entry of ``switcher.json`` is marked as the preferred version. Added ``scripts/check_version_switcher.py``, which checks the version menu of every documented version against the live site, a test that keeps ``switcher.json`` clean and requires an entry for the current version, and maintainer notes on the version switcher and its Read the Docs redirects.
-*   [DOCS] Added Documentation and Citation sections to the README, switched the pipeline images to PNG, updated the wording and author order for uncertainty quantification, and made the documentation default to the ``stable`` version.
-*   [CI] Read the Docs builds now fail on warnings and install the ``docs`` extra.
-*   [CI] The tests now run on Python 3.10 to 3.14 and with the lowest allowed dependency versions, a ``ruff`` check was added, the tests run before a release is uploaded to PyPI, and Dependabot checks the dependencies and GitHub Actions monthly.
+*   [BREAKING] Free-orientation sources are now simulated with one waveform along the
+    cortical normal of each active source (rank-one blocks), instead of an independent
+    waveform per component. Results of earlier free-orientation runs are not comparable.
+*   [BREAKING] ``SourceSimulator.simulate`` needs the keyword-only argument
+    ``cortical_normals`` for free orientation (and ``Q_basis`` for reduced free-orientation
+    MEG). Free-orientation leadfield files from 1.0.x do not contain the normals: create them
+    again with ``extract_leadfields()``, otherwise ``DataGenerator`` stops with an error.
+*   [BREAKING] The ``CALIBRAIN_DATA`` environment variable is no longer read. Pass
+    ``data_dir`` (or ``--data-dir``) instead. While the variable is set, ``get_data_path``
+    warns that it is ignored.
+*   [BREAKING] ``run_data_generation`` no longer writes ``results/logs/*.log`` and ignores
+    the ``log_dir`` key of the configuration. It logs to the console.
+*   [FEATURE] Example data on demand. ``fetch_example_data()`` downloads the forward
+    solutions of the ``fsaverage`` template and, as a separate dataset under the CamCAN
+    terms, of four CamCAN participants (``fetch_example_data("camcan")``), and checks them
+    against a SHA-256 checksum. ``reduce_forward_solutions()`` reduces them to 1284 sources
+    and ``extract_leadfields()`` creates the leadfield files. These two also run as
+    ``python -m calibrain.reduce_fwd`` and ``python -m calibrain.extract_leadfield``.
+*   [FEATURE] Leadfield files and ``LeadfieldBuilder`` carry ``cortical_normals`` (and
+    ``Q_basis`` for MEG), and ``DataGenerator`` saves the normals in the posterior-summary
+    files.
+*   [ENHANCEMENT] The data-generation and calibration workflows accept a ``data_dir`` key in
+    their configuration. An installed package keeps its data in a per-user folder instead of
+    inside the Python environment; a source checkout still uses ``<repository>/data``.
+*   [ENHANCEMENT] ``extract_leadfield`` checks its input and raises a ``ValueError`` for free
+    extraction from a fixed-orientation forward solution, for a source space that is not a
+    cortical surface, and for zero cortical normals.
+*   [ENHANCEMENT] ``PyQt5``, ``pyvistaqt``, and ``ipywidgets`` are optional now
+    (``pip install "calibrain[viz]"``). The version is defined only in
+    ``calibrain/__init__.py`` and the dependencies, with lower bounds, only in
+    ``pyproject.toml`` (``pooch`` is a direct dependency; ``requirements.txt`` is removed).
+*   [BUGFIX] ``extract_leadfield`` no longer stores local file paths (user and machine names)
+    in the leadfield files; create existing files again before you share them. Importing
+    ``extract_leadfield`` or ``reduce_fwd`` no longer runs their batch jobs, which overwrote
+    data files. ``LeadfieldBuilder`` no longer fails with an ``AttributeError`` when
+    ``save_path`` does not exist. The duplicate ``__init__.py`` in the repository root, which
+    could break the collection of the tests, is removed.
+*   [DOCS] New tutorial 05, "Preparing the Example Data", and new tutorial 15, a complete
+    workflow on the real ``fsaverage`` head model. The tutorials are renumbered (leadfield
+    construction is now 06 and calibration 12), so links to the old tutorial pages change.
+*   [DOCS] Rewritten development guide, contributing page, and glossary, expanded
+    installation guides, a ``SECURITY.md``, and a release checklist for maintainers. The
+    title, description, authors, and citation (the Zenodo concept DOI) are the same
+    everywhere, and the version menu and the old-version banner of the documentation work
+    again.
+*   [TEST] New tests for free-orientation simulation, the data steps, the workflows, the
+    posterior-summary files, and the package metadata.
+*   [CI] The tests run on Python 3.10 to 3.14 and with the lowest allowed dependency
+    versions, and before a release is uploaded to PyPI. A ``ruff`` check was added, Read the
+    Docs builds fail on warnings, and Dependabot checks the dependencies and the GitHub
+    Actions monthly.
 
 Version 1.0.3 (2026-07-08)
 --------------------------

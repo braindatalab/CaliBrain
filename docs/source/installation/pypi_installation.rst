@@ -40,7 +40,7 @@ If you need a specific release, pin the version explicitly:
 
 .. code-block:: bash
 
-   python -m pip install "calibrain==1.0.3"
+   python -m pip install "calibrain==1.1.0"
 
 Check that the installation worked
 ----------------------------------
