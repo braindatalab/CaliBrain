@@ -8,6 +8,15 @@ The notable changes of every release, newest first. Entries are tagged ``[FEATUR
 ``[ENHANCEMENT]``, ``[BUGFIX]``, ``[BREAKING]``, ``[DOCS]``, ``[TEST]``, or ``[CI]``;
 ``[BREAKING]`` entries need a change in user code or in existing data files.
 
+Version 1.1.1 (unreleased)
+--------------------------
+
+*   [BUGFIX] ``python -m calibrain.reduce_fwd`` and ``python -m calibrain.extract_leadfield``
+    no longer print a ``RuntimeWarning``. ``extract_leadfields`` and
+    ``reduce_forward_solutions`` are imported on first use; ``from calibrain import ...``
+    works as before.
+*   [CI] Dependabot only updates the GitHub actions, no longer the Python dependencies.
+
 Version 1.1.0 (2026-11-20)
 --------------------------
 

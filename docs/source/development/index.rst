@@ -219,8 +219,8 @@ Continuous integration
        distributions, checks them with ``twine check``, and uploads them to PyPI with
        trusted publishing.
    * - ``dependabot.yml``
-     - Monthly update pull requests to ``dev`` for the pip dependencies and the versions
-       of the GitHub actions.
+     - Monthly update pull requests to ``dev`` for the versions of the GitHub actions.
+       The Python dependencies are not updated automatically.
 
 Read the Docs (``readthedocs.yml``) builds the documentation of ``dev``, ``main``
 (``latest``), the ``stable`` branch, and the release tags, and fails on warnings.
