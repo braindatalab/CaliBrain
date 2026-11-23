@@ -123,6 +123,7 @@ master_doc = 'index'
 
 # Tell Sphinx where static files are located
 html_static_path = ['_static']
+html_favicon = "_static/favicon.ico"
 html_css_files = ['custom.css']
 templates_path = ['_templates']
 epub_exclude_files = ['_static/switcher.json']
