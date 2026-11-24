@@ -167,6 +167,13 @@ publishing:
 9. Verify the release: install ``calibrain==X.Y.Z`` into a fresh environment, and
    check the Read the Docs ``stable`` build, the PyPI page (summary and images), and
    the Zenodo record.
+   The workflow ``publish-container.yml`` then builds the container image from the
+   PyPI release, tests it with Docker and Apptainer, and pushes
+   ``ghcr.io/braindatalab/calibrain:X.Y.Z``. Check that it succeeded. Before the
+   release, when dependencies changed, regenerate the pinned versions of the image with
+   ``python scripts/make_container_constraints.py --version X.Y.Z`` (after the upload to
+   PyPI) or ``--wheel dist/<wheel>``, in the Python version of the image, and commit
+   ``container/constraints.txt``.
 10. Run ``python scripts/check_version_switcher.py``. It checks the version menu of
     every documented version against the live site (see below).
 

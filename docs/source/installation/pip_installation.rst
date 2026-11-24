@@ -1,87 +1,56 @@
 .. meta::
-   :description: Install CaliBrain with pip from a local repository checkout for development or testing.
+   :description: Install CaliBrain from a clone of the repository in editable mode, to change the code, run the tests, or build the documentation.
 
-Pip Installation
-================
+Install from source
+===================
 
-Use this method if you want to install CaliBrain from a local repository
-checkout.
+Use this if you want to change CaliBrain, run its tests, or build this documentation. To
+only use CaliBrain, :doc:`pypi_installation` is simpler.
 
-Clone the repository
+You need Python 3.10 or newer, a terminal, and Git (``git --version`` should print a
+version; otherwise install Git from https://git-scm.com/downloads).
+
+Step 1: Get the code
 --------------------
-
-Download the source code and move into the project directory:
 
 .. code-block:: bash
 
    git clone https://github.com/braindatalab/CaliBrain.git
    cd CaliBrain
 
-Create an isolated Python environment
--------------------------------------
+All the following commands are run in this folder (``CaliBrain``).
 
-It is recommended to install into a virtual environment.
+Step 2: Create and activate an environment
+------------------------------------------
 
-On Linux and macOS:
+Follow :ref:`install-environment`. If you use conda, follow :doc:`conda_installation`
+instead of steps 2 and 3.
 
-.. code-block:: bash
-
-   python -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-
-On Windows (PowerShell):
-
-.. code-block:: powershell
-
-   python -m venv .venv
-   .venv\Scripts\Activate.ps1
-   python -m pip install --upgrade pip
-
-Install CaliBrain from the checkout
------------------------------------
-
-Install the package in editable mode:
-
-.. code-block:: bash
-
-   python -m pip install -e .
-
-Editable mode means that changes in the local source tree are available without
-reinstalling the package.
-
-Optional extras
----------------
-
-Install the 3D plotting packages (``PyQt5``, ``pyvistaqt``, ``ipywidgets``):
-
-.. code-block:: bash
-
-   python -m pip install -e ".[viz]"
-
-Install documentation dependencies:
-
-.. code-block:: bash
-
-   python -m pip install -e ".[docs]"
-
-Install development dependencies (``pytest``, ``pytest-cov``, ``ruff``):
+Step 3: Install in editable mode
+--------------------------------
 
 .. code-block:: bash
 
    python -m pip install -e ".[dev]"
 
-Extras can be combined, for example ``".[viz,dev,docs]"``.
+The option ``-e`` (*editable*) links the installation to the folder, so that changes you
+make in the code take effect without installing again. ``[dev]`` adds ``pytest`` and
+``ruff``. To also build the documentation, use ``".[dev,docs]"``. For all extras, see
+:ref:`install-extras`.
 
-Check that the installation worked
-----------------------------------
+Step 4: Check the installation
+------------------------------
 
-.. code-block:: bash
-
-   python -c "import calibrain; print(calibrain.__version__)"
-
-With the ``dev`` extra installed, you can also run the test suite:
+Follow :ref:`install-check`. Then run the tests, which take about half a minute:
 
 .. code-block:: bash
 
    python -m pytest tests/
+
+Tests that need the example data are skipped until you have downloaded it
+(:doc:`../datasets/index`).
+
+Next steps
+----------
+
+How to make a change and submit it is described in :doc:`../development/contributing`.

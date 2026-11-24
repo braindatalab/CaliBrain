@@ -203,3 +203,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# The container build reads the wheel of a pull request check from this folder
+!container/wheels/
+container/wheels/*
+!container/wheels/.gitkeep
