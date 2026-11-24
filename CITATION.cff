@@ -39,3 +39,21 @@ keywords:
   - calibration
   - benchmarking
   - Bayesian
+references:
+  - type: article
+    title: "Uncertainty calibration in Bayesian M/EEG source imaging"
+    authors:
+      - family-names: "Huseynov"
+        given-names: "Ismail"
+      - family-names: "Orabe"
+        given-names: "Mohammad"
+      - family-names: "Nagarajan"
+        given-names: "Srikantan"
+      - family-names: "Haufe"
+        given-names: "Stefan"
+    journal: "arXiv preprint arXiv:2611.06979"
+    year: 2026
+    url: "https://arxiv.org/abs/2611.06979"
+    identifiers:
+      - type: other
+        value: "arXiv:2611.06979"

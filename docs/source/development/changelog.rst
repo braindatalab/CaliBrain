@@ -19,6 +19,8 @@ Version 1.1.1 (unreleased)
     ``reduce_forward_solutions`` are imported on first use; ``from calibrain import ...``
     works as before.
 *   [CI] Dependabot only updates the GitHub actions, no longer the Python dependencies.
+*   [DOCS] The arXiv preprint is listed in ``CITATION.cff``, ``.zenodo.json``, and the
+    citation page, and PyPI shows more classifiers.
 
 Version 1.1.0 (2026-11-20)
 --------------------------

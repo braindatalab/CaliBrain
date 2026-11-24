@@ -95,7 +95,8 @@ def test_authors_are_listed_in_the_same_order_everywhere():
     names = re.findall(r'\{name = "([^"]+)"', pyproject.split("authors = [", 1)[1].split("]", 1)[0])
     assert names == AUTHORS
 
-    citation = (ROOT / "CITATION.cff").read_text()
+    # The authors of the software; the references (the preprint) list their own order.
+    citation = (ROOT / "CITATION.cff").read_text().split("\nreferences:", 1)[0]
     family = re.findall(r'family-names: "([^"]+)"', citation)
     assert family == [name.split()[-1] for name in AUTHORS]
 
@@ -135,3 +136,9 @@ def test_readme_images_use_absolute_urls_so_that_they_show_on_pypi():
     sources = re.findall(r'<img[^>]*\ssrc="([^"]+)"', readme)
     assert sources
     assert all(src.startswith("https://") for src in sources), sources
+
+
+def test_the_arxiv_preprint_is_cited_consistently():
+    arxiv_id = "2611.06979"
+    for path in ("CITATION.cff", ".zenodo.json", "docs/source/cite/index.rst"):
+        assert arxiv_id in (ROOT / path).read_text(), path

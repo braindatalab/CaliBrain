@@ -39,3 +39,22 @@ BibTeX
      doi = {10.5281/zenodo.20683761},
      url = {https://doi.org/10.5281/zenodo.20683761}
    }
+
+The method paper
+----------------
+
+The methods that CaliBrain implements, and the experiments it was built for, are
+described in the preprint `Uncertainty calibration in Bayesian M/EEG source imaging
+<https://arxiv.org/abs/2611.06979>`_ (arXiv:2611.06979). If your work builds on the
+method and not only on the software, cite the preprint in addition to the software:
+
+.. code-block:: bibtex
+
+   @misc{huseynov2026uncertainty,
+     title = {Uncertainty calibration in Bayesian M/EEG source imaging},
+     author = {Huseynov, Ismail and Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan},
+     year = {2026},
+     eprint = {2611.06979},
+     archivePrefix = {arXiv},
+     url = {https://arxiv.org/abs/2611.06979}
+   }
