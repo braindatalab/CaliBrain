@@ -10,6 +10,10 @@ released CaliBrain package, and Jupyter. It has no display, so the 3D brain plot
 All other plots work. The example data are not inside the image: keep them in a folder on
 your computer and pass that folder as ``data_dir``.
 
+You need Apptainer (on a cluster, usually already installed; ask the administrators) or
+Docker on your computer. Neither is part of CaliBrain. If you only want to try CaliBrain
+on your own computer, :doc:`pypi_installation` is simpler.
+
 There are three ways to get it:
 
 1. **Pull the published image** (the simplest way, nothing to clone).
