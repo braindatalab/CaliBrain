@@ -11,6 +11,7 @@
 [![License](https://img.shields.io/github/license/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/blob/main/LICENSE)
 [![Latest GitHub release](https://img.shields.io/github/v/release/braindatalab/CaliBrain)](https://github.com/braindatalab/CaliBrain/releases)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20683761.svg)](https://doi.org/10.5281/zenodo.20683761)
+[![Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/braindatalab/CaliBrain/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/braindatalab/CaliBrain)
 
 CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging.
 
