@@ -84,14 +84,14 @@ jobs:
       - name: Test the image with Apptainer
         env:
           VERSION: ${{ steps.v.outputs.version }}
-        run: sh container/smoke_test.sh "apptainer exec docker-daemon:calibrain:test" "$VERSION"
+        run: sh container/smoke_test.sh "sudo apptainer exec docker-daemon:calibrain:test" "$VERSION"
 
       - name: Test the definition file with Apptainer
         env:
           VERSION: ${{ steps.v.outputs.version }}
         run: |
           sudo apptainer build --build-arg "VERSION=${VERSION}" calibrain.sif container/calibrain.def
-          sh container/smoke_test.sh "apptainer exec calibrain.sif" "$VERSION"
+          sh container/smoke_test.sh "sudo apptainer exec calibrain.sif" "$VERSION"
 
       - name: Log in to ghcr.io
         if: github.event_name == 'workflow_run' || inputs.push

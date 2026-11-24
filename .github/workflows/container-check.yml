@@ -49,9 +49,9 @@ jobs:
         uses: eWaterCycle/setup-apptainer@v2
 
       - name: Test the image with Apptainer
-        run: sh container/smoke_test.sh "apptainer exec docker-daemon:calibrain:check" "$CALIBRAIN_VERSION"
+        run: sh container/smoke_test.sh "sudo apptainer exec docker-daemon:calibrain:check" "$CALIBRAIN_VERSION"
 
       - name: Build and test the definition file
         run: |
           sudo apptainer build calibrain.sif container/calibrain.def
-          sh container/smoke_test.sh "apptainer exec calibrain.sif" "$CALIBRAIN_VERSION"
+          sh container/smoke_test.sh "sudo apptainer exec calibrain.sif" "$CALIBRAIN_VERSION"
