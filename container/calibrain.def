@@ -1,0 +1,44 @@
+# Apptainer definition file for CaliBrain, for people who cannot pull the published image.
+# Build it from the root of a clone of the repository:
+#
+#   apptainer build --build-arg VERSION=1.1.0 calibrain.sif container/calibrain.def
+#
+# VERSION is a release number on PyPI. The default "local" installs the wheel in
+# container/wheels instead (used by the checks of pull requests).
+# It installs the same packages as container/Dockerfile, through container/install_calibrain.sh.
+
+Bootstrap: docker
+From: python:3.13-slim
+
+%arguments
+    VERSION=local
+
+%files
+    container/constraints.txt /opt/calibrain/constraints.txt
+    container/install_calibrain.sh /opt/calibrain/install_calibrain.sh
+    container/wheels /opt/calibrain/wheels
+
+%post
+    sh /opt/calibrain/install_calibrain.sh /opt/calibrain/constraints.txt "{{ VERSION }}" /opt/calibrain/wheels
+    rm -rf /opt/calibrain
+
+%environment
+    export MPLBACKEND=Agg
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    if [ "$#" -eq 0 ]; then
+        exec bash
+    fi
+    exec "$@"
+
+%labels
+    Title CaliBrain
+    Description CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging
+    Source https://github.com/braindatalab/CaliBrain
+    License BSD-3-Clause
+    Version {{ VERSION }}
+
+%help
+    CaliBrain without a display, with Jupyter. No example data is inside: pass a folder
+    as data_dir. Documentation: https://calibrain.readthedocs.io/

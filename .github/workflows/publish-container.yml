@@ -1,0 +1,108 @@
+name: Publish container image
+
+# Builds the image from the release on PyPI, tests it with Docker and with Apptainer,
+# and pushes it to the GitHub Container Registry. It runs after "Publish to PyPI" has
+# succeeded, so a failure here never blocks a release. It can also be started by hand.
+
+on:
+  workflow_run:
+    workflows: ["Publish to PyPI"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release number on PyPI, for example 1.1.0 (without the v)"
+        required: true
+      push:
+        description: "Push the image to ghcr.io (otherwise only build and test)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish-container
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/braindatalab/calibrain
+
+jobs:
+  image:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # A release run builds the files of the released commit. A manual run uses the
+      # current default branch together with the version that was typed in.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Find the version
+        id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="${INPUT_VERSION:-$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' calibrain/__init__.py)}"
+          case "$version" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Not a release number: '$version'" >&2; exit 1 ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Wait until the release is on PyPI
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "https://pypi.org/pypi/calibrain/${VERSION}/json" > /dev/null; then exit 0; fi
+            sleep 20
+          done
+          echo "calibrain ${VERSION} is not on PyPI" >&2; exit 1
+
+      - name: Build the image
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          docker build -f container/Dockerfile --build-arg "VERSION=${VERSION}" \
+            -t calibrain:test container
+
+      - name: Test the image with Docker
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: sh container/smoke_test.sh "docker run --rm calibrain:test" "$VERSION"
+
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Test the image with Apptainer
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: sh container/smoke_test.sh "apptainer exec docker-daemon:calibrain:test" "$VERSION"
+
+      - name: Test the definition file with Apptainer
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          sudo apptainer build --build-arg "VERSION=${VERSION}" calibrain.sif container/calibrain.def
+          sh container/smoke_test.sh "apptainer exec calibrain.sif" "$VERSION"
+
+      - name: Log in to ghcr.io
+        if: github.event_name == 'workflow_run' || inputs.push
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push the image
+        if: github.event_name == 'workflow_run' || inputs.push
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          docker tag calibrain:test "${IMAGE}:${VERSION}"
+          docker tag calibrain:test "${IMAGE}:latest"
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"

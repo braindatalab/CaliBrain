@@ -1,0 +1,57 @@
+name: Container check
+
+# Builds the container image and the Apptainer definition file from the checkout (a wheel
+# built from the current code, not the release on PyPI) and runs the smoke test on them.
+# The release workflow "Publish container image" does the same with the PyPI release.
+
+on:
+  pull_request:
+    paths:
+      - "container/**"
+      - "scripts/make_container_constraints.py"
+      - "pyproject.toml"
+      - "calibrain/__init__.py"
+      - ".github/workflows/container-check.yml"
+      - ".github/workflows/publish-container.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build a wheel from the checkout
+        run: |
+          python -m pip install build
+          python -m build --wheel
+          cp dist/calibrain-*.whl container/wheels/
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' calibrain/__init__.py)
+          echo "CALIBRAIN_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build the image
+        run: docker build -f container/Dockerfile -t calibrain:check container
+
+      - name: Test the image with Docker
+        run: sh container/smoke_test.sh "docker run --rm calibrain:check" "$CALIBRAIN_VERSION"
+
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Test the image with Apptainer
+        run: sh container/smoke_test.sh "apptainer exec docker-daemon:calibrain:check" "$CALIBRAIN_VERSION"
+
+      - name: Build and test the definition file
+        run: |
+          sudo apptainer build calibrain.sif container/calibrain.def
+          sh container/smoke_test.sh "apptainer exec calibrain.sif" "$CALIBRAIN_VERSION"

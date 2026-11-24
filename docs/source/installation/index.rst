@@ -24,15 +24,18 @@ Which method should I use?
   repository checkout.
 - :doc:`conda <conda_installation>` if you want to install into a conda
   environment, either from PyPI or from a source checkout.
+- :doc:`container <container_installation>` if you want to run CaliBrain on a cluster
+  or server, or need the same software environment for every run.
 
 Installation methods
 --------------------
 
-CaliBrain is documented through three installation paths:
+CaliBrain is documented through four installation paths:
 
 - :doc:`PyPI <pypi_installation>` for installing a published release into an existing Python environment;
 - :doc:`pip <pip_installation>` for installing directly from a local source checkout;
-- :doc:`conda <conda_installation>` for installing into a conda environment, from PyPI or from a source checkout.
+- :doc:`conda <conda_installation>` for installing into a conda environment, from PyPI or from a source checkout;
+- :doc:`container <container_installation>` for running a published Apptainer or Docker image.
 
 Optional packages
 -----------------
@@ -57,3 +60,4 @@ chooses the folder they are stored in. See
    pypi_installation
    pip_installation
    conda_installation
+   container_installation

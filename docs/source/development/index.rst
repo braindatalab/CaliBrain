@@ -39,7 +39,12 @@ Repository layout
      - The Sphinx documentation (``docs/source``).
    * - ``scripts/``
      - Maintainer scripts: ``build_example_data_archives.py``,
-       ``check_version_switcher.py``, and ``generate_readme_example.py``.
+       ``check_version_switcher.py``, ``generate_readme_example.py``, and
+       ``make_container_constraints.py``.
+   * - ``container/``
+     - The container image: ``Dockerfile``, the Apptainer definition ``calibrain.def``,
+       the pinned package versions, and the install and test scripts. See
+       :doc:`../installation/container_installation`.
    * - ``viz/``
      - Scripts that plot results of workflow runs (``plot_*.py``).
    * - ``data/``
@@ -183,6 +188,8 @@ The tests are in ``tests/`` and run with ``python -m pytest``:
        ``test_metric_evaluation.py``, ``test_free_orientation_uncertainty.py``
      - Intervals, coverage curves, calibration modes, and metrics, for fixed and free
        orientation.
+   * - ``test_container_files.py``
+     - The Dockerfile, the definition file, and the pinned versions agree.
    * - ``test_package_metadata.py``
      - The version, the citation file, and ``switcher.json``.
 
@@ -214,6 +221,13 @@ Continuous integration
    * - ``docs-check.yml``
      - Builds the documentation with ``make html`` (``DOCS_VERSION=dev``, Python 3.10).
        It does not fail on warnings; Read the Docs does.
+   * - ``container-check.yml``
+     - On pull requests that change ``container/``: builds the image and the Apptainer
+       definition from a wheel of the checkout and runs ``container/smoke_test.sh`` on them.
+   * - ``publish-container.yml``
+     - After ``publish-pypi.yml`` succeeds for a release (or manually): builds the image
+       from the PyPI release, tests it with Docker and Apptainer, and pushes it to
+       ``ghcr.io/braindatalab/calibrain``.
    * - ``publish-pypi.yml``
      - When a GitHub release is published (or manually): runs the tests, builds the
        distributions, checks them with ``twine check``, and uploads them to PyPI with
