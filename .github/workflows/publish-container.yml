@@ -31,7 +31,9 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release')
-    runs-on: ubuntu-latest
+    # Ubuntu 22.04 on purpose: the Apptainer package that the setup action installs needs
+    # libfuse3-3, which was renamed in Ubuntu 24.04 (ubuntu-latest).
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write

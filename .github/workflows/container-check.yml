@@ -20,7 +20,9 @@ permissions:
 
 jobs:
   container:
-    runs-on: ubuntu-latest
+    # Ubuntu 22.04 on purpose: the Apptainer package that the setup action installs needs
+    # libfuse3-3, which was renamed in Ubuntu 24.04 (ubuntu-latest).
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
