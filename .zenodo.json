@@ -30,6 +30,14 @@
     "benchmarking",
     "Bayesian"
   ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "arXiv:2611.06979",
+      "scheme": "arxiv",
+      "resource_type": "publication-preprint"
+    }
+  ],
   "license": "bsd-3-clause",
   "access_right": "open"
 }
