@@ -14,10 +14,6 @@ Version 1.1.1 (unreleased)
 *   [FEATURE] A container image with Apptainer and Docker instructions (see
     :doc:`../installation/container_installation`), published to
     ``ghcr.io/braindatalab/calibrain`` for every release.
-*   [BUGFIX] ``python -m calibrain.reduce_fwd`` and ``python -m calibrain.extract_leadfield``
-    no longer print a ``RuntimeWarning``. ``extract_leadfields`` and
-    ``reduce_forward_solutions`` are imported on first use; ``from calibrain import ...``
-    works as before.
 *   [CI] Dependabot only updates the GitHub actions, no longer the Python dependencies.
 
 Version 1.1.0 (2026-11-20)
