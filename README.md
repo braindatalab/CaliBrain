@@ -41,23 +41,35 @@ documentation on Read the Docs.
 If you use CaliBrain in academic work, please cite the software archive. The DOI below
 always points to the latest version; Zenodo also lists a DOI for every release.
 
-```text
-Orabe, Mohammad, Nagarajan, Srikantan, Haufe, Stefan, & Huseynov, Ismail T. (2026).
-CaliBrain: A Python toolbox for uncertainty quantification, calibration, and
-benchmarking in Bayesian M/EEG inverse source imaging. Zenodo.
-https://doi.org/10.5281/zenodo.20683761
-```
-
 ```bibtex
 @software{calibrain,
   title = {CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging},
-  author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail T.},
+  author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail},
   year = {2026},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.20683761},
   url = {https://doi.org/10.5281/zenodo.20683761}
 }
 ```
+
+The software is described in a preprint, which has not yet been peer reviewed. The DOI
+below always points to the latest version of the preprint.
+
+```bibtex
+@misc{orabe2026calibrain,
+  title = {CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging},
+  author = {Orabe, Mohammad and Nagarajan, Srikantan and Haufe, Stefan and Huseynov, Ismail},
+  year = {2026},
+  publisher = {Zenodo},
+  note = {Preprint},
+  doi = {10.5281/zenodo.24544960},
+  url = {https://doi.org/10.5281/zenodo.24544960}
+}
+```
+
+The methods that CaliBrain implements are described in the preprint
+[Uncertainty calibration in Bayesian M/EEG source imaging](https://arxiv.org/abs/2611.06979)
+(arXiv:2611.06979). If your work builds on the method, cite it as well.
 
 ## Example
 

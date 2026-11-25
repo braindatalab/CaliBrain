@@ -24,7 +24,7 @@ authors:
     email: "haufe@tu-berlin.de"
     orcid: "https://orcid.org/0000-0003-1470-9195"
   - family-names: "Huseynov"
-    given-names: "Ismail T."
+    given-names: "Ismail"
     email: "ismailhuseynov6666@gmail.com"
     orcid: "https://orcid.org/0000-0002-4141-3544"
 repository-code: "https://github.com/braindatalab/CaliBrain"
@@ -40,6 +40,23 @@ keywords:
   - benchmarking
   - Bayesian
 references:
+  - type: article
+    title: "CaliBrain: A Python toolbox for uncertainty quantification, calibration, and benchmarking in Bayesian M/EEG inverse source imaging"
+    authors:
+      - family-names: "Orabe"
+        given-names: "Mohammad"
+      - family-names: "Nagarajan"
+        given-names: "Srikantan"
+      - family-names: "Haufe"
+        given-names: "Stefan"
+      - family-names: "Huseynov"
+        given-names: "Ismail"
+    journal: "Zenodo preprint"
+    publisher:
+      name: "Zenodo"
+    year: 2026
+    doi: 10.5281/zenodo.24544960
+    url: "https://doi.org/10.5281/zenodo.24544960"
   - type: article
     title: "Uncertainty calibration in Bayesian M/EEG source imaging"
     authors:
