@@ -16,7 +16,7 @@
       "orcid": "0000-0003-1470-9195"
     },
     {
-      "name": "Huseynov, Ismail T.",
+      "name": "Huseynov, Ismail",
       "orcid": "0000-0002-4141-3544"
     }
   ],
@@ -31,6 +31,12 @@
     "Bayesian"
   ],
   "related_identifiers": [
+    {
+      "relation": "isDocumentedBy",
+      "identifier": "10.5281/zenodo.24544960",
+      "scheme": "doi",
+      "resource_type": "publication-preprint"
+    },
     {
       "relation": "isSupplementTo",
       "identifier": "arXiv:2611.06979",
